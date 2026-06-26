@@ -1,0 +1,34 @@
+{
+  "placeholderImages": [
+    {
+      "id": "hero-couple",
+      "description": "An elegant African Christian couple holding hands, radiating peace and joy.",
+      "imageUrl": "https://picsum.photos/seed/eden1/1200/800",
+      "imageHint": "elegant African couple"
+    },
+    {
+      "id": "faith-background",
+      "description": "A serene church interior with soft golden lighting.",
+      "imageUrl": "https://picsum.photos/seed/eden2/1200/800",
+      "imageHint": "sacred church interior"
+    },
+    {
+      "id": "blog-marriage",
+      "description": "A happy family praying together.",
+      "imageUrl": "https://picsum.photos/seed/eden3/600/400",
+      "imageHint": "christian family prayer"
+    },
+    {
+      "id": "avatar-woman",
+      "description": "A professional African woman in her 30s.",
+      "imageUrl": "https://picsum.photos/seed/eden4/400/400",
+      "imageHint": "african woman portrait"
+    },
+    {
+      "id": "avatar-man",
+      "description": "A professional African man in his 30s.",
+      "imageUrl": "https://picsum.photos/seed/eden5/400/400",
+      "imageHint": "african man portrait"
+    }
+  ]
+}
