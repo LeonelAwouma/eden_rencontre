@@ -59,11 +59,12 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
-import { getSession, logout, updateProfile, type EdenUser } from "@/lib/auth";
+import { getSession, logout, updateProfile, ageFromBirthDate, type EdenUser } from "@/lib/auth";
 import { Textarea } from "@/components/ui/textarea";
 import { PROFILES } from "@/lib/profiles";
 import { MARRIAGE_VALUES, getValue } from "@/lib/values";
 import { computeMatchScore, rankByMatch } from "@/lib/matching";
+import { getMyOnboarding } from "@/lib/onboarding";
 import { supabase } from "@/lib/supabase";
 import {
   upsertMyProfile,
@@ -97,6 +98,7 @@ import {
 } from "@/lib/social";
 import { motion, AnimatePresence } from "framer-motion";
 import { Monogram, Flourish, VitrailPattern } from "@/components/ornaments";
+import { ImposingFloralCorners, ImposingFloralSide } from "@/components/garden";
 
 type Tab = "Accueil" | "Découvrir" | "Visiteurs" | "Favoris" | "Demandes" | "Premium" | "Messages" | "Notifications" | "Profil";
 
@@ -817,6 +819,11 @@ export default function DashboardPage() {
       else loadSocial();
     });
     loadConversations();
+    // Parcours d'onboarding : on y dirige les nouveaux membres (sauf s'ils ont choisi « Passer »).
+    getMyOnboarding().then(({ completed }) => {
+      const skipped = typeof window !== "undefined" && localStorage.getItem("eden_onboarding_skipped") === "1";
+      if (!completed && !skipped) router.replace("/onboarding");
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user]);
 
@@ -990,10 +997,11 @@ export default function DashboardPage() {
             {/* ===== FIL CENTRAL ===== */}
             <div className="space-y-6 min-w-0">
 
-              {/* Hero — Parole du jour, en arche de chapelle (panneau vitrail) */}
-              <section className="relative overflow-hidden rounded-t-[110px] sm:rounded-t-[190px] rounded-b-lg border border-secondary/25 px-6 pt-12 pb-9 sm:pt-16 sm:pb-12 text-center bg-gradient-to-br from-secondary/10 to-card">
-                <VitrailPattern className="absolute inset-0 w-full h-full text-secondary/[0.08] pointer-events-none" />
-                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-40 bg-secondary/15 blur-3xl rounded-full pointer-events-none" />
+              {/* Hero — Parole du jour */}
+              <section className="relative overflow-hidden rounded-t-[110px] sm:rounded-t-[190px] rounded-b-lg border border-sage/25 px-6 pt-12 pb-9 sm:pt-16 sm:pb-12 text-center bg-gradient-to-br from-sage/10 to-card">
+                <ImposingFloralCorners size="xl" corners={["bl", "br"]} opacity={0.75} />
+                <VitrailPattern className="absolute inset-0 w-full h-full text-sage/[0.06] pointer-events-none" />
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-40 bg-sage/12 blur-3xl rounded-full pointer-events-none" />
                 <div className="relative z-10 flex flex-col items-center">
                   <Monogram className="w-12 h-10 text-secondary mb-5" />
                   <span className="text-[10px] font-bold uppercase tracking-[0.4em] text-secondary/80 mb-5">Parole du jour</span>
@@ -1020,7 +1028,8 @@ export default function DashboardPage() {
               </div>
 
               {/* Composer de publication */}
-              <Card className="border border-secondary/15 bg-card rounded-2xl p-4">
+              <Card className="relative overflow-hidden border border-sage/15 bg-card rounded-2xl p-4">
+                <ImposingFloralCorners size="sm" corners={["tr"]} opacity={0.4} />
                 <input ref={composerImageRef} type="file" accept="image/*" className="hidden" onChange={handleComposerImage} />
                 <div className={cn("flex gap-3", composerOpen ? "items-start" : "items-center")}>
                   <Avatar className="w-10 h-10 border border-foreground/10 shrink-0">
@@ -2308,6 +2317,21 @@ export default function DashboardPage() {
               </Card>
             ) : (
               <>
+                {/* Compléter / modifier le questionnaire (onboarding) */}
+                <button
+                  onClick={() => router.push("/onboarding")}
+                  className="w-full flex items-center gap-4 p-5 rounded-2xl border border-secondary/15 bg-card shadow-xl hover:border-secondary/40 transition-colors text-left group"
+                >
+                  <div className="w-12 h-12 bg-secondary/10 border border-secondary/25 rounded-t-2xl rounded-b-md flex items-center justify-center shrink-0">
+                    <ScrollText className="w-6 h-6 text-secondary" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h3 className="font-headline text-lg font-bold text-foreground group-hover:text-primary transition-colors">Mon questionnaire</h3>
+                    <p className="text-muted-foreground text-sm">Compléter ou modifier vos réponses (foi, valeurs, attentes)</p>
+                  </div>
+                  <ChevronRight className="w-5 h-5 text-secondary shrink-0 group-hover:translate-x-1 transition-transform" />
+                </button>
+
                 {/* Mes publications — consulter & gérer */}
                 <button
                   onClick={() => setShowMyPosts(true)}
@@ -2334,6 +2358,7 @@ export default function DashboardPage() {
                     {[
                       { label: "Email", val: user?.email || "—" },
                       { label: "Sexe", val: user?.gender === "homme" ? "Homme" : user?.gender === "femme" ? "Femme" : "—" },
+                      { label: "Âge", val: ageFromBirthDate(user?.birthDate) ? `${ageFromBirthDate(user?.birthDate)} ans` : "—" },
                       { label: "Ville", val: user?.city || "—" },
                       { label: "Pays", val: user?.country || "—" },
                       { label: "Profession", val: user?.profession || "—" },
@@ -2409,17 +2434,23 @@ export default function DashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground relative">
+      {/* Accent végétal latéral — desktop */}
+      <div className="hidden xl:block fixed left-[280px] top-1/4 w-32 h-80 pointer-events-none z-0 opacity-40" aria-hidden="true">
+        <ImposingFloralSide className="w-full h-full" />
+      </div>
+
       {/* ===== Sidebar (desktop) ===== */}
-      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:w-[280px] bg-card border-r border-secondary/15 z-40">
-        <div className="h-20 flex items-center px-6 border-b border-secondary/15">
+      <aside className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:w-[280px] bg-card border-r border-sage/15 z-40 relative overflow-hidden">
+        <ImposingFloralCorners size="md" corners={["bl"]} opacity={0.55} className="z-0" />
+        <div className="h-20 flex items-center px-6 border-b border-sage/15 relative z-10">
           <Link href="/" className="flex items-center gap-2.5 group">
             <Monogram className="w-9 h-8 text-primary shrink-0 group-hover:text-secondary transition-colors" />
             <span className="font-headline text-xl font-bold text-foreground">Eden <span className="text-primary italic font-normal">Rencontre</span></span>
           </Link>
         </div>
 
-        <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar">
+        <nav className="flex-1 overflow-y-auto p-4 space-y-1 custom-scrollbar relative z-10">
           <div className="flex items-center gap-3 px-2 pb-3">
             <span className="text-[9px] font-bold uppercase tracking-[0.3em] text-secondary/80">Navigation</span>
             <Flourish className="flex-1 h-2.5 text-secondary/30" />
@@ -2448,9 +2479,10 @@ export default function DashboardPage() {
           })}
         </nav>
 
-        <div className="p-4 space-y-4 border-t border-secondary/15">
-          <div className="relative overflow-hidden rounded-t-3xl rounded-b-lg border border-secondary/30 p-4 text-center bg-gradient-to-br from-secondary/10 to-card">
-            <VitrailPattern className="absolute inset-0 w-full h-full text-secondary/[0.08] pointer-events-none" />
+        <div className="p-4 space-y-4 border-t border-sage/15 relative z-10">
+          <div className="relative overflow-hidden rounded-t-3xl rounded-b-lg border border-sage/25 p-4 text-center bg-gradient-to-br from-sage/10 to-card">
+            <ImposingFloralCorners size="sm" corners={["tl", "tr"]} opacity={0.5} />
+            <VitrailPattern className="absolute inset-0 w-full h-full text-sage/[0.06] pointer-events-none" />
             <div className="relative z-10 flex flex-col items-center">
               <Monogram className="w-9 h-8 text-secondary mb-2" />
               <p className="text-foreground font-headline font-bold text-sm">Eden Or</p>
@@ -2484,7 +2516,8 @@ export default function DashboardPage() {
       {/* ===== Colonne principale ===== */}
       <div className="lg:pl-[280px] pb-[calc(76px+env(safe-area-inset-bottom))] lg:pb-0">
         {/* Topbar */}
-        <header className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-secondary/15 h-20 flex items-center justify-between px-4 sm:px-6 lg:px-10">
+        <header className="sticky top-0 z-30 bg-background/90 backdrop-blur-xl border-b border-sage/15 h-20 flex items-center justify-between px-4 sm:px-6 lg:px-10 relative overflow-hidden">
+          <ImposingFloralCorners size="sm" corners={["br"]} opacity={0.35} className="hidden lg:block" />
           {/* Mobile logo */}
           <Link href="/dashboard" className="flex items-center gap-2.5 lg:hidden">
             <Monogram className="w-9 h-8 text-primary shrink-0" />

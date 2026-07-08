@@ -23,6 +23,10 @@ alter table public.profiles add column if not exists region text;
 alter table public.profiles add column if not exists profession text;
 alter table public.profiles add column if not exists bio text;
 alter table public.profiles add column if not exists marriage_vision text[];
+alter table public.profiles add column if not exists birth_date date;
+-- Onboarding : réponses aux 3 questionnaires (JSON) + état d'achèvement
+alter table public.profiles add column if not exists questionnaire jsonb not null default '{}'::jsonb;
+alter table public.profiles add column if not exists onboarding_completed boolean not null default false;
 
 drop policy if exists profiles_select on public.profiles;
 create policy profiles_select on public.profiles
@@ -44,7 +48,7 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, name, gender, civil_status, region, country, city, profession, bio, marriage_vision)
+  insert into public.profiles (id, email, name, gender, civil_status, region, country, city, profession, bio, marriage_vision, birth_date)
   values (
     new.id,
     new.email,
@@ -58,7 +62,8 @@ begin
     new.raw_user_meta_data->>'bio',
     case when new.raw_user_meta_data ? 'marriageVision'
       then array(select jsonb_array_elements_text(new.raw_user_meta_data->'marriageVision'))
-      else null end
+      else null end,
+    (new.raw_user_meta_data->>'birthDate')::date
   )
   on conflict (id) do nothing;
   return new;
@@ -89,7 +94,10 @@ set gender          = coalesce(p.gender, u.raw_user_meta_data->>'gender'),
     marriage_vision = coalesce(p.marriage_vision,
       case when u.raw_user_meta_data ? 'marriageVision'
         then array(select jsonb_array_elements_text(u.raw_user_meta_data->'marriageVision'))
-        else null end)
+        else null end),
+    birth_date      = coalesce(p.birth_date,
+      case when (u.raw_user_meta_data->>'birthDate') ~ '^\d{4}-\d{2}-\d{2}$'
+        then (u.raw_user_meta_data->>'birthDate')::date else null end)
 from auth.users u
 where u.id = p.id;
 

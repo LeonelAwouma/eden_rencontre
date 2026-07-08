@@ -14,7 +14,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { registerUser } from "@/lib/auth";
+import { registerUser, ageFromBirthDate, MIN_AGE } from "@/lib/auth";
 import { MARRIAGE_VALUES } from "@/lib/values";
 import { Monogram } from "@/components/ornaments";
 import { useRouter } from "next/navigation";
@@ -104,10 +104,14 @@ export default function RegisterPage() {
     country: "",
     city: "",
     name: "",
+    birthDate: "",
     email: "",
     password: "",
     marriageVision: [] as string[],
   });
+
+  const age = ageFromBirthDate(formData.birthDate);
+  const ageValid = age !== null && age >= MIN_AGE;
 
   const [photos, setPhotos] = useState<(string | null)[]>([
     null, null, null
@@ -168,6 +172,7 @@ export default function RegisterPage() {
       email: formData.email,
       password: formData.password,
       gender: formData.gender,
+      birthDate: formData.birthDate,
       discoverySource: formData.discoverySource,
       civilStatus: formData.civilStatus,
       region: formData.region,
@@ -321,9 +326,9 @@ export default function RegisterPage() {
                 </div>
 
                 <div className="flex justify-center">
-                  <div className="bg-amber-500/10 border border-amber-500/20 rounded-full py-2 px-5 flex items-center gap-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-                    <p className="text-amber-500/80 text-[10px] font-bold uppercase tracking-widest">Information définitive</p>
+                  <div className="bg-olive/10 border border-olive/20 rounded-full py-2 px-5 flex items-center gap-2">
+                    <AlertTriangle className="w-3.5 h-3.5 text-olive" />
+                    <p className="text-olive/80 text-[10px] font-bold uppercase tracking-widest">Information définitive</p>
                   </div>
                 </div>
               </div>
@@ -521,6 +526,21 @@ export default function RegisterPage() {
                     />
                   </div>
                   <div className="space-y-2">
+                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Date de naissance</Label>
+                    <Input
+                      type="date"
+                      value={formData.birthDate}
+                      onChange={(e) => setFormData({...formData, birthDate: e.target.value})}
+                      className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30"
+                    />
+                    {formData.birthDate && !ageValid && (
+                      <p className="text-xs text-destructive flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Vous devez avoir au moins {MIN_AGE} ans pour rejoindre Eden.</p>
+                    )}
+                    {formData.birthDate && ageValid && (
+                      <p className="text-[11px] text-foreground/30 uppercase tracking-widest">{age} ans</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Adresse email</Label>
                     <Input
                       type="email"
@@ -552,7 +572,7 @@ export default function RegisterPage() {
                   </div>
                   <Button
                     onClick={nextStep}
-                    disabled={!formData.name || !formData.email || formData.password.length < 8}
+                    disabled={!formData.name || !ageValid || !formData.email || formData.password.length < 8}
                     className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                   >
                     Continuer <ArrowRight className="w-5 h-5 ml-2" />
@@ -742,11 +762,11 @@ export default function RegisterPage() {
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(198, 166, 79, 0.25);
+          background: hsl(145 22% 62% / 0.2);
           border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(198, 166, 79, 0.45);
+          background: hsl(145 22% 62% / 0.4);
         }
       `}</style>
     </div>

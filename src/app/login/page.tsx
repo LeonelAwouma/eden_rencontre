@@ -10,6 +10,7 @@ import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, ArrowRight, Heart, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 import { loginUser, signInWithGoogle, getSession } from "@/lib/auth";
 import { Monogram } from "@/components/ornaments";
+import { ImposingFloralCorners } from "@/components/garden";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -82,6 +83,7 @@ export default function LoginPage() {
     <div className="min-h-screen bg-background flex">
       {/* Left Panel — Image & Branding */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] relative overflow-hidden">
+        <ImposingFloralCorners size="xl" corners={["bl", "tl"]} opacity={0.8} />
         {/* Background Image */}
         <Image
           src="/mariage_one.png"
@@ -143,7 +145,8 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <div className="w-full max-w-md space-y-8 sm:space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
+        <div className="w-full max-w-md space-y-8 sm:space-y-10 animate-in fade-in slide-in-from-right-4 duration-700 relative">
+          <ImposingFloralCorners size="md" corners={["tr"]} opacity={0.45} className="hidden sm:block" />
           {/* Header */}
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-2">

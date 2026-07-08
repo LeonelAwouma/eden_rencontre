@@ -19,7 +19,7 @@ export function Navigation() {
   ];
 
   return (
-    <nav className="sticky top-0 z-50 w-full bg-background/95 backdrop-blur-xl border-b border-foreground/5">
+    <nav className="sticky top-0 z-50 w-full garden-nav">
       <div className="container mx-auto px-4 sm:px-6 h-20 sm:h-24 flex items-center justify-between">
         <Link href="/" className="flex items-center gap-3 sm:gap-4 group">
           <Monogram className="w-10 h-10 sm:w-12 sm:h-12 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
@@ -46,7 +46,7 @@ export function Navigation() {
             <Button variant="ghost" asChild className="text-foreground hover:text-primary font-bold text-sm tracking-wide transition-colors">
               <Link href="/login">Connexion</Link>
             </Button>
-            <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-black px-8 h-12 rounded-xl text-sm tracking-tighter shadow-xl shadow-primary/10 group" asChild>
+            <Button className="garden-btn-primary font-black px-8 h-12 rounded-xl text-sm tracking-tighter group" asChild>
               <Link href="/login" className="flex items-center justify-center">
                 Commencer
               </Link>
@@ -85,7 +85,7 @@ export function Navigation() {
             <Button variant="outline" className="w-full border-primary text-primary h-14 text-base font-bold rounded-2xl" asChild>
               <Link href="/login" onClick={() => setIsOpen(false)}>Se connecter</Link>
             </Button>
-            <Button className="w-full bg-primary text-primary-foreground h-14 text-base font-black rounded-2xl shadow-2xl shadow-primary/20" asChild>
+            <Button className="w-full garden-btn-primary h-14 text-base font-black rounded-2xl" asChild>
               <Link href="/login" onClick={() => setIsOpen(false)}>Commencer mon histoire</Link>
             </Button>
           </div>

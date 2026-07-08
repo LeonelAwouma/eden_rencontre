@@ -35,6 +35,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getProfileById, startConversation, type MemberProfile } from "@/lib/chat";
 import { sendFriendRequest, getRelationStatus, recordProfileView, isFavorited, setFavorite, type RelationStatus } from "@/lib/social";
 import { getValue } from "@/lib/values";
+import { ageFromBirthDate } from "@/lib/auth";
 import { PROFILES } from "@/lib/profiles";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -105,6 +106,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
   const genderLabel = member?.gender === "homme" ? "Homme" : member?.gender === "femme" ? "Femme" : null;
   const location = member ? [member.city, member.country].filter(Boolean).join(", ") : "";
   const initial = member?.name?.charAt(0)?.toUpperCase() || "?";
+  const memberAge = ageFromBirthDate(member?.birthDate);
   const effStatus: RelationStatus = friendSent ? "pending_out" : relation;
   const areFriends = effStatus === "friends";
 
@@ -251,6 +253,9 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                 </div>
 
                 <div className="flex flex-wrap gap-3 pt-2">
+                  {memberAge && (
+                    <Badge className="bg-primary/15 text-primary border-none rounded-xl px-4 py-2 font-bold text-sm">{memberAge} ans</Badge>
+                  )}
                   {member.civilStatus && (
                     <Badge className="bg-primary/15 text-primary border-none rounded-xl px-4 py-2 flex items-center gap-2 font-bold text-sm">
                       <div className="w-1.5 h-1.5 bg-primary rounded-full" />

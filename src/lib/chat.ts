@@ -39,6 +39,7 @@ export interface MemberProfile {
   country?: string | null;
   region?: string | null;
   gender?: string | null;
+  birthDate?: string | null;
   civilStatus?: string | null;
   profession?: string | null;
   bio?: string | null;
@@ -124,6 +125,7 @@ export async function upsertMyProfile(user: EdenUser): Promise<{ error?: string 
     country: user.country ?? null,
     region: user.region ?? null,
     gender: user.gender ?? null,
+    birth_date: user.birthDate || null,
     civil_status: user.civilStatus ?? null,
     profession: user.profession ?? null,
     bio: user.bio ?? null,
@@ -144,7 +146,7 @@ export async function getProfileById(id: string): Promise<{ profile?: MemberProf
   if (!id) return {};
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, name, email, city, country, region, gender, civil_status, profession, bio, marriage_vision, avatar_url")
+    .select("id, name, email, city, country, region, gender, birth_date, civil_status, profession, bio, marriage_vision, avatar_url")
     .eq("id", id)
     .maybeSingle();
   if (error) {
@@ -162,6 +164,7 @@ export async function getProfileById(id: string): Promise<{ profile?: MemberProf
       country: d.country,
       region: d.region,
       gender: d.gender,
+      birthDate: d.birth_date,
       civilStatus: d.civil_status,
       profession: d.profession,
       bio: d.bio,

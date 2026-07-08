@@ -10,6 +10,7 @@ export interface EdenUser {
   name: string;
   email: string;
   gender?: string;
+  birthDate?: string; // ISO (AAAA-MM-JJ) — choisi à l'inscription, 18 ans minimum
   discoverySource?: string;
   civilStatus?: string;
   region?: string;
@@ -29,6 +30,21 @@ export type EditableProfile = Partial<Pick<EdenUser, "name" | "city" | "country"
 export type RegisterInput = Omit<EdenUser, "createdAt"> & { password: string };
 export type AuthResult = { ok: true; user: EdenUser } | { ok: false; error: string };
 
+// Âge minimum requis à l'inscription.
+export const MIN_AGE = 18;
+
+// Calcule l'âge (en années) à partir d'une date de naissance ISO. null si invalide.
+export function ageFromBirthDate(iso?: string | null): number | null {
+  if (!iso) return null;
+  const b = new Date(iso);
+  if (isNaN(b.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - b.getFullYear();
+  const m = now.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+  return age;
+}
+
 // ─────────────────────────────────────────────────────────────
 // Supabase
 // ─────────────────────────────────────────────────────────────
@@ -39,6 +55,7 @@ function mapSupabaseUser(u: any): EdenUser {
     name: m.name || m.full_name || (u?.email ? String(u.email).split("@")[0] : "Membre"),
     email: u?.email || "",
     gender: m.gender,
+    birthDate: m.birthDate,
     discoverySource: m.discoverySource,
     civilStatus: m.civilStatus,
     region: m.region,

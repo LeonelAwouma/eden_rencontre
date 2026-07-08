@@ -21,7 +21,7 @@ export interface Friendship {
 }
 
 const PROFILE_COLS =
-  "id, name, email, city, country, region, gender, civil_status, profession, bio, marriage_vision, avatar_url";
+  "id, name, email, city, country, region, gender, birth_date, civil_status, profession, bio, marriage_vision, avatar_url";
 
 function mapRow(d: any): MemberProfile {
   return {
@@ -32,6 +32,7 @@ function mapRow(d: any): MemberProfile {
     country: d.country,
     region: d.region,
     gender: d.gender,
+    birthDate: d.birth_date,
     civilStatus: d.civil_status,
     profession: d.profession,
     bio: d.bio,
