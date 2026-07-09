@@ -10,7 +10,7 @@ import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import type { Tab } from "@/components/dashboard/dashboard-types";
 import {
   User, Edit3, Save, X, CheckCircle, AlertCircle, Loader2, ChevronDown, ChevronRight,
-  MapPin, Briefcase, BookOpen, Lock
+  MapPin, Briefcase, BookOpen, Lock, Heart
 } from "lucide-react";
 
 /* ─────────────────────────── Types ─────────────────────────── */
@@ -84,7 +84,7 @@ function Toast({ message, type, onClose }: { message: string; type: "success" | 
 
 /* ────────────────── Basic Info Section ─────────────────────── */
 
-function BasicInfoCard({ profile, onRefresh }: { profile: ProfileData; onRefresh: () => void }) {
+function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: ProfileData; onRefresh: () => void; onSwitchToFaith: () => void }) {
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -157,59 +157,167 @@ function BasicInfoCard({ profile, onRefresh }: { profile: ProfileData; onRefresh
       </div>
 
       {!editing ? (
-        <div className="space-y-4">
-          <div className="flex items-center gap-4 mb-6">
+        <div className="space-y-5">
+          {/* Profile Header */}
+          <div className="flex items-center gap-5 pb-5 border-b border-[#F0EDE8]">
             <ProfileAvatar name={profile.name} avatarUrl={profile.avatar_url} size="lg" />
-            <div>
-              <h4 className="text-xl font-bold text-[#2F2F2F]">{profile.name || "—"}</h4>
-              <p className="text-sm text-[#777777]">{profile.email}</p>
-              {profile.city && <p className="text-sm text-[#777777] flex items-center gap-1"><MapPin size={12} />{profile.city}{profile.country ? `, ${profile.country}` : ""}</p>}
+            <div className="min-w-0">
+              <h4 className="text-xl font-bold text-[#2F2F2F] truncate">{profile.name || "—"}</h4>
+              <p className="text-sm text-[#777777] truncate">{profile.email}</p>
+              {profile.city && <p className="text-sm text-[#777777] flex items-center gap-1 mt-0.5"><MapPin size={12} />{profile.city}{profile.country ? `, ${profile.country}` : ""}</p>}
             </div>
           </div>
-          <InfoRow label="Genre" value={profile.gender} />
-          <InfoRow label="Statut civil" value={profile.civil_status} />
-          <InfoRow label="Date de naissance" value={formatDate(profile.birth_date)} />
-          <InfoRow label="Profession" value={profile.profession} icon={<Briefcase size={14} className="text-[#777777]" />} />
-          <InfoRow label="Région" value={profile.region} />
-          <InfoRow label="Bio" value={profile.bio} />
+
+          {/* Personal Info Section */}
+          <div>
+            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
+              <User size={14} /> Informations personnelles
+            </h4>
+            <div className="space-y-0">
+              <InfoRow label="Nom complet" value={profile.name} />
+              <InfoRow label="Email" value={profile.email} />
+              <InfoRow label="Genre" value={profile.gender} />
+              <InfoRow label="Date de naissance" value={formatDate(profile.birth_date)} />
+              <InfoRow label="Statut civil" value={profile.civil_status} />
+            </div>
+          </div>
+
+          {/* Location Section */}
+          <div>
+            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
+              <MapPin size={14} /> Localisation
+            </h4>
+            <div className="space-y-0">
+              <InfoRow label="Ville" value={profile.city} />
+              <InfoRow label="Pays" value={profile.country} />
+              <InfoRow label="Région" value={profile.region} />
+            </div>
+          </div>
+
+          {/* Professional Info */}
+          <div>
+            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
+              <Briefcase size={14} /> Parcours professionnel
+            </h4>
+            <div className="space-y-0">
+              <InfoRow label="Profession" value={profile.profession} />
+            </div>
+          </div>
+
+          {/* Bio */}
+          {profile.bio && (
+            <div>
+              <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3">À propos de moi</h4>
+              <p className="text-sm text-[#2F2F2F] leading-relaxed whitespace-pre-wrap bg-[#FAFAF7] rounded-xl p-4 border border-[#F0EDE8]">{profile.bio}</p>
+            </div>
+          )}
+
+          {/* Marriage Vision */}
           {profile.marriage_vision && profile.marriage_vision.length > 0 && (
             <div>
-              <p className="text-xs font-semibold text-[#777777] uppercase tracking-wider mb-2">Vision du mariage</p>
+              <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
+                <Heart size={14} /> Vision du mariage
+              </h4>
               <div className="flex flex-wrap gap-2">
                 {profile.marriage_vision.map(v => (
-                  <span key={v} className="px-3 py-1 bg-[#EEF5EC] text-[#486B46] rounded-full text-xs font-medium">{v}</span>
+                  <span key={v} className="px-3 py-1.5 bg-[#EEF5EC] text-[#486B46] rounded-full text-xs font-medium">{v}</span>
                 ))}
               </div>
             </div>
           )}
+
+          {/* Onboarding Summary */}
+          {profile.questionnaire && Object.keys(profile.questionnaire).length > 0 && (
+            <div>
+              <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
+                <BookOpen size={14} /> Données du parcours de foi
+              </h4>
+              <p className="text-xs text-[#777777] mb-3">Réponses enregistrées lors de l'onboarding. Modifiables dans l'onglet &laquo; Parcours de foi &raquo;.</p>
+              <div className="space-y-0">
+                {QUESTIONNAIRES.flatMap(q => q.sections.flatMap(s => s.fields))
+                  .filter(f => {
+                    const v = profile.questionnaire[f.id];
+                    return v && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "");
+                  })
+                  .slice(0, 15)
+                  .map(f => {
+                    const v = profile.questionnaire[f.id];
+                    const display = Array.isArray(v) ? v.join(", ") : String(v);
+                    return <InfoRow key={f.id} label={f.label} value={display} />;
+                  })}
+              </div>
+              {Object.keys(profile.questionnaire).filter(k => {
+                const v = profile.questionnaire[k];
+                return v && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "");
+              }).length > 15 && (
+                <button onClick={onSwitchToFaith} className="text-xs text-[#486B46] font-semibold mt-3 hover:underline">
+                  Voir toutes les réponses dans Parcours de foi →
+                </button>
+              )}
+            </div>
+          )}
         </div>
       ) : (
-        <div className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <EditField label="Nom complet" value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} required />
-            <EditField label="Genre" value={form.gender} onChange={v => setForm(f => ({ ...f, gender: v }))} type="select" options={GENDER_OPTIONS} />
-            <EditField label="Date de naissance" value={form.birth_date} onChange={v => setForm(f => ({ ...f, birth_date: v }))} type="date" />
-            <EditField label="Statut civil" value={form.civil_status} onChange={v => setForm(f => ({ ...f, civil_status: v }))} type="select" options={CIVIL_STATUS_OPTIONS} />
-            <EditField label="Ville" value={form.city} onChange={v => setForm(f => ({ ...f, city: v }))} />
-            <EditField label="Pays" value={form.country} onChange={v => setForm(f => ({ ...f, country: v }))} />
-            <EditField label="Région" value={form.region} onChange={v => setForm(f => ({ ...f, region: v }))} />
-            <EditField label="Profession" value={form.profession} onChange={v => setForm(f => ({ ...f, profession: v }))} />
-          </div>
+        <div className="space-y-8">
+          {/* Section: Identité */}
           <div>
-            <label className="text-xs font-semibold text-[#777777] uppercase tracking-wider mb-1 block">Bio</label>
-            <textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} rows={3}
+            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 flex items-center gap-2 pb-2 border-b border-[#F0EDE8]">
+              <User size={14} /> Identité
+            </h4>
+            <div className="space-y-4">
+              <EditField label="Nom complet" value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} required />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <EditField label="Genre" value={form.gender} onChange={v => setForm(f => ({ ...f, gender: v }))} type="select" options={GENDER_OPTIONS} />
+                <EditField label="Date de naissance" value={form.birth_date} onChange={v => setForm(f => ({ ...f, birth_date: v }))} type="date" />
+                <EditField label="Statut civil" value={form.civil_status} onChange={v => setForm(f => ({ ...f, civil_status: v }))} type="select" options={CIVIL_STATUS_OPTIONS} />
+                <EditField label="Profession" value={form.profession} onChange={v => setForm(f => ({ ...f, profession: v }))} />
+              </div>
+            </div>
+          </div>
+
+          {/* Section: Localisation */}
+          <div>
+            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 flex items-center gap-2 pb-2 border-b border-[#F0EDE8]">
+              <MapPin size={14} /> Localisation
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <EditField label="Ville" value={form.city} onChange={v => setForm(f => ({ ...f, city: v }))} />
+              <EditField label="Pays" value={form.country} onChange={v => setForm(f => ({ ...f, country: v }))} />
+              <EditField label="Région" value={form.region} onChange={v => setForm(f => ({ ...f, region: v }))} />
+            </div>
+          </div>
+
+          {/* Section: Bio */}
+          <div>
+            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 pb-2 border-b border-[#F0EDE8]">À propos de moi</h4>
+            <textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} rows={4}
+              placeholder="Décrivez-vous en quelques mots…"
               className="w-full border border-[#E0DDD8] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#486B46] focus:ring-2 focus:ring-[#486B46]/20 resize-none" />
           </div>
+
+          {/* Section: Vision du mariage */}
           <div>
-            <label className="text-xs font-semibold text-[#777777] uppercase tracking-wider mb-2 block">Vision du mariage</label>
+            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 flex items-center gap-2 pb-2 border-b border-[#F0EDE8]">
+              <Heart size={14} /> Vision du mariage
+            </h4>
             <div className="flex flex-wrap gap-2">
               {MARRIAGE_VISION_OPTIONS.map(v => (
                 <button key={v} onClick={() => toggleVision(v)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${form.marriage_vision.includes(v) ? "bg-[#486B46] text-white" : "bg-[#F5F3F0] text-[#777777] hover:bg-[#EEF5EC] hover:text-[#486B46]"}`}>
-                  {v}
+                  className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${form.marriage_vision.includes(v) ? "bg-[#486B46] text-white shadow-sm" : "bg-[#F5F3F0] text-[#777777] hover:bg-[#EEF5EC] hover:text-[#486B46] border border-[#E0DDD8]"}`}>
+                  {form.marriage_vision.includes(v) ? "✓ " : ""}{v}
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Save / Cancel buttons at bottom */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#F0EDE8]">
+            <button onClick={() => setEditing(false)} className="eden-btn-outline text-sm px-5 py-2.5">
+              <X size={16} className="mr-1.5 inline" /> Annuler
+            </button>
+            <button onClick={handleSave} disabled={saving} className="eden-btn-primary text-sm px-6 py-2.5 flex items-center gap-2">
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Enregistrer les modifications
+            </button>
           </div>
         </div>
       )}
@@ -640,7 +748,7 @@ export default function ProfilePage() {
         <div className="max-w-4xl mx-auto px-4 sm:px-8 py-6 space-y-6">
           {tab === "profile" ? (
             <>
-              <BasicInfoCard profile={profile} onRefresh={handleRefresh} />
+              <BasicInfoCard profile={profile} onRefresh={handleRefresh} onSwitchToFaith={() => setTab("faith")} />
               <ProfileCompletionCard profile={profile} />
             </>
           ) : (
