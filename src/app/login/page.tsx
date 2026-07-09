@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, ArrowRight, Heart, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
-import { loginUser, signInWithGoogle, getSession } from "@/lib/auth";
+import { signInWithGoogle, getSession } from "@/lib/auth";
 import { Monogram } from "@/components/ornaments";
 import { ImposingFloralCorners } from "@/components/garden";
 
@@ -49,11 +49,48 @@ export default function LoginPage() {
     setError(null);
     setIsLoading(true);
 
-    const result = await loginUser(formData.email, formData.password);
-    if (result.ok) {
+    try {
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: formData.email, password: formData.password }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        if (data.error === "pending") {
+          router.push(`/register/pending?email=${encodeURIComponent(formData.email)}`);
+          return;
+        }
+        if (data.error === "rejected") {
+          setError("Votre demande d'inscription n'a pas été approuvée. Contactez le support si vous pensez qu'il s'agit d'une erreur.");
+          setIsLoading(false);
+          return;
+        }
+        if (data.error === "suspended") {
+          setError("Votre compte a été suspendu. Contactez le support pour plus d'informations.");
+          setIsLoading(false);
+          return;
+        }
+        setError(data.error || data.message || "Erreur de connexion.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Also sign in on client-side Supabase for session continuity
+      // The server already validated, so we can use the client-side signIn
+      const { supabase } = await import("@/lib/supabase");
+      if (supabase) {
+        await supabase.auth.signInWithPassword({
+          email: formData.email.trim().toLowerCase(),
+          password: formData.password,
+        });
+      }
+
       router.push("/searching");
-    } else {
-      setError(result.error);
+    } catch {
+      setError("Erreur de connexion au serveur.");
       setIsLoading(false);
     }
   };

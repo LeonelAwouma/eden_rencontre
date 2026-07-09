@@ -166,28 +166,41 @@ export default function RegisterPage() {
   const handleComplete = async () => {
     setCreateError(null);
     setCreating(true);
-    // Crée le compte (relié dynamiquement au formulaire de connexion)
-    const result = await registerUser({
-      name: formData.name,
-      email: formData.email,
-      password: formData.password,
-      gender: formData.gender,
-      birthDate: formData.birthDate,
-      discoverySource: formData.discoverySource,
-      civilStatus: formData.civilStatus,
-      region: formData.region,
-      country: formData.country,
-      city: formData.city,
-      marriageVision: formData.marriageVision,
-      photos,
-    });
-    if (!result.ok) {
-      setCreateError(result.error);
+
+    try {
+      // Use server-side API for registration (creates user with "pending" status)
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+          gender: formData.gender,
+          birthDate: formData.birthDate,
+          discoverySource: formData.discoverySource,
+          civilStatus: formData.civilStatus,
+          region: formData.region,
+          country: formData.country,
+          city: formData.city,
+          marriageVision: formData.marriageVision,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setCreateError(data.error || "Erreur lors de l'inscription.");
+        setCreating(false);
+        return;
+      }
+
+      // Redirect to pending approval page
+      router.push(`/register/pending?email=${encodeURIComponent(formData.email)}`);
+    } catch {
+      setCreateError("Erreur de connexion au serveur.");
       setCreating(false);
-      return;
     }
-    // Logique : s'inscrire PUIS se connecter. On renvoie vers la connexion.
-    router.push(`/login?registered=1&email=${encodeURIComponent(formData.email)}`);
   };
 
   const availableCountries = formData.region === "Afrique" ? AFRICAN_COUNTRIES : DIASPORA_COUNTRIES;

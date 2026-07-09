@@ -12,6 +12,7 @@ export default {
       fontFamily: {
         body: ['Inter', 'Manrope', 'sans-serif'],
         headline: ['Cormorant Garamond', 'Libre Baskerville', 'serif'],
+        sans: ['Plus Jakarta Sans', 'Inter', 'sans-serif'],
         code: ['monospace'],
       },
       colors: {

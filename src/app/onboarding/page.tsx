@@ -121,6 +121,9 @@ export default function OnboardingPage() {
             </span>
           )}
           <Flourish className="w-40 h-3 text-secondary/40 mt-5" />
+          <p className="text-[11px] text-muted-foreground/60 mt-4 max-w-md text-center leading-relaxed">
+            Les informations collectées nous permettent de garantir un matching sûr, pertinent et efficace.
+          </p>
         </div>
 
         {/* Champs */}

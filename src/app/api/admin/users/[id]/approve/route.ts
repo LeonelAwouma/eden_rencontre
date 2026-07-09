@@ -1,0 +1,76 @@
+import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { sendAccountApprovedEmail } from "@/lib/email";
+
+export async function POST(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  try {
+    const admin = await requireAdmin();
+    const db = getSupabaseAdmin();
+    const { id } = await params;
+
+    // Get the user
+    const { data: user, error: fetchError } = await db
+      .from("profiles")
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (fetchError || !user) {
+      return NextResponse.json(
+        { error: "Utilisateur introuvable." },
+        { status: 404 }
+      );
+    }
+
+    // Update status to approved
+    const { error: updateError } = await db
+      .from("profiles")
+      .update({
+        status: "approved",
+        reviewed_by: admin.adminId,
+        reviewed_at: new Date().toISOString(),
+        rejection_reason: null,
+      })
+      .eq("id", id);
+
+    if (updateError) {
+      console.error("Error approving user:", updateError);
+      return NextResponse.json(
+        { error: "Erreur lors de l'approbation." },
+        { status: 500 }
+      );
+    }
+
+    // Send approval email
+    if (user.email) {
+      await sendAccountApprovedEmail(user.email, user.name || "Membre");
+    }
+
+    // Log the action
+    const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
+    await logAdminAction(
+      admin.adminId,
+      admin.email,
+      "user_approved",
+      "user",
+      id,
+      { user_email: user.email, user_name: user.name },
+      ip
+    );
+
+    return NextResponse.json({ ok: true, message: "Utilisateur approuvé avec succès." });
+  } catch (error) {
+    if (error instanceof Error && error.message === "UNAUTHORIZED") {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+    console.error("Admin approve API error:", error);
+    return NextResponse.json(
+      { error: "Erreur interne du serveur." },
+      { status: 500 }
+    );
+  }
+}

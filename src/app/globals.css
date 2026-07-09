@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -22,6 +22,18 @@
     --muted-terracotta: 15 40% 58%;
     --moss-light: 145 25% 48%;
     --natural-sage: 145 22% 62%;
+
+    /* ── EDEN Admin Dashboard Colors ── */
+    --eden-off-white: #FCFCFC;
+    --eden-soft-beige: #F8F5F2;
+    --eden-primary-green: #38C172;
+    --eden-light-green: #86EFAC;
+    --eden-dark-green: #22C55E;
+    --eden-success-green: #38C172;
+    --eden-error-red: #F56565;
+    --eden-soft-blue: #4F7DF3;
+    --eden-neutral-gray: #4B5563;
+    --eden-light-gray: #E5E7EB;
 
     /* ── Semantic Colors ── */
     --background: 42 35% 97%;
@@ -93,6 +105,139 @@
 }
 
 @layer components {
+  /* ── EDEN Admin Dashboard Styles ── */
+  .eden-admin-body {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+    background: linear-gradient(135deg, #FCFCFC 0%, #F8F5F2 50%, #FCFCFC 100%);
+    background-attachment: fixed;
+  }
+
+  .eden-admin-body h1,
+  .eden-admin-body h2,
+  .eden-admin-body h3,
+  .eden-admin-body h4,
+  .eden-admin-body h5,
+  .eden-admin-body h6 {
+    font-family: 'Plus Jakarta Sans', 'Inter', sans-serif;
+  }
+
+  /* Glass card effect */
+  .eden-glass-card {
+    background: rgba(255, 255, 255, 0.72);
+    backdrop-filter: blur(20px) saturate(1.8);
+    -webkit-backdrop-filter: blur(20px) saturate(1.8);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+    box-shadow:
+      0 1px 2px rgba(0, 0, 0, 0.02),
+      0 4px 16px rgba(0, 0, 0, 0.04),
+      inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  }
+
+  .eden-glass-card:hover {
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow:
+      0 2px 4px rgba(0, 0, 0, 0.03),
+      0 8px 32px rgba(0, 0, 0, 0.06),
+      inset 0 1px 0 rgba(255, 255, 255, 0.9);
+  }
+
+  /* Premium card */
+  .eden-card {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 20px;
+    box-shadow:
+      0 1px 3px rgba(0, 0, 0, 0.03),
+      0 4px 16px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .eden-card:hover {
+    border-color: #86EFAC;
+    box-shadow:
+      0 2px 8px rgba(56, 193, 114, 0.08),
+      0 8px 32px rgba(0, 0, 0, 0.06);
+    transform: translateY(-1px);
+  }
+
+  /* KPI Card gradient accents */
+  .eden-kpi-users { border-left: 3px solid #4F7DF3; }
+  .eden-kpi-pending { border-left: 3px solid #FBBF24; }
+  .eden-kpi-approved { border-left: 3px solid #38C172; }
+  .eden-kpi-suspended { border-left: 3px solid #F56565; }
+
+  /* Sidebar active indicator */
+  .eden-sidebar-active {
+    background: linear-gradient(135deg, rgba(56, 193, 114, 0.1) 0%, rgba(134, 239, 172, 0.15) 100%);
+    color: #38C172;
+    font-weight: 600;
+    position: relative;
+  }
+  .eden-sidebar-active::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 60%;
+    background: linear-gradient(180deg, #38C172, #86EFAC);
+    border-radius: 0 4px 4px 0;
+  }
+
+  /* Status badges */
+  .eden-badge-pending {
+    background: rgba(255, 158, 69, 0.1);
+    color: #FF9E45;
+    border: 1px solid rgba(255, 158, 69, 0.2);
+  }
+  .eden-badge-approved {
+    background: rgba(56, 193, 114, 0.1);
+    color: #38C172;
+    border: 1px solid rgba(56, 193, 114, 0.2);
+  }
+  .eden-badge-suspended {
+    background: rgba(245, 101, 101, 0.1);
+    color: #F56565;
+    border: 1px solid rgba(245, 101, 101, 0.2);
+  }
+  .eden-badge-rejected {
+    background: rgba(245, 101, 101, 0.1);
+    color: #F56565;
+    border: 1px solid rgba(245, 101, 101, 0.2);
+  }
+
+  /* Quick action button */
+  .eden-quick-action {
+    background: #FFFFFF;
+    border: 1px solid #E5E7EB;
+    border-radius: 16px;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .eden-quick-action:hover {
+    border-color: #38C172;
+    background: linear-gradient(135deg, rgba(56, 193, 114, 0.04) 0%, rgba(134, 239, 172, 0.06) 100%);
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(56, 193, 114, 0.12);
+  }
+
+  /* Timeline connector */
+  .eden-timeline-connector {
+    position: relative;
+  }
+  .eden-timeline-connector::before {
+    content: '';
+    position: absolute;
+    left: 17px;
+    top: 36px;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, #E5E7EB 0%, transparent 100%);
+  }
+  .eden-timeline-connector:last-child::before {
+    display: none;
+  }
+
   /* ── Botanical Buttons ── */
   .garden-btn-primary {
     @apply bg-primary hover:bg-primary/90 text-primary-foreground;
