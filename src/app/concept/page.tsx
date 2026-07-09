@@ -91,11 +91,11 @@ export default function ConceptPage() {
             </div>
 
             <div className="flex flex-col gap-8">
-              <div className="relative h-[500px] rounded-2xl overflow-hidden shadow-botanical-lg border border-sage/10 group">
+              <div className="relative rounded-2xl overflow-hidden shadow-botanical-lg border border-sage/10 group">
                 <img
-                  src="/mariage_one.png"
+                  src="/concept.png"
                   alt="Concept Visual"
-                  className="object-cover w-full h-full transition-transform duration-700 group-hover:scale-105"
+                  className="object-contain w-full h-auto transition-transform duration-700 group-hover:scale-105"
                 />
                 {/* Botanical vignette overlay */}
                 <div

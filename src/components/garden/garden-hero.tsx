@@ -41,7 +41,7 @@ export function GardenHero() {
   const reduced = useReducedMotion();
 
   return (
-    <section className="relative overflow-hidden bg-background">
+    <section className="relative overflow-hidden">
       {/* ── Top Accent Line ── */}
       <div
         className="absolute top-0 left-0 right-0 h-[1px] pointer-events-none z-30"
@@ -52,45 +52,28 @@ export function GardenHero() {
         }}
       />
 
-      {/* ── Botanical Atmosphere ── */}
-      <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-        <div className="absolute top-1/4 left-1/4 w-[500px] h-[500px] rounded-full bg-sage/[0.04] blur-[120px]" />
-        <div className="absolute bottom-0 right-1/3 w-[400px] h-[400px] rounded-full bg-olive/[0.03] blur-[100px]" />
-      </div>
-
-      {/* Subtle botanical pattern */}
-      <div
-        className="absolute inset-0 pointer-events-none opacity-[0.015]"
-        aria-hidden="true"
-        style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='200' height='200' viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M100 180 Q95 140 100 100 Q105 60 100 20' stroke='hsl(155 42%25 18%25)' stroke-width='0.5' fill='none'/%3E%3Cellipse cx='85' cy='60' rx='15' ry='8' fill='hsl(145 22%25 62%25)' opacity='0.3' transform='rotate(-30 85 60)'/%3E%3Cellipse cx='118' cy='100' rx='13' ry='7' fill='hsl(95 28%25 38%25)' opacity='0.25' transform='rotate(25 118 100)'/%3E%3C/svg%3E")`,
-          backgroundSize: "200px 200px",
-        }}
-      />
-
       {/* Pollen particles — only on desktop where image is separate */}
       <div className="hidden lg:block">
         {!reduced && <PollenParticles />}
       </div>
 
-      {/* ── Main Layout: Split on desktop, stacked on mobile ── */}
-      <div className="relative z-10 flex flex-col lg:flex-row min-h-[100vh] lg:min-h-[92vh]">
-
+      {/* ── Main Layout: CSS Grid on desktop (avoids sub-pixel rounding gap), stacked on mobile ── */}
+      <div className="relative z-10 flex flex-col lg:grid lg:grid-cols-[52fr_48fr] xl:grid-cols-2 min-h-[100vh] lg:min-h-[92vh]">
         {/* ═══ LEFT COLUMN: Text Content ═══ */}
-        <div className="flex items-center lg:w-[52%] xl:w-[50%] relative">
+        <div className="flex items-center relative">
           <div className="container mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 py-20 sm:py-24 lg:py-0">
             <motion.div
               initial={reduced ? false : { opacity: 0, y: 36 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
-              className="max-w-xl lg:max-w-lg xl:max-w-xl space-y-6 sm:space-y-7 text-center lg:text-left"
+              className="max-w-xl lg:max-w-lg xl:max-w-xl space-y-6 sm:space-y-7 text-center"
             >
               {/* Eyebrow */}
               <motion.div
                 initial={reduced ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.7, delay: 0.25 }}
-                className="flex justify-center lg:justify-start"
+                className="flex justify-center"
               >
                 <span className="inline-flex items-center gap-2.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.28em] text-deep-eden/50">
                   <span className="w-6 sm:w-8 h-[1px] bg-deep-eden/20" />
@@ -114,7 +97,7 @@ export function GardenHero() {
                 initial={reduced ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.5 }}
-                className="flex justify-center lg:justify-start"
+                className="flex justify-center"
               >
                 <svg viewBox="0 0 80 14" className="w-16 sm:w-20 h-3.5 opacity-35" fill="none" aria-hidden="true">
                   <path d="M0 7 L25 7" stroke="hsl(155 42% 18%)" strokeWidth="0.5" />
@@ -125,7 +108,7 @@ export function GardenHero() {
               </motion.div>
 
               {/* Subheading */}
-              <p className="text-[0.95rem] sm:text-base lg:text-lg text-muted-foreground leading-relaxed max-w-md font-body mx-auto lg:mx-0">
+              <p className="text-[0.95rem] sm:text-base lg:text-lg text-muted-foreground leading-relaxed max-w-md font-body mx-auto">
                 Rejoignez la communauté de référence pour les célibataires chrétiens d'Afrique et de la diaspora. Un sanctuaire dédié à la vérité et à l'engagement sacré.
               </p>
 
@@ -134,7 +117,7 @@ export function GardenHero() {
                 initial={reduced ? false : { opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.8 }}
-                className="flex flex-col sm:flex-row items-center sm:items-stretch justify-center lg:justify-start gap-3 sm:gap-4 pt-2 sm:pt-4"
+                className="flex flex-col sm:flex-row items-center sm:items-stretch justify-center gap-3 sm:gap-4 pt-2 sm:pt-4"
               >
                 <Button
                   size="lg"
@@ -157,7 +140,7 @@ export function GardenHero() {
                 initial={reduced ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.7, delay: 1.1 }}
-                className="flex items-center justify-center lg:justify-start gap-5 sm:gap-7 pt-4 text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-foreground/25 font-medium"
+                className="flex items-center justify-center gap-5 sm:gap-7 pt-4 text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-foreground/25 font-medium"
               >
                 <span className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-natural-sage/50" />
@@ -177,7 +160,7 @@ export function GardenHero() {
         </div>
 
         {/* ═══ RIGHT COLUMN: Hero Image ═══ */}
-        <div className="relative lg:w-[48%] xl:w-[50%] min-h-[50vh] sm:min-h-[55vh] lg:min-h-[92vh]">
+        <div className="relative min-h-[50vh] sm:min-h-[55vh] lg:min-h-[92vh]">
           {/* Image fills this column naturally */}
           <div className="absolute inset-0">
             <Image
@@ -190,33 +173,7 @@ export function GardenHero() {
             />
           </div>
 
-          {/* Soft edge blend — left side on desktop only */}
-          <div className="hidden lg:block absolute inset-y-0 left-0 w-24 z-10" aria-hidden="true"
-            style={{
-              background: "linear-gradient(to right, hsl(42 35% 97% / 0.9), hsl(42 35% 97% / 0.4), transparent)",
-            }}
-          />
 
-          {/* Mobile: top/bottom fade for stacked layout */}
-          <div className="lg:hidden absolute inset-x-0 top-0 h-24 z-10" aria-hidden="true"
-            style={{
-              background: "linear-gradient(to bottom, hsl(42 35% 97%), hsl(42 35% 97% / 0.3), transparent)",
-            }}
-          />
-          <div className="lg:hidden absolute inset-x-0 bottom-0 h-20 z-10" aria-hidden="true"
-            style={{
-              background: "linear-gradient(to top, hsl(42 35% 97%), hsl(42 35% 97% / 0.5), transparent)",
-            }}
-          />
-
-          {/* Subtle warm light overlay */}
-          <div
-            className="absolute inset-0 z-[5] mix-blend-soft-light opacity-15 pointer-events-none"
-            aria-hidden="true"
-            style={{
-              background: "radial-gradient(ellipse at 50% 40%, hsl(145 22% 62% / 0.15) 0%, transparent 70%)",
-            }}
-          />
         </div>
       </div>
 

@@ -48,6 +48,11 @@ const NAV_ITEMS = [
     icon: CalendarDays,
   },
   {
+    label: "Rendez-vous vidéo",
+    href: "/admin/meetings",
+    icon: CalendarDays,
+  },
+  {
     label: "Rapports",
     href: "/admin/reports",
     icon: ShieldCheck,
