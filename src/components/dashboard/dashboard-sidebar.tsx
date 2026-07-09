@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -55,6 +56,16 @@ export function DashboardSidebar({
   incomingRequestCount,
   onLogout,
 }: SidebarProps) {
+  const router = useRouter();
+
+  const handleNavClick = (name: Tab) => {
+    if (name === "Profil") {
+      router.push("/dashboard/profile");
+    } else {
+      setActiveTab(name);
+    }
+  };
+
   return (
     <aside
       className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:w-[280px] z-40"
@@ -92,7 +103,7 @@ export function DashboardSidebar({
             <button
               key={item.name}
               role="menuitem"
-              onClick={() => setActiveTab(item.name)}
+              onClick={() => handleNavClick(item.name)}
               className={cn("sidebar-nav-item", active && "active")}
               aria-current={active ? "page" : undefined}
             >
@@ -160,7 +171,7 @@ export function DashboardSidebar({
             </AvatarFallback>
           </Avatar>
           <button
-            onClick={() => setActiveTab("Profil")}
+            onClick={() => handleNavClick("Profil")}
             className="flex-1 min-w-0 text-left group"
           >
             <p
