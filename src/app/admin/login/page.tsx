@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import { Heart, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Monogram } from "@/components/ornaments";
 
 export default function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -48,11 +49,11 @@ export default function AdminLoginPage() {
           "linear-gradient(135deg, #FCFCFC 0%, #F8F5F2 40%, #86EFAC10 70%, #FCFCFC 100%)",
       }}
     >
-      {/* Subtle background decorations */}
-      <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#38C172]/[0.03] blur-3xl" />
-        <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#86EFAC]/[0.04] blur-3xl" />
-      </div>
+        {/* Subtle background decorations */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-[-20%] right-[-10%] w-[600px] h-[600px] rounded-full bg-[#486B46]/[0.03] blur-3xl" />
+          <div className="absolute bottom-[-20%] left-[-10%] w-[500px] h-[500px] rounded-full bg-[#86EFAC]/[0.04] blur-3xl" />
+        </div>
 
       <motion.div
         initial={{ opacity: 0, y: 20, scale: 0.98 }}
@@ -68,15 +69,18 @@ export default function AdminLoginPage() {
               initial={{ scale: 0.8, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               transition={{ duration: 0.5, delay: 0.1 }}
-              className="w-14 h-14 rounded-2xl bg-gradient-to-br from-[#38C172] to-[#86EFAC] flex items-center justify-center shadow-[0_4px_16px_rgba(56,193,114,0.3)] mb-4"
+              className="mb-4"
             >
-              <Heart className="w-7 h-7 text-white" fill="white" />
+              <Monogram className="w-14 h-12 text-[#486B46]" />
             </motion.div>
             <h1
-              className="text-[22px] font-bold text-[#1a1a1a] tracking-tight"
-              style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
+              className="text-[22px] font-bold tracking-tight"
+              style={{ fontFamily: "'Playfair Display', 'Plus Jakarta Sans', serif", color: "#2F2F2F" }}
             >
-              EDEN Admin
+              Eden{" "}
+              <span className="italic font-normal" style={{ color: "#486B46" }}>
+                Rencontre
+              </span>
             </h1>
             <p className="text-[13px] text-[#9CA3AF] mt-1 font-medium">
               Connectez-vous à votre espace d'administration

@@ -108,5 +108,13 @@ INSERT INTO public.platform_settings (category, key, value) VALUES
   ('notifications', 'email_enabled', 'true'),
   ('notifications', 'push_enabled', 'false'),
   ('notifications', 'weekly_report', 'true'),
-  ('notifications', 'admin_alerts', 'true')
+  ('notifications', 'admin_alerts', 'true'),
+  ('security', 'two_factor_enabled', 'false'),
+  ('security', 'session_timeout_minutes', '60'),
+  ('security', 'max_login_attempts', '5'),
+  ('security', 'password_min_length', '8'),
+  ('appearance', 'theme', '"light"'),
+  ('appearance', 'accent_color', '"#486B46"'),
+  ('appearance', 'logo_url', 'null'),
+  ('appearance', 'banner_text', '"Bienvenue sur Eden Rencontre"')
 ON CONFLICT (category, key) DO NOTHING;

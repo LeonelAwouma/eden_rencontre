@@ -47,7 +47,7 @@ export default function SettingsPage() {
     try {
       const res = await fetch("/api/admin/settings");
       const data = await res.json();
-      if (res.ok) setSettings(data.settings);
+      if (res.ok) setSettings(data.settings || {});
     } catch (err) {
       console.error("Error fetching settings:", err);
     } finally {
@@ -99,7 +99,14 @@ export default function SettingsPage() {
     }
   };
 
-  const renderField = (category: string, key: string, label: string, type: "text" | "email" | "toggle" | "number" | "select", options?: string[]) => {
+  const renderField = (
+    category: string,
+    key: string,
+    label: string,
+    type: "text" | "email" | "toggle" | "number" | "select",
+    options?: string[],
+    description?: string
+  ) => {
     const value = getValue(category, key);
 
     if (type === "toggle") {
@@ -108,6 +115,7 @@ export default function SettingsPage() {
         <div key={`${category}-${key}`} className="flex items-center justify-between py-4 border-b border-[#F3F4F6] last:border-0">
           <div>
             <p className="text-[13px] font-semibold text-[#1a1a1a]">{label}</p>
+            {description && <p className="text-[11px] text-[#9CA3AF] mt-0.5">{description}</p>}
           </div>
           <button
             onClick={() => setValue(category, key, !isOn)}
@@ -129,6 +137,7 @@ export default function SettingsPage() {
       return (
         <div key={`${category}-${key}`} className="py-4 border-b border-[#F3F4F6] last:border-0">
           <p className="text-[13px] font-semibold text-[#1a1a1a] mb-2">{label}</p>
+          {description && <p className="text-[11px] text-[#9CA3AF] mb-2">{description}</p>}
           <select
             value={String(value)}
             onChange={(e) => setValue(category, key, e.target.value)}
@@ -145,6 +154,7 @@ export default function SettingsPage() {
     return (
       <div key={`${category}-${key}`} className="py-4 border-b border-[#F3F4F6] last:border-0">
         <p className="text-[13px] font-semibold text-[#1a1a1a] mb-2">{label}</p>
+        {description && <p className="text-[11px] text-[#9CA3AF] mb-2">{description}</p>}
         <input
           type={type}
           value={String(value)}
@@ -172,94 +182,43 @@ export default function SettingsPage() {
         return (
           <div className="space-y-0">
             <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-4">Paramètres de modération</h3>
-            {renderField("moderation", "auto_approve", "Approbation automatique", "toggle")}
-            {renderField("moderation", "require_verification", "Vérification requise", "toggle")}
-            {renderField("moderation", "report_threshold", "Seuil de signalements pour suspension", "number")}
-            {renderField("moderation", "suspension_duration_days", "Durée de suspension (jours)", "number")}
+            {renderField("moderation", "auto_approve", "Approbation automatique", "toggle", undefined, "Les nouveaux comptes seront automatiquement approuvés")}
+            {renderField("moderation", "require_verification", "Vérification requise", "toggle", undefined, "Exiger une vérification d'identité pour les nouveaux membres")}
+            {renderField("moderation", "report_threshold", "Seuil de signalements pour suspension", "number", undefined, "Nombre de signalements avant suspension automatique")}
+            {renderField("moderation", "suspension_duration_days", "Durée de suspension (jours)", "number", undefined, "Durée par défaut d'une suspension")}
           </div>
         );
       case "meets":
         return (
           <div className="space-y-0">
             <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-4">Paramètres des Meets</h3>
-            {renderField("meets", "max_participants", "Nombre maximum de participants", "number")}
-            {renderField("meets", "registration_deadline_hours", "Délai d'inscription (heures)", "number")}
-            {renderField("meets", "default_visibility", "Visibilité par défaut", "select", ["public", "private"])}
+            {renderField("meets", "max_participants", "Nombre maximum de participants", "number", undefined, "Capacité maximale par événement Meet")}
+            {renderField("meets", "registration_deadline_hours", "Délai d'inscription (heures)", "number", undefined, "Heures avant l'événement où les inscriptions ferment")}
+            {renderField("meets", "default_visibility", "Visibilité par défaut", "select", ["public", "private"], "Visibilité par défaut des nouveaux événements")}
           </div>
         );
       case "notifications":
         return (
           <div className="space-y-0">
             <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-4">Paramètres de notification</h3>
-            {renderField("notifications", "email_enabled", "Notifications par email", "toggle")}
-            {renderField("notifications", "push_enabled", "Notifications push", "toggle")}
-            {renderField("notifications", "weekly_report", "Rapport hebdomadaire", "toggle")}
-            {renderField("notifications", "admin_alerts", "Alertes administrateur", "toggle")}
+            {renderField("notifications", "email_enabled", "Notifications par email", "toggle", undefined, "Envoyer des notifications par email aux utilisateurs")}
+            {renderField("notifications", "push_enabled", "Notifications push", "toggle", undefined, "Activer les notifications push navigateur")}
+            {renderField("notifications", "weekly_report", "Rapport hebdomadaire", "toggle", undefined, "Envoyer un rapport hebdomadaire aux administrateurs")}
+            {renderField("notifications", "admin_alerts", "Alertes administrateur", "toggle", undefined, "Alertes en temps réel pour les administrateurs")}
           </div>
         );
       case "security":
         return (
           <div className="space-y-0">
             <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-4">Paramètres de sécurité</h3>
-            <div className="py-4 border-b border-[#F3F4F6]">
-              <p className="text-[13px] font-semibold text-[#1a1a1a] mb-2">Changer le mot de passe</p>
-              <input
-                type="password"
-                placeholder="Nouveau mot de passe"
-                className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all mb-3"
-              />
-              <input
-                type="password"
-                placeholder="Confirmer le mot de passe"
-                className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all"
-              />
-              <button className="mt-3 px-4 py-2.5 rounded-xl bg-[#38C172] text-white text-[12px] font-semibold hover:bg-[#22C55E] transition-all">
-                Mettre à jour le mot de passe
-              </button>
-            </div>
-            <div className="py-4">
-              <p className="text-[13px] font-semibold text-[#1a1a1a] mb-1">Sessions actives</p>
-              <p className="text-[12px] text-[#9CA3AF]">Session actuelle — Ce navigateur</p>
-            </div>
+            {renderField("security", "two_factor_enabled", "Authentification à deux facteurs", "toggle", undefined, "Exiger la 2FA pour les administrateurs")}
+            {renderField("security", "session_timeout_minutes", "Expiration de session (minutes)", "number", undefined, "Durée avant déconnexion automatique")}
+            {renderField("security", "max_login_attempts", "Tentatives de connexion max", "number", undefined, "Nombre de tentatives avant verrouillage du compte")}
+            {renderField("security", "password_min_length", "Longueur minimale du mot de passe", "number", undefined, "Nombre minimum de caractères pour les mots de passe")}
           </div>
         );
       case "appearance":
-        return (
-          <div className="space-y-0">
-            <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-4">Apparence</h3>
-            <div className="py-4 border-b border-[#F3F4F6]">
-              <p className="text-[13px] font-semibold text-[#1a1a1a] mb-3">Thème</p>
-              <div className="flex gap-3">
-                {["Clair", "Sombre", "Système"].map((theme) => (
-                  <button
-                    key={theme}
-                    className="px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[12px] font-semibold text-[#4B5563] hover:border-[#38C172] hover:text-[#38C172] transition-all bg-white"
-                  >
-                    {theme}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="py-4">
-              <p className="text-[13px] font-semibold text-[#1a1a1a] mb-3">Couleur d'accent</p>
-              <div className="flex gap-3">
-                {[
-                  { color: "#38C172", label: "Vert" },
-                  { color: "#FF9E45", label: "Orange" },
-                  { color: "#4F7DF3", label: "Bleu" },
-                  { color: "#8B5CF6", label: "Violet" },
-                ].map((c) => (
-                  <button
-                    key={c.label}
-                    className="w-10 h-10 rounded-xl border-2 border-transparent hover:border-[#1a1a1a]/20 transition-all"
-                    style={{ backgroundColor: c.color }}
-                    title={c.label}
-                  />
-                ))}
-              </div>
-            </div>
-          </div>
-        );
+        return <AppearanceSection getValue={getValue} setValue={setValue} settings={settings} editedValues={editedValues} />;
       default:
         return null;
     }
@@ -348,5 +307,109 @@ export default function SettingsPage() {
         </div>
       )}
     </>
+  );
+}
+
+/* ───────────────────── Appearance Section ─────────────────────── */
+
+function AppearanceSection({
+  getValue,
+  setValue,
+  settings,
+  editedValues,
+}: {
+  getValue: (cat: string, key: string) => unknown;
+  setValue: (cat: string, key: string, val: unknown) => void;
+  settings: SettingsData;
+  editedValues: Record<string, unknown>;
+}) {
+  const currentTheme = String(getValue("appearance", "theme") || "light");
+  const currentAccent = String(getValue("appearance", "accent_color") || "#486B46");
+  const currentBanner = String(getValue("appearance", "banner_text") || "");
+
+  const themes = [
+    { id: "light", label: "Clair", bg: "#FFFFFF", border: "#E5E7EB" },
+    { id: "dark", label: "Sombre", bg: "#1a1a1a", border: "#374151" },
+    { id: "system", label: "Système", bg: "linear-gradient(135deg, #FFFFFF 50%, #1a1a1a 50%)", border: "#E5E7EB" },
+  ];
+
+  const accentColors = [
+    { color: "#486B46", label: "Vert Eden" },
+    { color: "#38C172", label: "Vert vif" },
+    { color: "#FF9E45", label: "Orange" },
+    { color: "#4F7DF3", label: "Bleu" },
+    { color: "#8B5CF6", label: "Violet" },
+    { color: "#C6A15B", label: "Doré" },
+  ];
+
+  return (
+    <div className="space-y-0">
+      <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-4">Apparence</h3>
+
+      {/* Theme Selection */}
+      <div className="py-4 border-b border-[#F3F4F6]">
+        <p className="text-[13px] font-semibold text-[#1a1a1a] mb-1">Thème</p>
+        <p className="text-[11px] text-[#9CA3AF] mb-3">Choisissez le thème de la plateforme</p>
+        <div className="flex gap-3">
+          {themes.map((theme) => (
+            <button
+              key={theme.id}
+              onClick={() => setValue("appearance", "theme", theme.id)}
+              className={cn(
+                "flex flex-col items-center gap-2 px-5 py-4 rounded-xl border-2 transition-all",
+                currentTheme === theme.id
+                  ? "border-[#38C172] bg-[#38C172]/5"
+                  : "border-[#E5E7EB] hover:border-[#38C172]/50"
+              )}
+            >
+              <div
+                className="w-10 h-10 rounded-lg shadow-sm"
+                style={{ background: theme.bg, border: `1px solid ${theme.border}` }}
+              />
+              <span className="text-[12px] font-semibold text-[#374151]">{theme.label}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Accent Color */}
+      <div className="py-4 border-b border-[#F3F4F6]">
+        <p className="text-[13px] font-semibold text-[#1a1a1a] mb-1">Couleur d'accent</p>
+        <p className="text-[11px] text-[#9CA3AF] mb-3">Couleur principale utilisée sur la plateforme</p>
+        <div className="flex flex-wrap gap-3">
+          {accentColors.map((c) => (
+            <button
+              key={c.label}
+              onClick={() => setValue("appearance", "accent_color", c.color)}
+              className={cn(
+                "w-10 h-10 rounded-xl transition-all relative",
+                currentAccent === c.color
+                  ? "ring-2 ring-offset-2 ring-[#1a1a1a]/30 scale-110"
+                  : "hover:scale-105"
+              )}
+              style={{ backgroundColor: c.color }}
+              title={c.label}
+            >
+              {currentAccent === c.color && (
+                <CheckCircle2 className="w-4 h-4 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Banner Text */}
+      <div className="py-4">
+        <p className="text-[13px] font-semibold text-[#1a1a1a] mb-1">Texte du bandeau</p>
+        <p className="text-[11px] text-[#9CA3AF] mb-2">Message affiché en haut de la page d'accueil</p>
+        <input
+          type="text"
+          value={currentBanner}
+          onChange={(e) => setValue("appearance", "banner_text", e.target.value)}
+          placeholder="Bienvenue sur Eden Rencontre"
+          className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all"
+        />
+      </div>
+    </div>
   );
 }

@@ -16,8 +16,8 @@ import {
   LogOut,
   X,
   ChevronDown,
-  Heart,
 } from "lucide-react";
+import { Monogram } from "@/components/ornaments";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -98,15 +98,16 @@ export function Sidebar({ isOpen, onClose, onLogout, adminName }: SidebarProps) 
       >
         {/* Logo area */}
         <div className="h-[72px] flex items-center gap-3 px-6 flex-shrink-0">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#38C172] to-[#86EFAC] flex items-center justify-center shadow-sm">
-            <Heart className="w-[18px] h-[18px] text-white" fill="white" />
-          </div>
+          <Monogram className="w-9 h-8 text-primary shrink-0" />
           <div>
             <p
               className="font-bold text-[15px] text-[#1a1a1a] tracking-tight"
-              style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
+              style={{ fontFamily: "'Playfair Display', 'Plus Jakarta Sans', serif" }}
             >
-              EDEN
+              Eden{" "}
+              <span className="italic font-normal" style={{ color: "#486B46" }}>
+                Rencontre
+              </span>
             </p>
             <p className="text-[10px] text-[#9CA3AF] font-medium uppercase tracking-[0.12em]">
               Administration
