@@ -1441,15 +1441,16 @@ export default function DashboardPage() {
             <div className="text-center space-y-3 max-w-xl mx-auto">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest"
                 style={{ background: "#EEF5EC", color: "#486B46", border: "1px solid #C6D4C0" }}>
-                <Crown className="w-3.5 h-3.5" style={{ color: "#C6A15B" }} /> Privilège Eden Or
+                <Crown className="w-3.5 h-3.5" style={{ color: "#C6A15B" }} /> Nos Formules
               </div>
               <h2 className="font-headline text-3xl sm:text-4xl font-bold" style={{ color: "#2F2F2F" }}>Élevez votre chemin</h2>
               <p className="text-base" style={{ color: "#777777" }}>Accédez à la pleine mesure d'Eden pour bâtir votre alliance.</p>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 max-w-3xl mx-auto">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {[
-                { name: "Découverte", price: "0", period: "Gratuit", accent: false, features: ["Profil sacré", "Profils alignés", "Demandes d'alliance"], cta: "Votre offre actuelle", current: true },
-                { name: "Eden Or", price: "9 900", period: "/ mois", accent: true, badge: "-40%", features: ["Tout de l'offre Découverte", "Visiteurs & messages illimités", "Visibilité accrue", "Badge vérifié", "Conseils pastoraux"], cta: "S'élever vers l'Or", current: false },
+                { name: "Découverte", price: "Gratuite", period: "", accent: false, features: ["Création de profil basique", "5 matches par jour", "Messages limités", "Accès aux événements publics"], cta: "Votre offre actuelle", current: true },
+                { name: "Croissance", price: "5 000", period: "FCFA/mois", accent: true, features: ["Matches illimités", "Messages illimités", "Profil vérifié", "Filtres avancés", "Support prioritaire"], cta: "Choisir Croissance", current: false },
+                { name: "Bénédiction", price: "40 000", period: "FCFA/an", accent: false, badge: "Meilleur", features: ["Tous les avantages Premium", "Conseil matrimonial gratuit", "Événements VIP", "Matching prioritaire", "Ressources spirituelles"], cta: "Choisir Bénédiction", current: false },
               ].map((plan) => (
                 <div key={plan.name} className="rounded-2xl p-6 sm:p-8 overflow-hidden relative"
                   style={{ background: plan.accent ? "linear-gradient(135deg, #FFFFFF 0%, #EEF5EC 100%)" : "#FFFFFF", border: `1px solid ${plan.accent ? "#C6D4C0" : "#E8E5E0"}`, boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
@@ -1463,7 +1464,7 @@ export default function DashboardPage() {
                     </div>
                     <div className="flex items-end gap-1.5">
                       <span className="font-headline text-4xl font-black" style={{ color: "#2F2F2F" }}>{plan.price}</span>
-                      <span className="mb-2 text-sm" style={{ color: "#777777" }}>{plan.price !== "0" ? "FCFA " : ""}{plan.period}</span>
+                      {plan.period && <span className="mb-2 text-sm" style={{ color: "#777777" }}>{plan.period}</span>}
                     </div>
                     <ul className="space-y-3">
                       {plan.features.map((f) => (

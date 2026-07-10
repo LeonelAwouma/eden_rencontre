@@ -7,45 +7,47 @@ import { Check, Heart } from "lucide-react";
 export default function PricingPage() {
   const plans = [
     {
-      name: "Standard",
-      price: "0",
+      name: "Découverte",
+      price: "Gratuite",
+      priceSuffix: "",
       description: "Pour commencer votre recherche spirituelle.",
       features: [
-        "Création du Profil de Foi",
-        "Recherche de membres",
-        "5 Coups de Cœur par jour",
+        "Création de profil basique",
+        "5 matches par jour",
         "Messages limités",
+        "Accès aux événements publics",
       ],
       cta: "Commencer gratuitement",
       popular: false,
     },
     {
-      name: "Premium Eden",
-      price: "19.99",
+      name: "Croissance",
+      price: "5 000",
+      priceSuffix: "FCFA/mois",
       description: "L'expérience complète pour trouver l'alliance.",
       features: [
-        "Tout du plan Standard",
+        "Matches illimités",
         "Messages illimités",
-        "Coups de Cœur illimités",
-        "Badge 'Profil Certifié' offert",
-        "Filtres de recherche avancés",
-        "Voir qui a visité votre profil",
+        "Profil vérifié",
+        "Filtres avancés",
+        "Support prioritaire",
       ],
-      cta: "Devenir Premium",
+      cta: "Choisir Croissance",
       popular: true,
     },
     {
-      name: "Alliance Or",
-      price: "49.99",
-      description: "Pour un accompagnement personnalisé.",
+      name: "Bénédiction",
+      price: "40 000",
+      priceSuffix: "FCFA/an",
+      description: "L'accompagnement spirituel ultime.",
       features: [
-        "Tout du plan Premium",
-        "Assistance prioritaire",
-        "Visibilité boostée",
-        "Conseils personnalisés (Blog exclusif)",
-        "Accès aux événements privés",
+        "Tous les avantages Premium",
+        "Conseil matrimonial gratuit",
+        "Événements VIP",
+        "Matching prioritaire",
+        "Ressources spirituelles",
       ],
-      cta: "Choisir Alliance Or",
+      cta: "Choisir Bénédiction",
       popular: false,
     }
   ];
@@ -84,8 +86,8 @@ export default function PricingPage() {
 
                 <div className="mb-8">
                   <div className="flex items-baseline gap-1">
-                    <span className="text-4xl font-bold text-accent">{plan.price}€</span>
-                    <span className="text-foreground/40">/mois</span>
+                    <span className="text-4xl font-bold text-accent">{plan.price}</span>
+                    {plan.priceSuffix && <span className="text-foreground/40">{plan.priceSuffix}</span>}
                   </div>
                 </div>
 
