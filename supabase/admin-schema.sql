@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Rencontre — Administration Platform Schema
+--  Eden Connexion — Administration Platform Schema
 --  Run after the main schema.sql
 -- ============================================================
 
@@ -136,7 +136,7 @@ $$;
 -- The hash below is for 'AdminEden2024!' — replace with your own.
 -- INSERT INTO public.admin_users (email, password_hash, name, role)
 -- VALUES (
---   'admin@edenrencontre.com',
+--   'admin@edenconnexion.com',
 --   '$2b$10$YourBcryptHashHere',
 --   'Super Administrateur',
 --   'super_admin'

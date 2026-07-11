@@ -35,7 +35,7 @@ export default function CriteresEssentielsPage() {
       <header className="sticky top-0 z-50 bg-card border-b border-secondary/15 px-6 h-20 flex items-center justify-between">
         <Link href="/dashboard" className="flex items-center gap-2">
           <Monogram className="w-9 h-8 text-primary shrink-0" />
-          <span className="font-headline text-2xl font-bold text-foreground">Eden <span className="text-primary italic font-normal">Rencontre</span></span>
+          <span className="font-headline text-2xl font-bold text-foreground">Eden <span>Connexion</span></span>
         </Link>
         <Button variant="ghost" onClick={() => router.back()} className="text-muted-foreground gap-2 hover:bg-foreground/5 hover:text-secondary">
           <ArrowLeft className="w-4 h-4" /> Retour au Dashboard

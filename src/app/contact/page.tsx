@@ -25,8 +25,8 @@ export default function ContactPage() {
               <div className="garden-card p-8 rounded-2xl text-center">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">Par Email</h3>
                 <p className="text-muted-foreground font-body mb-4">Écrivez-nous à :</p>
-                <a href="mailto:support@edenrencontre.com" className="text-primary font-headline text-xl font-bold hover:text-deep-eden transition-colors">
-                  support@edenrencontre.com
+                <a href="mailto:support@edenconnexion.com" className="text-primary font-headline text-xl font-bold hover:text-deep-eden transition-colors">
+                  support@edenconnexion.com
                 </a>
                 <p className="text-muted-foreground text-sm font-body mt-3">Réponse sous 24 à 48 heures</p>
               </div>
@@ -38,7 +38,7 @@ export default function ContactPage() {
                 </div>
                 <div className="garden-card p-6 rounded-2xl text-center">
                   <h3 className="font-headline text-lg font-bold text-deep-eden mb-3">Demande de Partenariat</h3>
-                  <p className="text-muted-foreground text-sm font-body">Vous souhaitez collaborer avec Eden Rencontre ? Écrivez-nous votre proposition.</p>
+                  <p className="text-muted-foreground text-sm font-body">Vous souhaitez collaborer avec Eden Connexion ? Écrivez-nous votre proposition.</p>
                 </div>
               </div>
 

@@ -616,7 +616,7 @@ export default function DashboardPage() {
           {/* Mobile logo */}
           <Link href="/dashboard" className="flex items-center gap-2 lg:hidden">
             <Monogram className="w-8 h-7 text-primary shrink-0" />
-            <span className="font-headline text-lg font-bold text-foreground">Eden <span className="italic font-normal" style={{ color: "#486B46" }}>Rencontre</span></span>
+            <span className="font-headline text-lg font-bold text-foreground">Eden <span>Connexion</span></span>
           </Link>
           {/* Desktop page title */}
           <h1 className="hidden lg:block font-headline text-xl font-bold" style={{ color: "#2F2F2F" }}>{activeTab}</h1>

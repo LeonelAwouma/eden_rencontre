@@ -15,9 +15,19 @@ import {
   ChevronRight,
   Users,
   UserCheck,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DashboardHeader } from "@/components/admin/dashboard-header";
+
+interface CharterAcceptance {
+  authorize_verification: boolean;
+  commit_respectful_conversations: boolean;
+  accept_full_charter: boolean;
+  all_accepted: boolean;
+  accepted_at: string | null;
+  charter_version: string;
+}
 
 interface UserProfile {
   id: string;
@@ -35,6 +45,9 @@ interface UserProfile {
   created_at: string;
   updated_at: string;
   birth_date: string;
+  charter_accepted?: boolean;
+  charter_accepted_at?: string | null;
+  charter_acceptances?: CharterAcceptance | CharterAcceptance[] | null;
 }
 
 const STATUS_OPTIONS = [
@@ -231,6 +244,9 @@ export default function AdminUsersPage() {
                       Statut
                     </th>
                     <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
+                      Charte
+                    </th>
+                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
                       Inscrit le
                     </th>
                     <th className="text-right text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
@@ -274,6 +290,33 @@ export default function AdminUsersPage() {
                         >
                           {STATUS_LABELS[user.status] || user.status}
                         </span>
+                      </td>
+                      <td className="px-6 py-3.5">
+                        {(() => {
+                          const ca = Array.isArray(user.charter_acceptances)
+                            ? user.charter_acceptances[0]
+                            : user.charter_acceptances;
+                          const accepted = ca?.all_accepted || user.charter_accepted;
+                          if (accepted) {
+                            return (
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#38C172]/10 text-[#38C172]">
+                                  <ShieldCheck className="w-3 h-3 inline mr-1" /> Acceptée
+                                </span>
+                                {ca?.accepted_at && (
+                                  <span className="text-[10px] text-[#9CA3AF]">
+                                    {new Date(ca.accepted_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                                  </span>
+                                )}
+                              </div>
+                            );
+                          }
+                          return (
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">
+                              En attente
+                            </span>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-3.5">
                         <p className="text-[13px] text-[#9CA3AF] font-medium">
@@ -346,6 +389,34 @@ export default function AdminUsersPage() {
                     >
                       {STATUS_LABELS[user.status]}
                     </span>
+                  </div>
+                  {/* Charter acceptance badge — mobile */}
+                  <div className="mb-3">
+                    {(() => {
+                      const ca = Array.isArray(user.charter_acceptances)
+                        ? user.charter_acceptances[0]
+                        : user.charter_acceptances;
+                      const accepted = ca?.all_accepted || user.charter_accepted;
+                      if (accepted) {
+                        return (
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#38C172]/10 text-[#38C172]">
+                              <ShieldCheck className="w-3 h-3 inline mr-1" /> Charte acceptée
+                            </span>
+                            {ca?.accepted_at && (
+                              <span className="text-[10px] text-[#9CA3AF]">
+                                {new Date(ca.accepted_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                              </span>
+                            )}
+                          </div>
+                        );
+                      }
+                      return (
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">
+                          Charte en attente
+                        </span>
+                      );
+                    })()}
                   </div>
                   <div className="flex items-center gap-2">
                     <Link

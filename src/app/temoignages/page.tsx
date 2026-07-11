@@ -42,7 +42,7 @@ export default function TemoignagesPage() {
       date: "Mariés en Juin 2025",
       avatar: "https://images.unsplash.com/photo-1522673607200-164d1b6ce486?q=80&w=400&h=400&fit=crop",
       quote: "La réponse à nos prières après des années d'attente.",
-      story: "Engagés tous deux dans nos églises locales, la distance et le quotidien rendaient les rencontres chrétiennes compliquées. Eden Rencontre nous a permis de connecter directement sur nos valeurs spirituelles. Dès notre premier échange, nous avons parlé de notre vision du ministère et de la famille chrétienne. Un an plus tard, devant Dieu et nos familles, nous célébrions notre mariage béni.",
+      story: "Engagés tous deux dans nos églises locales, la distance et le quotidien rendaient les rencontres chrétiennes compliquées. Eden Connexion nous a permis de connecter directement sur nos valeurs spirituelles. Dès notre premier échange, nous avons parlé de notre vision du ministère et de la famille chrétienne. Un an plus tard, devant Dieu et nos familles, nous célébrions notre mariage béni.",
       duration: "Rencontrés en 8 mois"
     },
     {
@@ -53,7 +53,7 @@ export default function TemoignagesPage() {
       date: "Mariés en Décembre 2025",
       avatar: "https://images.unsplash.com/photo-1511285560929-80b456fea0bc?q=80&w=400&h=400&fit=crop",
       quote: "La distance n'est rien quand Dieu conduit les cœurs.",
-      story: "Rebecca vivait à Abidjan et moi à Bruxelles. Nous étions sceptiques sur les relations à distance, mais l'intégrité de nos profils certifiés sur Eden Rencontre nous a tout de suite rassurés. Nous avons prié ensemble par appel vidéo chaque semaine avant de nous rencontrer physiquement. Le Seigneur a aplani tous les sentiers, et aujourd'hui nous bâtissons notre foyer ensemble.",
+      story: "Rebecca vivait à Abidjan et moi à Bruxelles. Nous étions sceptiques sur les relations à distance, mais l'intégrité de nos profils certifiés sur Eden Connexion nous a tout de suite rassurés. Nous avons prié ensemble par appel vidéo chaque semaine avant de nous rencontrer physiquement. Le Seigneur a aplani tous les sentiers, et aujourd'hui nous bâtissons notre foyer ensemble.",
       duration: "Rencontrés en 1 an"
     },
     {
@@ -64,7 +64,7 @@ export default function TemoignagesPage() {
       date: "Fiancés en Février 2026",
       avatar: "https://images.unsplash.com/photo-1583939003579-730e3918a45a?q=80&w=400&h=400&fit=crop",
       quote: "Une communion spirituelle immédiate.",
-      story: "Après plusieurs déceptions sur des applications classiques, j'ai prié pour un cadre sain et spirituel. Sur Eden Rencontre, j'ai vu le profil de Sarah qui affichait clairement son amour pour la parole de Dieu. Nos discussions ont été extrêmement édifiantes dès le premier jour. Nous venons de célébrer nos fiançailles officielles et préparons activement le mariage devant l'autel.",
+      story: "Après plusieurs déceptions sur des applications classiques, j'ai prié pour un cadre sain et spirituel. Sur Eden Connexion, j'ai vu le profil de Sarah qui affichait clairement son amour pour la parole de Dieu. Nos discussions ont été extrêmement édifiantes dès le premier jour. Nous venons de célébrer nos fiançailles officielles et préparons activement le mariage devant l'autel.",
       duration: "Rencontrés en 6 mois"
     },
     {
@@ -86,7 +86,7 @@ export default function TemoignagesPage() {
       date: "Fiancés en Octobre 2025",
       avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=400&h=400&fit=crop",
       quote: "Une vision commune de l'autel familial.",
-      story: "En tant que chrétiens de la diaspora, trouver un conjoint qui partage la même foi et les mêmes valeurs n'est pas simple au quotidien. Eden Rencontre a réduit les distances physiques. Noémie est une femme de valeur et de prière, et notre relation s'est construite sur le socle solide de la parole de Dieu. Nous rendons grâce pour cette plateforme bénie.",
+      story: "En tant que chrétiens de la diaspora, trouver un conjoint qui partage la même foi et les mêmes valeurs n'est pas simple au quotidien. Eden Connexion a réduit les distances physiques. Noémie est une femme de valeur et de prière, et notre relation s'est construite sur le socle solide de la parole de Dieu. Nous rendons grâce pour cette plateforme bénie.",
       duration: "Rencontrés en 11 mois"
     },
     {
@@ -281,7 +281,7 @@ export default function TemoignagesPage() {
                     </div>
                     <h2 className="font-headline text-3xl font-bold text-foreground">Partagez votre témoignage</h2>
                     <p className="text-foreground/60 text-sm">
-                      Vous avez trouvé votre futur conjoint sur Eden Rencontre ? Racontez votre histoire pour encourager et fortifier la foi de la communauté.
+                      Vous avez trouvé votre futur conjoint sur Eden Connexion ? Racontez votre histoire pour encourager et fortifier la foi de la communauté.
                     </p>
                   </div>
 
@@ -376,7 +376,7 @@ export default function TemoignagesPage() {
                   <div className="space-y-3">
                     <h2 className="font-headline text-3xl font-bold text-foreground">Merci pour votre témoignage !</h2>
                     <p className="text-foreground/60 max-w-md mx-auto text-sm leading-relaxed">
-                      Votre histoire d'alliance a été envoyée. Après validation par notre comité éthique, elle sera publiée pour témoigner de la fidélité de Dieu sur Eden Rencontre.
+                      Votre histoire d'alliance a été envoyée. Après validation par notre comité éthique, elle sera publiée pour témoigner de la fidélité de Dieu sur Eden Connexion.
                     </p>
                   </div>
                   <div className="pt-4 max-w-sm mx-auto text-xs text-primary/70 italic bg-primary/5 p-4 rounded-xl border border-primary/10">

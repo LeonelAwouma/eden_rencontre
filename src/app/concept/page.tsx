@@ -47,7 +47,7 @@ export default function ConceptPage() {
               </h1>
               <OrganicSeparator />
               <p className="text-xl text-muted-foreground leading-relaxed font-body">
-                Eden Rencontre n'est pas un simple site de rencontre. C'est un sanctuaire numérique dédié à l'édification de foyers chrétiens solides, basés sur la vérité, le respect et l'amour divin.
+                Eden Connexion n'est pas un simple site de rencontre. C'est un sanctuaire numérique dédié à l'édification de foyers chrétiens solides, basés sur la vérité, le respect et l'amour divin.
               </p>
             </div>
           </div>
@@ -137,7 +137,7 @@ export default function ConceptPage() {
                   <h4 className="font-headline text-2xl font-bold text-sage mb-4 italic">
                     &ldquo;L'alliance bénie commence par une rencontre vraie.&rdquo;
                   </h4>
-                  <p className="text-muted-foreground italic font-body">Fondatrice d'Eden Rencontre</p>
+                  <p className="text-muted-foreground italic font-body">Fondatrice d'Eden Connexion</p>
                 </div>
               </div>
             </div>

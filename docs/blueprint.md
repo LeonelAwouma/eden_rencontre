@@ -1,4 +1,4 @@
-# **App Name**: Eden Rencontre
+# **App Name**: Eden Connexion
 
 ## Core Features:
 

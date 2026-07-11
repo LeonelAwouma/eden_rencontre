@@ -25,7 +25,7 @@ export default function CGUPage() {
               <div className="garden-card p-8 rounded-2xl">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">1. Objet</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">
-                  Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Eden Rencontre, un service de mise en relation matrimoniale destiné aux célibataires chrétiens. En créant un compte, vous acceptez sans réserve les présentes conditions.
+                  Les présentes Conditions Générales d'Utilisation (CGU) régissent l'accès et l'utilisation de la plateforme Eden Connexion, un service de mise en relation matrimoniale destiné aux célibataires chrétiens. En créant un compte, vous acceptez sans réserve les présentes conditions.
                 </p>
               </div>
 
@@ -39,7 +39,7 @@ export default function CGUPage() {
               <div className="garden-card p-8 rounded-2xl">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">3. Comportement Attendu</h3>
                 <p className="text-muted-foreground leading-relaxed font-body mb-4">
-                  En tant que membre d'Eden Rencontre, vous vous engagez à :
+                  En tant que membre d'Eden Connexion, vous vous engagez à :
                 </p>
                 <ul className="text-muted-foreground leading-relaxed font-body space-y-2 list-disc list-inside">
                   <li>Respecter tous les membres avec courtoisie et bienveillance</li>
@@ -76,14 +76,14 @@ export default function CGUPage() {
               <div className="garden-card p-8 rounded-2xl">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">6. Résiliation</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">
-                  Vous pouvez supprimer votre compte à tout moment depuis les paramètres. Eden Rencontre se réserve le droit de suspendre ou supprimer tout compte en cas de non-respect des présentes CGU ou de la Charte Éthique, sans préavis ni remboursement.
+                  Vous pouvez supprimer votre compte à tout moment depuis les paramètres. Eden Connexion se réserve le droit de suspendre ou supprimer tout compte en cas de non-respect des présentes CGU ou de la Charte Éthique, sans préavis ni remboursement.
                 </p>
               </div>
 
               <div className="garden-card p-8 rounded-2xl">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">7. Responsabilité</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">
-                  Eden Rencontre s'efforce d'assurer un service de qualité mais ne peut garantir la réussite d'une rencontre ni l'exactitude des profils publiés par les membres. La responsabilité de la plateforme ne saurait être engagée en cas de dommages résultant de rencontres effectuées via le service.
+                  Eden Connexion s'efforce d'assurer un service de qualité mais ne peut garantir la réussite d'une rencontre ni l'exactitude des profils publiés par les membres. La responsabilité de la plateforme ne saurait être engagée en cas de dommages résultant de rencontres effectuées via le service.
                 </p>
               </div>
 

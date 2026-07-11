@@ -80,7 +80,7 @@ export default function SearchingPage() {
 
         {/* Marque */}
         <span className="font-headline text-2xl font-bold tracking-tight text-foreground mb-2">
-          Eden <span className="text-primary font-normal italic">Rencontre</span>
+          Eden <span>Connexion</span>
         </span>
 
         {name && (

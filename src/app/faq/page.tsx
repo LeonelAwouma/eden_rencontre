@@ -4,8 +4,8 @@ import { GardenSection, OrganicSeparator } from "@/components/garden";
 
 const faqs = [
   {
-    q: "Qu'est-ce qu'Eden Rencontre ?",
-    a: "Eden Rencontre est une plateforme matrimoniale haut de gamme dédiée aux célibataires chrétiens d'Afrique et de la diaspora. Notre mission est de faciliter des rencontres sérieuses basées sur la foi, les valeurs bibliques et l'engagement envers le mariage.",
+    q: "Qu'est-ce qu'Eden Connexion ?",
+    a: "Eden Connexion est une plateforme matrimoniale haut de gamme dédiée aux célibataires chrétiens d'Afrique et de la diaspora. Notre mission est de faciliter des rencontres sérieuses basées sur la foi, les valeurs bibliques et l'engagement envers le mariage.",
   },
   {
     q: "Comment fonctionne la modération des profils ?",
@@ -16,7 +16,7 @@ const faqs = [
     a: "Oui. Notre système bloque automatiquement le partage de liens externes et de numéros de téléphone lors des premiers échanges. Cette protection permet de créer un climat de confiance et de protéger nos membres contre les arnaques.",
   },
   {
-    q: "Puis-je utiliser Eden Rencontre gratuitement ?",
+    q: "Puis-je utiliser Eden Connexion gratuitement ?",
     a: "L'inscription et la création de profil sont gratuites. Vous pouvez parcourir les profils et recevoir des suggestions. Pour accéder aux fonctionnalités de messagerie avancées, nous proposons différents abonnements adaptés à vos besoins.",
   },
   {
@@ -29,7 +29,7 @@ const faqs = [
   },
   {
     q: "Comment contacter le support ?",
-    a: "Vous pouvez nous écrire via la page Contact ou par email à support@edenrencontre.com. Notre équipe vous répondra sous 24 à 48 heures.",
+    a: "Vous pouvez nous écrire via la page Contact ou par email à support@edenconnexion.com. Notre équipe vous répondra sous 24 à 48 heures.",
   },
 ];
 
@@ -48,7 +48,7 @@ export default function FAQPage() {
               </h1>
               <OrganicSeparator />
               <p className="text-muted-foreground text-lg leading-relaxed font-body">
-                Trouvez rapidement les réponses à vos questions sur Eden Rencontre.
+                Trouvez rapidement les réponses à vos questions sur Eden Connexion.
               </p>
             </div>
 

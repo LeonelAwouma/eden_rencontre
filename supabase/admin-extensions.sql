@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Rencontre — Admin Extensions (Reports, Payments, Settings)
+--  Eden Connexion — Admin Extensions (Reports, Payments, Settings)
 --  Run after admin-schema.sql
 -- ============================================================
 
@@ -93,9 +93,9 @@ CREATE POLICY settings_service_only ON public.platform_settings FOR ALL USING (f
 
 -- Seed default settings
 INSERT INTO public.platform_settings (category, key, value) VALUES
-  ('general', 'platform_name', '"Eden Rencontre"'),
-  ('general', 'contact_email', '"contact@edenrencontre.com"'),
-  ('general', 'support_email', '"support@edenrencontre.com"'),
+  ('general', 'platform_name', '"Eden Connexion"'),
+  ('general', 'contact_email', '"contact@edenconnexion.com"'),
+  ('general', 'support_email', '"support@edenconnexion.com"'),
   ('general', 'default_language', '"fr"'),
   ('general', 'timezone', '"Africa/Douala"'),
   ('moderation', 'auto_approve', 'false'),
@@ -116,5 +116,5 @@ INSERT INTO public.platform_settings (category, key, value) VALUES
   ('appearance', 'theme', '"light"'),
   ('appearance', 'accent_color', '"#486B46"'),
   ('appearance', 'logo_url', 'null'),
-  ('appearance', 'banner_text', '"Bienvenue sur Eden Rencontre"')
+  ('appearance', 'banner_text', '"Bienvenue sur Eden Connexion"')
 ON CONFLICT (category, key) DO NOTHING;

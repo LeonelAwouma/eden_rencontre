@@ -17,6 +17,9 @@ export async function POST(request: NextRequest) {
       country,
       city,
       marriageVision,
+      charterAuthorizeVerification,
+      charterCommitRespectful,
+      charterAcceptFull,
     } = body;
 
     if (!email || !password || !name) {
@@ -70,7 +73,23 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Upsert profile with "pending" status
+    // 2. Save charter acceptance
+    if (charterAuthorizeVerification && charterCommitRespectful && charterAcceptFull) {
+      const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || null;
+      const ua = request.headers.get("user-agent") || null;
+      await db.from("charter_acceptances").upsert({
+        user_id: userId,
+        authorize_verification: true,
+        commit_respectful_conversations: true,
+        accept_full_charter: true,
+        accepted_at: new Date().toISOString(),
+        ip_address: ip,
+        user_agent: ua,
+        charter_version: "v1.0",
+      }, { onConflict: "user_id" });
+    }
+
+    // 3. Upsert profile with "pending" status
     const { error: profileError } = await db
       .from("profiles")
       .upsert({
@@ -112,7 +131,7 @@ export async function POST(request: NextRequest) {
         .eq("id", userId);
     }
 
-    // 3. Send confirmation email
+    // 4. Send confirmation email
     await sendRegistrationReceivedEmail(cleanEmail, name);
 
     return NextResponse.json({

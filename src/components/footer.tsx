@@ -30,7 +30,7 @@ export function Footer() {
             <Link href="/" className="flex items-center gap-3 group">
               <Monogram className="w-8 h-8 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
               <span className="font-headline text-xl font-bold text-foreground group-hover:text-deep-eden transition-colors">
-                Eden <span className="italic font-normal text-primary">Rencontre</span>
+                Eden <span>Connexion</span>
               </span>
             </Link>
             <p className="text-foreground/60 text-sm leading-relaxed font-body">
@@ -84,7 +84,7 @@ export function Footer() {
         {/* Bottom bar with botanical divider */}
         <div className="mt-16 pt-8 border-t border-sage/8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-foreground/40 text-xs font-body">
-            © {year ?? '...'} Eden Rencontre. Tous droits réservés.
+            © {year ?? '...'} Eden Connexion. Tous droits réservés.
           </p>
           <p className="text-foreground/40 text-xs flex items-center gap-1.5 font-body">
             Fait avec <Heart className="w-3 h-3 text-pomegranate" /> et <Leaf className="w-3 h-3 text-olive" /> pour la gloire de Dieu.

@@ -17,7 +17,7 @@ function PendingContent() {
         <Link href="/" className="inline-flex items-center gap-3 group">
           <Monogram className="w-10 h-10 text-primary shrink-0" />
           <span className="font-headline text-2xl font-bold tracking-tight text-foreground">
-            Eden <span className="text-primary font-normal italic">Rencontre</span>
+            Eden <span>Connexion</span>
           </span>
         </Link>
 
@@ -32,7 +32,7 @@ function PendingContent() {
             Inscription en cours de vérification
           </h1>
           <p className="text-foreground/50 text-base leading-relaxed">
-            Merci pour votre inscription sur Eden Rencontre. Votre compte est actuellement
+            Merci pour votre inscription sur Eden Connexion. Votre compte est actuellement
             en cours de validation par notre équipe.
           </p>
         </div>
@@ -85,7 +85,7 @@ function PendingContent() {
         </Link>
 
         <p className="text-foreground/15 text-[10px] font-medium uppercase tracking-widest">
-          Eden Rencontre — Alliance Bénie
+          Eden Connexion — Alliance Bénie
         </p>
       </div>
     </div>

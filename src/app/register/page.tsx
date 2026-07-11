@@ -84,6 +84,7 @@ const STEP_TITLES = [
   "Votre ville",
   "Vos informations",
   "Vos valeurs",
+  "Charte d'engagement",
   "Votre profil",
 ];
 
@@ -108,6 +109,9 @@ export default function RegisterPage() {
     email: "",
     password: "",
     marriageVision: [] as string[],
+    charterAuthorizeVerification: false,
+    charterCommitRespectful: false,
+    charterAcceptFull: false,
   });
 
   const age = ageFromBirthDate(formData.birthDate);
@@ -117,7 +121,7 @@ export default function RegisterPage() {
     null, null, null
   ]);
 
-  const totalSteps = 9;
+  const totalSteps = 10;
   const progress = ((step + 1) / totalSteps) * 100;
 
   const nextStep = () => setStep(prev => prev + 1);
@@ -184,6 +188,9 @@ export default function RegisterPage() {
           country: formData.country,
           city: formData.city,
           marriageVision: formData.marriageVision,
+          charterAuthorizeVerification: formData.charterAuthorizeVerification,
+          charterCommitRespectful: formData.charterCommitRespectful,
+          charterAcceptFull: formData.charterAcceptFull,
         }),
       });
 
@@ -224,7 +231,7 @@ export default function RegisterPage() {
       <div className="hidden lg:flex lg:w-[42%] xl:w-[45%] relative overflow-hidden">
         <Image
           src="/mariage.png"
-          alt="Eden Rencontre — Alliance Bénie"
+          alt="Eden Connexion — Alliance Bénie"
           fill
           className="object-cover object-center"
           priority
@@ -236,7 +243,7 @@ export default function RegisterPage() {
           <Link href="/" className="flex items-center gap-3 group">
             <Monogram className="w-10 h-10 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
             <span className="font-headline text-2xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
-              Eden <span className="text-primary font-normal italic">Rencontre</span>
+              Eden <span>Connexion</span>
             </span>
           </Link>
 
@@ -282,7 +289,7 @@ export default function RegisterPage() {
           <Link href="/" className="flex items-center gap-3 group">
             <Monogram className="w-8 h-8 text-primary shrink-0" />
             <span className="font-headline text-lg font-bold text-foreground">
-              Eden <span className="text-primary font-normal italic">Rencontre</span>
+              Eden <span>Connexion</span>
             </span>
           </Link>
           <Link href="/login" className="text-sm text-primary font-bold hover:text-primary/80 transition-colors">
@@ -294,7 +301,7 @@ export default function RegisterPage() {
           <div className="w-full max-w-lg space-y-7 sm:space-y-8">
 
             {/* Progress Bar */}
-            {step <= 8 && (
+            {step <= 9 && (
               <div className="space-y-3 animate-in fade-in duration-500">
                 <Progress value={progress} className="h-1.5 bg-foreground/5" />
                 <div className="flex justify-between items-center">
@@ -354,7 +361,7 @@ export default function RegisterPage() {
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Votre venue parmi nous</h1>
-                  <p className="text-foreground/50 text-base">Comment avez-vous découvert Eden Rencontre ?</p>
+                  <p className="text-foreground/50 text-base">Comment avez-vous découvert Eden Connexion ?</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {discoverySources.map(source => (
@@ -631,7 +638,7 @@ export default function RegisterPage() {
                   disabled={formData.marriageVision.length === 0}
                   className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
-                  Finaliser mon inscription
+                  Continuer <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
                   <ChevronLeft className="w-4 h-4" /> Retour
@@ -640,9 +647,87 @@ export default function RegisterPage() {
             )}
 
             {/* ============================================================ */}
-            {/* Step 8 — Photo Upload & Completion */}
+            {/* Step 8 — Charter Acceptance */}
             {/* ============================================================ */}
-            {step >= 8 && (
+            {step === 8 && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+                <div className="space-y-3">
+                  <h1 className="text-2xl sm:text-3xl font-headline font-bold text-foreground">Charte d&#39;Engagement</h1>
+                  <p className="text-foreground/50 text-sm">Lisez attentivement et acceptez chaque engagement pour accéder au Sanctuaire.</p>
+                </div>
+
+                {/* Charter content — scrollable */}
+                <div className="bg-card border border-foreground/10 rounded-2xl p-5 max-h-[340px] overflow-y-auto custom-scrollbar space-y-5 text-sm text-foreground/70 leading-relaxed">
+                  <div className="space-y-3">
+                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">AXE I — Authenticité et Vérification</h3>
+                    <p><strong>Art. 1.</strong> L&#39;utilisateur s&#39;engage à fournir des informations rigoureusement exactes, à jour et conformes à sa situation réelle (identité, âge, statut matrimonial, situation professionnelle, engagement ecclésial). Tout mensonge volontaire entraînera l&#39;exclusion immédiate.</p>
+                    <p><strong>Art. 2.</strong> L&#39;utilisateur donne son accord formel aux administrateurs pour procéder à la vérification de l&#39;ensemble des informations fournies, y compris l&#39;exigence de pièces justificatives ou le contact des référents pastoraux.</p>
+                  </div>
+                  <div className="space-y-3">
+                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">AXE II — Alignement Spirituel</h3>
+                    <p><strong>Art. 3.</strong> L&#39;utilisateur reconnaît la Bible comme autorité suprême. Sa démarche et ses critères de recherche doivent être alignés sur les principes des Saintes Écritures concernant la pureté, le mariage et les relations humaines.</p>
+                    <p><strong>Art. 4.</strong> Toutes les interactions doivent être empreintes de dignité et de bienveillance chrétienne. Sont strictement interdits : propos grossiers, insinuations sexuelles, harcèlement, intimidation et chantage.</p>
+                  </div>
+                  <div className="space-y-3">
+                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">AXE III — Confidentialité</h3>
+                    <p><strong>Art. 5.</strong> Toutes les informations concernant d&#39;autres membres doivent rester strictement confidentielles. Il est interdit de capturer ou divulguer des éléments de profil sans accord écrit.</p>
+                  </div>
+                </div>
+
+                {/* Checkboxes */}
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={formData.charterAuthorizeVerification}
+                      onChange={() => setFormData({...formData, charterAuthorizeVerification: !formData.charterAuthorizeVerification})}
+                      className="mt-1 w-5 h-5 rounded border-foreground/20 text-primary focus:ring-primary/30 shrink-0"
+                    />
+                    <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
+                      J&#39;autorise expressément les administrateurs à vérifier la véracité de mes informations personnelles et ecclésiales.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={formData.charterCommitRespectful}
+                      onChange={() => setFormData({...formData, charterCommitRespectful: !formData.charterCommitRespectful})}
+                      className="mt-1 w-5 h-5 rounded border-foreground/20 text-primary focus:ring-primary/30 shrink-0"
+                    />
+                    <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
+                      Je m&#39;engage à maintenir des conversations saines et respectueuses, soumises à la Parole de Dieu.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-3 cursor-pointer group">
+                    <input
+                      type="checkbox"
+                      checked={formData.charterAcceptFull}
+                      onChange={() => setFormData({...formData, charterAcceptFull: !formData.charterAcceptFull})}
+                      className="mt-1 w-5 h-5 rounded border-foreground/20 text-primary focus:ring-primary/30 shrink-0"
+                    />
+                    <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
+                      J&#39;ai lu, compris et j&#39;accepte l&#39;intégralité de la présente charte d&#39;engagement.
+                    </span>
+                  </label>
+                </div>
+
+                <Button
+                  onClick={nextStep}
+                  disabled={!formData.charterAuthorizeVerification || !formData.charterCommitRespectful || !formData.charterAcceptFull}
+                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  Accepter et continuer <ShieldCheck className="w-5 h-5 ml-2" />
+                </Button>
+                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
+                  <ChevronLeft className="w-4 h-4" /> Retour
+                </button>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* Step 9 — Photo Upload & Completion */}
+            {/* ============================================================ */}
+            {step >= 9 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 {/* Success Banner */}
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
@@ -708,8 +793,8 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Login link on steps 0-7 */}
-            {step <= 7 && (
+            {/* Login link on steps 0-8 */}
+            {step <= 8 && (
               <div className="text-center pt-2">
                 <p className="text-foreground/30 text-sm">
                   Déjà membre ?{" "}
@@ -723,7 +808,7 @@ export default function RegisterPage() {
         </div>
 
         {/* Footer for terms */}
-        {step <= 7 && (
+        {step <= 8 && (
           <div className="px-6 py-4 border-t border-foreground/5">
             <p className="text-center text-foreground/15 text-[10px] font-medium uppercase tracking-widest">
               En créant votre compte, vous acceptez notre{" "}

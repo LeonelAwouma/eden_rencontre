@@ -53,7 +53,7 @@ export default function ParcoursPage() {
           <div className="container mx-auto px-4 relative z-10 text-center space-y-6">
             <h1 className="font-headline text-5xl md:text-6xl font-bold text-foreground">Votre Chemin vers l'Alliance</h1>
             <p className="text-xl text-foreground/60 max-w-2xl mx-auto leading-relaxed">
-              Eden Rencontre vous accompagne pas à pas dans votre quête d'une union bénie, en alliant technologie moderne et valeurs bibliques immuables.
+              Eden Connexion vous accompagne pas à pas dans votre quête d'une union bénie, en alliant technologie moderne et valeurs bibliques immuables.
             </p>
           </div>
         </section>

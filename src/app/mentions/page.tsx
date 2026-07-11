@@ -22,10 +22,10 @@ export default function MentionsPage() {
               <div className="garden-card p-8 rounded-2xl">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">Éditeur du Site</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">
-                  Eden Rencontre<br />
+                  Eden Connexion<br />
                   Plateforme matrimoniale chrétienne<br />
-                  Email : contact@edenrencontre.com<br />
-                  Directeur de la publication : Direction Eden Rencontre
+                  Email : contact@edenconnexion.com<br />
+                  Directeur de la publication : Direction Eden Connexion
                 </p>
               </div>
 
@@ -39,7 +39,7 @@ export default function MentionsPage() {
               <div className="garden-card p-8 rounded-2xl">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">Propriété Intellectuelle</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">
-                  L'ensemble du contenu de ce site (textes, images, graphismes, logos, icônes) est la propriété exclusive d'Eden Rencontre, sauf indication contraire. Toute reproduction, représentation, modification ou adaptation, totale ou partielle, est interdite sans autorisation préalable écrite.
+                  L'ensemble du contenu de ce site (textes, images, graphismes, logos, icônes) est la propriété exclusive d'Eden Connexion, sauf indication contraire. Toute reproduction, représentation, modification ou adaptation, totale ou partielle, est interdite sans autorisation préalable écrite.
                 </p>
               </div>
 

@@ -406,7 +406,7 @@ function AppearanceSection({
           type="text"
           value={currentBanner}
           onChange={(e) => setValue("appearance", "banner_text", e.target.value)}
-          placeholder="Bienvenue sur Eden Rencontre"
+          placeholder="Bienvenue sur Eden Connexion"
           className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all"
         />
       </div>

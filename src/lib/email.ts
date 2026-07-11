@@ -1,8 +1,8 @@
-// ── Email Service for Eden Rencontre ─────────────────────────
+// ── Email Service for Eden Connexion ─────────────────────────
 // Uses Resend API for sending emails.
 // Configure RESEND_API_KEY in .env.local
 
-const FROM_EMAIL = "Eden Rencontre <leonelawouma65@gmail.com>";
+const FROM_EMAIL = "Eden Connexion <leonelawouma65@gmail.com>";
 
 interface EmailOptions {
   to: string;
@@ -58,7 +58,7 @@ export async function sendRegistrationReceivedEmail(
 ): Promise<boolean> {
   return sendEmail({
     to: email,
-    subject: "Inscription reçue — Eden Rencontre",
+    subject: "Inscription reçue — Eden Connexion",
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -67,7 +67,7 @@ export async function sendRegistrationReceivedEmail(
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${name},</h2>
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
-            Merci de votre inscription sur <strong>Eden Rencontre</strong>.
+            Merci de votre inscription sur <strong>Eden Connexion</strong>.
           </p>
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
             Vos informations sont actuellement <strong>en cours de vérification</strong> par notre équipe.
@@ -83,11 +83,11 @@ export async function sendRegistrationReceivedEmail(
           </div>
           <p style="color: #888; font-size: 13px; margin-bottom: 0;">
             En attendant, nous vous invitons à relire notre
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://edenrencontre.com"}/charte" style="color: #2D5016;">Charte Éthique</a>.
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com"}/charte" style="color: #2D5016;">Charte Éthique</a>.
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} Eden Rencontre — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Eden Connexion — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -99,10 +99,10 @@ export async function sendAccountApprovedEmail(
   email: string,
   name: string
 ): Promise<boolean> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenrencontre.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com";
   return sendEmail({
     to: email,
-    subject: "Votre compte a été approuvé — Eden Rencontre",
+    subject: "Votre compte a été approuvé — Eden Connexion",
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -115,7 +115,7 @@ export async function sendAccountApprovedEmail(
             <strong>votre profil a été validé</strong>.
           </p>
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
-            Vous pouvez désormais accéder à la plateforme Eden Rencontre et commencer
+            Vous pouvez désormais accéder à la plateforme Eden Connexion et commencer
             votre chemin vers l'alliance bénie.
           </p>
           <div style="text-align: center; margin: 30px 0;">
@@ -129,7 +129,7 @@ export async function sendAccountApprovedEmail(
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} Eden Rencontre — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Eden Connexion — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -144,7 +144,7 @@ export async function sendAccountRejectedEmail(
 ): Promise<boolean> {
   return sendEmail({
     to: email,
-    subject: "Votre demande d'inscription — Eden Rencontre",
+    subject: "Votre demande d'inscription — Eden Connexion",
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -153,7 +153,7 @@ export async function sendAccountRejectedEmail(
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${name},</h2>
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
-            Nous vous remercions pour votre intérêt envers <strong>Eden Rencontre</strong>.
+            Nous vous remercions pour votre intérêt envers <strong>Eden Connexion</strong>.
           </p>
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
             Après examen de votre dossier, nous avons le regret de vous informer que
@@ -171,7 +171,7 @@ export async function sendAccountRejectedEmail(
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} Eden Rencontre — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Eden Connexion — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -186,7 +186,7 @@ export async function sendAccountSuspendedEmail(
 ): Promise<boolean> {
   return sendEmail({
     to: email,
-    subject: "Suspension de votre compte — Eden Rencontre",
+    subject: "Suspension de votre compte — Eden Connexion",
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
@@ -195,7 +195,7 @@ export async function sendAccountSuspendedEmail(
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${name},</h2>
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
-            Nous vous informons que votre compte sur <strong>Eden Rencontre</strong> a été temporairement suspendu.
+            Nous vous informons que votre compte sur <strong>Eden Connexion</strong> a été temporairement suspendu.
           </p>
           ${reason ? `
           <div style="margin: 20px 0; padding: 20px; background: #fff3cd; border-radius: 12px; border-left: 4px solid #ffc107;">
@@ -209,7 +209,7 @@ export async function sendAccountSuspendedEmail(
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} Eden Rencontre — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Eden Connexion — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,

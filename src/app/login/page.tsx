@@ -124,7 +124,7 @@ export default function LoginPage() {
         {/* Background Image */}
         <Image
           src="/mariage_one.png"
-          alt="Eden Rencontre — Union Bénie"
+          alt="Eden Connexion — Union Bénie"
           fill
           className="object-cover"
           priority
@@ -139,7 +139,7 @@ export default function LoginPage() {
           <Link href="/" className="flex items-center gap-3 group">
             <Monogram className="w-10 h-10 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
             <span className="font-headline text-2xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
-              Eden <span className="text-primary font-normal italic">Rencontre</span>
+              Eden <span>Connexion</span>
             </span>
           </Link>
 
@@ -177,7 +177,7 @@ export default function LoginPage() {
           <Link href="/" className="flex items-center gap-3 group">
             <Monogram className="w-8 h-8 text-primary shrink-0" />
             <span className="font-headline text-xl font-bold text-foreground">
-              Eden <span className="text-primary font-normal italic">Rencontre</span>
+              Eden <span>Connexion</span>
             </span>
           </Link>
         </div>
@@ -310,7 +310,7 @@ export default function LoginPage() {
           {/* Register CTA */}
           <div className="text-center space-y-2 pt-4">
             <p className="text-foreground/40 text-sm">
-              Pas encore membre d'Eden Rencontre ?
+              Pas encore membre d'Eden Connexion ?
             </p>
             <Link
               href="/register"

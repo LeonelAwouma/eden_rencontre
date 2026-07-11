@@ -165,7 +165,7 @@ export function GardenHero() {
           <div className="absolute inset-0">
             <Image
               src="/hero.png"
-              alt="Couple chrétien — Eden Rencontre"
+              alt="Couple chrétien — Eden Connexion"
               fill
               className="object-cover object-center"
               priority

@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
 
     let query = db
       .from("profiles")
-      .select("*", { count: "exact" })
+      .select("*, charter_acceptances(authorize_verification, commit_respectful_conversations, accept_full_charter, all_accepted, accepted_at, charter_version)", { count: "exact" })
       .order("updated_at", { ascending: false });
 
     if (status && status !== "all") {

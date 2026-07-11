@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Rencontre — Google Meet Integration Schema
+--  Eden Connexion — Google Meet Integration Schema
 --  Run after admin-schema.sql and admin-extensions.sql
 -- ============================================================
 

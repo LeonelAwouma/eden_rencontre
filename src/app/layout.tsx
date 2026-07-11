@@ -3,7 +3,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 
 export const metadata: Metadata = {
-  title: 'Eden Rencontre — L\'alliance bénie commence par une rencontre vraie.',
+  title: 'Eden Connexion — L\'alliance bénie commence par une rencontre vraie.',
   description: 'Plateforme matrimoniale haut de gamme dédiée aux célibataires chrétiens d\'Afrique et de la diaspora. Un sanctuaire numérique pour bâtir des foyers sur les fondements de la foi.',
 };
 

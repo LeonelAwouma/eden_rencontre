@@ -24,7 +24,7 @@ export function Navigation() {
         <Link href="/" className="flex items-center gap-3 sm:gap-4 group">
           <Monogram className="w-10 h-10 sm:w-12 sm:h-12 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
           <span className="font-headline text-xl sm:text-3xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
-            Eden <span className="text-primary font-normal italic">Rencontre</span>
+            Eden <span>Connexion</span>
           </span>
         </Link>
 

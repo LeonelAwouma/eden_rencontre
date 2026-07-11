@@ -64,7 +64,7 @@ export default function ConfidentialitePage() {
                   <li><strong>Droit de limitation :</strong> demander la limitation du traitement</li>
                 </ul>
                 <p className="text-muted-foreground leading-relaxed font-body mt-4">
-                  Pour exercer vos droits, contactez-nous à : <a href="mailto:privacy@edenrencontre.com" className="text-primary hover:text-deep-eden transition-colors underline">privacy@edenrencontre.com</a>
+                  Pour exercer vos droits, contactez-nous à : <a href="mailto:privacy@edenconnexion.com" className="text-primary hover:text-deep-eden transition-colors underline">privacy@edenconnexion.com</a>
                 </p>
               </div>
 
@@ -85,7 +85,7 @@ export default function ConfidentialitePage() {
               <div className="garden-card p-8 rounded-2xl">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">8. Contact DPO</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">
-                  Pour toute question relative à la protection de vos données, vous pouvez contacter notre Délégué à la Protection des Données à : <a href="mailto:privacy@edenrencontre.com" className="text-primary hover:text-deep-eden transition-colors underline">privacy@edenrencontre.com</a>
+                  Pour toute question relative à la protection de vos données, vous pouvez contacter notre Délégué à la Protection des Données à : <a href="mailto:privacy@edenconnexion.com" className="text-primary hover:text-deep-eden transition-colors underline">privacy@edenconnexion.com</a>
                 </p>
               </div>
             </div>

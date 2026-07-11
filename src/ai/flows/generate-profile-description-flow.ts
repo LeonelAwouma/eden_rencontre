@@ -48,7 +48,7 @@ const prompt = ai.definePrompt({
   name: 'generateProfileDescriptionPrompt',
   input: { schema: GenerateProfileDescriptionInputSchema },
   output: { schema: GenerateProfileDescriptionOutputSchema },
-  prompt: `You are an AI writing assistant for Eden Rencontre, a premium Christian matchmaking platform dedicated to helping African and diaspora Christians build faith-centered marriages. Your task is to help a user write a heartfelt, sincere, and biblically-aligned profile description.
+  prompt: `You are an AI writing assistant for Eden Connexion, a premium Christian matchmaking platform dedicated to helping African and diaspora Christians build faith-centered marriages. Your task is to help a user write a heartfelt, sincere, and biblically-aligned profile description.
 
 Based on the following information provided by the user:
 - Christian denomination: {{{denomination}}}
