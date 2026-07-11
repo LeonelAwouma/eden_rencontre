@@ -16,6 +16,9 @@ import {
   LogOut,
   X,
   ChevronDown,
+  Heart,
+  MessageSquare,
+  MessageCircle,
 } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 
@@ -41,6 +44,21 @@ const NAV_ITEMS = [
     label: "Vérifications",
     href: "/admin/users?status=pending",
     icon: ShieldCheck,
+  },
+  {
+    label: "Matching",
+    href: "/admin/matching",
+    icon: Heart,
+  },
+  {
+    label: "Témoignages",
+    href: "/admin/testimonials",
+    icon: MessageSquare,
+  },
+  {
+    label: "Chat Monitoring",
+    href: "/admin/chat-monitoring",
+    icon: MessageCircle,
   },
   {
     label: "Meets",
@@ -111,7 +129,7 @@ export function Sidebar({ isOpen, onClose, onLogout, adminName }: SidebarProps) 
             >
               Eden{" "}
               <span className="italic font-normal" style={{ color: "#486B46" }}>
-                Rencontre
+                Connexion
               </span>
             </p>
             <p className="text-[10px] text-[#9CA3AF] font-medium uppercase tracking-[0.12em]">

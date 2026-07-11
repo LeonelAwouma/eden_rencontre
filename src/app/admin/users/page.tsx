@@ -16,6 +16,8 @@ import {
   Users,
   UserCheck,
   ShieldCheck,
+  Crown,
+  CreditCard,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DashboardHeader } from "@/components/admin/dashboard-header";
@@ -79,6 +81,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState<UserProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState(initialStatus);
+  const [planFilter, setPlanFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -89,6 +92,7 @@ export default function AdminUsersPage() {
     try {
       const params = new URLSearchParams();
       if (statusFilter !== "all") params.set("status", statusFilter);
+      if (planFilter !== "all") params.set("plan", planFilter);
       if (searchQuery) params.set("search", searchQuery);
       params.set("page", page.toString());
       params.set("limit", "20");
@@ -106,7 +110,7 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, searchQuery, page]);
+  }, [statusFilter, planFilter, searchQuery, page]);
 
   useEffect(() => {
     fetchUsers();
@@ -183,6 +187,34 @@ export default function AdminUsersPage() {
               className={cn(
                 "flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-all duration-200",
                 statusFilter === opt.value
+                  ? "bg-white text-[#1a1a1a] shadow-sm border border-[#E5E7EB]"
+                  : "text-[#9CA3AF] hover:text-[#6B7280]"
+              )}
+            >
+              <opt.icon className="w-3.5 h-3.5" />
+              {opt.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Plan filter */}
+        <div className="flex gap-1 bg-[#F9FAFB] rounded-xl p-1 border border-[#E5E7EB] overflow-x-auto">
+          {[
+            { value: "all", label: "Tous plans", icon: CreditCard },
+            { value: "free", label: "Gratuit", icon: Users },
+            { value: "essentiel", label: "Essentiel", icon: Crown },
+            { value: "premium", label: "Premium", icon: Crown },
+            { value: "elite", label: "Élite", icon: Crown },
+          ].map((opt) => (
+            <button
+              key={opt.value}
+              onClick={() => {
+                setPlanFilter(opt.value);
+                setPage(1);
+              }}
+              className={cn(
+                "flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-all duration-200",
+                planFilter === opt.value
                   ? "bg-white text-[#1a1a1a] shadow-sm border border-[#E5E7EB]"
                   : "text-[#9CA3AF] hover:text-[#6B7280]"
               )}
