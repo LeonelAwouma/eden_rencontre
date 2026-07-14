@@ -5,7 +5,7 @@
 -- Table to store each user's charter acceptance record
 CREATE TABLE IF NOT EXISTS charter_acceptances (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
 
   -- Individual checkbox approvals
   authorize_verification BOOLEAN NOT NULL DEFAULT FALSE,
@@ -39,16 +39,19 @@ CREATE INDEX IF NOT EXISTS idx_charter_acceptances_accepted_at ON charter_accept
 ALTER TABLE charter_acceptances ENABLE ROW LEVEL SECURITY;
 
 -- Users can read their own acceptance
+DROP POLICY IF EXISTS "Users can read own charter acceptance" ON charter_acceptances;
 CREATE POLICY "Users can read own charter acceptance"
   ON charter_acceptances FOR SELECT
   USING (auth.uid() = user_id);
 
 -- Users can insert their own acceptance (during registration)
+DROP POLICY IF EXISTS "Users can insert own charter acceptance" ON charter_acceptances;
 CREATE POLICY "Users can insert own charter acceptance"
   ON charter_acceptances FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
 -- Users can update their own acceptance
+DROP POLICY IF EXISTS "Users can update own charter acceptance" ON charter_acceptances;
 CREATE POLICY "Users can update own charter acceptance"
   ON charter_acceptances FOR UPDATE
   USING (auth.uid() = user_id);
@@ -65,6 +68,7 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+DROP TRIGGER IF EXISTS charter_acceptances_updated_at ON charter_acceptances;
 CREATE TRIGGER charter_acceptances_updated_at
   BEFORE UPDATE ON charter_acceptances
   FOR EACH ROW

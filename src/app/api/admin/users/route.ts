@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     let query = db
       .from("profiles")
-      .select("*, charter_acceptances(authorize_verification, commit_respectful_conversations, accept_full_charter, all_accepted, accepted_at, charter_version)", { count: "exact" })
+      .select("*", { count: "exact" })
       .order("updated_at", { ascending: false });
 
     if (status && status !== "all") {
@@ -44,6 +44,23 @@ export async function GET(request: NextRequest) {
         { error: "Erreur lors de la récupération des utilisateurs." },
         { status: 500 }
       );
+    }
+
+    // Fetch charter acceptances separately (no FK between profiles and charter_acceptances)
+    if (users && users.length > 0) {
+      const userIds = users.map((u: { id: string }) => u.id);
+      const { data: acceptances } = await db
+        .from("charter_acceptances")
+        .select("user_id, authorize_verification, commit_respectful_conversations, accept_full_charter, all_accepted, accepted_at, charter_version")
+        .in("user_id", userIds);
+
+      const acceptanceMap = new Map(
+        (acceptances || []).map((a: { user_id: string } & Record<string, unknown>) => [a.user_id, a])
+      );
+      users.forEach((user: Record<string, unknown> & { id: string }) => {
+        const acceptance = acceptanceMap.get(user.id);
+        user.charter_acceptances = acceptance ? [acceptance] : [];
+      });
     }
 
     return NextResponse.json({
