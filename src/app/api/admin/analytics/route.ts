@@ -32,13 +32,21 @@ export async function GET(req: NextRequest) {
     const approvalRate = totalDecided > 0 ? Math.round((approvedCount / totalDecided) * 100) : 0;
     const conversionRate = (totalUsers || 0) > 0 ? Math.round((approvedCount / (totalUsers || 1)) * 100) : 0;
 
-    // Meet events
-    const [totalMeets, publishedMeets, completedMeets] = await Promise.all([
-      supabase.from("meet_events").select("id", { count: "exact", head: true }),
-      supabase.from("meet_events").select("id", { count: "exact", head: true }).eq("status", "published"),
-      supabase.from("meet_events").select("id", { count: "exact", head: true })
-        .eq("status", "published").lt("event_date", new Date().toISOString()),
-    ]);
+    // Meet events (table may not exist yet)
+    let totalMeetsCount = 0, publishedMeetsCount = 0, completedMeetsCount = 0;
+    try {
+      const [totalMeets, publishedMeets, completedMeets] = await Promise.all([
+        supabase.from("meet_events").select("id", { count: "exact", head: true }),
+        supabase.from("meet_events").select("id", { count: "exact", head: true }).eq("status", "published"),
+        supabase.from("meet_events").select("id", { count: "exact", head: true })
+          .eq("status", "published").lt("event_date", new Date().toISOString()),
+      ]);
+      totalMeetsCount = totalMeets.count || 0;
+      publishedMeetsCount = publishedMeets.count || 0;
+      completedMeetsCount = completedMeets.count || 0;
+    } catch {
+      console.warn("meet_events table not found, skipping meet stats");
+    }
 
     // Daily registrations for chart
     const { data: allProfiles } = await supabase
@@ -103,9 +111,9 @@ export async function GET(req: NextRequest) {
         activeUsers: approvedCount,
         conversionRate,
         approvalRate,
-        totalMeets: totalMeets || 0,
-        publishedMeets: publishedMeets || 0,
-        completedMeets: completedMeets || 0,
+        totalMeets: totalMeetsCount,
+        publishedMeets: publishedMeetsCount,
+        completedMeets: completedMeetsCount,
       },
       dailyRegistrations: Object.values(dailyData),
       genderDistribution: Object.entries(genderCounts).map(([name, value]) => ({ name, value })),

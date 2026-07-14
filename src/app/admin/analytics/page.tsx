@@ -55,9 +55,15 @@ export default function AnalyticsPage() {
     try {
       const res = await fetch(`/api/admin/analytics?days=${period}`);
       const result = await res.json();
-      if (res.ok) setData(result);
+      if (res.ok && !result.error) {
+        setData(result);
+      } else {
+        console.error("Analytics API error:", result.error || "Unknown error");
+        setData(null);
+      }
     } catch (err) {
       console.error("Error fetching analytics:", err);
+      setData(null);
     } finally {
       setLoading(false);
     }
