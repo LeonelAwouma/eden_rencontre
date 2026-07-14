@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { createGoogleMeetEvent } from "@/lib/google-calendar";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET — List all meetings with optional filters
 export async function GET(req: NextRequest) {
@@ -65,10 +66,14 @@ export async function POST(req: NextRequest) {
       duration_minutes = 60,
     } = body;
 
+    // Get current admin session
+    const admin = await requireAdmin().catch(() => null);
+    const effectiveAdminId = admin?.adminId === "env-admin" ? null : (admin_id || admin?.adminId || null);
+
     // Validate required fields
-    if (!title || !user_one_id || !user_two_id || !admin_id || !start_time) {
+    if (!title || !user_one_id || !user_two_id || !start_time) {
       return NextResponse.json(
-        { error: "Champs requis: title, user_one_id, user_two_id, admin_id, start_time" },
+        { error: "Champs requis: title, user_one_id, user_two_id, start_time" },
         { status: 400 }
       );
     }
@@ -115,7 +120,7 @@ export async function POST(req: NextRequest) {
         description: description || null,
         user_one_id,
         user_two_id,
-        admin_id,
+        admin_id: effectiveAdminId,
         google_event_id: googleResult.eventId || null,
         google_meet_url: googleResult.meetUrl || null,
         start_time: startDate.toISOString(),

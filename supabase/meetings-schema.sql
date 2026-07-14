@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS public.meetings (
   description TEXT,
   user_one_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
   user_two_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-  admin_id UUID NOT NULL REFERENCES public.admin_users(id),
+  admin_id UUID REFERENCES public.admin_users(id),
   google_event_id TEXT,
   google_meet_url TEXT,
   start_time TIMESTAMPTZ NOT NULL,
