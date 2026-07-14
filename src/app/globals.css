@@ -509,6 +509,107 @@ html {
   scroll-behavior: smooth;
 }
 
+/* ═══════════════════════════════════════════════════
+   DYNAMIC ACCENT COLOR — uses --accent-hex from settings
+   ═══════════════════════════════════════════════════ */
+:root {
+  --accent-hex: #486B46;
+  --accent-hex-10: #486B461a;
+  --accent-hex-20: #486B4633;
+  --accent-hex-50: #486B4680;
+}
+
+/* Sidebar active item */
+.sidebar-nav-item.active {
+  background: var(--accent-hex-10, #EEF5EC);
+  color: var(--accent-hex, #486B46);
+}
+.sidebar-nav-item.active::before {
+  background: var(--accent-hex, #486B46);
+}
+
+.eden-sidebar-active {
+  background: var(--accent-hex-10, #EEF5EC);
+  color: var(--accent-hex, #486B46);
+}
+.eden-sidebar-active::before {
+  background: var(--accent-hex, #486B46);
+}
+
+/* Sidebar hover */
+.sidebar-nav-item:hover {
+  background: var(--accent-hex-10, rgba(72, 107, 70, 0.04));
+  color: var(--accent-hex, #2F2F2F);
+}
+
+/* Loading spinner */
+.eden-admin-body .animate-spin,
+.eden-admin-body div[class*="border-t-[#38C172]"] {
+  border-top-color: var(--accent-hex, #38C172) !important;
+  border-color: var(--accent-hex-20, #38C17233);
+  border-top-color: var(--accent-hex, #38C172) !important;
+}
+
+/* Save buttons with green background */
+.eden-admin-body button[class*="bg-[#38C172]"],
+.eden-admin-body a[class*="bg-[#38C172]"] {
+  background-color: var(--accent-hex, #38C172) !important;
+  box-shadow: 0 4px 16px var(--accent-hex-50, rgba(56, 193, 114, 0.3)) !important;
+}
+.eden-admin-body button[class*="bg-[#38C172]"]:hover {
+  box-shadow: 0 6px 24px var(--accent-hex-50, rgba(56, 193, 114, 0.4)) !important;
+}
+
+/* Green hover/active accents */
+.eden-admin-body button[class*="text-[#38C172]"],
+.eden-admin-body span[class*="text-[#38C172]"],
+.eden-admin-body a[class*="text-[#38C172]"] {
+  color: var(--accent-hex, #38C172) !important;
+}
+
+.eden-admin-body div[class*="bg-[#38C172]/10"],
+.eden-admin-body button[class*="bg-[#38C172]/10"] {
+  background-color: var(--accent-hex-10, rgba(56, 193, 114, 0.1)) !important;
+}
+
+/* Focus rings */
+.eden-admin-body input:focus,
+.eden-admin-body select:focus {
+  border-color: var(--accent-hex, #38C172) !important;
+  box-shadow: 0 0 0 2px var(--accent-hex-20, rgba(56, 193, 114, 0.2)) !important;
+}
+
+/* Accent-colored borders on cards */
+.eden-admin-body [class*="border-"][class*="#38C172"] {
+  border-color: var(--accent-hex, #38C172) !important;
+}
+
+/* Ring/selected states for color picker and options */
+.eden-admin-body [class*="ring-"][class*="#38C172"],
+.eden-admin-body [class*="border-"][class*="#38C172"] {
+  --tw-ring-color: var(--accent-hex, #38C172) !important;
+  border-color: var(--accent-hex, #38C172) !important;
+}
+
+/* Approved badge */
+.eden-badge-approved {
+  background: var(--accent-hex-10, rgba(72, 107, 70, 0.1));
+  color: var(--accent-hex, #486B46);
+  border: 1px solid var(--accent-hex-20, rgba(72, 107, 70, 0.2));
+}
+
+/* Focus visible */
+:focus-visible {
+  outline: 2px solid var(--accent-hex, #486B46);
+}
+
+/* Quick action hover */
+.eden-quick-action:hover {
+  border-color: var(--accent-hex, #486B46);
+  background: var(--accent-hex-10, #EEF5EC);
+  box-shadow: 0 4px 16px var(--accent-hex-20, rgba(72, 107, 70, 0.12));
+}
+
 /* ── Circular Progress ── */
 @keyframes circular-progress {
   from { stroke-dashoffset: 283; }
