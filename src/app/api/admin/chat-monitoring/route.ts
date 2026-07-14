@@ -1,21 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { cookies } from "next/headers";
-
-async function verifyAdmin() {
-  const cookieStore = await cookies();
-  const session = cookieStore.get("admin_session");
-  if (!session) return null;
-  try {
-    return JSON.parse(session.value);
-  } catch {
-    return null;
-  }
-}
+import { requireAdmin } from "@/lib/admin-auth";
 
 export async function GET(req: NextRequest) {
-  const admin = await verifyAdmin();
-  if (!admin) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
 
   const { searchParams } = new URL(req.url);
   const tab = searchParams.get("tab") || "conversations";
@@ -91,8 +83,11 @@ export async function GET(req: NextRequest) {
 }
 
 export async function PATCH(req: NextRequest) {
-  const admin = await verifyAdmin();
-  if (!admin) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  try {
+    await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
 
   const body = await req.json();
   const { type, id, status, admin_notes, restricted_reason } = body;
@@ -132,8 +127,12 @@ export async function PATCH(req: NextRequest) {
 }
 
 export async function POST(req: NextRequest) {
-  const admin = await verifyAdmin();
-  if (!admin) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  let admin;
+  try {
+    admin = await requireAdmin();
+  } catch {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
 
   const body = await req.json();
   const { action_type, target_user_id, conversation_id, reason, details, expires_at } = body;
@@ -145,7 +144,7 @@ export async function POST(req: NextRequest) {
   const { data, error } = await supabase
     .from("moderation_actions")
     .insert({
-      admin_id: admin.id || "00000000-0000-0000-0000-000000000000",
+      admin_id: admin.adminId === "env-admin" ? null : admin.adminId,
       target_user_id,
       conversation_id: conversation_id || null,
       action_type,
