@@ -240,7 +240,7 @@ export async function logAdminAction(
 ): Promise<void> {
   const db = getSupabaseAdmin();
   await db.from("admin_audit_log").insert({
-    admin_id: adminId,
+    admin_id: adminId === "env-admin" ? null : adminId,
     admin_email: adminEmail,
     action,
     target_type: targetType,

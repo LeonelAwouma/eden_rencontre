@@ -29,12 +29,12 @@ export async function POST(
       );
     }
 
-    // Update status to suspended
+    // Update status to suspended (env-admin has no UUID, so null out reviewed_by)
     const { error: updateError } = await db
       .from("profiles")
       .update({
         status: "suspended",
-        reviewed_by: admin.adminId,
+        reviewed_by: admin.adminId === "env-admin" ? null : admin.adminId,
         reviewed_at: new Date().toISOString(),
       })
       .eq("id", id);

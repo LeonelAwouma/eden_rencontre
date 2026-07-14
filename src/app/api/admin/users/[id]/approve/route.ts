@@ -26,12 +26,12 @@ export async function POST(
       );
     }
 
-    // Update status to approved
+    // Update status to approved (env-admin has no UUID, so null out reviewed_by)
     const { error: updateError } = await db
       .from("profiles")
       .update({
         status: "approved",
-        reviewed_by: admin.adminId,
+        reviewed_by: admin.adminId === "env-admin" ? null : admin.adminId,
         reviewed_at: new Date().toISOString(),
         rejection_reason: null,
       })

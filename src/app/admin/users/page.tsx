@@ -86,6 +86,7 @@ export default function AdminUsersPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -127,6 +128,7 @@ export default function AdminUsersPage() {
     action: "approve" | "reject" | "suspend"
   ) => {
     try {
+      setActionError(null);
       const res = await fetch(`/api/admin/users/${userId}/${action}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -135,9 +137,15 @@ export default function AdminUsersPage() {
 
       if (res.ok) {
         fetchUsers();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActionError(data.error || `Erreur lors de l'action "${action}".`);
+        setTimeout(() => setActionError(null), 5000);
       }
     } catch (err) {
       console.error(`Error ${action}ing user:`, err);
+      setActionError("Erreur réseau. Veuillez réessayer.");
+      setTimeout(() => setActionError(null), 5000);
     }
   };
 
@@ -167,6 +175,17 @@ export default function AdminUsersPage() {
           </p>
         </div>
       </motion.div>
+
+      {/* Error banner */}
+      {actionError && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 p-3 rounded-xl bg-[#FEE2E2] border border-[#FECACA] text-[13px] font-medium text-[#DC2626]"
+        >
+          {actionError}
+        </motion.div>
+      )}
 
       {/* Filters */}
       <motion.div

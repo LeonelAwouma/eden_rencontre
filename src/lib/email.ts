@@ -1,8 +1,28 @@
 // ── Email Service for Eden Connexion ─────────────────────────
-// Uses Resend API for sending emails.
-// Configure RESEND_API_KEY in .env.local
+// Uses Gmail SMTP via nodemailer for sending emails.
+// Configure GMAIL_USER and GMAIL_APP_PASSWORD in .env.local
 
-const FROM_EMAIL = "Eden Connexion <leonelawouma65@gmail.com>";
+import nodemailer from "nodemailer";
+
+const FROM_EMAIL = "Eden Connexion <corpceleste3@gmail.com>";
+
+// Create a reusable transporter
+function getTransporter() {
+  const gmailUser = process.env.GMAIL_USER || "corpceleste3@gmail.com";
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
+
+  if (!gmailAppPassword) {
+    return null;
+  }
+
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: gmailUser,
+      pass: gmailAppPassword,
+    },
+  });
+}
 
 interface EmailOptions {
   to: string;
@@ -11,38 +31,34 @@ interface EmailOptions {
 }
 
 async function sendEmail(options: EmailOptions): Promise<boolean> {
-  const resendKey = process.env.RESEND_API_KEY;
+  const gmailAppPassword = process.env.GMAIL_APP_PASSWORD;
 
-  if (resendKey) {
-    // Use Resend API
+  if (gmailAppPassword) {
+    // Use Gmail SMTP via nodemailer
     try {
-      const res = await fetch("https://api.resend.com/emails", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${resendKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          from: FROM_EMAIL,
-          to: [options.to],
-          subject: options.subject,
-          html: options.html,
-        }),
-      });
-      if (!res.ok) {
-        const errText = await res.text();
-        console.error("Resend API error:", res.status, errText);
+      const transporter = getTransporter();
+      if (!transporter) {
+        console.error("Gmail transporter could not be created — missing GMAIL_APP_PASSWORD");
+        return false;
       }
-      return res.ok;
+
+      await transporter.sendMail({
+        from: FROM_EMAIL,
+        to: options.to,
+        subject: options.subject,
+        html: options.html,
+      });
+      console.log(`📧 Email sent to ${options.to} — Subject: ${options.subject}`);
+      return true;
     } catch (err) {
-      console.error("Email send error (Resend):", err);
+      console.error("Email send error (Gmail SMTP):", err);
       return false;
     }
   }
 
-  // Fallback: log to console (development)
+  // Fallback: log to console (development — no GMAIL_APP_PASSWORD configured)
   console.log("═══════════════════════════════════════════");
-  console.log("📧 EMAIL (no RESEND_API_KEY configured)");
+  console.log("📧 EMAIL (no GMAIL_APP_PASSWORD configured)");
   console.log(`From: ${FROM_EMAIL}`);
   console.log(`To: ${options.to}`);
   console.log(`Subject: ${options.subject}`);
@@ -167,7 +183,7 @@ export async function sendAccountRejectedEmail(
           ` : ""}
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
             Si vous pensez qu'il s'agit d'une erreur, n'hésitez pas à nous contacter
-            à l'adresse <a href="mailto:leonelawouma65@gmail.com" style="color: #2D5016;">leonelawouma65@gmail.com</a>.
+            à l'adresse <a href="mailto:corpceleste3@gmail.com" style="color: #2D5016;">corpceleste3@gmail.com</a>.
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
@@ -205,7 +221,7 @@ export async function sendAccountSuspendedEmail(
           ` : ""}
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
             Pour toute question, contactez-nous à
-            <a href="mailto:leonelawouma65@gmail.com" style="color: #2D5016;">leonelawouma65@gmail.com</a>.
+            <a href="mailto:corpceleste3@gmail.com" style="color: #2D5016;">corpceleste3@gmail.com</a>.
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
