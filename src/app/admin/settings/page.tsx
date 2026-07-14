@@ -92,6 +92,16 @@ export default function SettingsPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
       fetchSettings();
+
+      // Apply accent color live if it was changed
+      const accentEntry = entries.find(([k]) => k === "appearance.accent_color");
+      if (accentEntry) {
+        const accent = String(accentEntry[1]);
+        document.documentElement.style.setProperty("--accent-hex", accent);
+        document.documentElement.style.setProperty("--accent-hex-10", accent + "1a");
+        document.documentElement.style.setProperty("--accent-hex-20", accent + "33");
+        document.documentElement.style.setProperty("--accent-hex-50", accent + "80");
+      }
     } catch (err) {
       console.error("Error saving settings:", err);
     } finally {
