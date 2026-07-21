@@ -19,7 +19,7 @@ import {
   Crown,
   CreditCard,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatDate } from "@/lib/utils";
 import { DashboardHeader } from "@/components/admin/dashboard-header";
 
 interface CharterAcceptance {
@@ -355,8 +355,8 @@ export default function AdminUsersPage() {
                                   <ShieldCheck className="w-3 h-3 inline mr-1" /> Acceptée
                                 </span>
                                 {ca?.accepted_at && (
-                                  <span className="text-[10px] text-[#9CA3AF]">
-                                    {new Date(ca.accepted_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                              <span className="text-[10px] text-[#9CA3AF]">
+                                    {formatDate(ca.accepted_at)}
                                   </span>
                                 )}
                               </div>
@@ -369,20 +369,17 @@ export default function AdminUsersPage() {
                           );
                         })()}
                       </td>
-                      <td className="px-6 py-3.5">
+                       <td className="px-6 py-3.5">
                         <p className="text-[13px] text-[#9CA3AF] font-medium">
-                          {new Date(user.created_at).toLocaleDateString("fr-FR", {
-                            day: "2-digit",
-                            month: "short",
-                            year: "numeric",
-                          })}
+                          {formatDate(user.created_at)}
                         </p>
                       </td>
-                      <td className="px-6 py-3.5">
-                        <div className="flex items-center justify-end gap-1">
+                       <td className="px-6 py-3.5">
+                        <div className="flex items-center justify-end gap-2">
                           <Link
                             href={`/admin/users/${user.id}`}
-                            className="w-8 h-8 rounded-lg flex items-center justify-center text-[#D1D5DB] hover:text-[#38C172] hover:bg-[#38C172]/5 transition-all"
+                            className="w-9 h-9 rounded-full flex items-center justify-center bg-[#F9FAFB] text-[#9CA3AF] shadow-sm border border-[#E5E7EB] hover:bg-[#E8F5E9] hover:text-[#486B46] hover:border-[#C6D4C0] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#486B46] transition-all duration-200"
+                            title="Voir le profil"
                           >
                             <Eye className="w-4 h-4" />
                           </Link>
@@ -390,14 +387,14 @@ export default function AdminUsersPage() {
                             <>
                               <button
                                 onClick={() => handleQuickAction(user.id, "approve")}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-[#D1D5DB] hover:text-[#38C172] hover:bg-[#38C172]/5 transition-all"
+                                className="w-9 h-9 rounded-full flex items-center justify-center bg-[#FF9E45]/10 text-[#C27D30] shadow-sm border border-[#FF9E45]/20 hover:bg-[#FF9E45]/20 hover:text-[#A36820] hover:border-[#FF9E45]/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C27D30] transition-all duration-200"
                                 title="Approuver"
                               >
                                 <CheckCircle2 className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleQuickAction(user.id, "reject")}
-                                className="w-8 h-8 rounded-lg flex items-center justify-center text-[#D1D5DB] hover:text-[#F56565] hover:bg-[#F56565]/5 transition-all"
+                                className="w-9 h-9 rounded-full flex items-center justify-center bg-[#F56565]/10 text-[#E53E3E] shadow-sm border border-[#F56565]/20 hover:bg-[#F56565]/20 hover:text-[#C53030] hover:border-[#F56565]/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E53E3E] transition-all duration-200"
                                 title="Rejeter"
                               >
                                 <XCircle className="w-4 h-4" />
@@ -456,7 +453,7 @@ export default function AdminUsersPage() {
                             </span>
                             {ca?.accepted_at && (
                               <span className="text-[10px] text-[#9CA3AF]">
-                                {new Date(ca.accepted_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
+                                {formatDate(ca.accepted_at)}
                               </span>
                             )}
                           </div>
