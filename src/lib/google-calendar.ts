@@ -44,10 +44,12 @@ interface GoogleCredentials {
 }
 
 /**
- * Retrieve stored Google OAuth credentials from platform_settings
+ * Retrieve stored Google OAuth credentials.
+ * First checks platform_settings table, then falls back to environment variables.
  */
 async function getGoogleCredentials(): Promise<GoogleCredentials | null> {
   try {
+    // 1. Try database first
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from("platform_settings")
@@ -56,12 +58,44 @@ async function getGoogleCredentials(): Promise<GoogleCredentials | null> {
       .eq("key", "google_calendar_credentials")
       .maybeSingle();
 
-    if (error || !data?.value || data.value === null) {
-      console.error("[GoogleCalendar] No credentials found in platform_settings");
+    if (!error && data?.value && data.value !== null) {
+      const dbCreds = data.value as GoogleCredentials;
+
+      // Merge with env fallbacks for client_id / client_secret
+      return {
+        ...dbCreds,
+        client_id: dbCreds.client_id || process.env.GOOGLE_CLIENT_ID || "",
+        client_secret: dbCreds.client_secret || process.env.GOOGLE_CLIENT_SECRET || "",
+      };
+    }
+
+    // 2. Fall back to environment variables
+    const clientId = process.env.GOOGLE_CLIENT_ID;
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+    const accessToken = process.env.GOOGLE_ACCESS_TOKEN;
+    const refreshToken = process.env.GOOGLE_REFRESH_TOKEN;
+
+    if (!clientId || !clientSecret) {
+      console.error("[GoogleCalendar] No credentials found in platform_settings or environment variables");
       return null;
     }
 
-    return data.value as GoogleCredentials;
+    if (!refreshToken) {
+      console.warn(
+        "[GoogleCalendar] GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET are set but no OAuth tokens found. " +
+        "You must complete the OAuth flow once to obtain access_token and refresh_token, " +
+        "then store them in the platform_settings table (category: general, key: google_calendar_credentials) " +
+        "or set GOOGLE_ACCESS_TOKEN and GOOGLE_REFRESH_TOKEN env variables."
+      );
+      return null;
+    }
+
+    return {
+      client_id: clientId,
+      client_secret: clientSecret,
+      access_token: accessToken || "",
+      refresh_token: refreshToken,
+    };
   } catch (err) {
     console.error("[GoogleCalendar] Failed to retrieve credentials:", err);
     return null;
