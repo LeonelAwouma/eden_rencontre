@@ -61,6 +61,7 @@ export async function POST(req: NextRequest) {
       description,
       user_one_id,
       user_two_id,
+      participant_ids,
       admin_id,
       start_time,
       duration_minutes = 60,
@@ -70,8 +71,19 @@ export async function POST(req: NextRequest) {
     const admin = await requireAdmin().catch(() => null);
     const effectiveAdminId = admin?.adminId === "env-admin" ? null : (admin_id || admin?.adminId || null);
 
+    // Support legacy 2-participant mode OR new multi-participant mode
+    const primaryUserId = user_one_id;
+    const secondaryUserId = user_two_id;
+
+    // Build unique participant list (at minimum 2 required from user_one_id + user_two_id)
+    const extraParticipantIds: string[] = Array.isArray(participant_ids)
+      ? participant_ids.filter((id: string) => id && id !== primaryUserId && id !== secondaryUserId)
+      : [];
+
+    const allParticipantIds = [primaryUserId, secondaryUserId, ...extraParticipantIds];
+
     // Validate required fields
-    if (!title || !user_one_id || !user_two_id || !start_time) {
+    if (!title || !primaryUserId || !secondaryUserId || !start_time) {
       return NextResponse.json(
         { error: "Champs requis: title, user_one_id, user_two_id, start_time" },
         { status: 400 }
@@ -82,25 +94,23 @@ export async function POST(req: NextRequest) {
     const startDate = new Date(start_time);
     const endDate = new Date(startDate.getTime() + duration_minutes * 60 * 1000);
 
-    // Fetch participant emails for Google Calendar
-    const { data: userOne } = await supabase
+    // Fetch all participant profiles for emails
+    const { data: allProfiles, error: profilesError } = await supabase
       .from("profiles")
-      .select("email, name")
-      .eq("id", user_one_id)
-      .maybeSingle();
+      .select("id, email, name")
+      .in("id", allParticipantIds);
 
-    const { data: userTwo } = await supabase
-      .from("profiles")
-      .select("email, name")
-      .eq("id", user_two_id)
-      .maybeSingle();
-
-    if (!userOne?.email || !userTwo?.email) {
+    if (profilesError || !allProfiles || allProfiles.length < 2) {
       return NextResponse.json(
         { error: "Impossible de récupérer les emails des participants" },
         { status: 400 }
       );
     }
+
+    const profileMap = new Map(allProfiles.map((p: { id: string; email: string; name: string }) => [p.id, p]));
+    const participantEmails = allParticipantIds
+      .map((id) => profileMap.get(id)?.email)
+      .filter(Boolean) as string[];
 
     // Create Google Calendar event with Meet link
     const googleResult = await createGoogleMeetEvent({
@@ -108,7 +118,7 @@ export async function POST(req: NextRequest) {
       description: description || "",
       startTime: startDate.toISOString(),
       endTime: endDate.toISOString(),
-      attendeeEmails: [userOne.email, userTwo.email],
+      attendeeEmails: participantEmails,
       organizerEmail: "", // Will be fetched from settings
     });
 
@@ -118,8 +128,8 @@ export async function POST(req: NextRequest) {
       .insert({
         title,
         description: description || null,
-        user_one_id,
-        user_two_id,
+        user_one_id: primaryUserId,
+        user_two_id: secondaryUserId,
         admin_id: effectiveAdminId,
         google_event_id: googleResult.eventId || null,
         google_meet_url: googleResult.meetUrl || null,
@@ -133,8 +143,22 @@ export async function POST(req: NextRequest) {
 
     if (insertError) throw insertError;
 
-    // Create notifications for both participants
-    const notificationMessage = `Un rendez-vous vidéo "${title}" a été planifié le ${startDate.toLocaleDateString("fr-FR", {
+    // Insert extra participants into meeting_participants junction table
+    if (extraParticipantIds.length > 0) {
+      const participantRows = extraParticipantIds.map((uid) => ({
+        meeting_id: meeting.id,
+        user_id: uid,
+      }));
+      const { error: partError } = await supabase
+        .from("meeting_participants")
+        .insert(participantRows);
+      if (partError) {
+        console.error("[Admin Meetings POST] Failed to insert extra participants:", partError);
+      }
+    }
+
+    // Create notifications for ALL participants
+    const notificationMessage = `Vous êtes invité(e) au rendez-vous vidéo "${title}" le ${startDate.toLocaleDateString("fr-FR", {
       weekday: "long",
       day: "numeric",
       month: "long",
@@ -142,22 +166,21 @@ export async function POST(req: NextRequest) {
       minute: "2-digit",
     })}`;
 
-    await supabase.from("meeting_notifications").insert([
-      {
-        meeting_id: meeting.id,
-        user_id: user_one_id,
-        notification_type: "created",
-        title: "Nouveau rendez-vous vidéo",
-        message: notificationMessage,
-      },
-      {
-        meeting_id: meeting.id,
-        user_id: user_two_id,
-        notification_type: "created",
-        title: "Nouveau rendez-vous vidéo",
-        message: notificationMessage,
-      },
-    ]);
+    const notificationRows = allParticipantIds.map((uid) => ({
+      meeting_id: meeting.id,
+      user_id: uid,
+      notification_type: "created",
+      title: "Invitation à un rendez-vous vidéo",
+      message: notificationMessage,
+    }));
+
+    const { error: notifError } = await supabase
+      .from("meeting_notifications")
+      .insert(notificationRows);
+
+    if (notifError) {
+      console.error("[Admin Meetings POST] Failed to create notifications:", notifError);
+    }
 
     return NextResponse.json({
       meeting,

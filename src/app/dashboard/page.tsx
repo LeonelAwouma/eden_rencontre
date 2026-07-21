@@ -248,6 +248,29 @@ export default function DashboardPage() {
   const activeConv = conversations.find((c) => c.id === activeConvId) || null;
   const messageNotifs = conversations.filter((c) => c.unread > 0);
   const displayName = user?.name || "Membre";
+
+  // Meeting notifications
+  const [meetingNotifs, setMeetingNotifs] = useState<{ id: string; meeting_id: string; notification_type: string; title: string; message: string; is_read: boolean; created_at: string }[]>([]);
+
+  useEffect(() => {
+    if (activeTab !== "Notifications" || !user?.id) return;
+    fetch(`/api/meetings/notifications?user_id=${user.id}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.notifications) setMeetingNotifs(d.notifications); })
+      .catch(() => {});
+  }, [activeTab, user?.id]);
+
+  const unreadMeetingNotifs = meetingNotifs.filter((n) => !n.is_read);
+
+  const markMeetingNotifsRead = async () => {
+    if (!user?.id || unreadMeetingNotifs.length === 0) return;
+    setMeetingNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    fetch("/api/meetings/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mark_all: true, user_id: user.id }),
+    }).catch(() => {});
+  };
   const displayInitial = displayName.charAt(0).toUpperCase();
   const myAvatar = user?.avatar_url || undefined;
   const displayLocation = user ? [user.city, user.country].filter(Boolean).join(", ") || "Eden" : "Eden";
@@ -1395,9 +1418,58 @@ export default function DashboardPage() {
         );
 
       case "Notifications":
+        // Mark meeting notifications as read when viewing
+        if (unreadMeetingNotifs.length > 0) {
+          markMeetingNotifsRead();
+        }
+
         return (
           <div className="space-y-6">
             <TabHeader icon={Bell} title="Notifications" subtitle="Tout ce qui se passe dans votre sanctuaire" />
+
+            {/* Meeting invitation notifications */}
+            {meetingNotifs.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>Invitations aux rendez-vous vidéo</p>
+                <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
+                  {meetingNotifs.map((n) => {
+                    const notifDate = new Date(n.created_at);
+                    const formattedDate = notifDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                    const typeIcon = n.notification_type === "created" ? Video
+                      : n.notification_type === "cancelled" ? X
+                      : n.notification_type === "rescheduled" ? Clock
+                      : Bell;
+                    const typeColor = n.notification_type === "created" ? "#38C172"
+                      : n.notification_type === "cancelled" ? "#EF4444"
+                      : n.notification_type === "rescheduled" ? "#8B5CF6"
+                      : "#486B46";
+                    const typeBg = n.notification_type === "created" ? "#EEF5EC"
+                      : n.notification_type === "cancelled" ? "#FEF2F2"
+                      : n.notification_type === "rescheduled" ? "#F5F3FF"
+                      : "#EEF5EC";
+
+                    return (
+                      <div key={n.id} className="flex items-start gap-4 p-4 transition-colors"
+                        style={{ borderLeft: n.is_read ? "3px solid transparent" : "3px solid #486B46" }}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: typeBg }}>
+                          {(() => { const Icon = typeIcon; return <Icon className="w-5 h-5" style={{ color: typeColor }} />; })()}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold" style={{ color: "#2F2F2F" }}>{n.title}</p>
+                          <p className="text-xs mt-1 leading-relaxed" style={{ color: "#4B5563" }}>{n.message}</p>
+                          <p className="text-[10px] mt-1.5" style={{ color: "#9CA3AF" }}>{formattedDate}</p>
+                        </div>
+                        {!n.is_read && (
+                          <span className="w-2 h-2 rounded-full shrink-0 mt-2" style={{ background: "#486B46" }} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Message notifications */}
             {messageNotifs.length > 0 && (
               <div className="space-y-2">
                 <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>Nouveaux messages</p>
@@ -1420,18 +1492,22 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-            <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
-              {[
-                { icon: Heart, text: "Consultez vos notifications d'activité ici.", when: "" },
-              ].map((n, i) => (
-                <div key={i} className="flex items-center gap-4 p-4">
-                  <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#EEF5EC" }}>
-                    <n.icon className="w-5 h-5" style={{ color: "#486B46" }} />
+
+            {/* Empty state when no notifications at all */}
+            {meetingNotifs.length === 0 && messageNotifs.length === 0 && (
+              <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
+                {[
+                  { icon: Heart, text: "Consultez vos notifications d'activité ici.", when: "" },
+                ].map((n, i) => (
+                  <div key={i} className="flex items-center gap-4 p-4">
+                    <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#EEF5EC" }}>
+                      <n.icon className="w-5 h-5" style={{ color: "#486B46" }} />
+                    </div>
+                    <p className="flex-1 text-sm" style={{ color: "#2F2F2F" }}>{n.text}</p>
                   </div>
-                  <p className="flex-1 text-sm" style={{ color: "#2F2F2F" }}>{n.text}</p>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         );
 

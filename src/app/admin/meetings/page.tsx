@@ -428,12 +428,12 @@ function Modal({ children, onClose, title }: { children: React.ReactNode; onClos
 
 function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCreated: (warning: string | null) => void }) {
   const [users, setUsers] = useState<Profile[]>([]);
-  const [searchQuery, setSearchQuery] = useState("");
   const [form, setForm] = useState({
     title: "Première rencontre guidée",
     description: "",
     user_one_id: "",
     user_two_id: "",
+    extra_participants: [] as string[],
     date: "",
     time: "18:00",
     duration_minutes: 60,
@@ -456,10 +456,27 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
     fetchUsers();
   }, []);
 
-  const filteredUsers = users.filter((u) =>
-    u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const allSelectedIds = [form.user_one_id, form.user_two_id, ...form.extra_participants].filter(Boolean);
+  const availableUsers = users.filter((u) => !allSelectedIds.includes(u.id));
+
+  const addExtraParticipant = () => {
+    setForm((f) => ({ ...f, extra_participants: [...f.extra_participants, ""] }));
+  };
+
+  const removeExtraParticipant = (index: number) => {
+    setForm((f) => ({
+      ...f,
+      extra_participants: f.extra_participants.filter((_, i) => i !== index),
+    }));
+  };
+
+  const updateExtraParticipant = (index: number, userId: string) => {
+    setForm((f) => {
+      const updated = [...f.extra_participants];
+      updated[index] = userId;
+      return { ...f, extra_participants: updated };
+    });
+  };
 
   const handleSubmit = async () => {
     if (!form.title || !form.user_one_id || !form.user_two_id || !form.date || !form.time) return;
@@ -468,6 +485,7 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
     setLoading(true);
     try {
       const start_time = new Date(`${form.date}T${form.time}`).toISOString();
+      const validExtras = form.extra_participants.filter(Boolean);
 
       const res = await fetch("/api/admin/meetings", {
         method: "POST",
@@ -477,14 +495,15 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
           description: form.description || null,
           user_one_id: form.user_one_id,
           user_two_id: form.user_two_id,
-          admin_id: "current", // Will be resolved by API
+          participant_ids: validExtras,
+          admin_id: "current",
           start_time,
           duration_minutes: form.duration_minutes,
         }),
       });
 
       const data = await res.json();
-        if (res.ok) {
+      if (res.ok) {
         onCreated(data.google_error || null);
       }
     } finally {
@@ -492,17 +511,21 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
     }
   };
 
-  const UserSelector = ({ label, value, onChange }: { label: string; value: string; onChange: (id: string) => void }) => (
-    <div>
-      <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">{label}</label>
-      <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all">
-        <option value="">Sélectionner un participant</option>
-        {users.map((u) => (
-          <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
-        ))}
-      </select>
-    </div>
-  );
+  const UserSelector = ({ label, value, onChange, excludeIds }: { label: string; value: string; onChange: (id: string) => void; excludeIds?: string[] }) => {
+    const excluded = excludeIds || [];
+    const options = users.filter((u) => !excluded.includes(u.id) || u.id === value);
+    return (
+      <div>
+        <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">{label}</label>
+        <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all">
+          <option value="">Sélectionner un participant</option>
+          {options.map((u) => (
+            <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+          ))}
+        </select>
+      </div>
+    );
+  };
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={onClose}>
@@ -526,12 +549,62 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
             <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Description du rendez-vous (optionnel)" className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] resize-none h-20" />
           </div>
 
-          <UserSelector label="Participant 1" value={form.user_one_id} onChange={(id) => setForm((f) => ({ ...f, user_one_id: id }))} />
-          <UserSelector label="Participant 2" value={form.user_two_id} onChange={(id) => setForm((f) => ({ ...f, user_two_id: id }))} />
+          {/* Primary participants */}
+          <div className="space-y-3">
+            <UserSelector
+              label="Participant 1"
+              value={form.user_one_id}
+              onChange={(id) => setForm((f) => ({ ...f, user_one_id: id }))}
+              excludeIds={[form.user_two_id, ...form.extra_participants]}
+            />
+            <UserSelector
+              label="Participant 2"
+              value={form.user_two_id}
+              onChange={(id) => setForm((f) => ({ ...f, user_two_id: id }))}
+              excludeIds={[form.user_one_id, ...form.extra_participants]}
+            />
+          </div>
 
           {form.user_one_id === form.user_two_id && form.user_one_id && (
-            <p className="text-[12px] text-[#EF4444] font-medium">Les deux participants doivent être différents</p>
+            <p className="text-[12px] text-[#EF4444] font-medium">Les deux participants principaux doivent être différents</p>
           )}
+
+          {/* Additional participants */}
+          {form.extra_participants.map((pid, index) => (
+            <div key={index} className="flex items-end gap-2">
+              <div className="flex-1">
+                <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">
+                  Participant {index + 3}
+                </label>
+                <select
+                  value={pid}
+                  onChange={(e) => updateExtraParticipant(index, e.target.value)}
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all"
+                >
+                  <option value="">Sélectionner un participant</option>
+                  {availableUsers.map((u) => (
+                    <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
+                  ))}
+                </select>
+              </div>
+              <button
+                type="button"
+                onClick={() => removeExtraParticipant(index)}
+                className="w-10 h-10 rounded-xl flex items-center justify-center text-[#EF4444] hover:bg-red-50 border border-[#E5E7EB] transition-all shrink-0"
+                title="Retirer ce participant"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+
+          <button
+            type="button"
+            onClick={addExtraParticipant}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-[#D1D5DB] text-[13px] font-medium text-[#6B7280] hover:text-[#38C172] hover:border-[#38C172] hover:bg-[#38C172]/5 transition-all w-full justify-center"
+          >
+            <Plus className="w-4 h-4" /> Ajouter un participant
+          </button>
 
           <div className="grid grid-cols-2 gap-4">
             <div>
