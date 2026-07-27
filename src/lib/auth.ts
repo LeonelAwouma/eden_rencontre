@@ -191,13 +191,14 @@ export async function signInWithGoogle(): Promise<{ ok: boolean; error?: string 
   if (!supabase) {
     return { ok: false, error: "Connexion Google indisponible (Supabase non configuré)." };
   }
-  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/searching` : undefined;
+  // Redirect to complete-registration page so Google users can fill in missing profile info
+  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/onboarding/complete-registration` : undefined;
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo },
   });
   if (error) return { ok: false, error: error.message };
-  // Redirection gérée par Supabase vers Google puis retour sur /searching
+  // Redirection gérée par Supabase vers Google puis retour sur /onboarding/complete-registration
   return { ok: true };
 }
 
@@ -208,4 +209,17 @@ export async function logout() {
   }
   if (typeof window === "undefined") return;
   window.localStorage.removeItem(SESSION_KEY);
+}
+
+// Checks whether the user's profile has all required fields filled in.
+// Used to detect Google sign-in users who haven't completed their profile yet.
+export function isProfileComplete(user: EdenUser | null): boolean {
+  if (!user) return false;
+  return !!(
+    user.gender &&
+    user.birthDate &&
+    user.region &&
+    user.country &&
+    user.city
+  );
 }
