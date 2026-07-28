@@ -123,6 +123,23 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ alert: data });
   }
 
+  if (type === "message") {
+    const update: Record<string, unknown> = {};
+    if (status === "flagged") {
+      update.is_flagged = true;
+      update.flag_reason = admin_notes || "Flagged by admin";
+    } else if (status === "unflagged") {
+      update.is_flagged = false;
+      update.flag_reason = null;
+    } else if (status === "deleted") {
+      update.is_deleted = true;
+    }
+    const { data, error } = await supabase
+      .from("chat_messages").update(update).eq("id", id).select().single();
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ message: data });
+  }
+
   return NextResponse.json({ error: "Type invalide" }, { status: 400 });
 }
 
