@@ -44,7 +44,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Monogram, Flourish, VitrailPattern } from "@/components/ornaments";
 import { ImposingFloralCorners, ImposingFloralSide } from "@/components/garden";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
-import { Tab, TABS, ComposerType, FeedPost, EDIT_WINDOW_MS, DAILY_VERSES, VERSE_OF_DAY } from "@/components/dashboard/dashboard-types";
+import { Tab, TABS, ComposerType, FeedPost, EDIT_WINDOW_MS, DAILY_VERSES, VERSE_OF_DAY, getDailyVerses } from "@/components/dashboard/dashboard-types";
 
 // ── Helper ──
 function formatTime(iso: string) {
@@ -508,7 +508,9 @@ export default function DashboardPage() {
     const now = new Date();
     const start = new Date(now.getFullYear(), 0, 0);
     const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
-    setDailyQuote(DAILY_VERSES[dayOfYear % DAILY_VERSES.length]);
+    // Use a temporary placeholder; will be updated once user loads with gender
+    const defaultVerses = getDailyVerses(null);
+    setDailyQuote(defaultVerses[dayOfYear % defaultVerses.length]);
     getSession().then(setUser);
     const params = new URLSearchParams(window.location.search);
     const t = params.get("tab");
@@ -524,6 +526,16 @@ export default function DashboardPage() {
     loadConversations();
     setPendingConv(null);
   }, [pendingConv, meId]);
+
+  // Update daily verse once user (with gender) is available
+  useEffect(() => {
+    if (!user) return;
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
+    const genderVerses = getDailyVerses(user.gender);
+    setDailyQuote(genderVerses[dayOfYear % genderVerses.length]);
+  }, [user?.gender]);
 
   useEffect(() => {
     if (!user?.id) return;
