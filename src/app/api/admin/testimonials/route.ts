@@ -26,11 +26,7 @@ export async function GET(req: NextRequest) {
   const supabase = getSupabaseAdmin();
   let query = supabase
     .from("testimonials")
-    .select(`
-      *,
-      user:profiles!testimonials_user_id_fkey(id, name, email, avatar_url, city, country, subscription_plan),
-      reviewer:admin_users!testimonials_reviewed_by_fkey(id, name, email)
-    `, { count: "exact" })
+    .select("*", { count: "exact" })
     .order("created_at", { ascending: false })
     .range(offset, offset + limit - 1);
 
@@ -45,6 +41,26 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
+  // Fetch user profiles separately to avoid FK constraint name issues
+  const userIds = [...new Set((data || []).map((t: any) => t.user_id).filter(Boolean))];
+  let profilesMap: Record<string, any> = {};
+  if (userIds.length > 0) {
+    const { data: profiles } = await supabase
+      .from("profiles")
+      .select("id, name, email, avatar_url, city, country, subscription_plan")
+      .in("id", userIds);
+    if (profiles) {
+      profilesMap = Object.fromEntries(profiles.map((p: any) => [p.id, p]));
+    }
+  }
+
+  // Enrich testimonials with user data
+  const enriched = (data || []).map((t: any) => ({
+    ...t,
+    user: profilesMap[t.user_id] || { id: t.user_id, name: "Anonyme", email: "", avatar_url: null, city: "", country: "", subscription_plan: "free" },
+    reviewer: null,
+  }));
+
   // Stats
   const { count: totalCount } = await supabase
     .from("testimonials").select("*", { count: "exact", head: true });
@@ -56,7 +72,7 @@ export async function GET(req: NextRequest) {
     .from("testimonials").select("*", { count: "exact", head: true }).eq("status", "rejected");
 
   return NextResponse.json({
-    testimonials: data || [],
+    testimonials: enriched || [],
     total: count || 0,
     stats: {
       total: totalCount || 0,
