@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { sendRegistrationReceivedEmail } from "@/lib/email";
 
 export async function POST(request: NextRequest) {
   try {
@@ -199,6 +200,19 @@ export async function POST(request: NextRequest) {
     if (metaError) {
       console.warn("[Google Onboarding] Could not update auth metadata:", metaError.message);
       // Non-critical: profile is already saved in the profiles table
+    }
+
+    // Send confirmation email
+    try {
+      const { data: { user: authUser } } = await db.auth.admin.getUserById(userId);
+      const userEmail = authUser?.email || "";
+      const userName = authUser?.user_metadata?.name || authUser?.user_metadata?.full_name || userEmail.split("@")[0];
+      if (userEmail) {
+        await sendRegistrationReceivedEmail(userEmail, userName);
+      }
+    } catch (emailErr) {
+      console.warn("[Google Onboarding] Could not send confirmation email:", emailErr);
+      // Non-critical: profile is already saved
     }
 
     return NextResponse.json({
