@@ -18,6 +18,7 @@ import {
   ShieldCheck,
   Crown,
   CreditCard,
+  MessageCircle,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 import { DashboardHeader } from "@/components/admin/dashboard-header";
@@ -383,6 +384,13 @@ export default function AdminUsersPage() {
                           >
                             <Eye className="w-4 h-4" />
                           </Link>
+                          <Link
+                            href={`/admin/chat-monitoring?user=${user.id}`}
+                            className="w-9 h-9 rounded-full flex items-center justify-center bg-[#486B46]/10 text-[#486B46] shadow-sm border border-[#486B46]/20 hover:bg-[#486B46]/20 hover:text-[#3A5A3A] hover:border-[#486B46]/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#486B46] transition-all duration-200"
+                            title="Surveiller les conversations"
+                          >
+                            <MessageCircle className="w-4 h-4" />
+                          </Link>
                           {user.status === "pending" && (
                             <>
                               <button
@@ -472,6 +480,13 @@ export default function AdminUsersPage() {
                       className="flex-1 text-center text-[12px] font-semibold text-[#38C172] bg-[#38C172]/5 py-2.5 rounded-xl hover:bg-[#38C172]/10 transition-colors"
                     >
                       Voir le profil
+                    </Link>
+                    <Link
+                      href={`/admin/chat-monitoring?user=${user.id}`}
+                      className="flex-1 text-center text-[12px] font-semibold text-[#486B46] bg-[#486B46]/5 py-2.5 rounded-xl hover:bg-[#486B46]/10 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <MessageCircle className="w-3.5 h-3.5" />
+                      Conversations
                     </Link>
                     {user.status === "pending" && (
                       <>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   MessageCircle,
@@ -486,7 +487,11 @@ function ConversationViewer({
 
 // ─── Main Chat Monitoring Page ──────────────────────────────────────
 export default function ChatMonitoringPage() {
+  const searchParams = useSearchParams();
+  const initialUserId = searchParams.get("user") || null;
+
   const [tab, setTab] = useState<"conversations" | "alerts">("conversations");
+  const [filterUserId, setFilterUserId] = useState<string | null>(initialUserId);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [alerts, setAlerts] = useState<ChatAlert[]>([]);
   const [loading, setLoading] = useState(true);
@@ -513,6 +518,7 @@ export default function ChatMonitoringPage() {
         page: page.toString(),
         limit: limit.toString(),
       });
+      if (filterUserId) params.set("user_id", filterUserId);
       const res = await fetch(`/api/admin/chat-monitoring?${params}`);
       if (res.ok) {
         const data = await res.json();
@@ -530,7 +536,7 @@ export default function ChatMonitoringPage() {
     } finally {
       setLoading(false);
     }
-  }, [tab, statusFilter, severityFilter, page]);
+  }, [tab, statusFilter, severityFilter, page, filterUserId]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -598,9 +604,23 @@ export default function ChatMonitoringPage() {
 
       {/* Page Title */}
       <div className="mb-6">
-        <h2 className="text-2xl font-bold text-[#1a1a1a] tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
-          Chat Monitoring
-        </h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-2xl font-bold text-[#1a1a1a] tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
+            Chat Monitoring
+          </h2>
+          {filterUserId && (
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#486B46]/10 border border-[#486B46]/20">
+              <MessageCircle className="w-3.5 h-3.5 text-[#486B46]" />
+              <span className="text-xs font-semibold text-[#486B46]">Filtré par utilisateur</span>
+              <button
+                onClick={() => { setFilterUserId(null); setPage(1); }}
+                className="w-5 h-5 rounded-md bg-[#486B46]/20 flex items-center justify-center text-[#486B46] hover:bg-[#486B46]/30 transition-all"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            </div>
+          )}
+        </div>
         <p className="text-sm text-[#9CA3AF] mt-1">Surveillez les conversations en temps réel et gérez les alertes de sécurité</p>
       </div>
 

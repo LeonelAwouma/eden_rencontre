@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const tab = searchParams.get("tab") || "conversations";
   const status = searchParams.get("status") || "all";
   const severity = searchParams.get("severity") || "all";
+  const userId = searchParams.get("user_id");
   const page = parseInt(searchParams.get("page") || "1");
   const limit = parseInt(searchParams.get("limit") || "20");
   const offset = (page - 1) * limit;
@@ -63,6 +64,7 @@ export async function GET(req: NextRequest) {
     .range(offset, offset + limit - 1);
 
   if (status !== "all") query = query.eq("status", status);
+  if (userId) query = query.or(`user_a_id.eq.${userId},user_b_id.eq.${userId}`);
 
   const { data, error, count } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
