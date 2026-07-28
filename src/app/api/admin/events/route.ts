@@ -122,6 +122,19 @@ export async function POST(request: NextRequest) {
       ip
     );
 
+    // Create notification for the new event
+    try {
+      await db.from("admin_notifications").insert({
+        type: "event",
+        title: "Nouvel événement créé",
+        message: `L'événement "${title}" a été créé pour le ${new Date(event_date).toLocaleDateString("fr-FR")}.`,
+        link: `/admin/events/${event.id}/edit`,
+        metadata: { event_id: event.id, event_title: title, event_date, status: status || "draft" },
+      });
+    } catch (notifErr) {
+      console.error("Failed to create event notification:", notifErr);
+    }
+
     return NextResponse.json({ ok: true, event });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {

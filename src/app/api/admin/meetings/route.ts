@@ -182,6 +182,19 @@ export async function POST(req: NextRequest) {
       console.error("[Admin Meetings POST] Failed to create notifications:", notifError);
     }
 
+    // Create admin notification for new meeting
+    try {
+      await supabase.from("admin_notifications").insert({
+        type: "meeting",
+        title: "Nouveau rendez-vous planifié",
+        message: `Le rendez-vous "${title}" a été planifié le ${startDate.toLocaleDateString("fr-FR", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" })}.`,
+        link: `/admin/meetings`,
+        metadata: { meeting_id: meeting.id, title, start_time: start_time },
+      });
+    } catch (notifErr) {
+      console.error("Failed to create meeting admin notification:", notifErr);
+    }
+
     return NextResponse.json({
       meeting,
       google_meet_url: googleResult.meetUrl || null,

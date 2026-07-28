@@ -69,6 +69,19 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    // Create admin notification for new testimonial
+    try {
+      await supabase.from("admin_notifications").insert({
+        type: "testimonial",
+        title: "Nouveau témoignage soumis",
+        message: `Un nouveau témoignage a été soumis et attend votre approbation.`,
+        link: "/admin/testimonials",
+        metadata: { testimonial_id: data.id, user_id },
+      });
+    } catch (notifErr) {
+      console.error("Failed to create testimonial notification:", notifErr);
+    }
+
     return NextResponse.json({ testimonial: data }, { status: 201 });
   } catch (err) {
     console.error("Testimonial submission error:", err);

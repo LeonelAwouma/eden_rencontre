@@ -134,6 +134,19 @@ export async function POST(request: NextRequest) {
     // 4. Send confirmation email
     await sendRegistrationReceivedEmail(cleanEmail, name);
 
+    // 5. Create admin notification for new registration
+    try {
+      await db.from("admin_notifications").insert({
+        type: "user",
+        title: "Nouvelle inscription",
+        message: `${name} (${cleanEmail}) s'est inscrit et attend votre validation.`,
+        link: `/admin/users/${userId}`,
+        metadata: { user_id: userId, name, email: cleanEmail, city, country },
+      });
+    } catch (notifErr) {
+      console.error("Failed to create registration notification:", notifErr);
+    }
+
     return NextResponse.json({
       ok: true,
       message: "Inscription réussie. Votre compte est en attente de validation.",
