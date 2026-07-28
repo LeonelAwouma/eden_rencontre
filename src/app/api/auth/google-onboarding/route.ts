@@ -141,6 +141,8 @@ export async function POST(request: NextRequest) {
       country: country,
       city: city,
       marriage_vision: marriageVision || [],
+      status: "pending",
+      onboarding_completed: true,
       updated_at: new Date().toISOString(),
     };
 
@@ -161,7 +163,8 @@ export async function POST(request: NextRequest) {
         country: country,
         city: city,
         marriage_vision: marriageVision || [],
-        onboarding_completed: false,
+        status: "pending",
+        onboarding_completed: true,
         updated_at: new Date().toISOString(),
       };
 

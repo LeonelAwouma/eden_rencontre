@@ -222,8 +222,8 @@ export default function CompleteRegistrationPage() {
         return;
       }
 
-      // Redirect to the standard onboarding questionnaire
-      router.push("/onboarding");
+      // Redirect to pending approval page (admin must approve before user can access)
+      router.push(`/register/pending?email=${encodeURIComponent(userEmail)}`);
     } catch {
       setSaveError("Erreur de connexion au serveur.");
       setSaving(false);
@@ -749,7 +749,7 @@ export default function CompleteRegistrationPage() {
                 <div className="space-y-3 text-center">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Bienvenue dans Eden !</h1>
                   <p className="text-foreground/50 text-base">
-                    Votre profil est maintenant complet. Vous allez être redirigé vers le questionnaire de personnalité pour affiner vos suggestions d'affinité.
+                    Votre profil est maintenant complet. Il sera examiné par notre équipe. Vous recevrez un email de confirmation dès que votre compte sera approuvé.
                   </p>
                 </div>
 
@@ -791,7 +791,7 @@ export default function CompleteRegistrationPage() {
                       Enregistrement…
                     </span>
                   ) : (
-                    <>Continuer vers le questionnaire <Heart className="w-6 h-6 fill-primary-foreground" /></>
+                    <>Envoyer mon profil pour approbation <Heart className="w-6 h-6 fill-primary-foreground" /></>
                   )}
                 </Button>
               </div>
