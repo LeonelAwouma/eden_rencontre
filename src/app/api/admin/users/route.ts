@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     let query = db
       .from("profiles")
       .select("*", { count: "exact" })
-      .order("updated_at", { ascending: false });
+      .order("created_at", { ascending: false, nullsFirst: false });
 
     if (status && status !== "all") {
       query = query.eq("status", status);

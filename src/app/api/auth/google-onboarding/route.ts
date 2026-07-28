@@ -166,6 +166,7 @@ export async function POST(request: NextRequest) {
         marriage_vision: marriageVision || [],
         status: "pending",
         onboarding_completed: true,
+        created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
 
