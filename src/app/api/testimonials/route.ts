@@ -23,25 +23,28 @@ export async function POST(req: NextRequest) {
 
     // Upload image to Supabase Storage if provided
     if (imageFile && imageFile.size > 0) {
-      const supabase = getSupabaseAdmin();
-      const fileExt = imageFile.name.split(".").pop();
-      const fileName = `${user_id}/${Date.now()}.${fileExt}`;
+      try {
+        const supabaseUpload = getSupabaseAdmin();
+        const fileExt = imageFile.name.split(".").pop();
+        const fileName = `${user_id}/${Date.now()}.${fileExt}`;
 
-      const { data: uploadData, error: uploadError } = await supabase.storage
-        .from("testimonials")
-        .upload(fileName, imageFile, {
-          contentType: imageFile.type,
-          upsert: false,
-        });
-
-      if (uploadError) {
-        console.error("Image upload error:", uploadError);
-        // Continue without image rather than failing the whole submission
-      } else if (uploadData) {
-        const { data: urlData } = supabase.storage
+        const { data: uploadData, error: uploadError } = await supabaseUpload.storage
           .from("testimonials")
-          .getPublicUrl(uploadData.path);
-        imageUrl = urlData.publicUrl;
+          .upload(fileName, imageFile, {
+            contentType: imageFile.type,
+            upsert: false,
+          });
+
+        if (uploadError) {
+          console.error("Image upload error (continuing without image):", uploadError.message);
+        } else if (uploadData) {
+          const { data: urlData } = supabaseUpload.storage
+            .from("testimonials")
+            .getPublicUrl(uploadData.path);
+          imageUrl = urlData.publicUrl;
+        }
+      } catch (uploadErr) {
+        console.error("Image upload exception (continuing without image):", uploadErr);
       }
     }
 
