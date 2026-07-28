@@ -1,12 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { Heart, MessageCircleCode, CheckCircle2, MapPin, Calendar, X, Check } from "lucide-react";
-import Image from "next/image";
+import { Heart, MessageCircleCode, CheckCircle2, MapPin, Calendar, X, Check, ImageIcon, Loader2, Clock } from "lucide-react";
+import { getSession } from "@/lib/auth";
 
 interface Testimonial {
   id: number;
@@ -24,6 +24,13 @@ export default function TemoignagesPage() {
   const [activeTab, setActiveTab] = useState<"tous" | "mariage" | "fiancailles">("tous");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const [formData, setFormData] = useState({
     names: "",
     type: "mariage",
@@ -31,7 +38,15 @@ export default function TemoignagesPage() {
     date: "",
     quote: "",
     story: "",
+    rating: "5",
   });
+
+  // Load current user session on mount
+  useEffect(() => {
+    getSession().then((user) => {
+      if (user?.id) setUserId(user.id);
+    });
+  }, []);
 
   const testimonials: Testimonial[] = [
     {
@@ -102,17 +117,84 @@ export default function TemoignagesPage() {
     }
   ];
 
-  const filteredTestimonials = activeTab === "tous" 
-    ? testimonials 
+  const filteredTestimonials = activeTab === "tous"
+    ? testimonials
     : testimonials.filter(t => t.type === activeTab);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    if (!file.type.startsWith("image/")) {
+      setSubmitError("Veuillez sélectionner un fichier image valide.");
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      setSubmitError("L'image ne doit pas dépasser 10 Mo.");
+      return;
+    }
+
+    setImageFile(file);
+    setSubmitError(null);
+
+    // Generate preview
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setImagePreview(ev.target?.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate API call
-    setTimeout(() => {
+    setIsSubmitting(true);
+    setSubmitError(null);
+
+    if (!userId) {
+      setSubmitError("Vous devez être connecté pour soumettre un témoignage.");
+      setIsSubmitting(false);
+      return;
+    }
+
+    try {
+      const body = new FormData();
+      body.append("user_id", userId);
+      body.append("couple_names", formData.names);
+      body.append("title", formData.quote);
+      body.append("content", formData.story);
+      body.append("rating", formData.rating);
+      if (imageFile) {
+        body.append("image", imageFile);
+      }
+
+      const res = await fetch("/api/testimonials", {
+        method: "POST",
+        body,
+      });
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Erreur lors de la soumission");
+      }
+
       setFormSubmitted(true);
-      // Reset form after a delay or preserve state
-    }, 800);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Erreur inconnue";
+      setSubmitError(message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const resetForm = () => {
@@ -123,7 +205,11 @@ export default function TemoignagesPage() {
       date: "",
       quote: "",
       story: "",
+      rating: "5",
     });
+    setImageFile(null);
+    setImagePreview(null);
+    setSubmitError(null);
     setFormSubmitted(false);
     setIsModalOpen(false);
   };
@@ -187,7 +273,7 @@ export default function TemoignagesPage() {
             </div>
 
             {/* Write a testimony button */}
-            <Button 
+            <Button
               onClick={() => setIsModalOpen(true)}
               className="bg-transparent hover:bg-foreground/5 border border-primary text-primary font-bold px-6 h-12 rounded-xl transition-all"
             >
@@ -198,13 +284,13 @@ export default function TemoignagesPage() {
           {/* Testimonials Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {filteredTestimonials.map((t) => (
-              <div 
-                key={t.id} 
+              <div
+                key={t.id}
                 className="bg-card border border-foreground/5 hover:border-primary/20 hover:scale-[1.02] transition-all duration-300 rounded-3xl p-8 flex flex-col justify-between shadow-2xl relative group overflow-hidden"
               >
                 {/* Accent line */}
                 <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-                
+
                 <div className="space-y-6">
                   {/* Rating and Type */}
                   <div className="flex justify-between items-center">
@@ -214,8 +300,8 @@ export default function TemoignagesPage() {
                       ))}
                     </div>
                     <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
-                      t.type === "mariage" 
-                        ? "bg-primary/10 border-primary/20 text-primary" 
+                      t.type === "mariage"
+                        ? "bg-primary/10 border-primary/20 text-primary"
                         : "bg-secondary/10 border-secondary/20 text-secondary"
                     }`}>
                       {t.type === "mariage" ? "Mariage béni" : "Fiançailles"}
@@ -228,7 +314,7 @@ export default function TemoignagesPage() {
                       « {t.quote} »
                     </p>
                     <p className="text-foreground/70 leading-relaxed text-sm italic">
-                      "{t.story}"
+                      &ldquo;{t.story}&rdquo;
                     </p>
                   </div>
                 </div>
@@ -236,9 +322,9 @@ export default function TemoignagesPage() {
                 {/* Couple metadata */}
                 <div className="mt-8 pt-6 border-t border-foreground/5 flex items-center gap-4">
                   <div className="relative w-12 h-12 rounded-full overflow-hidden border border-primary/25">
-                    <img 
-                      src={t.avatar} 
-                      alt={t.names} 
+                    <img
+                      src={t.avatar}
+                      alt={t.names}
                       className="object-cover w-full h-full"
                     />
                   </div>
@@ -266,7 +352,7 @@ export default function TemoignagesPage() {
         {isModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-background/80 backdrop-blur-md animate-in fade-in duration-300">
             <div className="bg-card border border-foreground/10 rounded-[2.5rem] w-full max-w-2xl max-h-[90vh] overflow-y-auto shadow-2xl p-8 sm:p-12 relative">
-              <button 
+              <button
                 onClick={resetForm}
                 className="absolute top-6 right-6 p-2 rounded-full bg-foreground/5 hover:bg-foreground/10 text-foreground/60 hover:text-foreground transition-colors"
               >
@@ -285,12 +371,18 @@ export default function TemoignagesPage() {
                     </p>
                   </div>
 
+                  {submitError && (
+                    <div className="bg-red-500/10 border border-red-500/20 text-red-400 rounded-xl px-4 py-3 text-sm">
+                      {submitError}
+                    </div>
+                  )}
+
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Vos Prénoms</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           required
                           value={formData.names}
                           onChange={(e) => setFormData({...formData, names: e.target.value})}
@@ -300,7 +392,7 @@ export default function TemoignagesPage() {
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Type d'Union</label>
-                        <select 
+                        <select
                           value={formData.type}
                           onChange={(e) => setFormData({...formData, type: e.target.value})}
                           className="w-full bg-muted border border-foreground/10 rounded-xl px-4 py-3 text-foreground focus:border-primary focus:outline-none transition-colors"
@@ -314,8 +406,8 @@ export default function TemoignagesPage() {
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
                         <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Villes & Pays</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           required
                           value={formData.location}
                           onChange={(e) => setFormData({...formData, location: e.target.value})}
@@ -325,8 +417,8 @@ export default function TemoignagesPage() {
                       </div>
                       <div className="space-y-2">
                         <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Date de l'Union</label>
-                        <input 
-                          type="text" 
+                        <input
+                          type="text"
                           required
                           value={formData.date}
                           onChange={(e) => setFormData({...formData, date: e.target.value})}
@@ -338,8 +430,8 @@ export default function TemoignagesPage() {
 
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Titre ou Phrase Clé</label>
-                      <input 
-                        type="text" 
+                      <input
+                        type="text"
                         required
                         value={formData.quote}
                         onChange={(e) => setFormData({...formData, quote: e.target.value})}
@@ -350,7 +442,7 @@ export default function TemoignagesPage() {
 
                     <div className="space-y-2">
                       <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Votre Témoignage</label>
-                      <textarea 
+                      <textarea
                         required
                         rows={4}
                         value={formData.story}
@@ -360,12 +452,79 @@ export default function TemoignagesPage() {
                       />
                     </div>
 
-                    <Button 
-                      type="submit" 
-                      className="w-full bg-primary text-primary-foreground font-black h-14 rounded-xl text-base shadow-xl shadow-primary/10 hover:bg-primary/90 transition-all"
+                    {/* Image Upload with Preview */}
+                    <div className="space-y-2">
+                      <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Photo du couple (optionnel)</label>
+
+                      {imagePreview ? (
+                        <div className="relative rounded-2xl overflow-hidden border border-primary/20 bg-foreground/5">
+                          {/* Full image preview */}
+                          <div className="relative w-full aspect-[4/3]">
+                            <img
+                              src={imagePreview}
+                              alt="Aperçu de la photo du couple"
+                              className="w-full h-full object-contain bg-black/5"
+                            />
+                          </div>
+                          <div className="p-3 flex items-center justify-between bg-foreground/5">
+                            <p className="text-xs text-foreground/50 truncate">
+                              {imageFile?.name}
+                            </p>
+                            <button
+                              type="button"
+                              onClick={removeImage}
+                              className="p-1.5 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500/20 transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => fileInputRef.current?.click()}
+                          className="border-2 border-dashed border-foreground/10 hover:border-primary/30 rounded-2xl p-8 flex flex-col items-center justify-center gap-3 cursor-pointer transition-colors bg-foreground/[0.02] hover:bg-foreground/[0.04]"
+                        >
+                          <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center">
+                            <ImageIcon className="w-6 h-6 text-primary" />
+                          </div>
+                          <div className="text-center">
+                            <p className="text-sm font-medium text-foreground/60">
+                              Cliquez pour ajouter une photo
+                            </p>
+                            <p className="text-xs text-foreground/40 mt-1">
+                              JPG, PNG ou WebP · Max 10 Mo
+                            </p>
+                          </div>
+                        </div>
+                      )}
+
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        onChange={handleImageChange}
+                        className="hidden"
+                      />
+                    </div>
+
+                    <Button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="w-full bg-primary text-primary-foreground font-black h-14 rounded-xl text-base shadow-xl shadow-primary/10 hover:bg-primary/90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     >
-                      Soumettre notre histoire
+                      {isSubmitting ? (
+                        <span className="flex items-center gap-2">
+                          <Loader2 className="w-5 h-5 animate-spin" />
+                          Envoi en cours...
+                        </span>
+                      ) : (
+                        "Soumettre notre histoire"
+                      )}
                     </Button>
+
+                    <p className="text-center text-xs text-foreground/40">
+                      Votre témoignage sera examiné par notre comité avant publication.
+                    </p>
                   </form>
                 </div>
               ) : (
@@ -376,14 +535,18 @@ export default function TemoignagesPage() {
                   <div className="space-y-3">
                     <h2 className="font-headline text-3xl font-bold text-foreground">Merci pour votre témoignage !</h2>
                     <p className="text-foreground/60 max-w-md mx-auto text-sm leading-relaxed">
-                      Votre histoire d'alliance a été envoyée. Après validation par notre comité éthique, elle sera publiée pour témoigner de la fidélité de Dieu sur Eden Connexion.
+                      Votre témoignage a été soumis avec succès et est actuellement <strong className="text-[#FF9E45]">en attente de validation</strong> par notre comité éthique. Vous serez notifié(e) dès qu'il sera approuvé et publié.
                     </p>
+                  </div>
+                  <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF9E45]/10 border border-[#FF9E45]/20 rounded-xl text-[#FF9E45] text-sm font-medium">
+                    <Clock className="w-4 h-4" />
+                    En attente d'approbation
                   </div>
                   <div className="pt-4 max-w-sm mx-auto text-xs text-primary/70 italic bg-primary/5 p-4 rounded-xl border border-primary/10">
                     « Que tout ce que vous faites soit fait avec amour. » <br />
                     <span className="font-bold font-headline block mt-1">— 1 Corinthiens 16:14</span>
                   </div>
-                  <Button 
+                  <Button
                     onClick={resetForm}
                     className="bg-primary text-primary-foreground font-bold px-8 h-12 rounded-xl mt-6"
                   >

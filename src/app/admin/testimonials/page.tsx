@@ -13,7 +13,6 @@ import {
   ChevronRight,
   Eye,
   Loader2,
-  Flag,
   Edit3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -43,6 +42,7 @@ interface Testimonial {
   published_at: string | null;
   is_featured: boolean;
   match_id: string | null;
+  image_url: string | null;
   created_at: string;
   user: TestimonialUser;
   reviewer?: { id: string; name: string; email: string } | null;
@@ -229,6 +229,17 @@ export default function TestimonialsPage() {
                   </div>
                 </div>
 
+                {/* Image thumbnail */}
+                {t.image_url && (
+                  <div className="w-16 h-16 rounded-lg overflow-hidden border border-[#E5E7EB] shrink-0">
+                    <img
+                      src={t.image_url}
+                      alt="Photo du couple"
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                )}
+
                 {/* Content preview */}
                 <div className="flex-1 min-w-0">
                   {t.title && <p className="text-sm font-semibold text-[#374151] mb-1">{t.title}</p>}
@@ -370,6 +381,20 @@ export default function TestimonialsPage() {
                   <p className="text-xs text-[#9CA3AF]">{selectedTestimonial.user?.city}, {selectedTestimonial.user?.country}</p>
                 </div>
               </div>
+
+              {/* Uploaded image */}
+              {selectedTestimonial.image_url && (
+                <div>
+                  <p className="text-xs text-[#9CA3AF] mb-1">Photo du couple</p>
+                  <div className="rounded-xl overflow-hidden border border-[#E5E7EB]">
+                    <img
+                      src={selectedTestimonial.image_url}
+                      alt="Photo du couple"
+                      className="w-full max-h-80 object-contain bg-[#F9FAFB]"
+                    />
+                  </div>
+                </div>
+              )}
 
               {selectedTestimonial.couple_names && (
                 <div>
