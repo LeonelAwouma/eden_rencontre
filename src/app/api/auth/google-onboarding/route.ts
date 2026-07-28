@@ -42,39 +42,66 @@ export async function POST(request: NextRequest) {
     // Get the authenticated user from the Authorization header or cookie
     const db = getSupabaseAdmin();
 
-    // Extract the access token from the request cookies
-    const accessToken = request.cookies.get("sb-access-token")?.value
-      || request.cookies.get("supabase-auth-token")?.value;
-
-    // Try to get user from various Supabase cookie formats
     let userId: string | null = null;
 
-    // Try standard Supabase cookie format
-    const allCookies = request.cookies.getAll();
-    for (const cookie of allCookies) {
-      if (cookie.name.startsWith("sb-") && cookie.name.endsWith("-auth-token")) {
-        try {
-          const parsed = JSON.parse(cookie.value);
-          if (parsed.access_token) {
-            const { data: { user } } = await db.auth.getUser(parsed.access_token);
-            if (user) {
-              userId = user.id;
-              break;
-            }
-          }
-        } catch {
-          // Try next cookie
-        }
-      }
+    // Priority 1: Authorization header (Bearer token)
+    const authHeader = request.headers.get("authorization");
+    if (authHeader?.startsWith("Bearer ")) {
+      const token = authHeader.substring(7);
+      const { data: { user } } = await db.auth.getUser(token);
+      if (user) userId = user.id;
     }
 
-    // Fallback: try to get from Authorization header
+    // Priority 2: Extract from Supabase cookies
     if (!userId) {
-      const authHeader = request.headers.get("authorization");
-      if (authHeader?.startsWith("Bearer ")) {
-        const token = authHeader.substring(7);
-        const { data: { user } } = await db.auth.getUser(token);
-        if (user) userId = user.id;
+      const allCookies = request.cookies.getAll();
+
+      // Strategy A: Look for Supabase v2 SSR split cookies (sb-<ref>-auth-token.0 / .1)
+      const authCookiePrefix = allCookies.find((c) =>
+        c.name.startsWith("sb-") && c.name.includes("-auth-token")
+      );
+
+      if (authCookiePrefix) {
+        // Get the base name (without .0 or .1 suffix)
+        const baseName = authCookiePrefix.name.replace(/\.\d+$/, "");
+        const part0 = request.cookies.get(`${baseName}.0`)?.value;
+        const part1 = request.cookies.get(`${baseName}.1`)?.value;
+        const baseValue = request.cookies.get(baseName)?.value;
+
+        // Try to reconstruct the full cookie value
+        const fullValue = [part0, part1].filter(Boolean).join("") || baseValue || "";
+
+        if (fullValue) {
+          try {
+            const parsed = JSON.parse(fullValue);
+            if (parsed.access_token) {
+              const { data: { user } } = await db.auth.getUser(parsed.access_token);
+              if (user) userId = user.id;
+            }
+          } catch {
+            // If not valid JSON, try the raw value as a token itself
+            try {
+              const { data: { user } } = await db.auth.getUser(fullValue);
+              if (user) userId = user.id;
+            } catch {
+              // Not a valid token
+            }
+          }
+        }
+      }
+
+      // Strategy B: Look for simple sb-access-token / supabase-auth-token cookies
+      if (!userId) {
+        const simpleToken = request.cookies.get("sb-access-token")?.value
+          || request.cookies.get("supabase-auth-token")?.value;
+        if (simpleToken) {
+          try {
+            const { data: { user } } = await db.auth.getUser(simpleToken);
+            if (user) userId = user.id;
+          } catch {
+            // Not a valid token
+          }
+        }
       }
     }
 

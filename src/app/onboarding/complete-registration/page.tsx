@@ -16,6 +16,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { getSession, ageFromBirthDate, MIN_AGE } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
 import { MARRIAGE_VALUES } from "@/lib/values";
 import { Monogram } from "@/components/ornaments";
 import {
@@ -184,9 +185,20 @@ export default function CompleteRegistrationPage() {
     setSaving(true);
 
     try {
+      // Get the current Supabase session to include the access token
+      const headers: Record<string, string> = {
+        "Content-Type": "application/json",
+      };
+      if (supabase) {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.access_token) {
+          headers["Authorization"] = `Bearer ${session.access_token}`;
+        }
+      }
+
       const res = await fetch("/api/auth/google-onboarding", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify({
           gender: formData.gender,
           birthDate: formData.birthDate,
