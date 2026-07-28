@@ -20,19 +20,16 @@ export async function GET(req: NextRequest) {
 
   const supabase = getSupabaseAdmin();
 
+  // Query the REAL messages table
   let query = supabase
-    .from("chat_messages")
+    .from("messages")
     .select(`
       id,
       conversation_id,
       sender_id,
       content,
-      message_type,
-      is_flagged,
-      flag_reason,
-      is_deleted,
-      created_at,
-      sender:profiles!chat_messages_sender_id_fkey(id, name, email, avatar_url)
+      image_url,
+      created_at
     `)
     .eq("conversation_id", conversationId)
     .order("created_at", { ascending: true })
@@ -42,25 +39,84 @@ export async function GET(req: NextRequest) {
     query = query.gt("created_at", since);
   }
 
-  const { data, error } = await query;
+  const { data: messages, error } = await query;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  // Also fetch conversation details for the header
-  const { data: conversation, error: convError } = await supabase
-    .from("chat_conversations")
-    .select(`
-      *,
-      user_a:profiles!chat_conversations_user_a_id_fkey(id, name, email, avatar_url, status, subscription_plan),
-      user_b:profiles!chat_conversations_user_b_id_fkey(id, name, email, avatar_url, status, subscription_plan)
-    `)
-    .eq("id", conversationId)
-    .single();
+  // Get unique sender IDs and fetch their profiles
+  const senderIds = [...new Set((messages || []).map(m => m.sender_id))];
+  const { data: senders } = await supabase
+    .from("profiles")
+    .select("id, name, email, avatar_url")
+    .in("id", senderIds);
 
-  if (convError) return NextResponse.json({ error: convError.message }, { status: 500 });
+  const senderMap: Record<string, { id: string; name: string; email: string; avatar_url: string | null }> = {};
+  for (const s of senders || []) {
+    senderMap[s.id] = {
+      id: s.id,
+      name: s.name || "Utilisateur",
+      email: s.email || "",
+      avatar_url: s.avatar_url || null,
+    };
+  }
+
+  // Enrich messages with sender info
+  const enriched = (messages || []).map(msg => ({
+    id: msg.id,
+    conversation_id: msg.conversation_id,
+    sender_id: msg.sender_id,
+    content: msg.content || "",
+    image_url: msg.image_url || null,
+    message_type: msg.image_url ? "image" : "text",
+    is_flagged: false,
+    flag_reason: null,
+    is_deleted: false,
+    created_at: msg.created_at,
+    sender: senderMap[msg.sender_id] || {
+      id: msg.sender_id,
+      name: "Utilisateur",
+      email: "",
+      avatar_url: null,
+    },
+  }));
+
+  // Fetch conversation details (members)
+  const { data: members } = await supabase
+    .from("conversation_members")
+    .select("user_id, last_read_at")
+    .eq("conversation_id", conversationId);
+
+  const memberIds = (members || []).map(m => m.user_id);
+  const { data: memberProfiles } = await supabase
+    .from("profiles")
+    .select("id, name, email, avatar_url, status, subscription_plan")
+    .in("id", memberIds);
+
+  const conversation = {
+    id: conversationId,
+    user_a_id: memberIds[0] || null,
+    user_b_id: memberIds[1] || null,
+    status: "active",
+    user_a: memberProfiles?.[0] ? {
+      id: memberProfiles[0].id,
+      name: memberProfiles[0].name || "Utilisateur",
+      email: memberProfiles[0].email || "",
+      avatar_url: memberProfiles[0].avatar_url || null,
+      status: (memberProfiles[0] as Record<string, unknown>).status as string || "approved",
+      subscription_plan: (memberProfiles[0] as Record<string, unknown>).subscription_plan as string || "free",
+    } : { id: memberIds[0] || "", name: "Inconnu", email: "", avatar_url: null, status: "unknown", subscription_plan: "free" },
+    user_b: memberProfiles?.[1] ? {
+      id: memberProfiles[1].id,
+      name: memberProfiles[1].name || "Utilisateur",
+      email: memberProfiles[1].email || "",
+      avatar_url: memberProfiles[1].avatar_url || null,
+      status: (memberProfiles[1] as Record<string, unknown>).status as string || "approved",
+      subscription_plan: (memberProfiles[1] as Record<string, unknown>).subscription_plan as string || "free",
+    } : { id: memberIds[1] || "", name: "Inconnu", email: "", avatar_url: null, status: "unknown", subscription_plan: "free" },
+  };
 
   return NextResponse.json({
-    messages: data || [],
+    messages: enriched,
     conversation,
-    total: data?.length || 0,
+    total: enriched.length,
   });
 }

@@ -375,7 +375,14 @@ function ConversationViewer({
                         <span>Ce message a été supprimé par un administrateur</span>
                       ) : (
                         <>
-                          <p>{msg.content}</p>
+                          {(msg as { image_url?: string }).image_url && (
+                            <img
+                              src={(msg as { image_url?: string }).image_url!}
+                              alt="Image partagée"
+                              className="max-w-[200px] max-h-[200px] rounded-lg mb-1 object-cover"
+                            />
+                          )}
+                          {msg.content && <p>{msg.content}</p>}
                           {msg.is_flagged && msg.flag_reason && (
                             <p className="text-[10px] text-[#F56565] mt-1 font-medium">
                               ⚠ {msg.flag_reason}
