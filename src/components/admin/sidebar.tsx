@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import {
@@ -94,6 +94,7 @@ const NAV_ITEMS = [
 
 export function Sidebar({ isOpen, onClose, onLogout, adminName }: SidebarProps) {
   const pathname = usePathname();
+  const searchParams = useSearchParams();
 
   return (
     <>
@@ -153,11 +154,25 @@ export function Sidebar({ isOpen, onClose, onLogout, adminName }: SidebarProps) 
             Navigation
           </p>
           {NAV_ITEMS.map((item) => {
-            const isActive =
-              item.href === "/admin/dashboard"
-                ? pathname === "/admin/dashboard"
-                : pathname.startsWith(item.href.split("?")[0]) &&
-                  item.href !== "/admin/dashboard";
+            const itemPath = item.href.split("?")[0];
+            const itemSearchParams = new URL(item.href, "http://localhost").searchParams;
+
+            let isActive: boolean;
+            if (item.href === "/admin/dashboard") {
+              isActive = pathname === "/admin/dashboard";
+            } else if (itemSearchParams.has("status")) {
+              // Items with query params (e.g., Vérifications) require exact match on both path AND param
+              isActive = pathname === itemPath && searchParams.get("status") === itemSearchParams.get("status");
+            } else {
+              // Items without query params are active only when pathname matches AND no conflicting query param
+              // For /admin/users, it's active only when there's no status=pending param
+              const hasStatusParam = searchParams.has("status");
+              if (itemPath === "/admin/users" && hasStatusParam) {
+                isActive = false;
+              } else {
+                isActive = pathname.startsWith(itemPath);
+              }
+            }
 
             return (
               <Link
