@@ -45,17 +45,17 @@ CREATE POLICY testimonials_public_select ON public.testimonials
   FOR SELECT USING (status = 'approved');
 
 -- Create storage bucket for testimonial images (run separately if needed)
--- INSERT INTO storage.buckets (id, name, public)
--- VALUES ('testimonials', 'testimonials', true)
--- ON CONFLICT (id) DO NOTHING;
+ INSERT INTO storage.buckets (id, name, public)
+VALUES ('testimonials', 'testimonials', true)
+ON CONFLICT (id) DO NOTHING;
 
 -- Storage policy for testimonials bucket
--- CREATE POLICY "Allow authenticated uploads to testimonials"
--- ON storage.objects FOR INSERT
--- TO authenticated
--- WITH CHECK (bucket_id = 'testimonials');
+CREATE POLICY "Allow authenticated uploads to testimonials"
+  ON storage.objects FOR INSERT
+  TO authenticated
+  WITH CHECK (bucket_id = 'testimonials');
 
--- CREATE POLICY "Public read access to testimonials images"
--- ON storage.objects FOR SELECT
--- TO public
--- USING (bucket_id = 'testimonials');
+CREATE POLICY "Public read access to testimonials images"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'testimonials');

@@ -1,16 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { cookies } from "next/headers";
+import { getAdminSession } from "@/lib/admin-auth";
 
 async function verifyAdmin() {
-  const cookieStore = await cookies();
-  const session = cookieStore.get("admin_session");
-  if (!session) return null;
-  try {
-    return JSON.parse(session.value);
-  } catch {
-    return null;
-  }
+  const session = await getAdminSession();
+  return session;
 }
 
 export async function GET(req: NextRequest) {
