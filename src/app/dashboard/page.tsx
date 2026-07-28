@@ -227,6 +227,9 @@ export default function DashboardPage() {
   const [composerType, setComposerType] = useState<ComposerType>("Publication");
   const [composerText, setComposerText] = useState("");
   const [composerImage, setComposerImage] = useState<string | null>(null);
+  const [composerImageFile, setComposerImageFile] = useState<File | null>(null);
+  const [testimonialSubmitting, setTestimonialSubmitting] = useState(false);
+  const [testimonialSubmitted, setTestimonialSubmitted] = useState(false);
   const composerImageRef = useRef<HTMLInputElement | null>(null);
   const [showMyPosts, setShowMyPosts] = useState(false);
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
@@ -461,16 +464,58 @@ export default function DashboardPage() {
     const file = e.target.files?.[0]; e.target.value = "";
     if (!file) return;
     if (!file.type.startsWith("image/")) { toast({ title: "Format non supporté", variant: "destructive" }); return; }
-    if (file.size > 5 * 1024 * 1024) { toast({ title: "Image trop lourde", variant: "destructive" }); return; }
+    if (file.size > 10 * 1024 * 1024) { toast({ title: "Image trop lourde (max 10 Mo)", variant: "destructive" }); return; }
+    setComposerImageFile(file);
     const reader = new FileReader();
     reader.onload = () => { setComposerImage(reader.result as string); setComposerOpen(true); };
     reader.readAsDataURL(file);
   };
 
-  const resetComposer = () => { setComposerOpen(false); setComposerText(""); setComposerImage(null); setComposerType("Publication"); };
+  const resetComposer = () => {
+    setComposerOpen(false);
+    setComposerText("");
+    setComposerImage(null);
+    setComposerImageFile(null);
+    setComposerType("Publication");
+    setTestimonialSubmitted(false);
+    setTestimonialSubmitting(false);
+  };
 
-  const publishPost = () => {
+  const publishPost = async () => {
     if (!composerText.trim() && !composerImage) { toast({ title: "Rien à publier", variant: "destructive" }); return; }
+
+    // For "Témoignage" type: submit to the API with pending_review status
+    if (composerType === "Témoignage" && user?.id) {
+      setTestimonialSubmitting(true);
+      try {
+        const body = new FormData();
+        body.append("user_id", user.id);
+        body.append("couple_names", displayName);
+        body.append("content", composerText.trim());
+        body.append("rating", "5");
+        if (composerImageFile) {
+          body.append("image", composerImageFile);
+        }
+
+        const res = await fetch("/api/testimonials", { method: "POST", body });
+        if (!res.ok) {
+          const data = await res.json();
+          throw new Error(data.error || "Erreur lors de la soumission");
+        }
+
+        setTestimonialSubmitted(true);
+        setTestimonialSubmitting(false);
+        toast({ title: "Témoignage soumis 🙏", description: "Il sera visible après approbation par un administrateur." });
+        return;
+      } catch (err) {
+        setTestimonialSubmitting(false);
+        const message = err instanceof Error ? err.message : "Erreur inconnue";
+        toast({ title: "Échec de la soumission", description: message, variant: "destructive" });
+        return;
+      }
+    }
+
+    // For other types: local feed post
     const newPost: FeedPost = {
       id: `post-${Date.now()}`, type: composerType, name: displayName, avatar: myAvatar ?? null,
       when: "À l'instant", text: composerText.trim(), image: composerImage, likes: 0, comments: 0, mine: true, createdAt: Date.now(),
@@ -740,45 +785,76 @@ export default function DashboardPage() {
                     </Avatar>
                     {composerOpen ? (
                       <div className="flex-1 min-w-0 space-y-3">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          {(["Publication", "Témoignage", "Prière"] as ComposerType[]).map((t) => (
-                            <button key={t} onClick={() => setComposerType(t)}
-                              className="px-3 h-7 rounded-full text-[11px] font-bold transition-colors"
-                              style={composerType === t
-                                ? { background: "#486B46", color: "#FFFFFF" }
-                                : { border: "1px solid #C6D4C0", color: "#486B46" }}>
-                              {t}
-                            </button>
-                          ))}
-                        </div>
-                        <Textarea autoFocus value={composerText} onChange={(e) => setComposerText(e.target.value)}
-                          placeholder="Partagez une parole, un témoignage, une intention de prière…"
-                          className="min-h-[88px] rounded-xl text-sm resize-none"
-                          style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
-                        {composerImage && (
-                          <div className="relative rounded-xl overflow-hidden" style={{ border: "1px solid #E8E5E0" }}>
-                            <img src={composerImage} alt="Aperçu" className="w-full max-h-60 object-cover" />
-                            <button onClick={() => setComposerImage(null)} className="absolute top-2 right-2 w-8 h-8 rounded-full backdrop-blur flex items-center justify-center"
-                              style={{ background: "rgba(250,249,246,0.8)" }}>
-                              <X className="w-4 h-4" />
+                        {testimonialSubmitted ? (
+                          /* Success state for testimonial submission */
+                          <div className="text-center py-6 space-y-4">
+                            <div className="w-14 h-14 rounded-full flex items-center justify-center mx-auto" style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}>
+                              <CheckCircle2 className="w-7 h-7" style={{ color: "#486B46" }} />
+                            </div>
+                            <div className="space-y-1">
+                              <p className="font-headline text-lg font-bold" style={{ color: "#2F2F2F" }}>Merci pour votre témoignage !</p>
+                              <p className="text-sm" style={{ color: "#777777" }}>
+                                Votre témoignage est <strong style={{ color: "#C6A15B" }}>en attente de validation</strong> par notre comité. Il sera publié dès approbation.
+                              </p>
+                            </div>
+                            <button onClick={resetComposer} className="h-10 px-6 rounded-xl text-sm font-bold transition-colors" style={{ background: "#486B46", color: "#FFFFFF" }}>
+                              Fermer
                             </button>
                           </div>
+                        ) : (
+                          <>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {(["Publication", "Témoignage", "Prière"] as ComposerType[]).map((t) => (
+                                <button key={t} onClick={() => setComposerType(t)}
+                                  className="px-3 h-7 rounded-full text-[11px] font-bold transition-colors"
+                                  style={composerType === t
+                                    ? { background: "#486B46", color: "#FFFFFF" }
+                                    : { border: "1px solid #C6D4C0", color: "#486B46" }}>
+                                  {t}
+                                </button>
+                              ))}
+                            </div>
+                            <Textarea autoFocus value={composerText} onChange={(e) => setComposerText(e.target.value)}
+                              placeholder={composerType === "Témoignage" ? "Racontez comment vous vous êtes rencontrés et les bénédictions qui en découlent…" : "Partagez une parole, un témoignage, une intention de prière…"}
+                              className="min-h-[88px] rounded-xl text-sm resize-none"
+                              style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                            {composerImage && (
+                              <div className="relative rounded-xl overflow-hidden" style={{ border: "1px solid #E8E5E0" }}>
+                                <img src={composerImage} alt="Aperçu" className="w-full max-h-80 object-contain" style={{ background: "#FAF9F6" }} />
+                                <button onClick={() => { setComposerImage(null); setComposerImageFile(null); }} className="absolute top-2 right-2 w-8 h-8 rounded-full backdrop-blur flex items-center justify-center"
+                                  style={{ background: "rgba(250,249,246,0.8)" }}>
+                                  <X className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between gap-2">
+                              <button onClick={() => composerImageRef.current?.click()}
+                                className="flex items-center gap-2 h-9 px-3 rounded-lg text-xs font-bold transition-colors"
+                                style={{ color: "#777777" }}>
+                                <ImagePlus className="w-4 h-4" style={{ color: "#486B46" }} /> {composerImage ? "Changer" : "Photo"}
+                              </button>
+                              <div className="flex items-center gap-2">
+                                <button onClick={resetComposer} className="h-9 px-4 rounded-lg text-sm font-bold transition-colors" style={{ color: "#777777" }}>Annuler</button>
+                                <Button onClick={publishPost} disabled={(!composerText.trim() && !composerImage) || testimonialSubmitting}
+                                  className="h-9 px-5 font-bold rounded-lg gap-2 text-sm disabled:opacity-50"
+                                  style={{ background: "#486B46", color: "#FFFFFF" }}>
+                                  {testimonialSubmitting ? (
+                                    <><Loader2 className="w-4 h-4 animate-spin" /> Envoi…</>
+                                  ) : composerType === "Témoignage" ? (
+                                    <>Soumettre <Send className="w-4 h-4" /></>
+                                  ) : (
+                                    <>Publier <Send className="w-4 h-4" /></>
+                                  )}
+                                </Button>
+                              </div>
+                            </div>
+                            {composerType === "Témoignage" && (
+                              <p className="text-[11px]" style={{ color: "#9CA3AF" }}>
+                                Votre témoignage sera examiné par notre comité avant publication.
+                              </p>
+                            )}
+                          </>
                         )}
-                        <div className="flex items-center justify-between gap-2">
-                          <button onClick={() => composerImageRef.current?.click()}
-                            className="flex items-center gap-2 h-9 px-3 rounded-lg text-xs font-bold transition-colors"
-                            style={{ color: "#777777" }}>
-                            <ImagePlus className="w-4 h-4" style={{ color: "#486B46" }} /> {composerImage ? "Changer" : "Photo"}
-                          </button>
-                          <div className="flex items-center gap-2">
-                            <button onClick={resetComposer} className="h-9 px-4 rounded-lg text-sm font-bold transition-colors" style={{ color: "#777777" }}>Annuler</button>
-                            <Button onClick={publishPost} disabled={!composerText.trim() && !composerImage}
-                              className="h-9 px-5 font-bold rounded-lg gap-2 text-sm"
-                              style={{ background: "#486B46", color: "#FFFFFF" }}>
-                              Publier <Send className="w-4 h-4" />
-                            </Button>
-                          </div>
-                        </div>
                       </div>
                     ) : (
                       <button onClick={() => openComposer("Publication")}
