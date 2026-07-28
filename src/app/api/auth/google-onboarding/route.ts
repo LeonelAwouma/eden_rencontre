@@ -132,39 +132,41 @@ export async function POST(request: NextRequest) {
     }
 
     // Update the profile with the collected information
+    // Note: discovery_source is stored in auth metadata only (column may not exist in profiles table)
+    const profileData: Record<string, any> = {
+      gender: gender,
+      birth_date: birthDate,
+      civil_status: civilStatus,
+      region: region,
+      country: country,
+      city: city,
+      marriage_vision: marriageVision || [],
+      updated_at: new Date().toISOString(),
+    };
+
     const { error: profileError } = await db
       .from("profiles")
-      .update({
-        gender: gender,
-        birth_date: birthDate,
-        discovery_source: discoverySource || null,
-        civil_status: civilStatus,
-        region: region,
-        country: country,
-        city: city,
-        marriage_vision: marriageVision || [],
-        updated_at: new Date().toISOString(),
-      })
+      .update(profileData)
       .eq("id", userId);
 
     if (profileError) {
       console.error("[Google Onboarding] Profile update error:", profileError.message);
       // Try upsert in case profile doesn't exist yet
+      const upsertData: Record<string, any> = {
+        id: userId,
+        gender: gender,
+        birth_date: birthDate,
+        civil_status: civilStatus,
+        region: region,
+        country: country,
+        city: city,
+        marriage_vision: marriageVision || [],
+        onboarding_completed: false,
+        updated_at: new Date().toISOString(),
+      };
+
       const { error: upsertError } = await db.from("profiles").upsert(
-        {
-          id: userId,
-          gender: gender,
-          birth_date: birthDate,
-          discovery_source: discoverySource || null,
-          civil_status: civilStatus,
-          region: region,
-          country: country,
-          city: city,
-          marriage_vision: marriageVision || [],
-          status: "pending",
-          onboarding_completed: false,
-          updated_at: new Date().toISOString(),
-        },
+        upsertData,
         { onConflict: "id" }
       );
 
