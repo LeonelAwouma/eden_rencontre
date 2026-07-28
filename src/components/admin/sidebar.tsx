@@ -41,11 +41,6 @@ const NAV_ITEMS = [
     icon: Users,
   },
   {
-    label: "Vérifications",
-    href: "/admin/users?status=pending",
-    icon: ShieldCheck,
-  },
-  {
     label: "Matching",
     href: "/admin/matching",
     icon: Heart,
