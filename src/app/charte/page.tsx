@@ -39,7 +39,7 @@ export default function ChartePage() {
                 <div className="garden-card p-8 rounded-2xl">
                   <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">Article 2 — Autorisation expresse de vérification (Accord d&#39;Audit Profil)</h3>
                   <p className="text-muted-foreground leading-relaxed font-body">
-                    Par la signature de la présente charte, l&#39;utilisateur donne son accord formel et exprès aux administrateurs de la plateforme pour procéder à la vérification de l&#39;ensemble des informations fournies. Les administrateurs se réservent le droit d&#39;exiger des pièces justificatives (copie de la CNI, justificatifs professionnels/diplômes) ou de contacter les référents pastoraux et ecclésiaux mentionnés par l&#39;utilisateur pour confirmer son statut et son engagement chrétien.
+                    Par la signature de la présente charte, l&#39;utilisateur donne son accord formel et exprès aux administrateurs de la plateforme pour procéder à la vérification de l&#39;ensemble des informations fournies. Les administrateurs se réservent le droit d&#39;exiger des pièces justificatives (copie de la CNI, justificatifs professionnels) ou de contacter les référents pastoraux et ecclésiaux mentionnés par l&#39;utilisateur pour confirmer son statut et son engagement chrétien.
                   </p>
                 </div>
               </div>
@@ -109,6 +109,9 @@ export default function ChartePage() {
                   <li>Une suspension temporaire du compte</li>
                   <li>La suppression définitive du compte en cas de récidive</li>
                 </ul>
+                <p className="text-muted-foreground leading-relaxed font-body mt-4">
+                  indépendamment des poursuites légales en vigueur en cas de fraude ou de cyberharcèlement.
+                </p>
               </div>
             </div>
           </div>
