@@ -27,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PROFILES } from "@/lib/profiles";
 import { MARRIAGE_VALUES, getValue } from "@/lib/values";
 import { computeMatchScore, rankByMatch } from "@/lib/matching";
-import { getMyOnboarding } from "@/lib/onboarding";
+import { getMyOnboarding, QUESTIONNAIRES, saveOnboarding, type Questionnaire, type Field } from "@/lib/onboarding";
 import { supabase } from "@/lib/supabase";
 import {
   upsertMyProfile, searchUsers, listConversations, getMessages,
@@ -216,6 +216,11 @@ export default function DashboardPage() {
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [profileForm, setProfileForm] = useState({ name: "", city: "", country: "", civilStatus: "", profession: "", bio: "", marriageVision: [] as string[] });
+  const [questionnaireAnswers, setQuestionnaireAnswers] = useState<Record<string, any>>({});
+  const [editingQuestionnaire, setEditingQuestionnaire] = useState<string | null>(null);
+  const [localQAnswers, setLocalQAnswers] = useState<Record<string, any>>({});
+  const [savingQuestionnaire, setSavingQuestionnaire] = useState(false);
+  const [expandedQuestionnaire, setExpandedQuestionnaire] = useState<string | null>(null);
   const chatChannelRef = useRef<any>(null);
   const typingTimeoutRef = useRef<any>(null);
   const lastTypingRef = useRef(0);
@@ -589,7 +594,8 @@ export default function DashboardPage() {
       else loadSocial();
     });
     loadConversations();
-    getMyOnboarding().then(({ completed }) => {
+    getMyOnboarding().then(({ answers, completed }) => {
+      setQuestionnaireAnswers(answers);
       const skipped = typeof window !== "undefined" && localStorage.getItem("eden_onboarding_skipped") === "1";
       if (!completed && !skipped) router.replace("/onboarding");
     });
@@ -669,6 +675,36 @@ export default function DashboardPage() {
   }, [meId]);
 
   const handleLogout = async () => { await logout(); router.push("/login"); };
+
+  // ── Questionnaire handlers ──
+  const startEditQuestionnaire = (qKey: string) => {
+    setLocalQAnswers({ ...questionnaireAnswers });
+    setEditingQuestionnaire(qKey);
+  };
+
+  const handleQFieldChange = (fieldId: string, value: any) => {
+    setLocalQAnswers(prev => ({ ...prev, [fieldId]: value }));
+  };
+
+  const handleQMultiToggle = (fieldId: string, option: string) => {
+    const current: string[] = localQAnswers[fieldId] || [];
+    handleQFieldChange(fieldId, current.includes(option) ? current.filter(x => x !== option) : [...current, option]);
+  };
+
+  const handleSaveQuestionnaire = async () => {
+    setSavingQuestionnaire(true);
+    try {
+      const result = await saveOnboarding(localQAnswers, true);
+      if (!result.ok) throw new Error(result.error);
+      setQuestionnaireAnswers(localQAnswers);
+      setEditingQuestionnaire(null);
+      toast({ title: "Parcours de foi mis à jour 🙏" });
+    } catch (e: any) {
+      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+    } finally {
+      setSavingQuestionnaire(false);
+    }
+  };
 
   // ═══════════════════════════════════════════════════════════
   // RENDER
@@ -1801,6 +1837,133 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+            {/* Questionnaire / Parcours de Foi */}
+            {!editingProfile && QUESTIONNAIRES.map((q) => {
+              const isExpanded = expandedQuestionnaire === q.key;
+              const isEditing = editingQuestionnaire === q.key;
+              const answers = isEditing ? localQAnswers : questionnaireAnswers;
+              const allFields = q.sections.flatMap(s => s.fields);
+              const filled = allFields.filter(f => {
+                const v = answers[f.id];
+                return v && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "");
+              }).length;
+              return (
+                <div key={q.key} className="rounded-2xl overflow-hidden"
+                  style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
+                  <button onClick={() => setExpandedQuestionnaire(isExpanded ? null : q.key)}
+                    className="w-full flex items-center justify-between p-5 text-left hover:opacity-80 transition-opacity">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}>
+                        <BookOpen className="w-5 h-5" style={{ color: "#486B46" }} />
+                      </div>
+                      <div>
+                        <h4 className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>{q.title}</h4>
+                        <p className="text-xs" style={{ color: "#777777" }}>{q.subtitle}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs font-bold" style={{ color: "#486B46" }}>{filled}/{allFields.length}</span>
+                      <ChevronRight className={cn("w-5 h-5 transition-transform", isExpanded && "rotate-90")} style={{ color: "#777777" }} />
+                    </div>
+                  </button>
+                  {isExpanded && (
+                    <div className="px-5 pb-5" style={{ borderTop: "1px solid #F0EDE8" }}>
+                      <div className="flex justify-end gap-2 pt-4 mb-4">
+                        {!isEditing ? (
+                          <button onClick={() => startEditQuestionnaire(q.key)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
+                            style={{ background: "#486B46", color: "#FFFFFF" }}>
+                            <Pencil className="w-3.5 h-3.5" /> Modifier
+                          </button>
+                        ) : (
+                          <>
+                            <button onClick={() => { setEditingQuestionnaire(null); setLocalQAnswers({}); }}
+                              className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold" style={{ border: "1px solid #E8E5E0", color: "#777777" }}>
+                              <X className="w-3.5 h-3.5" /> Annuler
+                            </button>
+                            <button onClick={handleSaveQuestionnaire} disabled={savingQuestionnaire}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold" style={{ background: "#486B46", color: "#FFFFFF" }}>
+                              {savingQuestionnaire ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Enregistrer
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      {q.sections.map((section) => (
+                        <div key={section.key} className="mb-5">
+                          <h5 className="text-xs font-bold uppercase tracking-wider mb-1 flex items-center gap-2" style={{ color: "#486B46" }}>
+                            {section.title}
+                            {section.private && <Lock className="w-3 h-3" style={{ color: "#C6A15B" }} />}
+                          </h5>
+                          {section.intro && <p className="text-[11px] italic mb-3" style={{ color: "#777777" }}>{section.intro}</p>}
+                          <div className="space-y-3">
+                            {section.fields.map((field) => {
+                              const value = answers[field.id];
+                              if (isEditing) {
+                                return (
+                                  <div key={field.id}>
+                                    <label className="text-[11px] font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>{field.label}</label>
+                                    {(field.type === "text" || field.type === "agerange") ? (
+                                      <Input value={value || ""} onChange={(e) => handleQFieldChange(field.id, e.target.value)}
+                                        placeholder={field.placeholder || field.label}
+                                        className="h-10 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                                    ) : field.type === "textarea" ? (
+                                      <>
+                                        <Textarea value={value || ""} onChange={(e) => handleQFieldChange(field.id, e.target.value)}
+                                          rows={3} placeholder={field.placeholder || field.label}
+                                          className="rounded-xl text-sm resize-none" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                                        {field.help && <p className="text-[11px] mt-1" style={{ color: "#999" }}>{field.help}</p>}
+                                      </>
+                                    ) : field.type === "single" || field.type === "qcm" ? (
+                                      <div className="space-y-1.5">
+                                        {field.options?.map((opt) => (
+                                          <button key={opt} onClick={() => handleQFieldChange(field.id, opt)}
+                                            className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all"
+                                            style={value === opt ? { background: "#486B46", color: "#FFFFFF" } : { background: "#F5F3F0", color: "#2F2F2F" }}>
+                                            {opt}
+                                          </button>
+                                        ))}
+                                      </div>
+                                    ) : field.type === "multi" ? (
+                                      <>
+                                        <div className="flex flex-wrap gap-2">
+                                          {field.options?.map((opt) => {
+                                            const selected = Array.isArray(value) && value.includes(opt);
+                                            return (
+                                              <button key={opt} onClick={() => handleQMultiToggle(field.id, opt)}
+                                                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                                                style={selected ? { background: "#486B46", color: "#FFFFFF" } : { background: "#F5F3F0", color: "#777777", border: "1px solid #E8E5E0" }}>
+                                                {selected ? "✓ " : ""}{opt}
+                                              </button>
+                                            );
+                                          })}
+                                        </div>
+                                        {field.help && <p className="text-[11px] mt-1" style={{ color: "#999" }}>{field.help}</p>}
+                                      </>
+                                    ) : null}
+                                  </div>
+                                );
+                              }
+                              // Display mode
+                              const displayVal = Array.isArray(value) ? value.join(", ") : String(value || "");
+                              return (
+                                <div key={field.id} className="py-2" style={{ borderBottom: "1px solid #F5F3F0" }}>
+                                  <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "#777777" }}>{field.label}</p>
+                                  {displayVal && displayVal !== "" ? (
+                                    <p className="text-sm" style={{ color: "#2F2F2F" }}>{displayVal}</p>
+                                  ) : (
+                                    <p className="text-sm italic" style={{ color: "#BBBBBB" }}>Non renseigné</p>
+                                  )}
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+
             {/* Logout */}
             {!editingProfile && (
               <Button onClick={handleLogout} variant="outline"
