@@ -44,6 +44,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Monogram, Flourish, VitrailPattern } from "@/components/ornaments";
 import { ImposingFloralCorners, ImposingFloralSide } from "@/components/garden";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { ChatGuide } from "@/components/dashboard/chat-guide";
 import { Tab, TABS, ComposerType, FeedPost, EDIT_WINDOW_MS, DAILY_VERSES, VERSE_OF_DAY, getDailyVerses } from "@/components/dashboard/dashboard-types";
 
 // ── Helper ──
@@ -241,6 +242,8 @@ export default function DashboardPage() {
   const [editPostText, setEditPostText] = useState("");
   const [editPostImage, setEditPostImage] = useState<string | null>(null);
   const [pendingConv, setPendingConv] = useState<string | null>(null);
+  const [guideDismissed, setGuideDismissed] = useState(false);
+  const [guideExpanded, setGuideExpanded] = useState<number | null>(null);
 
   // Social
   const [discoverMembers, setDiscoverMembers] = useState<MemberProfile[]>([]);
@@ -1470,7 +1473,8 @@ export default function DashboardPage() {
                   <div className="relative flex-1 min-h-0" style={{ background: "#FAF9F6" }}>
                     <VitrailPattern className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.03]" />
                     <div className="relative h-full overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                      {messages.length === 0 && <p className="text-center text-xs py-8" style={{ color: "#777777" }}>Dites bonjour avec bienveillance 🙏</p>}
+                      {messages.length === 0 && !guideDismissed && <ChatGuide onDismiss={() => setGuideDismissed(true)} />}
+                      {messages.length === 0 && guideDismissed && <p className="text-center text-xs py-8" style={{ color: "#777777" }}>Dites bonjour avec bienveillance 🙏</p>}
                       {messages.map((m) => (
                         <div key={m.id} className={cn("flex", m.from === "me" ? "justify-end" : "justify-start")}>
                           <div className={cn("max-w-[80%] rounded-2xl text-sm leading-relaxed overflow-hidden", m.imageUrl ? "p-1.5" : "px-4 py-2.5")}
