@@ -1663,45 +1663,152 @@ export default function DashboardPage() {
             <TabHeader icon={Settings} title="Mon Profil" subtitle="Gérez votre présence dans le sanctuaire" />
             <div className="rounded-2xl p-6 sm:p-8"
               style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
-              <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
-                <div className="relative shrink-0">
-                  <Avatar className="w-24 h-24 shadow-lg" style={{ border: "3px solid #E8E5E0" }}>
-                    <AvatarImage src={myAvatar} />
-                    <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{displayInitial}</AvatarFallback>
-                  </Avatar>
-                  <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar}
-                    className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg"
-                    style={{ background: "#486B46", color: "#FFFFFF" }}>
-                    {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
-                  </button>
-                  <input ref={avatarInputRef} type="file" accept="image/*" className="hidden"
-                    onChange={(e) => { handlePickAvatar(e.target.files?.[0]); e.target.value = ""; }} />
-                </div>
-                <div className="flex-1 space-y-1.5">
-                  <div className="flex items-center gap-2 justify-center sm:justify-start">
-                    <h3 className="font-headline text-2xl font-bold" style={{ color: "#2F2F2F" }}>{displayName}</h3>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1" style={{ background: "#EEF5EC", color: "#486B46" }}>
-                      <CheckCircle2 className="w-3 h-3" /> Vérifié
-                    </span>
+              {!editingProfile ? (
+                <>
+                  <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+                    <div className="relative shrink-0">
+                      <Avatar className="w-24 h-24 shadow-lg" style={{ border: "3px solid #E8E5E0" }}>
+                        <AvatarImage src={myAvatar} />
+                        <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{displayInitial}</AvatarFallback>
+                      </Avatar>
+                      <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar}
+                        className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg"
+                        style={{ background: "#486B46", color: "#FFFFFF" }}>
+                        {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                      </button>
+                      <input ref={avatarInputRef} type="file" accept="image/*" className="hidden"
+                        onChange={(e) => { handlePickAvatar(e.target.files?.[0]); e.target.value = ""; }} />
+                    </div>
+                    <div className="flex-1 space-y-1.5">
+                      <div className="flex items-center gap-2 justify-center sm:justify-start">
+                        <h3 className="font-headline text-2xl font-bold" style={{ color: "#2F2F2F" }}>{displayName}</h3>
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1" style={{ background: "#EEF5EC", color: "#486B46" }}>
+                          <CheckCircle2 className="w-3 h-3" /> Vérifié
+                        </span>
+                      </div>
+                      <p className="text-sm flex items-center gap-1.5 justify-center sm:justify-start" style={{ color: "#777777" }}>
+                        <MapPin className="w-3.5 h-3.5" style={{ color: "#486B46" }} /> {displayLocation}
+                      </p>
+                      {user?.email && <p className="text-xs" style={{ color: "#777777" }}>{user.email}</p>}
+                    </div>
+                    <Button onClick={startEditProfile} className="h-10 px-5 rounded-xl font-bold gap-1.5" style={{ background: "#486B46", color: "#FFFFFF" }}>
+                      <Pencil className="w-3.5 h-3.5" /> Modifier
+                    </Button>
                   </div>
-                  <p className="text-sm flex items-center gap-1.5 justify-center sm:justify-start" style={{ color: "#777777" }}>
-                    <MapPin className="w-3.5 h-3.5" style={{ color: "#486B46" }} /> {displayLocation}
-                  </p>
-                  {user?.email && <p className="text-xs" style={{ color: "#777777" }}>{user.email}</p>}
+                </>
+              ) : (
+                <div className="space-y-6">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-headline text-lg font-bold" style={{ color: "#2F2F2F" }}>
+                      <Pencil className="w-4 h-4 inline mr-2" style={{ color: "#486B46" }} />
+                      Modifier mon profil
+                    </h3>
+                    <button onClick={() => setEditingProfile(false)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
+                      style={{ color: "#777777" }}>
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  {/* Identity section */}
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
+                      Identité
+                    </h4>
+                    <div className="space-y-4">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Nom complet *</label>
+                        <Input value={profileForm.name} onChange={(e) => setProfileForm((f) => ({ ...f, name: e.target.value }))}
+                          placeholder="Votre nom complet" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Statut civil</label>
+                          <select value={profileForm.civilStatus} onChange={(e) => setProfileForm((f) => ({ ...f, civilStatus: e.target.value }))}
+                            className="w-full h-11 rounded-xl px-4 text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0", color: "#2F2F2F" }}>
+                            <option value="">Sélectionner…</option>
+                            {["Célibataire", "Divorcé(e)", "Veuf/Veuve", "Séparé(e)"].map((o) => <option key={o} value={o}>{o}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Profession</label>
+                          <Input value={profileForm.profession} onChange={(e) => setProfileForm((f) => ({ ...f, profession: e.target.value }))}
+                            placeholder="Votre profession" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Location section */}
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
+                      Localisation
+                    </h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Ville</label>
+                        <Input value={profileForm.city} onChange={(e) => setProfileForm((f) => ({ ...f, city: e.target.value }))}
+                          placeholder="Votre ville" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                      </div>
+                      <div>
+                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Pays</label>
+                        <Input value={profileForm.country} onChange={(e) => setProfileForm((f) => ({ ...f, country: e.target.value }))}
+                          placeholder="Votre pays" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bio section */}
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
+                      À propos de moi
+                    </h4>
+                    <Textarea value={profileForm.bio} onChange={(e) => setProfileForm((f) => ({ ...f, bio: e.target.value }))}
+                      rows={4} placeholder="Décrivez-vous en quelques mots…"
+                      className="rounded-xl text-sm resize-none" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                  </div>
+
+                  {/* Marriage vision */}
+                  <div>
+                    <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2 flex items-center gap-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
+                      <Heart className="w-3.5 h-3.5" /> Vision du mariage (max 3)
+                    </h4>
+                    <div className="flex flex-wrap gap-2">
+                      {MARRIAGE_VALUES.map((v) => (
+                        <button key={v.id} onClick={() => toggleProfileValue(v.id)}
+                          className="px-4 py-2 rounded-full text-xs font-medium transition-all"
+                          style={profileForm.marriageVision.includes(v.id)
+                            ? { background: "#486B46", color: "#FFFFFF" }
+                            : { background: "#F5F3F0", color: "#777777", border: "1px solid #E8E5E0" }}>
+                          {profileForm.marriageVision.includes(v.id) ? "✓ " : ""}{v.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Action buttons */}
+                  <div className="flex items-center justify-end gap-3 pt-4" style={{ borderTop: "1px solid #F0EDE8" }}>
+                    <Button onClick={() => setEditingProfile(false)} variant="outline" className="h-10 px-5 rounded-xl font-bold text-sm"
+                      style={{ borderColor: "#E8E5E0", color: "#777777" }}>
+                      <X className="w-4 h-4 mr-1.5" /> Annuler
+                    </Button>
+                    <Button onClick={handleSaveProfile} disabled={savingProfile}
+                      className="h-10 px-6 rounded-xl font-bold text-sm gap-2"
+                      style={{ background: "#486B46", color: "#FFFFFF" }}>
+                      {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
+                      Enregistrer
+                    </Button>
+                  </div>
                 </div>
-                {!editingProfile && (
-                  <Button onClick={startEditProfile} className="h-10 px-5 rounded-xl font-bold gap-1.5" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                    <Pencil className="w-3.5 h-3.5" /> Modifier
-                  </Button>
-                )}
-              </div>
+              )}
             </div>
             {/* Logout */}
-            <Button onClick={handleLogout} variant="outline"
-              className="w-full h-12 rounded-xl font-bold"
-              style={{ borderColor: "#E8E5E0", color: "#777777" }}>
-              Se déconnecter
-            </Button>
+            {!editingProfile && (
+              <Button onClick={handleLogout} variant="outline"
+                className="w-full h-12 rounded-xl font-bold"
+                style={{ borderColor: "#E8E5E0", color: "#777777" }}>
+                Se déconnecter
+              </Button>
+            )}
           </div>
         );
 
