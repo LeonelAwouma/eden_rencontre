@@ -279,9 +279,39 @@ export async function getMessages(convId: string, myId: string): Promise<ChatMes
 export async function sendChatMessage(
   convId: string,
   content: string,
-  imageUrl?: string | null
-): Promise<{ message?: ChatMessage; error?: string }> {
+  imageUrl?: string | null,
+  senderId?: string,
+  receiverId?: string
+): Promise<{ message?: ChatMessage; error?: string; moderationError?: string }> {
   if (!supabase) return { error: "Supabase non configuré." };
+
+  // ── Moderation pipeline (text only, skip for image-only messages) ──
+  if (content.trim() && senderId) {
+    try {
+      const modRes = await fetch("/api/moderation/validate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          senderId,
+          receiverId: receiverId || "",
+          conversationId: convId,
+          content: content.trim(),
+        }),
+      });
+      const mod = await modRes.json();
+      if (!mod.allowed) {
+        return { error: mod.blockReason || mod.warnings?.[0] || "Message bloqué par le système de modération.", moderationError: mod.warnings?.[0] };
+      }
+      // If warned (DELIVER=false but allowed=true), pass warning to caller
+      if (mod.decision === "WARN" && mod.warnings?.length) {
+        // Still send the message, but return the warning
+      }
+    } catch (modErr) {
+      // Moderation service failure — fail open (allow message)
+      console.warn("[Eden] moderation check failed, allowing message:", modErr);
+    }
+  }
+
   const { data, error } = await supabase
     .from("messages")
     .insert({ conversation_id: convId, content, image_url: imageUrl ?? null })

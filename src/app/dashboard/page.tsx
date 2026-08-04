@@ -341,14 +341,14 @@ export default function DashboardPage() {
         toast({ title: "Échec de l'envoi", description: res.error || "Réessayez.", variant: "destructive" });
         return;
       }
-      const sentImg = await sendChatMessage(activeConvId, text, res.url);
+    const sentImg = await sendChatMessage(activeConvId, text, res.url, meId, activeConv?.otherId);
       if (sentImg.error) { notifySendError(sentImg.error); return; }
       if (sentImg.message) appendMessage(sentImg.message);
       clearPendingImage(); setChatInput(""); loadConversations();
       return;
     }
     setChatInput("");
-    const sent = await sendChatMessage(activeConvId, text);
+    const sent = await sendChatMessage(activeConvId, text, null, meId, activeConv?.otherId);
     if (sent.error) { setChatInput(text); notifySendError(sent.error); return; }
     if (sent.message) appendMessage(sent.message);
     loadConversations();
