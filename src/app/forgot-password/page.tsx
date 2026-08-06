@@ -6,28 +6,76 @@ import Image from "next/image";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, ArrowLeft, ShieldCheck, Heart, MailCheck, KeyRound } from "lucide-react";
+import {
+  ArrowRight,
+  Heart,
+  ShieldCheck,
+  AlertCircle,
+  CheckCircle2,
+  Mail,
+  ArrowLeft,
+} from "lucide-react";
 import { Monogram } from "@/components/ornaments";
+import { ImposingFloralCorners } from "@/components/garden";
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [sent, setSent] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+  const [emailError, setEmailError] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const validateEmail = (value: string): boolean => {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      setEmailError("L'adresse email est requise.");
+      return false;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
+      setEmailError("Veuillez entrer une adresse email valide.");
+      return false;
+    }
+    setEmailError(null);
+    return true;
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
+
+    if (!validateEmail(email)) return;
+
     setIsLoading(true);
-    // Simulate API call
-    setTimeout(() => {
+
+    try {
+      const res = await fetch("/api/auth/forgot-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok && res.status !== 200) {
+        setError(data.message || "Une erreur est survenue. Veuillez réessayer.");
+        setIsLoading(false);
+        return;
+      }
+
+      // Always show success — generic response prevents enumeration
+      setSuccess(true);
+    } catch {
+      setError("Erreur de connexion au serveur.");
+    } finally {
       setIsLoading(false);
-      setSent(true);
-    }, 1800);
+    }
   };
 
   return (
     <div className="min-h-screen bg-background flex">
       {/* Left Panel — Image & Branding */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] relative overflow-hidden">
+        <ImposingFloralCorners size="xl" corners={["bl", "tl"]} opacity={0.8} />
         <Image
           src="/mariage_one.png"
           alt="Eden Connexion — Union Bénie"
@@ -49,18 +97,18 @@ export default function ForgotPasswordPage() {
           <div className="space-y-8">
             <div className="space-y-4">
               <h2 className="font-headline text-4xl xl:text-5xl font-bold text-foreground leading-tight">
-                Reprenez le <br />
-                <span className="text-primary italic font-normal">chemin.</span>
+                Retrouvez votre <br />
+                <span className="text-primary italic font-normal">accès.</span>
               </h2>
               <p className="text-foreground/60 text-lg max-w-md leading-relaxed">
-                Un instant d'égarement n'efface pas votre alliance. Réinitialisez votre accès en toute sérénité.
+                Ne vous inquiétez pas, nous allons vous aider à récupérer votre compte en toute sécurité.
               </p>
             </div>
 
             <div className="flex flex-wrap gap-6">
               <div className="flex items-center gap-2 text-foreground/40">
                 <ShieldCheck className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest">Lien sécurisé</span>
+                <span className="text-xs font-bold uppercase tracking-widest">Processus sécurisé</span>
               </div>
               <div className="flex items-center gap-2 text-foreground/40">
                 <Heart className="w-4 h-4 text-primary fill-primary" />
@@ -73,6 +121,7 @@ export default function ForgotPasswordPage() {
 
       {/* Right Panel — Form */}
       <div className="flex-1 flex flex-col justify-center items-center px-5 sm:px-12 lg:px-16 xl:px-24 pt-24 pb-12 sm:py-12 relative">
+        {/* Mobile Logo */}
         <div className="lg:hidden absolute top-7 left-5">
           <Link href="/" className="flex items-center gap-3 group">
             <Monogram className="w-8 h-8 text-primary shrink-0" />
@@ -82,20 +131,31 @@ export default function ForgotPasswordPage() {
           </Link>
         </div>
 
-        <div className="w-full max-w-md space-y-8 sm:space-y-10 animate-in fade-in slide-in-from-right-4 duration-700">
-          {!sent ? (
+        <div className="w-full max-w-md space-y-8 sm:space-y-10 animate-in fade-in slide-in-from-right-4 duration-700 relative">
+          <ImposingFloralCorners size="md" corners={["tr"]} opacity={0.45} className="hidden sm:block" />
+
+          {/* Back to login */}
+          <Link
+            href="/login"
+            className="inline-flex items-center gap-2 text-foreground/50 hover:text-primary text-sm font-medium transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4" />
+            Retour à la connexion
+          </Link>
+
+          {!success ? (
             <>
               {/* Header */}
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-2">
-                  <KeyRound className="w-3.5 h-3.5" />
+                  <Mail className="w-3.5 h-3.5" />
                   Récupération
                 </div>
                 <h1 className="font-headline text-3xl sm:text-5xl font-bold text-foreground">
-                  Mot de passe oublié ?
+                  Mot de passe oublié
                 </h1>
                 <p className="text-foreground/50 text-base">
-                  Entrez votre adresse email. Nous vous enverrons un lien pour rétablir votre accès au sanctuaire.
+                  Entrez votre adresse email et nous vous enverrons un code de vérification pour réinitialiser votre mot de passe.
                 </p>
               </div>
 
@@ -110,10 +170,27 @@ export default function ForgotPasswordPage() {
                     required
                     placeholder="votre@email.com"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (emailError) setEmailError(null);
+                    }}
+                    onBlur={() => email && validateEmail(email)}
                     className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30 text-base"
                   />
+                  {emailError && (
+                    <p className="text-sm text-destructive flex items-center gap-1.5 mt-1">
+                      <AlertCircle className="w-3.5 h-3.5" />
+                      {emailError}
+                    </p>
+                  )}
                 </div>
+
+                {error && (
+                  <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/20 rounded-xl p-4 animate-in fade-in slide-in-from-top-1 duration-300">
+                    <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                    <p className="text-sm text-destructive/90 leading-relaxed">{error}</p>
+                  </div>
+                )}
 
                 <Button
                   type="submit"
@@ -127,68 +204,54 @@ export default function ForgotPasswordPage() {
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
-                      Envoyer le lien
+                      Envoyer le code
                       <ArrowRight className="w-5 h-5" />
                     </span>
                   )}
                 </Button>
               </form>
-
-              {/* Back to login */}
-              <div className="text-center pt-4">
-                <Link
-                  href="/login"
-                  className="inline-flex items-center gap-2 text-foreground/40 hover:text-primary font-medium text-sm transition-colors group"
-                >
-                  <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                  Retour à la connexion
-                </Link>
-              </div>
             </>
           ) : (
-            /* Confirmation state */
-            <div className="space-y-8 animate-in fade-in zoom-in-95 duration-500 text-center">
-              <div className="w-20 h-20 mx-auto bg-primary/10 rounded-3xl flex items-center justify-center border border-primary/20">
-                <MailCheck className="w-10 h-10 text-primary" />
-              </div>
-              <div className="space-y-3">
-                <h1 className="font-headline text-3xl sm:text-4xl font-bold text-foreground">
-                  Vérifiez vos emails
-                </h1>
-                <p className="text-foreground/50 text-base leading-relaxed">
-                  Si un compte est associé à{" "}
-                  <span className="text-primary font-bold">{email}</span>, un lien de réinitialisation vient d'être envoyé. Pensez à consulter vos courriers indésirables.
+            /* Success State */
+            <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-500">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
+                  <CheckCircle2 className="w-10 h-10 text-primary" />
+                </div>
+                <h2 className="font-headline text-2xl sm:text-3xl font-bold text-foreground">
+                  Vérifiez votre boîte email
+                </h2>
+                <p className="text-foreground/50 text-base max-w-sm">
+                  Si un compte existe avec l'adresse <strong className="text-foreground/70">{email.trim().toLowerCase()}</strong>,
+                  un code de vérification à 6 chiffres a été envoyé.
                 </p>
               </div>
 
-              <div className="bg-card border border-foreground/5 rounded-2xl p-5 flex items-start gap-4 text-left">
-                <ShieldCheck className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                <p className="text-xs text-foreground/40 leading-relaxed">
-                  Le lien expire dans 30 minutes pour garantir la sécurité de votre alliance. Vous n'avez rien reçu ?{" "}
+              <div className="space-y-4 pt-4">
+                <Link href={`/verify-otp?email=${encodeURIComponent(email.trim().toLowerCase())}`}>
+                  <Button className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:shadow-primary/25 transition-all hover:scale-[1.02]">
+                    <span className="flex items-center gap-2">
+                      Entrer le code
+                      <ArrowRight className="w-5 h-5" />
+                    </span>
+                  </Button>
+                </Link>
+
+                <p className="text-center text-foreground/40 text-sm">
+                  Vous n'avez pas reçu le code ?{" "}
                   <button
-                    onClick={() => setSent(false)}
-                    className="text-primary hover:text-primary/80 font-bold transition-colors"
+                    onClick={() => {
+                      setSuccess(false);
+                      setEmail("");
+                    }}
+                    className="text-primary font-bold hover:text-primary/80 transition-colors"
                   >
-                    Renvoyer
+                    Réessayer
                   </button>
                 </p>
               </div>
-
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 text-foreground/40 hover:text-primary font-medium text-sm transition-colors group"
-              >
-                <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" />
-                Retour à la connexion
-              </Link>
             </div>
           )}
-
-          {/* Footer info */}
-          <p className="text-center text-foreground/20 text-[10px] font-medium uppercase tracking-widest pt-4">
-            Besoin d'aide ?{" "}
-            <Link href="/concept" className="text-foreground/30 hover:text-primary/60 transition-colors">Contactez le sanctuaire</Link>.
-          </p>
         </div>
       </div>
     </div>
