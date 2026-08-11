@@ -82,7 +82,7 @@ export default function AdminLoginPage() {
             >
               Eden{" "}
               <span className="italic font-normal" style={{ color: "#486B46" }}>
-                Rencontre
+                Connexion
               </span>
             </h1>
             <p className="text-[12px] sm:text-[13px] text-[#9CA3AF] mt-1 font-medium text-center">
