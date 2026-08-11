@@ -1,8 +1,9 @@
 /**
  * Server-side authentication helper for API routes.
  *
- * Extracts the current Supabase user from the request's cookies
- * or Authorization header. Used to protect API endpoints.
+ * Extracts the current Supabase user from the request.
+ * Compatible with the existing project architecture where
+ * the frontend sends the Supabase access token.
  *
  * IMPORTANT: This module should ONLY be used server-side (API routes).
  */
@@ -17,10 +18,12 @@ export interface AuthenticatedUser {
 
 /**
  * Extract the authenticated user from a Next.js API request.
- * Checks (in order):
- *  1. Authorization: Bearer <token> header
- *  2. Supabase split cookies (sb-<ref>-auth-token.0 / .1)
- *  3. Simple cookies (sb-access-token / supabase-auth-token)
+ *
+ * Strategy 1: Authorization: Bearer <supabase_access_token>
+ *   → Used by the GoogleMeetConnect component which sends the token explicitly.
+ *
+ * Strategy 2: Supabase cookies (split or simple)
+ *   → Fallback for any direct browser requests with Supabase cookies.
  *
  * @returns The authenticated user or null if not found/invalid.
  */
@@ -29,63 +32,70 @@ export async function getAuthenticatedUser(
 ): Promise<AuthenticatedUser | null> {
   const db = getSupabaseAdmin();
 
-  // Strategy 1: Authorization header
+  // ── Strategy 1: Authorization header ──────────────────────
   const authHeader = request.headers.get("authorization");
   if (authHeader?.startsWith("Bearer ")) {
-    const token = authHeader.substring(7);
-    try {
-      const {
-        data: { user },
-      } = await db.auth.getUser(token);
-      if (user?.id && user?.email) {
-        return { id: user.id, email: user.email };
-      }
-    } catch {
-      // Invalid token
-    }
-  }
-
-  // Strategy 2: Supabase split cookies
-  const allCookies = request.cookies.getAll();
-  const authCookiePrefix = allCookies.find(
-    (c) => c.name.startsWith("sb-") && c.name.includes("-auth-token")
-  );
-
-  if (authCookiePrefix) {
-    const baseName = authCookiePrefix.name.replace(/\.\d+$/, "");
-    const part0 = request.cookies.get(`${baseName}.0`)?.value;
-    const part1 = request.cookies.get(`${baseName}.1`)?.value;
-    const baseValue = request.cookies.get(baseName)?.value;
-    const fullValue = [part0, part1].filter(Boolean).join("") || baseValue || "";
-
-    if (fullValue) {
+    const token = authHeader.substring(7).trim();
+    if (token) {
       try {
-        const parsed = JSON.parse(fullValue);
-        if (parsed.access_token) {
-          const {
-            data: { user },
-          } = await db.auth.getUser(parsed.access_token);
-          if (user?.id && user?.email) {
-            return { id: user.id, email: user.email };
-          }
+        const {
+          data: { user },
+        } = await db.auth.getUser(token);
+        if (user?.id && user?.email) {
+          return { id: user.id, email: user.email };
         }
       } catch {
-        // Not JSON — try as raw token
-        try {
-          const {
-            data: { user },
-          } = await db.auth.getUser(fullValue);
-          if (user?.id && user?.email) {
-            return { id: user.id, email: user.email };
-          }
-        } catch {
-          // Not a valid token
-        }
+        // Invalid token — continue to next strategy
       }
     }
   }
 
-  // Strategy 3: Simple cookies
+  // ── Strategy 2: Supabase split cookies ────────────────────
+  // Supabase stores auth in cookies named like: sb-<project-ref>-auth-token
+  // The value may be split across multiple cookies (.0, .1) or stored as JSON.
+  const allCookies = request.cookies.getAll();
+  const authTokenCookies = allCookies.filter(
+    (c) =>
+      c.name.includes("-auth-token") &&
+      !c.name.includes("-auth-token-code-verifier")
+  );
+
+  for (const cookie of authTokenCookies) {
+    try {
+      // Try to get the full value from split cookies
+      const baseName = cookie.name.replace(/\.\d+$/, "");
+      const part0 = request.cookies.get(`${baseName}.0`)?.value;
+      const part1 = request.cookies.get(`${baseName}.1`)?.value;
+      const fullValue = [part0, part1].filter(Boolean).join("") || cookie.value;
+
+      if (!fullValue) continue;
+
+      // Try parsing as JSON (Supabase v2 format)
+      let accessToken: string | null = null;
+      try {
+        const parsed = JSON.parse(decodeURIComponent(fullValue));
+        accessToken = parsed.access_token || null;
+      } catch {
+        // Not JSON — try as raw JWT token
+        if (fullValue.startsWith("eyJ")) {
+          accessToken = fullValue;
+        }
+      }
+
+      if (accessToken) {
+        const {
+          data: { user },
+        } = await db.auth.getUser(accessToken);
+        if (user?.id && user?.email) {
+          return { id: user.id, email: user.email };
+        }
+      }
+    } catch {
+      // Continue to next cookie
+    }
+  }
+
+  // ── Strategy 3: Simple named cookies ─────────────────────
   const simpleToken =
     request.cookies.get("sb-access-token")?.value ||
     request.cookies.get("supabase-auth-token")?.value;

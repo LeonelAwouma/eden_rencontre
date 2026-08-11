@@ -12,6 +12,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/lib/supabase";
 import {
   Video,
   CheckCircle2,
@@ -20,6 +21,25 @@ import {
   Unplug,
   ExternalLink,
 } from "lucide-react";
+
+/** Get the current Supabase access token for API calls */
+async function getAccessToken(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data: { session } } = await supabase.auth.getSession();
+  return session?.access_token || null;
+}
+
+/** Fetch wrapper that includes the Supabase Authorization header */
+async function authFetch(url: string, options: RequestInit = {}): Promise<Response> {
+  const token = await getAccessToken();
+  const headers: Record<string, string> = {
+    ...(options.headers as Record<string, string> || {}),
+  };
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+  return fetch(url, { ...options, headers });
+}
 
 interface MeetStatus {
   connected: boolean;
@@ -50,7 +70,7 @@ export function GoogleMeetConnect() {
   // Fetch current authorization status
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch("/api/google-meet/status");
+      const res = await authFetch("/api/google-meet/status");
       if (!res.ok) throw new Error("Failed to fetch status");
       const data = await res.json();
       setStatus(data);
@@ -95,7 +115,7 @@ export function GoogleMeetConnect() {
     setConnecting(true);
 
     try {
-      const res = await fetch("/api/google-meet/authorize", { method: "POST" });
+      const res = await authFetch("/api/google-meet/authorize", { method: "POST" });
       const data = await res.json();
 
       if (!res.ok) {
@@ -121,7 +141,7 @@ export function GoogleMeetConnect() {
     setDisconnecting(true);
 
     try {
-      const res = await fetch("/api/google-meet/disconnect", { method: "POST" });
+      const res = await authFetch("/api/google-meet/disconnect", { method: "POST" });
       const data = await res.json();
 
       if (!res.ok) {
@@ -145,7 +165,7 @@ export function GoogleMeetConnect() {
     setTesting(true);
 
     try {
-      const res = await fetch("/api/google-meet/test", { method: "POST" });
+      const res = await authFetch("/api/google-meet/test", { method: "POST" });
       const data = await res.json();
 
       if (!res.ok && !data.success) {
