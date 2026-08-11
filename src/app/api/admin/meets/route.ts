@@ -35,59 +35,84 @@ export async function GET(req: NextRequest) {
     const { data: meets, error } = await query;
     if (error) throw error;
 
-    // Fetch invitation counts for each meet
-    const meetsWithCounts = await Promise.all(
-      (meets || []).map(async (meet) => {
-        const { count: totalInvitations } = await supabase
-          .from("meet_invitations")
-          .select("*", { count: "exact", head: true })
-          .eq("meet_id", meet.id);
+    // Fetch invitation counts for each meet (gracefully handle if table doesn't exist)
+    let meetsWithCounts = (meets || []).map((meet) => ({
+      ...meet,
+      invitation_stats: {
+        total: 0,
+        sent: 0,
+        failed: 0,
+        pending: 0,
+      },
+    }));
 
-        const { count: sentInvitations } = await supabase
-          .from("meet_invitations")
-          .select("*", { count: "exact", head: true })
-          .eq("meet_id", meet.id)
-          .eq("status", "sent");
+    try {
+      meetsWithCounts = await Promise.all(
+        (meets || []).map(async (meet) => {
+          const { count: totalInvitations } = await supabase
+            .from("meet_invitations")
+            .select("*", { count: "exact", head: true })
+            .eq("meet_id", meet.id);
 
-        const { count: failedInvitations } = await supabase
-          .from("meet_invitations")
-          .select("*", { count: "exact", head: true })
-          .eq("meet_id", meet.id)
-          .eq("status", "failed");
+          const { count: sentInvitations } = await supabase
+            .from("meet_invitations")
+            .select("*", { count: "exact", head: true })
+            .eq("meet_id", meet.id)
+            .eq("status", "sent");
 
-        const { count: pendingInvitations } = await supabase
-          .from("meet_invitations")
-          .select("*", { count: "exact", head: true })
-          .eq("meet_id", meet.id)
-          .eq("status", "pending");
+          const { count: failedInvitations } = await supabase
+            .from("meet_invitations")
+            .select("*", { count: "exact", head: true })
+            .eq("meet_id", meet.id)
+            .eq("status", "failed");
 
-        return {
-          ...meet,
-          invitation_stats: {
-            total: totalInvitations || 0,
-            sent: sentInvitations || 0,
-            failed: failedInvitations || 0,
-            pending: pendingInvitations || 0,
-          },
-        };
-      })
-    );
+          const { count: pendingInvitations } = await supabase
+            .from("meet_invitations")
+            .select("*", { count: "exact", head: true })
+            .eq("meet_id", meet.id)
+            .eq("status", "pending");
 
-    // Get overall stats
-    const { data: stats } = await supabase.rpc("get_meet_space_stats");
+          return {
+            ...meet,
+            invitation_stats: {
+              total: totalInvitations || 0,
+              sent: sentInvitations || 0,
+              failed: failedInvitations || 0,
+              pending: pendingInvitations || 0,
+            },
+          };
+        })
+      );
+    } catch (invErr) {
+      console.warn("[Admin Meets GET] Could not fetch invitation stats (table may not exist):", invErr);
+    }
+
+    // Get overall stats (gracefully handle if RPC function doesn't exist)
+    let statsData = {
+      total_meets: meetsWithCounts.length,
+      active_meets: meetsWithCounts.filter((m: any) => m.status === "active").length,
+      cancelled_meets: meetsWithCounts.filter((m: any) => m.status === "cancelled").length,
+      completed_meets: meetsWithCounts.filter((m: any) => m.status === "completed").length,
+      total_invitations: 0,
+      sent_invitations: 0,
+      pending_invitations: 0,
+      failed_invitations: 0,
+    };
+
+    try {
+      const { data: stats, error: statsError } = await supabase.rpc("get_meet_space_stats");
+      if (statsError) {
+        console.warn("[Admin Meets GET] RPC get_meet_space_stats error:", statsError);
+      } else if (stats?.[0]) {
+        statsData = stats[0];
+      }
+    } catch (rpcErr) {
+      console.warn("[Admin Meets GET] RPC get_meet_space_stats failed:", rpcErr);
+    }
 
     return NextResponse.json({
       meets: meetsWithCounts,
-      stats: stats?.[0] || {
-        total_meets: 0,
-        active_meets: 0,
-        cancelled_meets: 0,
-        completed_meets: 0,
-        total_invitations: 0,
-        sent_invitations: 0,
-        pending_invitations: 0,
-        failed_invitations: 0,
-      },
+      stats: statsData,
     });
   } catch (err: any) {
     console.error("[Admin Meets GET]", err);
