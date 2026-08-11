@@ -12,6 +12,7 @@ import {
   User, Edit3, Save, X, CheckCircle, AlertCircle, Loader2, ChevronDown, ChevronRight,
   MapPin, Briefcase, BookOpen, Lock, Heart
 } from "lucide-react";
+import { GoogleMeetConnect } from "@/components/google-meet-connect";
 
 /* ─────────────────────────── Types ─────────────────────────── */
 
@@ -749,6 +750,7 @@ export default function ProfilePage() {
           {tab === "profile" ? (
             <>
               <BasicInfoCard profile={profile} onRefresh={handleRefresh} onSwitchToFaith={() => setTab("faith")} />
+              <GoogleMeetConnect />
               <ProfileCompletionCard profile={profile} />
             </>
           ) : (
