@@ -31,6 +31,14 @@ export async function GET(req: NextRequest) {
 
   if (error) {
     console.error("Error fetching notifications:", error);
+    // If the table doesn't exist, return empty results instead of 500
+    if (error.code === "PGRST205") {
+      return NextResponse.json({
+        notifications: [],
+        total: 0,
+        unread_count: 0,
+      });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
@@ -65,6 +73,10 @@ export async function PATCH(req: NextRequest) {
 
     if (error) {
       console.error("Error marking all as read:", error);
+      // If the table doesn't exist, return success (nothing to mark)
+      if (error.code === "PGRST205") {
+        return NextResponse.json({ success: true, message: "Aucune notification" });
+      }
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
     return NextResponse.json({ success: true, message: "Toutes marquées comme lues" });
@@ -83,6 +95,10 @@ export async function PATCH(req: NextRequest) {
 
   if (error) {
     console.error("Error marking as read:", error);
+    // If the table doesn't exist, return not found
+    if (error.code === "PGRST205") {
+      return NextResponse.json({ error: "Notifications non disponibles" }, { status: 404 });
+    }
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
