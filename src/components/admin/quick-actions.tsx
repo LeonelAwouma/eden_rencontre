@@ -16,8 +16,8 @@ const ACTIONS = [
     description: "Examiner les demandes",
     href: "/admin/users?status=pending",
     icon: UserCheck,
-    color: "text-[#38C172]",
-    bg: "bg-[#38C172]/8",
+    color: "text-[#486B46]",
+    bg: "bg-[#486B46]/8",
   },
   {
     label: "Créer un Meet",
@@ -32,8 +32,8 @@ const ACTIONS = [
     description: "Voir tous les comptes",
     href: "/admin/users",
     icon: Users,
-    color: "text-[#38C172]",
-    bg: "bg-[#38C172]/8",
+    color: "text-[#486B46]",
+    bg: "bg-[#486B46]/8",
   },
   {
     label: "Voir les rapports",
@@ -51,29 +51,37 @@ export function QuickActions() {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
-      className="bg-white rounded-[20px] border border-[#E5E7EB] p-6"
+      className="bg-white rounded-2xl border border-[#E8E5E0] p-4 sm:p-6"
     >
       <h2
-        className="text-[18px] font-semibold text-[#1a1a1a] tracking-tight mb-5"
+        className="text-base sm:text-lg font-semibold text-[#2F2F2F] tracking-tight mb-4 sm:mb-5"
         style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
       >
         Actions rapides
       </h2>
-      <div className="space-y-3">
-        {ACTIONS.map((action, i) => (
+      <div className="space-y-2.5 sm:space-y-3">
+        {ACTIONS.map((action) => (
           <Link
             key={action.label}
             href={action.href}
-            className="group flex items-center gap-3.5 p-3.5 rounded-2xl border border-[#E5E7EB] hover:border-[#38C172]/40 hover:bg-gradient-to-r hover:from-[#38C172]/[0.03] hover:to-[#86EFAC]/[0.05] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(56,193,114,0.08)]"
+            className="group flex items-center gap-3 sm:gap-3.5 p-3 sm:p-3.5 rounded-xl border border-[#E8E5E0] hover:border-[#486B46]/30 hover:bg-gradient-to-r hover:from-[#486B46]/[0.02] hover:to-[#6E8B63]/[0.04] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(72,107,70,0.06)]"
           >
-            <div className={`w-10 h-10 rounded-[12px] ${action.bg} flex items-center justify-center flex-shrink-0`}>
-              <action.icon className={`w-[18px] h-[18px] ${action.color}`} />
+            <div
+              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${action.bg} flex items-center justify-center flex-shrink-0`}
+            >
+              <action.icon
+                className={`w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] ${action.color}`}
+              />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[13px] font-semibold text-[#1a1a1a]">{action.label}</p>
-              <p className="text-[11px] text-[#9CA3AF] font-medium">{action.description}</p>
+              <p className="text-[12px] sm:text-[13px] font-semibold text-[#2F2F2F]">
+                {action.label}
+              </p>
+              <p className="text-[10px] sm:text-[11px] text-[#9CA3AF] font-medium">
+                {action.description}
+              </p>
             </div>
-            <ArrowUpRight className="w-4 h-4 text-[#D1D5DB] group-hover:text-[#38C172] transition-colors flex-shrink-0" />
+            <ArrowUpRight className="w-4 h-4 text-[#D1D5DB] group-hover:text-[#486B46] transition-colors flex-shrink-0" />
           </Link>
         ))}
       </div>

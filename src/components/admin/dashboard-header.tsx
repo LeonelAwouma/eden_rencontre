@@ -2,7 +2,20 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Search, Bell, Settings, Menu, Check, CheckCheck, Calendar, User, MessageSquare, Star, AlertTriangle, Info } from "lucide-react";
+import {
+  Search,
+  Bell,
+  Menu,
+  Check,
+  CheckCheck,
+  Calendar,
+  User,
+  MessageSquare,
+  Star,
+  AlertTriangle,
+  Info,
+  X,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 
@@ -42,17 +55,17 @@ function getNotificationIcon(type: string) {
 function getNotificationColor(type: string) {
   switch (type) {
     case "event":
-      return "bg-blue-100 text-blue-600";
+      return "bg-blue-50 text-blue-600";
     case "user":
-      return "bg-green-100 text-green-600";
+      return "bg-emerald-50 text-emerald-600";
     case "testimonial":
-      return "bg-yellow-100 text-yellow-600";
+      return "bg-amber-50 text-amber-600";
     case "meeting":
-      return "bg-purple-100 text-purple-600";
+      return "bg-violet-50 text-violet-600";
     case "report":
-      return "bg-red-100 text-red-600";
+      return "bg-red-50 text-red-600";
     default:
-      return "bg-gray-100 text-gray-600";
+      return "bg-gray-50 text-gray-600";
   }
 }
 
@@ -68,11 +81,15 @@ function timeAgo(dateStr: string): string {
   return date.toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
 }
 
-export function DashboardHeader({ adminName, onMenuClick }: DashboardHeaderProps) {
+export function DashboardHeader({
+  adminName,
+  onMenuClick,
+}: DashboardHeaderProps) {
   const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -88,17 +105,18 @@ export function DashboardHeader({ adminName, onMenuClick }: DashboardHeaderProps
     }
   }, []);
 
-  // Fetch on mount and poll every 30 seconds
   useEffect(() => {
     fetchNotifications();
     const interval = setInterval(fetchNotifications, 30000);
     return () => clearInterval(interval);
   }, [fetchNotifications]);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(e.target as Node)
+      ) {
         setIsOpen(false);
       }
     }
@@ -146,177 +164,253 @@ export function DashboardHeader({ adminName, onMenuClick }: DashboardHeaderProps
     setIsOpen(false);
   }
 
+  // Get current date formatted
+  const currentDate = new Date().toLocaleDateString("fr-FR", {
+    weekday: "long",
+    day: "numeric",
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <motion.header
       initial={{ opacity: 0, y: -8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
-      className="flex items-center justify-between gap-4 mb-8"
+      className="mb-6 sm:mb-8"
     >
-      {/* Left: Greeting */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={onMenuClick}
-          className="lg:hidden w-10 h-10 rounded-xl bg-white border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:text-[#374151] hover:border-[#D1D5DB] transition-all"
-        >
-          <Menu className="w-5 h-5" />
-        </button>
-        <div>
-          <h1
-            className="text-[28px] sm:text-[32px] font-bold text-[#1a1a1a] tracking-tight leading-tight"
-            style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
-          >
-            Hello, {adminName} 👋
-          </h1>
-          <p className="text-sm text-[#9CA3AF] mt-0.5 font-medium">
-            Welcome back to EDEN — Here's an overview of your platform's activity.
-          </p>
-        </div>
-      </div>
-
-      {/* Right: Actions */}
-      <div className="hidden sm:flex items-center gap-2">
-        {/* Search */}
-        <div className="hidden md:flex items-center gap-2 bg-white border border-[#E5E7EB] rounded-xl px-3 py-2 w-56 hover:border-[#D1D5DB] transition-all">
-          <Search className="w-4 h-4 text-[#9CA3AF]" />
-          <input
-            type="text"
-            placeholder="Rechercher…"
-            className="bg-transparent text-sm text-[#374151] placeholder:text-[#D1D5DB] outline-none w-full font-medium"
-          />
-          <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded-md border border-[#E5E7EB] bg-[#F9FAFB] px-1.5 py-0.5 text-[10px] font-medium text-[#9CA3AF]">
-            ⌘K
-          </kbd>
-        </div>
-
-        {/* Notifications */}
-        <div className="relative" ref={dropdownRef}>
+      {/* Top bar */}
+      <div className="flex items-center justify-between gap-3 mb-4 sm:mb-6">
+        {/* Left: Menu + Greeting */}
+        <div className="flex items-center gap-3 min-w-0">
           <button
-            onClick={() => setIsOpen(!isOpen)}
-            className={cn(
-              "relative w-10 h-10 rounded-xl bg-white border flex items-center justify-center transition-all",
-              isOpen
-                ? "border-[#38C172] text-[#374151] shadow-sm"
-                : "border-[#E5E7EB] text-[#6B7280] hover:text-[#374151] hover:border-[#D1D5DB]"
-            )}
+            onClick={onMenuClick}
+            className="lg:hidden w-10 h-10 rounded-xl bg-white border border-[#E8E5E0] flex items-center justify-center text-[#777777] hover:text-[#2F2F2F] hover:border-[#D1D5DB] transition-all active:scale-95 flex-shrink-0"
           >
-            <Bell className="w-[18px] h-[18px]" />
-            {unreadCount > 0 && (
-              <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 bg-[#F56565] rounded-full text-[9px] font-bold text-white flex items-center justify-center px-1">
-                {unreadCount > 99 ? "99+" : unreadCount}
-              </span>
+            <Menu className="w-5 h-5" />
+          </button>
+          <div className="min-w-0">
+            <h1
+              className="text-xl sm:text-2xl md:text-[28px] font-bold text-[#2F2F2F] tracking-tight leading-tight truncate"
+              style={{
+                fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
+              }}
+            >
+              Bonjour, {adminName} 👋
+            </h1>
+            <p className="text-xs sm:text-sm text-[#9CA3AF] mt-0.5 font-medium hidden sm:block">
+              Voici un aperçu de l'activité de votre plateforme.
+            </p>
+          </div>
+        </div>
+
+        {/* Right: Actions */}
+        <div className="flex items-center gap-2">
+          {/* Mobile search toggle */}
+          <button
+            onClick={() => setSearchOpen(!searchOpen)}
+            className="md:hidden w-10 h-10 rounded-xl bg-white border border-[#E8E5E0] flex items-center justify-center text-[#777777] hover:text-[#2F2F2F] hover:border-[#D1D5DB] transition-all active:scale-95"
+          >
+            {searchOpen ? (
+              <X className="w-[18px] h-[18px]" />
+            ) : (
+              <Search className="w-[18px] h-[18px]" />
             )}
           </button>
 
-          <AnimatePresence>
-            {isOpen && (
-              <motion.div
-                initial={{ opacity: 0, y: 8, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 8, scale: 0.95 }}
-                transition={{ duration: 0.2, ease: "easeOut" }}
-                className="absolute right-0 top-12 w-[380px] bg-white rounded-2xl shadow-xl border border-[#E5E7EB] z-50 overflow-hidden"
-              >
-                {/* Header */}
-                <div className="flex items-center justify-between px-4 py-3 border-b border-[#F3F4F6]">
-                  <h3 className="text-sm font-bold text-[#1a1a1a]">Notifications</h3>
-                  {unreadCount > 0 && (
-                    <button
-                      onClick={markAllAsRead}
-                      className="flex items-center gap-1 text-xs text-[#38C172] hover:text-[#2D9F62] font-semibold transition-colors"
-                    >
-                      <CheckCheck className="w-3.5 h-3.5" />
-                      Tout marquer comme lu
-                    </button>
-                  )}
-                </div>
+          {/* Desktop search */}
+          <div className="hidden md:flex items-center gap-2 bg-white border border-[#E8E5E0] rounded-xl px-3 py-2.5 w-56 lg:w-64 hover:border-[#D1D5DB] focus-within:border-[#486B46] focus-within:ring-2 focus-within:ring-[#486B46]/10 transition-all">
+            <Search className="w-4 h-4 text-[#9CA3AF] flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="Rechercher…"
+              className="bg-transparent text-sm text-[#2F2F2F] placeholder:text-[#D1D5DB] outline-none w-full font-medium"
+            />
+            <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded-md border border-[#E8E5E0] bg-[#F8F5F2] px-1.5 py-0.5 text-[10px] font-medium text-[#9CA3AF]">
+              ⌘K
+            </kbd>
+          </div>
 
-                {/* Notification list */}
-                <div className="max-h-[400px] overflow-y-auto">
-                  {loading ? (
-                    <div className="flex items-center justify-center py-8">
-                      <div className="w-5 h-5 border-2 border-[#38C172] border-t-transparent rounded-full animate-spin" />
-                    </div>
-                  ) : notifications.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-8 px-4">
-                      <Bell className="w-8 h-8 text-[#D1D5DB] mb-2" />
-                      <p className="text-sm text-[#9CA3AF] font-medium">Aucune notification</p>
-                    </div>
-                  ) : (
-                    notifications.map((notif) => (
-                      <div
-                        key={notif.id}
-                        onClick={() => handleNotificationClick(notif)}
-                        className={cn(
-                          "flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors border-b border-[#F9FAFB] last:border-0",
-                          notif.is_read ? "bg-white hover:bg-[#F9FAFB]" : "bg-[#F0FFF4] hover:bg-[#E6FFED]"
-                        )}
+          {/* Notifications */}
+          <div className="relative" ref={dropdownRef}>
+            <button
+              onClick={() => setIsOpen(!isOpen)}
+              className={cn(
+                "relative w-10 h-10 rounded-xl bg-white border flex items-center justify-center transition-all active:scale-95",
+                isOpen
+                  ? "border-[#486B46] text-[#2F2F2F] shadow-sm"
+                  : "border-[#E8E5E0] text-[#777777] hover:text-[#2F2F2F] hover:border-[#D1D5DB]"
+              )}
+            >
+              <Bell className="w-[18px] h-[18px]" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#F56565] rounded-full text-[9px] font-bold text-white flex items-center justify-center px-1 shadow-sm">
+                  {unreadCount > 99 ? "99+" : unreadCount}
+                </span>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {isOpen && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                  transition={{ duration: 0.2, ease: "easeOut" }}
+                  className="absolute right-0 top-12 w-[340px] sm:w-[380px] bg-white rounded-2xl shadow-xl border border-[#E8E5E0] z-50 overflow-hidden"
+                >
+                  {/* Header */}
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-[#F3F4F6]">
+                    <h3 className="text-sm font-bold text-[#2F2F2F]">
+                      Notifications
+                    </h3>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={markAllAsRead}
+                        className="flex items-center gap-1 text-xs text-[#486B46] hover:text-[#3A5A38] font-semibold transition-colors"
                       >
-                        {/* Icon */}
-                        <div className={cn("w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5", getNotificationColor(notif.type))}>
-                          {getNotificationIcon(notif.type)}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2">
-                            <p className={cn("text-sm truncate", notif.is_read ? "font-medium text-[#374151]" : "font-bold text-[#1a1a1a]")}>
-                              {notif.title}
-                            </p>
-                            {!notif.is_read && (
-                              <span className="w-2 h-2 bg-[#38C172] rounded-full flex-shrink-0" />
-                            )}
-                          </div>
-                          <p className="text-xs text-[#6B7280] mt-0.5 line-clamp-2">{notif.message}</p>
-                          <p className="text-[10px] text-[#9CA3AF] mt-1">{timeAgo(notif.created_at)}</p>
-                        </div>
-
-                        {/* Mark as read button */}
-                        {!notif.is_read && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              markAsRead(notif.id);
-                            }}
-                            className="flex-shrink-0 w-6 h-6 rounded-md flex items-center justify-center text-[#9CA3AF] hover:text-[#38C172] hover:bg-[#F0FFF4] transition-colors mt-0.5"
-                            title="Marquer comme lu"
-                          >
-                            <Check className="w-3.5 h-3.5" />
-                          </button>
-                        )}
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Footer */}
-                {notifications.length > 0 && (
-                  <div className="border-t border-[#F3F4F6] px-4 py-2.5">
-                    <button
-                      onClick={() => {
-                        setIsOpen(false);
-                        router.push("/admin/dashboard");
-                      }}
-                      className="w-full text-center text-xs text-[#38C172] hover:text-[#2D9F62] font-semibold transition-colors"
-                    >
-                      Voir toutes les notifications
-                    </button>
+                        <CheckCheck className="w-3.5 h-3.5" />
+                        Tout marquer comme lu
+                      </button>
+                    )}
                   </div>
-                )}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
 
-        {/* Settings */}
-        <button className="w-10 h-10 rounded-xl bg-white border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:text-[#374151] hover:border-[#D1D5DB] transition-all">
-          <Settings className="w-[18px] h-[18px]" />
-        </button>
+                  {/* Notification list */}
+                  <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
+                    {loading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="w-5 h-5 border-2 border-[#486B46] border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    ) : notifications.length === 0 ? (
+                      <div className="flex flex-col items-center justify-center py-10 px-4">
+                        <div className="w-12 h-12 rounded-2xl bg-[#F8F5F2] flex items-center justify-center mb-3">
+                          <Bell className="w-6 h-6 text-[#D1D5DB]" />
+                        </div>
+                        <p className="text-sm text-[#777777] font-medium">
+                          Aucune notification
+                        </p>
+                        <p className="text-xs text-[#9CA3AF] mt-1">
+                          Les notifications apparaîtront ici
+                        </p>
+                      </div>
+                    ) : (
+                      notifications.map((notif) => (
+                        <div
+                          key={notif.id}
+                          onClick={() => handleNotificationClick(notif)}
+                          className={cn(
+                            "flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors border-b border-[#F9FAFB] last:border-0",
+                            notif.is_read
+                              ? "bg-white hover:bg-[#FAF9F6]"
+                              : "bg-[#F0FFF4] hover:bg-[#E6FFED]"
+                          )}
+                        >
+                          <div
+                            className={cn(
+                              "w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5",
+                              getNotificationColor(notif.type)
+                            )}
+                          >
+                            {getNotificationIcon(notif.type)}
+                          </div>
 
-        {/* Avatar */}
-        <div className="ml-1 w-10 h-10 rounded-full bg-gradient-to-br from-[#38C172] to-[#86EFAC] flex items-center justify-center text-white text-sm font-bold shadow-sm cursor-pointer hover:shadow-md transition-shadow">
-          {adminName.charAt(0).toUpperCase()}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2">
+                              <p
+                                className={cn(
+                                  "text-sm truncate",
+                                  notif.is_read
+                                    ? "font-medium text-[#2F2F2F]"
+                                    : "font-bold text-[#2F2F2F]"
+                                )}
+                              >
+                                {notif.title}
+                              </p>
+                              {!notif.is_read && (
+                                <span className="w-2 h-2 bg-[#486B46] rounded-full flex-shrink-0" />
+                              )}
+                            </div>
+                            <p className="text-xs text-[#777777] mt-0.5 line-clamp-2">
+                              {notif.message}
+                            </p>
+                            <p className="text-[10px] text-[#9CA3AF] mt-1 font-medium">
+                              {timeAgo(notif.created_at)}
+                            </p>
+                          </div>
+
+                          {!notif.is_read && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                markAsRead(notif.id);
+                              }}
+                              className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#486B46] hover:bg-[#EEF5EC] transition-colors mt-0.5"
+                              title="Marquer comme lu"
+                            >
+                              <Check className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+
+                  {/* Footer */}
+                  {notifications.length > 0 && (
+                    <div className="border-t border-[#F3F4F6] px-4 py-2.5">
+                      <button
+                        onClick={() => {
+                          setIsOpen(false);
+                          router.push("/admin/dashboard");
+                        }}
+                        className="w-full text-center text-xs text-[#486B46] hover:text-[#3A5A38] font-semibold transition-colors py-1"
+                      >
+                        Voir toutes les notifications
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* Avatar */}
+          <div className="hidden sm:flex ml-1 w-10 h-10 rounded-full bg-gradient-to-br from-[#486B46] to-[#6E8B63] items-center justify-center text-white text-sm font-bold shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+            {adminName.charAt(0).toUpperCase()}
+          </div>
         </div>
+      </div>
+
+      {/* Mobile search bar (expandable) */}
+      <AnimatePresence>
+        {searchOpen && (
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            transition={{ duration: 0.2 }}
+            className="md:hidden overflow-hidden"
+          >
+            <div className="flex items-center gap-2 bg-white border border-[#E8E5E0] rounded-xl px-3 py-2.5 mb-4 focus-within:border-[#486B46] focus-within:ring-2 focus-within:ring-[#486B46]/10 transition-all">
+              <Search className="w-4 h-4 text-[#9CA3AF] flex-shrink-0" />
+              <input
+                type="text"
+                placeholder="Rechercher un utilisateur, événement…"
+                className="bg-transparent text-sm text-[#2F2F2F] placeholder:text-[#D1D5DB] outline-none w-full font-medium"
+                autoFocus
+              />
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Date bar */}
+      <div className="hidden md:flex items-center gap-2">
+        <div className="h-px flex-1 bg-gradient-to-r from-[#E8E5E0] to-transparent" />
+        <span className="text-[11px] font-medium text-[#9CA3AF] capitalize">
+          {currentDate}
+        </span>
+        <div className="h-px flex-1 bg-gradient-to-l from-[#E8E5E0] to-transparent" />
       </div>
     </motion.header>
   );
