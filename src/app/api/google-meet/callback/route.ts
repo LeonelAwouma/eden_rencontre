@@ -3,7 +3,9 @@
  *
  * Handles the Google OAuth callback after the user grants Meet permission.
  * Exchanges the authorization code for tokens and stores them.
- * Then redirects to the dashboard with a success/error indicator.
+ * Then redirects to the appropriate page (dashboard or admin meets).
+ *
+ * Supports both user and admin flows via the `returnTo` field in the OAuth state.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -21,47 +23,54 @@ export async function GET(request: NextRequest) {
     const state = searchParams.get("state");
     const error = searchParams.get("error");
 
-    // Build the base redirect URL for the frontend
+    // Build the base redirect URL — default to dashboard
     const origin = request.headers.get("origin") || request.nextUrl.origin;
-    const dashboardUrl = `${origin}/dashboard`;
+    let redirectBase = `${origin}/dashboard`;
+
+    // Helper to build redirect URL with query params
+    const redirectTo = (params: Record<string, string>) => {
+      const url = new URL(redirectBase);
+      Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+      return NextResponse.redirect(url.toString());
+    };
 
     // 1. Handle OAuth errors
     if (error) {
       console.warn("[GoogleMeet Callback] OAuth error from Google:", error);
-      return NextResponse.redirect(
-        `${dashboardUrl}?google_meet_error=${encodeURIComponent(
+      return redirectTo({
+        google_meet_error:
           error === "access_denied"
             ? "L'accès a été refusé. Veuillez autoriser l'application pour activer Google Meet."
-            : `Erreur OAuth: ${error}`
-        )}`
-      );
+            : `Erreur OAuth: ${error}`,
+      });
     }
 
     // 2. Validate required parameters
     if (!code) {
-      return NextResponse.redirect(
-        `${dashboardUrl}?google_meet_error=${encodeURIComponent(
-          "Code d'autorisation manquant."
-        )}`
-      );
+      return redirectTo({
+        google_meet_error: "Code d'autorisation manquant.",
+      });
     }
 
     if (!state) {
-      return NextResponse.redirect(
-        `${dashboardUrl}?google_meet_error=${encodeURIComponent(
-          "Paramètre de sécurité manquant. Veuillez réessayer."
-        )}`
-      );
+      return redirectTo({
+        google_meet_error: "Paramètre de sécurité manquant. Veuillez réessayer.",
+      });
     }
 
     // 3. Validate state (CSRF protection)
-    const userId = parseOAuthState(state);
-    if (!userId) {
-      return NextResponse.redirect(
-        `${dashboardUrl}?google_meet_error=${encodeURIComponent(
-          "Session expirée ou invalide. Veuillez réessayer."
-        )}`
-      );
+    const parsed = parseOAuthState(state);
+    if (!parsed) {
+      return redirectTo({
+        google_meet_error: "Session expirée ou invalide. Veuillez réessayer.",
+      });
+    }
+
+    const { userId, returnTo } = parsed;
+
+    // Override redirect base if returnTo is specified (admin flow)
+    if (returnTo) {
+      redirectBase = `${origin}${returnTo}`;
     }
 
     // 4. Exchange authorization code for tokens
@@ -73,21 +82,19 @@ export async function GET(request: NextRequest) {
         "[GoogleMeet Callback] Token exchange failed:",
         tokenResult.error
       );
-      return NextResponse.redirect(
-        `${dashboardUrl}?google_meet_error=${encodeURIComponent(
-          "Échec de l'obtention des jetons Google. Veuillez réessayer."
-        )}`
-      );
+      return redirectTo({
+        google_meet_error:
+          "Échec de l'obtention des jetons Google. Veuillez réessayer.",
+      });
     }
 
     // 5. Verify the Meet scope was granted
     const scopeString = tokenResult.scope || "";
     if (!scopeString.includes(GOOGLE_MEET_SCOPE)) {
-      return NextResponse.redirect(
-        `${dashboardUrl}?google_meet_error=${encodeURIComponent(
-          "L'autorisation Google Meet n'a pas été accordée. Veuillez réessayer et cocher la case Google Meet."
-        )}`
-      );
+      return redirectTo({
+        google_meet_error:
+          "L'autorisation Google Meet n'a pas été accordée. Veuillez réessayer et cocher la case Google Meet.",
+      });
     }
 
     // 6. Store credentials for the user
@@ -105,17 +112,14 @@ export async function GET(request: NextRequest) {
         "[GoogleMeet Callback] Failed to store credentials:",
         storeResult.error
       );
-      return NextResponse.redirect(
-        `${dashboardUrl}?google_meet_error=${encodeURIComponent(
-          "Erreur lors de l'enregistrement des identifiants. Veuillez réessayer."
-        )}`
-      );
+      return redirectTo({
+        google_meet_error:
+          "Erreur lors de l'enregistrement des identifiants. Veuillez réessayer.",
+      });
     }
 
-    // 7. Success — redirect to dashboard with success indicator
-    return NextResponse.redirect(
-      `${dashboardUrl}?google_meet_success=1`
-    );
+    // 7. Success — redirect with success indicator
+    return redirectTo({ google_meet_success: "1" });
   } catch (err: any) {
     console.error("[GoogleMeet Callback] Unexpected error:", err);
     const origin = request.headers.get("origin") || request.nextUrl.origin;

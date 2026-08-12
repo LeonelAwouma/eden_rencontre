@@ -562,24 +562,30 @@ function mapGoogleErrorCode(status: number): string {
 
 /**
  * Create a state parameter for CSRF protection.
- * The state contains the user ID and a timestamp, signed with a simple HMAC.
+ * The state contains the user ID, optional return path, and a timestamp.
+ *
+ * @param userId - The user or admin ID
+ * @param returnTo - Optional path to redirect after callback (e.g. "/admin/meets")
  */
-export function createOAuthState(userId: string): string {
-  const payload = JSON.stringify({
+export function createOAuthState(userId: string, returnTo?: string): string {
+  const payload: Record<string, unknown> = {
     userId,
     timestamp: Date.now(),
     nonce: Math.random().toString(36).substring(2, 15),
-  });
+  };
+  if (returnTo) {
+    payload.returnTo = returnTo;
+  }
   // Base64 encode (no encryption needed — CSRF state is validated by presence, not secrecy)
-  return Buffer.from(payload).toString("base64url");
+  return Buffer.from(JSON.stringify(payload)).toString("base64url");
 }
 
 /**
  * Parse and validate the OAuth state parameter.
- * Returns the userId if valid, or null if invalid/expired.
+ * Returns the userId and optional returnTo path, or null if invalid/expired.
  * State expires after 10 minutes.
  */
-export function parseOAuthState(state: string): string | null {
+export function parseOAuthState(state: string): { userId: string; returnTo: string | null } | null {
   try {
     const decoded = Buffer.from(state, "base64url").toString("utf-8");
     const payload = JSON.parse(decoded);
@@ -590,7 +596,10 @@ export function parseOAuthState(state: string): string | null {
     const age = Date.now() - payload.timestamp;
     if (age > 10 * 60 * 1000) return null;
 
-    return payload.userId;
+    return {
+      userId: payload.userId,
+      returnTo: payload.returnTo || null,
+    };
   } catch {
     return null;
   }

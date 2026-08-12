@@ -5,6 +5,9 @@
  * Uses admin cookie-based authentication instead of Supabase auth.
  *
  * Returns the Google OAuth URL that the admin should be redirected to.
+ * Uses the SAME callback URL as the user flow (/api/google-meet/callback)
+ * to avoid redirect_uri_mismatch errors with Google Cloud Console.
+ * The admin destination (/admin/meets) is encoded in the OAuth state.
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -27,12 +30,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Generate a CSRF state parameter containing the admin user ID
-    const state = createOAuthState(admin.adminId);
+    // 2. Generate a CSRF state with admin ID and return path
+    const state = createOAuthState(admin.adminId, "/admin/meets");
 
-    // 3. Build the callback URL (admin-specific)
+    // 3. Use the SAME callback URL as the user flow (already in Google Cloud Console)
     const origin = request.headers.get("origin") || request.nextUrl.origin;
-    const redirectUri = `${origin}/api/admin/google-meet/callback`;
+    const redirectUri = `${origin}/api/google-meet/callback`;
 
     // 4. Generate the Google OAuth URL
     let authUrl: string;
