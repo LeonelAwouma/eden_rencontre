@@ -97,15 +97,15 @@ export async function POST(request: NextRequest) {
         participant_limit: Array.isArray(participant_ids) ? participant_ids.length : null,
         is_public: is_public !== false,
         status: status || "draft",
-        created_by: admin.adminId,
+        created_by: admin.adminId === "env-admin" ? null : admin.adminId,
       })
       .select()
       .single();
 
     if (error) {
-      console.error("Error creating event:", error);
+      console.error("[Admin Events POST] Supabase error creating event:", JSON.stringify(error, null, 2));
       return NextResponse.json(
-        { error: "Erreur lors de la création de l'événement." },
+        { error: "Erreur lors de la création de l'événement.", details: error.message },
         { status: 500 }
       );
     }
