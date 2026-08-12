@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { createGoogleMeetEvent } from "@/lib/google-calendar";
 import { requireAdmin } from "@/lib/admin-auth";
+import { sendMeetingInvitationEmail } from "@/lib/email";
 
 // GET — List all meetings with optional filters
 export async function GET(req: NextRequest) {
@@ -195,11 +196,46 @@ export async function POST(req: NextRequest) {
       console.error("Failed to create meeting admin notification:", notifErr);
     }
 
+    // Send email invitations to all participants with Google Meet link
+    let emailsSent = 0;
+    let emailsFailed = 0;
+    const meetUrl = googleResult.meetUrl || null;
+    const meetingDate = new Date(start_time);
+
+    const emailPromises = allParticipantIds.map(async (uid: string) => {
+      const profile = profileMap.get(uid);
+      if (!profile?.email) return;
+
+      // Find the other participant(s)
+      const otherIds = allParticipantIds.filter((id: string) => id !== uid);
+      const otherNames = otherIds
+        .map((oid: string) => profileMap.get(oid)?.name || "un membre")
+        .join(", ");
+
+      const sent = await sendMeetingInvitationEmail({
+        to: profile.email,
+        userName: profile.name || "Membre",
+        meetingTitle: title,
+        meetingDescription: description || null,
+        meetingDate,
+        durationMinutes: duration_minutes,
+        meetLink: meetUrl,
+        otherUserName: otherNames,
+      });
+
+      if (sent) emailsSent++;
+      else emailsFailed++;
+    });
+
+    await Promise.allSettled(emailPromises);
+
     return NextResponse.json({
       meeting,
       google_meet_url: googleResult.meetUrl || null,
       google_configured: googleResult.success,
       google_error: googleResult.success ? null : googleResult.error,
+      emails_sent: emailsSent,
+      emails_failed: emailsFailed,
     });
   } catch (err: any) {
     console.error("[Admin Meetings POST]", err);

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { updateGoogleMeetEvent, deleteGoogleMeetEvent } from "@/lib/google-calendar";
+import { sendMeetingInvitationEmail, sendMeetingRescheduledEmail, sendMeetingCancelledEmail } from "@/lib/email";
 
 // GET — Get a single meeting
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
@@ -135,6 +136,51 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
           message: notificationMessage,
         },
       ]);
+    }
+
+    // Send email notifications to participants
+    try {
+      const participantIds = [existing.user_one_id, existing.user_two_id];
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("id, name, email")
+        .in("id", participantIds);
+
+      const profileMap = new Map(profiles?.map((p: { id: string; name: string; email: string }) => [p.id, p]) || []);
+
+      const emailPromises = participantIds.map(async (uid: string) => {
+        const profile = profileMap.get(uid);
+        if (!profile?.email) return;
+
+        const otherId = participantIds.find((pid: string) => pid !== uid);
+        const otherName = (otherId ? profileMap.get(otherId)?.name : null) || "un membre";
+
+        if (action === "cancel") {
+          await sendMeetingCancelledEmail(
+            profile.email,
+            profile.name || "Membre",
+            existing.title,
+            otherName,
+            cancellation_reason
+          );
+        } else if (action === "reschedule") {
+          const newStart = new Date(updateData.start_time as string || existing.start_time);
+          await sendMeetingRescheduledEmail({
+            to: profile.email,
+            userName: profile.name || "Membre",
+            meetingTitle: (updateData.title as string) || existing.title,
+            meetingDescription: (updateData.description as string) || existing.description,
+            meetingDate: newStart,
+            durationMinutes: (updateData.duration_minutes as number) || existing.duration_minutes,
+            meetLink: existing.google_meet_url,
+            otherUserName: otherName,
+          });
+        }
+      });
+
+      await Promise.allSettled(emailPromises);
+    } catch (emailErr) {
+      console.error("[Admin Meeting PATCH] Failed to send email notifications:", emailErr);
     }
 
     return NextResponse.json({ meeting: updated });

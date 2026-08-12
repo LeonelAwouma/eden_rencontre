@@ -398,6 +398,174 @@ export async function sendMeetInvitationEmail(
   });
 }
 
+// ── Meeting (Rendez-vous) Invitation Email ───────────────────
+export interface MeetingInvitationEmailParams {
+  to: string;
+  userName: string;
+  meetingTitle: string;
+  meetingDescription: string | null;
+  meetingDate: Date;
+  durationMinutes: number;
+  meetLink: string | null;
+  otherUserName: string;
+}
+
+export async function sendMeetingInvitationEmail(
+  params: MeetingInvitationEmailParams
+): Promise<boolean> {
+  const { to, userName, meetingTitle, meetingDescription, meetingDate, durationMinutes, meetLink, otherUserName } = params;
+
+  const formattedDate = meetingDate.toLocaleDateString("fr-FR", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+  const formattedTime = meetingDate.toLocaleTimeString("fr-FR", {
+    hour: "2-digit", minute: "2-digit",
+  });
+  const durationLabel = durationMinutes >= 60
+    ? `${Math.floor(durationMinutes / 60)}h${durationMinutes % 60 > 0 ? `${durationMinutes % 60}` : ""}`
+    : `${durationMinutes} minutes`;
+
+  const joinButtonHtml = meetLink
+    ? `<div style="text-align: center; margin: 30px 0;">
+        <a href="${meetLink}" style="display: inline-block; background: #2D5016; color: white; padding: 16px 40px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px;">
+          Rejoindre Google Meet
+        </a>
+      </div>`
+    : `<div style="margin: 20px 0; padding: 16px; background: #fff3cd; border-radius: 12px; border-left: 4px solid #ffc107;">
+        <p style="color: #856404; font-size: 14px; margin: 0;">
+          ⚠️ Le lien de réunion n'a pas encore été généré. Il sera disponible prochainement.
+        </p>
+      </div>`;
+
+  return sendEmail({
+    to,
+    subject: `Invitation à un rendez-vous vidéo — ${meetingTitle}`,
+    html: `
+      <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+        </div>
+        <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
+          <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${userName},</h2>
+          <p style="color: #555; font-size: 16px; line-height: 1.7;">
+            Vous êtes invité(e) à un rendez-vous vidéo avec <strong>${otherUserName}</strong>.
+          </p>
+          <div style="margin: 24px 0; padding: 24px; background: #f0ede6; border-radius: 12px;">
+            <p style="color: #2D5016; font-size: 18px; font-weight: bold; margin: 0 0 12px 0;">${meetingTitle}</p>
+            ${meetingDescription ? `<p style="color: #6B7280; font-size: 14px; margin: 0 0 12px 0; line-height: 1.6;">${meetingDescription}</p>` : ""}
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 6px 0; color: #888; font-size: 14px; width: 100px;">📅 Date</td><td style="padding: 6px 0; color: #333; font-size: 14px; font-weight: 500;">${formattedDate}</td></tr>
+              <tr><td style="padding: 6px 0; color: #888; font-size: 14px;">🕐 Heure</td><td style="padding: 6px 0; color: #333; font-size: 14px; font-weight: 500;">${formattedTime}</td></tr>
+              <tr><td style="padding: 6px 0; color: #888; font-size: 14px;">⏱ Durée</td><td style="padding: 6px 0; color: #333; font-size: 14px; font-weight: 500;">${durationLabel}</td></tr>
+              <tr><td style="padding: 6px 0; color: #888; font-size: 14px;">👤 Avec</td><td style="padding: 6px 0; color: #333; font-size: 14px; font-weight: 500;">${otherUserName}</td></tr>
+            </table>
+          </div>
+          ${joinButtonHtml}
+          ${meetLink ? `<p style="color: #888; font-size: 12px; text-align: center; word-break: break-all;">Ou copiez ce lien : <a href="${meetLink}" style="color: #2D5016;">${meetLink}</a></p>` : ""}
+          <p style="color: #888; font-size: 13px; margin-top: 24px; text-align: center;">Connectez-vous à votre espace pour plus de détails.</p>
+        </div>
+        <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
+          © ${new Date().getFullYear()} Eden Connexion — L'alliance bénie commence par une rencontre vraie.
+        </p>
+      </div>
+    `,
+  });
+}
+
+// ── Meeting Rescheduled Email ─────────────────────────────────
+export async function sendMeetingRescheduledEmail(
+  params: MeetingInvitationEmailParams
+): Promise<boolean> {
+  const { to, userName, meetingTitle, meetingDate, durationMinutes, meetLink, otherUserName } = params;
+
+  const formattedDate = meetingDate.toLocaleDateString("fr-FR", {
+    weekday: "long", day: "numeric", month: "long", year: "numeric",
+  });
+  const formattedTime = meetingDate.toLocaleTimeString("fr-FR", {
+    hour: "2-digit", minute: "2-digit",
+  });
+  const durationLabel = durationMinutes >= 60
+    ? `${Math.floor(durationMinutes / 60)}h${durationMinutes % 60 > 0 ? `${durationMinutes % 60}` : ""}`
+    : `${durationMinutes} minutes`;
+
+  const joinButtonHtml = meetLink
+    ? `<div style="text-align: center; margin: 30px 0;">
+        <a href="${meetLink}" style="display: inline-block; background: #2D5016; color: white; padding: 16px 40px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px;">
+          Rejoindre Google Meet
+        </a>
+      </div>` : "";
+
+  return sendEmail({
+    to,
+    subject: `Rendez-vous reprogrammé — ${meetingTitle}`,
+    html: `
+      <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+        </div>
+        <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
+          <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${userName},</h2>
+          <p style="color: #555; font-size: 16px; line-height: 1.7;">
+            Votre rendez-vous vidéo avec <strong>${otherUserName}</strong> a été <strong style="color: #8B5CF6;">reprogrammé</strong>.
+          </p>
+          <div style="margin: 24px 0; padding: 24px; background: #F5F3FF; border-radius: 12px; border-left: 4px solid #8B5CF6;">
+            <p style="color: #5B21B6; font-size: 18px; font-weight: bold; margin: 0 0 12px 0;">${meetingTitle}</p>
+            <table style="width: 100%; border-collapse: collapse;">
+              <tr><td style="padding: 6px 0; color: #888; font-size: 14px; width: 100px;">📅 Nouvelle date</td><td style="padding: 6px 0; color: #333; font-size: 14px; font-weight: 500;">${formattedDate}</td></tr>
+              <tr><td style="padding: 6px 0; color: #888; font-size: 14px;">🕐 Heure</td><td style="padding: 6px 0; color: #333; font-size: 14px; font-weight: 500;">${formattedTime}</td></tr>
+              <tr><td style="padding: 6px 0; color: #888; font-size: 14px;">⏱ Durée</td><td style="padding: 6px 0; color: #333; font-size: 14px; font-weight: 500;">${durationLabel}</td></tr>
+            </table>
+          </div>
+          ${joinButtonHtml}
+          ${meetLink ? `<p style="color: #888; font-size: 12px; text-align: center; word-break: break-all;">Ou copiez ce lien : <a href="${meetLink}" style="color: #2D5016;">${meetLink}</a></p>` : ""}
+        </div>
+        <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
+          © ${new Date().getFullYear()} Eden Connexion — L'alliance bénie commence par une rencontre vraie.
+        </p>
+      </div>
+    `,
+  });
+}
+
+// ── Meeting Cancelled Email ───────────────────────────────────
+export async function sendMeetingCancelledEmail(
+  to: string,
+  userName: string,
+  meetingTitle: string,
+  otherUserName: string,
+  reason?: string
+): Promise<boolean> {
+  return sendEmail({
+    to,
+    subject: `Rendez-vous annulé — ${meetingTitle}`,
+    html: `
+      <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+        </div>
+        <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
+          <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${userName},</h2>
+          <p style="color: #555; font-size: 16px; line-height: 1.7;">
+            Votre rendez-vous vidéo <strong>« ${meetingTitle} »</strong> avec <strong>${otherUserName}</strong> a été <strong style="color: #EF4444;">annulé</strong>.
+          </p>
+          ${reason ? `
+          <div style="margin: 20px 0; padding: 16px; background: #fef2f2; border-radius: 12px; border-left: 4px solid #EF4444;">
+            <p style="color: #991B1B; font-size: 14px; margin: 0 0 4px 0; font-weight: bold;">Raison :</p>
+            <p style="color: #555; font-size: 14px; margin: 0; line-height: 1.6;">${reason}</p>
+          </div>
+          ` : ""}
+          <p style="color: #555; font-size: 16px; line-height: 1.7;">
+            N'hésitez pas à planifier un nouveau rendez-vous depuis votre espace.
+          </p>
+        </div>
+        <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
+          © ${new Date().getFullYear()} Eden Connexion — L'alliance bénie commence par une rencontre vraie.
+        </p>
+      </div>
+    `,
+  });
+}
+
 // ── Account Suspended Email ──────────────────────────────────
 export async function sendAccountSuspendedEmail(
   email: string,
