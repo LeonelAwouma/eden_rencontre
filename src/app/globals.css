@@ -544,31 +544,31 @@ html {
 
 /* Loading spinner */
 .eden-admin-body .animate-spin,
-.eden-admin-body div[class*="border-t-[#38C172]"] {
+.eden-admin-body div[class*="border-t-[#38C172]"]:not([class*="border-t-[#38C172]/"]) {
   border-top-color: var(--accent-hex, #38C172) !important;
   border-color: var(--accent-hex-20, #38C17233);
   border-top-color: var(--accent-hex, #38C172) !important;
 }
 
 /* Save buttons with green background */
-.eden-admin-body button[class*="bg-[#38C172]"],
-.eden-admin-body a[class*="bg-[#38C172]"] {
+.eden-admin-body button[class*="bg-[#38C172]"]:not([class*="bg-[#38C172]/"]),
+.eden-admin-body a[class*="bg-[#38C172]"]:not([class*="bg-[#38C172]/"]) {
   background-color: var(--accent-hex, #38C172) !important;
   box-shadow: 0 4px 16px var(--accent-hex-50, rgba(56, 193, 114, 0.3)) !important;
 }
-.eden-admin-body button[class*="bg-[#38C172]"]:hover {
+.eden-admin-body button[class*="bg-[#38C172]"]:not([class*="bg-[#38C172]/"]):hover {
   box-shadow: 0 6px 24px var(--accent-hex-50, rgba(56, 193, 114, 0.4)) !important;
 }
 
 /* Green hover/active accents */
-.eden-admin-body button[class*="text-[#38C172]"],
-.eden-admin-body span[class*="text-[#38C172]"],
-.eden-admin-body a[class*="text-[#38C172]"] {
+.eden-admin-body button[class*="text-[#38C172]"]:not([class*="text-[#38C172]/"]),
+.eden-admin-body span[class*="text-[#38C172]"]:not([class*="text-[#38C172]/"]),
+.eden-admin-body a[class*="text-[#38C172]"]:not([class*="text-[#38C172]/"]) {
   color: var(--accent-hex, #38C172) !important;
 }
 
-.eden-admin-body div[class*="bg-[#38C172]/10"],
-.eden-admin-body button[class*="bg-[#38C172]/10"] {
+.eden-admin-body div[class*="bg-[#38C172]/10"]:not([class*="bg-[#38C172]/100"]),
+.eden-admin-body button[class*="bg-[#38C172]/10"]:not([class*="bg-[#38C172]/100"]) {
   background-color: var(--accent-hex-10, rgba(56, 193, 114, 0.1)) !important;
 }
 
@@ -580,13 +580,13 @@ html {
 }
 
 /* Accent-colored borders on cards */
-.eden-admin-body [class*="border-"][class*="#38C172"] {
+.eden-admin-body [class*="border-[#38C172]"]:not([class*="border-[#38C172]/"]) {
   border-color: var(--accent-hex, #38C172) !important;
 }
 
 /* Ring/selected states for color picker and options */
-.eden-admin-body [class*="ring-"][class*="#38C172"],
-.eden-admin-body [class*="border-"][class*="#38C172"] {
+.eden-admin-body [class*="ring-[#38C172]"]:not([class*="ring-[#38C172]/"]),
+.eden-admin-body [class*="border-[#38C172]"]:not([class*="border-[#38C172]/"]) {
   --tw-ring-color: var(--accent-hex, #38C172) !important;
   border-color: var(--accent-hex, #38C172) !important;
 }
