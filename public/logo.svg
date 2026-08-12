@@ -1,0 +1,7 @@
+<svg viewBox="0 0 56 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Deux alliances entrelacées -->
+  <circle cx="22" cy="29" r="13" stroke="#486B46" stroke-width="1.6" />
+  <circle cx="34" cy="29" r="13" stroke="#486B46" stroke-width="1.6" />
+  <!-- Croix au sommet -->
+  <path d="M28 3 V15 M22.5 8 H33.5" stroke="#486B46" stroke-width="1.6" stroke-linecap="round" />
+</svg>
