@@ -273,6 +273,24 @@ export async function POST(req: NextRequest) {
       await Promise.allSettled(emailPromises);
     }
 
+    // Create in-app notifications for invited users (visible in user dashboard)
+    try {
+      const formattedMeetDate = meetDate.toLocaleDateString("fr-FR", {
+        weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
+      });
+
+      const userNotifRows = user_ids.map((userId: string) => ({
+        user_id: userId,
+        notification_type: "meet_invitation",
+        title: "Invitation à un Google Meet",
+        message: `Vous êtes invité(e) au Google Meet « ${cleanTitle} » le ${formattedMeetDate}.${meetLink ? " Lien : " + meetLink : ""}`,
+      }));
+
+      await supabase.from("meeting_notifications").insert(userNotifRows);
+    } catch (userNotifErr) {
+      console.error("[Admin Meets POST] Failed to create user notifications:", userNotifErr);
+    }
+
     // Create admin notification
     try {
       await supabase.from("admin_notifications").insert({

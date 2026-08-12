@@ -23,6 +23,7 @@ import {
   Copy,
   ChevronLeft,
   UserPlus,
+  Unplug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DashboardHeader } from "@/components/admin/dashboard-header";
@@ -132,6 +133,7 @@ export default function AdminMeetsPage() {
   } | null>(null);
   const [meetStatusLoading, setMeetStatusLoading] = useState(true);
   const [connectingGoogle, setConnectingGoogle] = useState(false);
+  const [disconnectingGoogle, setDisconnectingGoogle] = useState(false);
 
   const fetchMeets = useCallback(async () => {
     setLoading(true);
@@ -213,6 +215,26 @@ export default function AdminMeetsPage() {
       setErrorBanner("Erreur réseau lors de la connexion à Google Meet.");
     } finally {
       setConnectingGoogle(false);
+    }
+  };
+
+  // Disconnect Google Meet (so admin can reconnect with a different account)
+  const handleDisconnectGoogleMeet = async () => {
+    if (!confirm("Déconnecter ce compte Google Meet ? Vous pourrez ensuite en connecter un autre.")) return;
+    setDisconnectingGoogle(true);
+    try {
+      const res = await fetch("/api/admin/google-meet/disconnect", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSuccessBanner("Google Meet déconnecté. Connectez un autre compte ci-dessous.");
+        await fetchMeetStatus();
+      } else {
+        setErrorBanner(data.error || "Erreur lors de la déconnexion.");
+      }
+    } catch {
+      setErrorBanner("Erreur réseau lors de la déconnexion.");
+    } finally {
+      setDisconnectingGoogle(false);
     }
   };
 
@@ -350,21 +372,36 @@ export default function AdminMeetsPage() {
         </motion.div>
       )}
 
-      {/* Google Meet Connected indicator (small, subtle) */}
+      {/* Google Meet Connected indicator with change account option */}
       {!meetStatusLoading && googleMeetReady && (
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="mb-4 flex items-center gap-2 px-4 py-2 rounded-xl"
+          className="mb-4 flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl"
           style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}
         >
-          <CheckCircle className="w-4 h-4" style={{ color: "#486B46" }} />
-          <p className="text-[12px] font-medium" style={{ color: "#2F5D2E" }}>
-            Google Meet connecté
-            {meetStatus.googleEmail && (
-              <span className="text-[#486B46]"> — {meetStatus.googleEmail}</span>
+          <div className="flex items-center gap-2 min-w-0">
+            <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#486B46" }} />
+            <p className="text-[12px] font-medium truncate" style={{ color: "#2F5D2E" }}>
+              Google Meet connecté
+              {meetStatus.googleEmail && (
+                <span className="text-[#486B46] font-semibold"> — {meetStatus.googleEmail}</span>
+              )}
+            </p>
+          </div>
+          <button
+            onClick={handleDisconnectGoogleMeet}
+            disabled={disconnectingGoogle}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all flex-shrink-0 hover:bg-white/60 disabled:opacity-50"
+            style={{ color: "#92400E", border: "1px solid #C6D4C0" }}
+          >
+            {disconnectingGoogle ? (
+              <Loader2 className="w-3 h-3 animate-spin" />
+            ) : (
+              <Unplug className="w-3 h-3" />
             )}
-          </p>
+            Changer de compte
+          </button>
         </motion.div>
       )}
 

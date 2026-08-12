@@ -92,6 +92,25 @@ export async function POST(
       .update(updateData)
       .eq("id", invitation_id);
 
+    // Create in-app notification for the user
+    if (emailSent) {
+      try {
+        const meetDate = new Date(meet.start_time);
+        const formattedDate = meetDate.toLocaleDateString("fr-FR", {
+          weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
+        });
+
+        await supabase.from("meeting_notifications").insert({
+          user_id: invitation.user_id,
+          notification_type: "meet_invitation",
+          title: "Invitation à un Google Meet (rappel)",
+          message: `Rappel : vous êtes invité(e) au Google Meet « ${meet.title} » le ${formattedDate}.${meet.meeting_uri ? " Lien : " + meet.meeting_uri : ""}`,
+        });
+      } catch (notifErr) {
+        console.error("[Resend Invitation] Failed to create user notification:", notifErr);
+      }
+    }
+
     return NextResponse.json({
       success: emailSent,
       status: newStatus,
