@@ -101,6 +101,54 @@ export async function PUT(
       ip
     );
 
+    // If event is (now) published and significant fields changed, notify all approved users
+    const significantChange = title !== undefined || event_date !== undefined || status === "published";
+    const isPublished = (status === "published") || (status === undefined && event.status === "published");
+
+    if (isPublished && significantChange) {
+      try {
+        // Only notify if status just became published, or date/title changed on a published event
+        const justPublished = status === "published" && event.status !== "published";
+        const dateOrTitleChanged = (title !== undefined || event_date !== undefined) && event.status === "published";
+
+        if (justPublished || dateOrTitleChanged) {
+          const { data: approvedUsers } = await db
+            .from("profiles")
+            .select("id")
+            .eq("status", "approved");
+
+          if (approvedUsers && approvedUsers.length > 0) {
+            const finalTitle = title || event.title;
+            const finalDate = event_date || event.event_date;
+            const formattedDate = new Date(finalDate).toLocaleDateString("fr-FR", {
+              weekday: "long", day: "numeric", month: "long", year: "numeric",
+            });
+
+            const notifTitle = justPublished ? "Nouvel événement" : "Événement mis à jour";
+            const notifMessage = justPublished
+              ? `Un nouvel événement est disponible : « ${finalTitle} » le ${formattedDate}.${event.meeting_link ? " Lien : " + event.meeting_link : ""}`
+              : `L'événement « ${finalTitle} » a été modifié. Nouvelle date : ${formattedDate}.${event.meeting_link ? " Lien : " + event.meeting_link : ""}`;
+
+            const notifRows = approvedUsers.map((u: { id: string }) => ({
+              user_id: u.id,
+              notification_type: "event_notification",
+              title: notifTitle,
+              message: notifMessage,
+            }));
+
+            for (let i = 0; i < notifRows.length; i += 500) {
+              const chunk = notifRows.slice(i, i + 500);
+              await db.from("meeting_notifications").insert(chunk);
+            }
+
+            console.log(`[Admin Events PUT] Sent ${notifRows.length} event notification(s)`);
+          }
+        }
+      } catch (userNotifErr) {
+        console.error("[Admin Events PUT] Failed to create user notifications:", userNotifErr);
+      }
+    }
+
     return NextResponse.json({ ok: true, event });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {

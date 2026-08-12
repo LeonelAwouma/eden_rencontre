@@ -1567,16 +1567,19 @@ export default function DashboardPage() {
                       : n.notification_type === "cancelled" ? X
                       : n.notification_type === "rescheduled" ? Clock
                       : n.notification_type === "meet_invitation" ? Video
+                      : n.notification_type === "event_notification" ? CalendarDays
                       : Bell;
                     const typeColor = n.notification_type === "created" ? "#38C172"
                       : n.notification_type === "cancelled" ? "#EF4444"
                       : n.notification_type === "rescheduled" ? "#8B5CF6"
                       : n.notification_type === "meet_invitation" ? "#2D5016"
+                      : n.notification_type === "event_notification" ? "#F59E0B"
                       : "#486B46";
                     const typeBg = n.notification_type === "created" ? "#EEF5EC"
                       : n.notification_type === "cancelled" ? "#FEF2F2"
                       : n.notification_type === "rescheduled" ? "#F5F3FF"
                       : n.notification_type === "meet_invitation" ? "#EEF5EC"
+                      : n.notification_type === "event_notification" ? "#FFFBEB"
                       : "#EEF5EC";
 
                     return (

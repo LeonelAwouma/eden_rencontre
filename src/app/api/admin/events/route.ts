@@ -122,7 +122,7 @@ export async function POST(request: NextRequest) {
       ip
     );
 
-    // Create notification for the new event
+    // Create admin notification for the new event
     try {
       await db.from("admin_notifications").insert({
         type: "event",
@@ -133,6 +133,39 @@ export async function POST(request: NextRequest) {
       });
     } catch (notifErr) {
       console.error("Failed to create event notification:", notifErr);
+    }
+
+    // If event is published, notify all approved users
+    if ((status || "draft") === "published") {
+      try {
+        const { data: approvedUsers } = await db
+          .from("profiles")
+          .select("id")
+          .eq("status", "approved");
+
+        if (approvedUsers && approvedUsers.length > 0) {
+          const formattedDate = new Date(event_date).toLocaleDateString("fr-FR", {
+            weekday: "long", day: "numeric", month: "long", year: "numeric",
+          });
+
+          const notifRows = approvedUsers.map((u: { id: string }) => ({
+            user_id: u.id,
+            notification_type: "event_notification",
+            title: "Nouvel événement",
+            message: `Un nouvel événement est disponible : « ${title} » le ${formattedDate}.${meeting_link ? " Lien : " + meeting_link : ""}`,
+          }));
+
+          // Batch insert (chunks of 500 to avoid payload limits)
+          for (let i = 0; i < notifRows.length; i += 500) {
+            const chunk = notifRows.slice(i, i + 500);
+            await db.from("meeting_notifications").insert(chunk);
+          }
+
+          console.log(`[Admin Events POST] Sent ${notifRows.length} event notification(s)`);
+        }
+      } catch (userNotifErr) {
+        console.error("[Admin Events POST] Failed to create user notifications:", userNotifErr);
+      }
     }
 
     return NextResponse.json({ ok: true, event });
