@@ -21,6 +21,7 @@ export default function EditEventPage() {
     meeting_link: "",
     location: "",
     event_date: "",
+    event_time: "18:00",
     participant_limit: "",
     is_public: true,
     status: "draft",
@@ -32,13 +33,21 @@ export default function EditEventPage() {
       .then((data) => {
         if (data.event) {
           const ev = data.event;
+          let eventDate = "";
+          let eventTime = "18:00";
+          if (ev.event_date) {
+            const dt = new Date(ev.event_date);
+            eventDate = dt.toISOString().slice(0, 10);
+            eventTime = dt.toISOString().slice(11, 16);
+          }
           setForm({
             title: ev.title || "",
             description: ev.description || "",
             cover_image_url: ev.cover_image_url || "",
             meeting_link: ev.meeting_link || "",
             location: ev.location || "",
-            event_date: ev.event_date ? ev.event_date.slice(0, 16) : "",
+            event_date: eventDate,
+            event_time: eventTime,
             participant_limit: ev.participant_limit ? String(ev.participant_limit) : "",
             is_public: ev.is_public !== false,
             status: ev.status || "draft",
@@ -58,13 +67,14 @@ export default function EditEventPage() {
     setSaving(true);
 
     try {
+      const eventDateTime = form.event_date && form.event_time ? `${form.event_date}T${form.event_time}` : form.event_date;
       const body: Record<string, unknown> = {
         title: form.title,
         description: form.description || null,
         cover_image_url: form.cover_image_url || null,
         meeting_link: form.meeting_link || null,
         location: form.location || null,
-        event_date: form.event_date,
+        event_date: eventDateTime,
         participant_limit: form.participant_limit ? parseInt(form.participant_limit) : null,
         is_public: form.is_public,
         status: form.status,
@@ -143,26 +153,36 @@ export default function EditEventPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Date et heure *</Label>
+              <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Date *</Label>
               <Input
                 required
-                type="datetime-local"
+                type="date"
                 value={form.event_date}
                 onChange={(e) => updateField("event_date", e.target.value)}
                 className="h-11 bg-gray-50 border-gray-200 rounded-xl"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Limite de participants</Label>
+              <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Heure *</Label>
               <Input
-                type="number"
-                min="1"
-                value={form.participant_limit}
-                onChange={(e) => updateField("participant_limit", e.target.value)}
-                placeholder="Illimité"
+                required
+                type="time"
+                value={form.event_time}
+                onChange={(e) => updateField("event_time", e.target.value)}
                 className="h-11 bg-gray-50 border-gray-200 rounded-xl"
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Limite de participants</Label>
+            <Input
+              type="number"
+              min="1"
+              value={form.participant_limit}
+              onChange={(e) => updateField("participant_limit", e.target.value)}
+              placeholder="Illimité"
+              className="h-11 bg-gray-50 border-gray-200 rounded-xl"
+            />
           </div>
 
           <div className="space-y-2">

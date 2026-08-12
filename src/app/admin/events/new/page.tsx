@@ -18,7 +18,7 @@ export default function NewEventPage() {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    title: "", description: "", meeting_link: "", location: "", event_date: "",
+    title: "", description: "", meeting_link: "", location: "", event_date: "", event_time: "18:00",
     is_public: true, status: "draft",
   });
 
@@ -67,9 +67,10 @@ export default function NewEventPage() {
         if (r.ok && d.url) coverImageUrl = d.url;
         else { alert(d.error || "Erreur upload image."); setSaving(false); return; }
       }
+      const eventDateTime = form.event_date && form.event_time ? `${form.event_date}T${form.event_time}` : form.event_date;
       const res = await fetch("/api/admin/events", {
         method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title: form.title, description: form.description || null, cover_image_url: coverImageUrl, meeting_link: form.meeting_link || null, location: form.location || null, event_date: form.event_date, participant_ids: selectedUsers.map((u) => u.id), is_public: form.is_public, status: form.status }),
+        body: JSON.stringify({ title: form.title, description: form.description || null, cover_image_url: coverImageUrl, meeting_link: form.meeting_link || null, location: form.location || null, event_date: eventDateTime, participant_ids: selectedUsers.map((u) => u.id), is_public: form.is_public, status: form.status }),
       });
       if (res.ok) router.push("/admin/events");
       else { const d = await res.json(); alert(d.error || "Erreur lors de la création."); }
@@ -120,25 +121,35 @@ export default function NewEventPage() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Date et heure *</Label>
+              <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Date *</Label>
               <Input
                 required
-                type="datetime-local"
+                type="date"
                 value={form.event_date}
                 onChange={(e) => updateField("event_date", e.target.value)}
                 className="h-11 bg-gray-50 border-gray-200 rounded-xl"
               />
             </div>
             <div className="space-y-2">
-              <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Lien de réunion</Label>
+              <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Heure *</Label>
               <Input
-                type="url"
-                value={form.meeting_link}
-                onChange={(e) => updateField("meeting_link", e.target.value)}
-                placeholder="https://meet.google.com/..."
+                required
+                type="time"
+                value={form.event_time}
+                onChange={(e) => updateField("event_time", e.target.value)}
                 className="h-11 bg-gray-50 border-gray-200 rounded-xl"
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">Lien de réunion</Label>
+            <Input
+              type="url"
+              value={form.meeting_link}
+              onChange={(e) => updateField("meeting_link", e.target.value)}
+              placeholder="https://meet.google.com/..."
+              className="h-11 bg-gray-50 border-gray-200 rounded-xl"
+            />
           </div>
 
           {/* Cover Image Upload */}
