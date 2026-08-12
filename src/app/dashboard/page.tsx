@@ -263,6 +263,16 @@ export default function DashboardPage() {
   // Meeting notifications
   const [meetingNotifs, setMeetingNotifs] = useState<{ id: string; meeting_id: string; notification_type: string; title: string; message: string; is_read: boolean; created_at: string }[]>([]);
 
+  // Upcoming events
+  const [upcomingEvents, setUpcomingEvents] = useState<{ id: string; title: string; event_date: string; location: string | null; meeting_link: string | null; cover_image_url: string | null }[]>([]);
+
+  useEffect(() => {
+    fetch("/api/events?limit=3")
+      .then((r) => r.json())
+      .then((d) => { if (d.events) setUpcomingEvents(d.events); })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (activeTab !== "Notifications" || !user?.id) return;
     fetch(`/api/meetings/notifications?user_id=${user.id}`)
@@ -1036,22 +1046,28 @@ export default function DashboardPage() {
                     <CalendarDays className="w-4 h-4" style={{ color: "#486B46" }} /> Événements à venir
                   </p>
                   <div className="space-y-3">
-                    {[
-                      { title: "Préparation au mariage", date: "Sam. 28 juin · 19h", mode: "En ligne" },
-                      { title: "Webinaire : Bâtir un foyer", date: "Mar. 1 juil. · 20h", mode: "Zoom" },
-                      { title: "Retraite couples & célib.", date: "12-14 juil.", mode: "Présentiel" },
-                    ].map((e, i) => (
-                      <div key={i} className="flex items-center gap-3 group cursor-pointer">
-                        <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0"
-                          style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}>
-                          <CalendarDays className="w-4 h-4" style={{ color: "#486B46" }} />
+                    {upcomingEvents.length > 0 ? upcomingEvents.map((e) => {
+                      const evDate = new Date(e.event_date);
+                      const formattedEvDate = evDate.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                      return (
+                        <div key={e.id} className="flex items-center gap-3 group cursor-pointer">
+                          <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
+                            style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}>
+                            {e.cover_image_url ? (
+                              <img src={e.cover_image_url} alt="" className="w-9 h-9 object-cover" />
+                            ) : (
+                              <CalendarDays className="w-4 h-4" style={{ color: "#486B46" }} />
+                            )}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate group-hover:transition-colors" style={{ color: "#2F2F2F" }}>{e.title}</p>
+                            <p className="text-[11px]" style={{ color: "#777777" }}>{formattedEvDate}{e.location ? ` · ${e.location}` : ""}</p>
+                          </div>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate group-hover:transition-colors" style={{ color: "#2F2F2F" }}>{e.title}</p>
-                          <p className="text-[11px]" style={{ color: "#777777" }}>{e.date} · {e.mode}</p>
-                        </div>
-                      </div>
-                    ))}
+                      );
+                    }) : (
+                      <p className="text-xs text-center py-2" style={{ color: "#9CA3AF" }}>Aucun événement prévu</p>
+                    )}
                   </div>
                 </div>
 

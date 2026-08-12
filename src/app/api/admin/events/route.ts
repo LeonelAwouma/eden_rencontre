@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
 
     let query = db
       .from("meet_events")
-      .select("*", { count: "exact" })
+      .select("*, event_participants(user_id, user:profiles!event_participants_user_id_fkey(id, name, email, avatar_url))", { count: "exact" })
       .order("event_date", { ascending: false });
 
     if (status && status !== "all") {
@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       meeting_link,
       location,
       event_date,
-      participant_limit,
+      participant_ids,
       is_public,
       status,
     } = body;
@@ -94,7 +94,7 @@ export async function POST(request: NextRequest) {
         meeting_link: meeting_link || null,
         location: location || null,
         event_date,
-        participant_limit: participant_limit || null,
+        participant_limit: Array.isArray(participant_ids) ? participant_ids.length : null,
         is_public: is_public !== false,
         status: status || "draft",
         created_by: admin.adminId,
@@ -108,6 +108,22 @@ export async function POST(request: NextRequest) {
         { error: "Erreur lors de la création de l'événement." },
         { status: 500 }
       );
+    }
+
+    // Insert selected participants
+    if (Array.isArray(participant_ids) && participant_ids.length > 0) {
+      const participantRows = participant_ids.map((userId: string) => ({
+        event_id: event.id,
+        user_id: userId,
+      }));
+
+      const { error: partError } = await db
+        .from("event_participants")
+        .insert(participantRows);
+
+      if (partError) {
+        console.error("[Admin Events POST] Failed to insert participants:", partError);
+      }
     }
 
     // Log the action

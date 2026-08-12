@@ -13,8 +13,9 @@ export async function GET(request: NextRequest) {
 
     const { data: events, error, count } = await db
       .from("meet_events")
-      .select("id, title, description, cover_image_url, meeting_link, location, event_date, participant_limit, is_public, status, created_at", { count: "exact" })
+      .select("id, title, description, cover_image_url, meeting_link, location, event_date, participant_limit, is_public, status, created_at, event_participants(count)", { count: "exact" })
       .eq("status", "published")
+      .gte("event_date", new Date().toISOString())
       .order("event_date", { ascending: true })
       .range(offset, offset + limit - 1);
 
