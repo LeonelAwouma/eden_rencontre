@@ -123,6 +123,16 @@ export default function AdminMeetsPage() {
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
 
+  // Google Meet connection status
+  const [meetStatus, setMeetStatus] = useState<{
+    connected: boolean;
+    hasMeetScope: boolean;
+    tokenExpired: boolean;
+    googleEmail: string | null;
+  } | null>(null);
+  const [meetStatusLoading, setMeetStatusLoading] = useState(true);
+  const [connectingGoogle, setConnectingGoogle] = useState(false);
+
   const fetchMeets = useCallback(async () => {
     setLoading(true);
     try {
@@ -141,6 +151,72 @@ export default function AdminMeetsPage() {
   }, [activeTab]);
 
   useEffect(() => { fetchMeets(); }, [fetchMeets]);
+
+  // Fetch Google Meet connection status
+  const fetchMeetStatus = useCallback(async () => {
+    setMeetStatusLoading(true);
+    try {
+      const res = await fetch("/api/admin/google-meet/status");
+      if (res.ok) {
+        const data = await res.json();
+        setMeetStatus({
+          connected: data.connected,
+          hasMeetScope: data.hasMeetScope,
+          tokenExpired: data.tokenExpired,
+          googleEmail: data.googleEmail,
+        });
+      } else {
+        setMeetStatus({ connected: false, hasMeetScope: false, tokenExpired: false, googleEmail: null });
+      }
+    } catch {
+      setMeetStatus({ connected: false, hasMeetScope: false, tokenExpired: false, googleEmail: null });
+    } finally {
+      setMeetStatusLoading(false);
+    }
+  }, []);
+
+  useEffect(() => { fetchMeetStatus(); }, [fetchMeetStatus]);
+
+  // Handle OAuth callback URL params (after Google Meet redirect)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const meetSuccess = params.get("google_meet_success");
+    const meetError = params.get("google_meet_error");
+
+    if (meetSuccess === "1") {
+      setSuccessBanner("Google Meet connecté avec succès ! Vous pouvez maintenant créer des meetings avec lien Google Meet.");
+      window.history.replaceState({}, "", window.location.pathname);
+      // Refresh status and meets
+      setTimeout(() => {
+        fetchMeetStatus();
+        fetchMeets();
+      }, 500);
+    } else if (meetError) {
+      setErrorBanner(decodeURIComponent(meetError));
+      window.history.replaceState({}, "", window.location.pathname);
+    }
+  }, [fetchMeetStatus, fetchMeets]);
+
+  // Initiate Google Meet OAuth connection
+  const handleConnectGoogleMeet = async () => {
+    setConnectingGoogle(true);
+    try {
+      const res = await fetch("/api/admin/google-meet/authorize", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.authUrl) {
+        // Redirect to Google OAuth
+        window.location.href = data.authUrl;
+      } else {
+        setErrorBanner(data.error || "Erreur lors de la connexion à Google Meet.");
+      }
+    } catch {
+      setErrorBanner("Erreur réseau lors de la connexion à Google Meet.");
+    } finally {
+      setConnectingGoogle(false);
+    }
+  };
+
+  const googleMeetReady = meetStatus?.connected && meetStatus?.hasMeetScope && !meetStatus?.tokenExpired;
 
   const handleDelete = async (meetId: string) => {
     if (!confirm("Supprimer définitivement ce meeting et toutes ses invitations ?")) return;
@@ -213,6 +289,84 @@ export default function AdminMeetsPage() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Google Meet Connection Status Banner */}
+      {!meetStatusLoading && meetStatus && !googleMeetReady && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-5 rounded-[20px] border-2 border-dashed p-5"
+          style={{
+            background: "linear-gradient(135deg, #FFF7ED 0%, #FEF3C7 100%)",
+            borderColor: "#F59E0B",
+          }}
+        >
+          <div className="flex items-start gap-4">
+            <div
+              className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: "#FEF3C7" }}
+            >
+              <Video className="w-5 h-5" style={{ color: "#D97706" }} />
+            </div>
+            <div className="flex-1 min-w-0">
+              <h3 className="text-[15px] font-bold text-[#92400E] mb-1">
+                Google Meet non connecté
+              </h3>
+              <p className="text-[13px] text-[#B45309] mb-3 leading-relaxed">
+                {!meetStatus.connected
+                  ? "Connectez votre compte Google pour créer des meetings avec un lien Google Meet. Les participants pourront rejoindre directement depuis l'invitation."
+                  : meetStatus.tokenExpired
+                  ? "Votre connexion Google a expiré. Veuillez vous reconnecter pour continuer à créer des Google Meets."
+                  : "L'autorisation Google Meet est manquante. Veuillez vous reconnecter en accordant la permission Google Meet."}
+              </p>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={handleConnectGoogleMeet}
+                  disabled={connectingGoogle}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white transition-all disabled:opacity-60"
+                  style={{
+                    background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)",
+                    boxShadow: "0 4px 16px rgba(217,119,6,0.3)",
+                  }}
+                >
+                  {connectingGoogle ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" /> Connexion en cours…
+                    </>
+                  ) : (
+                    <>
+                      <ExternalLink className="w-4 h-4" /> Connecter Google Meet
+                    </>
+                  )}
+                </button>
+                {meetStatus.googleEmail && (
+                  <span className="text-[12px] text-[#92400E]">
+                    Compte : <span className="font-semibold">{meetStatus.googleEmail}</span>
+                  </span>
+                )}
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      )}
+
+      {/* Google Meet Connected indicator (small, subtle) */}
+      {!meetStatusLoading && googleMeetReady && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          className="mb-4 flex items-center gap-2 px-4 py-2 rounded-xl"
+          style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}
+        >
+          <CheckCircle className="w-4 h-4" style={{ color: "#486B46" }} />
+          <p className="text-[12px] font-medium" style={{ color: "#2F5D2E" }}>
+            Google Meet connecté
+            {meetStatus.googleEmail && (
+              <span className="text-[#486B46]"> — {meetStatus.googleEmail}</span>
+            )}
+          </p>
+        </motion.div>
+      )}
 
       {/* Title + Create Button */}
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -416,7 +570,11 @@ export default function AdminMeetsPage() {
             onCreated={(result) => {
               setShowCreateModal(false);
               fetchMeets();
-              if (result.error) {
+              if (result.google_error) {
+                // Google Meet specific warning takes priority
+                setErrorBanner(result.google_error + " Cliquez sur « Connecter Google Meet » ci-dessus pour autoriser l'accès.");
+                fetchMeetStatus();
+              } else if (result.error) {
                 setErrorBanner(result.error);
               } else {
                 const parts = [];
@@ -441,7 +599,7 @@ export default function AdminMeetsPage() {
 
 function CreateMeetModal({ onClose, onCreated }: {
   onClose: () => void;
-  onCreated: (result: { emails_sent: number; emails_failed: number; error?: string }) => void;
+  onCreated: (result: { emails_sent: number; emails_failed: number; error?: string; google_error?: string }) => void;
 }) {
   const [users, setUsers] = useState<Profile[]>([]);
   const [searchQuery, setSearchQuery] = useState("");
@@ -523,6 +681,7 @@ function CreateMeetModal({ onClose, onCreated }: {
         onCreated({
           emails_sent: data.emails_sent || 0,
           emails_failed: data.emails_failed || 0,
+          google_error: data.google_error || undefined,
         });
       } else {
         onCreated({ emails_sent: 0, emails_failed: 0, error: data.error || "Erreur lors de la création" });

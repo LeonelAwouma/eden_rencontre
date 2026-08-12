@@ -1,10 +1,11 @@
 -- Google Meet credentials table
 -- Stores per-user Google OAuth tokens for Google Meet API access.
 -- These tokens are obtained through a direct Google OAuth flow (separate from Supabase auth).
+-- user_id is TEXT to support both Supabase auth users and admin users.
 
 CREATE TABLE IF NOT EXISTS google_meet_credentials (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
-  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id TEXT NOT NULL,
   
   -- Google OAuth tokens (encrypted at rest if possible)
   access_token TEXT NOT NULL,
@@ -33,19 +34,19 @@ ALTER TABLE google_meet_credentials ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own Google Meet credentials"
   ON google_meet_credentials FOR SELECT
-  USING (auth.uid() = user_id);
+  USING (user_id = auth.uid()::TEXT);
 
 CREATE POLICY "Users can insert own Google Meet credentials"
   ON google_meet_credentials FOR INSERT
-  WITH CHECK (auth.uid() = user_id);
+  WITH CHECK (user_id = auth.uid()::TEXT);
 
 CREATE POLICY "Users can update own Google Meet credentials"
   ON google_meet_credentials FOR UPDATE
-  USING (auth.uid() = user_id);
+  USING (user_id = auth.uid()::TEXT);
 
 CREATE POLICY "Users can delete own Google Meet credentials"
   ON google_meet_credentials FOR DELETE
-  USING (auth.uid() = user_id);
+  USING (user_id = auth.uid()::TEXT);
 
 -- Function to auto-update updated_at
 CREATE OR REPLACE FUNCTION update_google_meet_credentials_updated_at()
