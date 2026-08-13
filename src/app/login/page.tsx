@@ -11,9 +11,11 @@ import { Eye, EyeOff, ArrowRight, Heart, ShieldCheck, AlertCircle, CheckCircle2 
 import { signInWithGoogle, getSession } from "@/lib/auth";
 import { Monogram } from "@/components/ornaments";
 import { ImposingFloralCorners } from "@/components/garden";
+import { useI18n } from "@/lib/i18n";
 
 export default function LoginPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,16 +66,16 @@ export default function LoginPage() {
           return;
         }
         if (data.error === "rejected") {
-          setError("Votre demande d'inscription n'a pas été approuvée. Contactez le support si vous pensez qu'il s'agit d'une erreur.");
+          setError(t("login.errorRejected"));
           setIsLoading(false);
           return;
         }
         if (data.error === "suspended") {
-          setError("Votre compte a été suspendu. Contactez le support pour plus d'informations.");
+          setError(t("login.errorSuspended"));
           setIsLoading(false);
           return;
         }
-        setError(data.error || data.message || "Erreur de connexion.");
+        setError(data.error || data.message || t("login.errorConnection"));
         setIsLoading(false);
         return;
       }
@@ -90,7 +92,7 @@ export default function LoginPage() {
 
       router.push("/searching");
     } catch {
-      setError("Erreur de connexion au serveur.");
+      setError(t("login.errorServer"));
       setIsLoading(false);
     }
   };
@@ -188,13 +190,13 @@ export default function LoginPage() {
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-2">
               <Heart className="w-3.5 h-3.5 fill-primary" />
-              Espace Membre
+              {t("login.title")} {t("login.titleHighlight")}
             </div>
             <h1 className="font-headline text-3xl sm:text-5xl font-bold text-foreground">
-              Connexion
+              {t("login.submit")}
             </h1>
             <p className="text-foreground/50 text-base">
-              Entrez vos identifiants pour accéder à votre profil sacré.
+              {t("login.subtitle")}
             </p>
           </div>
 
@@ -211,12 +213,12 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">
-                Adresse email
+                {t("login.emailLabel")}
               </Label>
               <Input
                 type="email"
                 required
-                placeholder="votre@email.com"
+                placeholder={t("login.emailPlaceholder")}
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30 text-base"
@@ -226,13 +228,13 @@ export default function LoginPage() {
             <div className="space-y-2">
               <div className="flex justify-between items-center">
                 <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">
-                  Mot de passe
+                  {t("login.passwordLabel")}
                 </Label>
                 <Link
                   href="/forgot-password"
                   className="text-xs text-primary/80 hover:text-primary font-medium transition-colors"
                 >
-                  Mot de passe oublié ?
+                  {t("login.forgotPassword")}
                 </Link>
               </div>
               <div className="relative">
@@ -269,11 +271,11 @@ export default function LoginPage() {
               {isLoading ? (
                 <span className="flex items-center gap-3">
                   <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  Connexion en cours...
+                  {t("login.submitting")}
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  Se connecter
+                  {t("login.submit")}
                   <ArrowRight className="w-5 h-5" />
                 </span>
               )}
@@ -286,7 +288,7 @@ export default function LoginPage() {
               <div className="w-full border-t border-foreground/5" />
             </div>
             <div className="relative flex justify-center text-xs">
-              <span className="bg-background px-4 text-foreground/30 font-medium uppercase tracking-widest">ou</span>
+              <span className="bg-background px-4 text-foreground/30 font-medium uppercase tracking-widest">{t("login.or")}</span>
             </div>
           </div>
 
@@ -304,29 +306,29 @@ export default function LoginPage() {
               <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
               <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
             </svg>
-            Continuer avec Google
+            {t("login.googleSso")}
           </Button>
 
           {/* Register CTA */}
           <div className="text-center space-y-2 pt-4">
             <p className="text-foreground/40 text-sm">
-              Pas encore membre d'Eden Connexion ?
+              {t("login.notMember")}
             </p>
             <Link
               href="/register"
               className="inline-flex items-center gap-2 text-primary font-bold text-base hover:text-primary/80 transition-colors group"
             >
-              Créer mon profil sacré
+              {t("login.createProfile")}
               <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
             </Link>
           </div>
 
           {/* Footer info */}
           <p className="text-center text-foreground/20 text-[10px] font-medium uppercase tracking-widest pt-4">
-            En vous connectant, vous acceptez notre{" "}
-            <Link href="/charte" className="text-foreground/30 hover:text-primary/60 transition-colors">Charte Éthique</Link>
-            {" "}et nos{" "}
-            <Link href="/cgu" className="text-foreground/30 hover:text-primary/60 transition-colors">CGU</Link>.
+            {t("login.termsPrefix")}{" "}
+            <Link href="/charte" className="text-foreground/30 hover:text-primary/60 transition-colors">{t("login.charter")}</Link>
+            {" "}{t("login.termsAnd")}{" "}
+            <Link href="/cgu" className="text-foreground/30 hover:text-primary/60 transition-colors">{t("login.terms")}</Link>.
           </p>
         </div>
       </div>

@@ -3,6 +3,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import { GardenSection, GardenCard } from "@/components/garden";
+import { useI18n } from "@/lib/i18n";
 
 /** Nature-inspired icons as SVG components */
 function LeafIcon({ className }: { className?: string }) {
@@ -40,26 +41,27 @@ function TreeIcon({ className }: { className?: string }) {
   );
 }
 
-const features = [
-  {
-    icon: LeafIcon,
-    title: "Profil de Foi",
-    description: "Un espace pour exprimer votre spiritualité, votre engagement et votre vision de l'alliance divine et de l'autel familial.",
-  },
-  {
-    icon: ShieldLeafIcon,
-    title: "Sécurité & Confiance",
-    description: "La sérénité avant tout. Profils modérés et signalement simple pour des échanges respectueux et apaisés dans un cadre sacré.",
-  },
-  {
-    icon: TreeIcon,
-    title: "Élite & Diaspora",
-    description: "Accédez à un réseau exclusif de célibataires chrétiens de haut niveau en Afrique et à l'international.",
-  },
-];
-
 export function FeaturesSection() {
   const reduced = useReducedMotion();
+  const { t } = useI18n();
+
+  const features = [
+    {
+      icon: LeafIcon,
+      title: t("features.faithProfileTitle"),
+      description: t("features.faithProfileDesc"),
+    },
+    {
+      icon: ShieldLeafIcon,
+      title: t("features.securityTitle"),
+      description: t("features.securityDesc"),
+    },
+    {
+      icon: TreeIcon,
+      title: t("features.eliteTitle"),
+      description: t("features.eliteDesc"),
+    },
+  ];
 
   return (
     <GardenSection variant="muted" className="relative overflow-hidden">
@@ -72,11 +74,11 @@ export function FeaturesSection() {
           className="text-center max-w-3xl mx-auto mb-14 sm:mb-20 space-y-5"
         >
           <span className="inline-block text-[10px] font-semibold uppercase tracking-[0.3em] text-deep-eden/50">
-            Nos Piliers
+            {t("features.pillarsLabel")}
           </span>
           <h2 className="font-headline text-3xl sm:text-4xl md:text-5xl font-bold text-foreground tracking-tight">
-            L'Art de la Rencontre{" "}
-            <span className="text-primary italic">Chrétienne</span>
+            {t("features.sectionTitle1")}{" "}
+            <span className="text-primary italic">{t("features.sectionTitle2")}</span>
           </h2>
           {/* Olive leaf divider */}
           <div className="flex justify-center">
@@ -88,7 +90,7 @@ export function FeaturesSection() {
             </svg>
           </div>
           <p className="text-muted-foreground text-lg sm:text-xl leading-relaxed">
-            Une plateforme d'exception pour ceux qui placent Dieu au centre de leur projet de vie.
+            {t("features.sectionDesc")}
           </p>
         </motion.div>
 

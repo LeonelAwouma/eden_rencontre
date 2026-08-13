@@ -1,6 +1,9 @@
+"use client";
+
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { GardenSection, OrganicSeparator } from "@/components/garden";
+import { useI18n } from "@/lib/i18n";
 
 /** Botanical vine ornament for section dividers */
 function VineDivider() {
@@ -30,6 +33,7 @@ function VineDivider() {
 }
 
 export default function ConceptPage() {
+  const { t } = useI18n();
   return (
     <div className="flex flex-col min-h-screen bg-background">
       <Navigation />
@@ -40,14 +44,14 @@ export default function ConceptPage() {
           <div className="container mx-auto px-4 relative z-10">
             <div className="relative max-w-3xl mx-auto text-center space-y-6 py-8">
               <span className="inline-block text-[10px] font-semibold uppercase tracking-[0.3em] text-deep-eden/50">
-                Notre Philosophie
+                {t("concept.philosophyLabel")}
               </span>
               <h1 className="font-headline text-5xl md:text-6xl font-bold text-foreground tracking-tight">
-                Notre Vision <span className="italic text-primary">Sacrée</span>
+                {t("concept.sacredVision")} <span className="italic text-primary">{t("concept.sacredHighlight")}</span>
               </h1>
               <OrganicSeparator />
               <p className="text-xl text-muted-foreground leading-relaxed font-body">
-                Eden Connexion n'est pas un simple site de rencontre. C'est un sanctuaire numérique dédié à l'édification de foyers chrétiens solides, basés sur la vérité, le respect et l'amour divin.
+                {t("concept.visionDesc")}
               </p>
             </div>
           </div>
@@ -62,17 +66,17 @@ export default function ConceptPage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-4 text-deep-eden">
                   <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 3v18M3 12h18M7 7l10 10M17 7L7 17"/></svg>
-                  <h3 className="font-headline text-3xl font-bold tracking-tight">Éthique & Intégrité</h3>
+                  <h3 className="font-headline text-3xl font-bold tracking-tight">{t("concept.ethicsTitle")}</h3>
                 </div>
                 <p className="text-muted-foreground text-lg leading-relaxed pl-12 font-body">
-                  Nous croyons que chaque interaction doit être empreinte de respect. Notre charte éthique bannit les comportements légers et encourage la sincérité dès les premiers échanges.
+                  {t("concept.ethicsDesc")}
                 </p>
               </div>
 
               <div className="space-y-4">
                 <div className="flex items-center gap-4 text-deep-eden">
                   <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2L3 7V12C3 17.5 7.8 22.5 12 24C16.2 22.5 21 17.5 21 12V7L12 2Z"/><path d="M9 12l2 2 4-4"/></svg>
-                  <h3 className="font-headline text-3xl font-bold tracking-tight">Protection des Profils</h3>
+                  <h3 className="font-headline text-3xl font-bold tracking-tight">{t("concept.communityTitle")}</h3>
                 </div>
                 <p className="text-muted-foreground text-lg leading-relaxed pl-12 font-body">
                   Nous luttons activement contre la fraude. Chaque membre est encouragé à vérifier son identité, créant ainsi un climat de confiance mutuelle.
@@ -154,18 +158,18 @@ export default function ConceptPage() {
                 <svg viewBox="0 0 24 24" className="w-12 h-12 text-deep-eden" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2L3 7V12C3 17.5 7.8 22.5 12 24C16.2 22.5 21 17.5 21 12V7L12 2Z"/><path d="M9 12l2 2 4-4"/></svg>
               </div>
               <h2 className="font-headline text-4xl font-bold text-foreground tracking-tight">
-                Sécurité <span className="text-primary italic">Maximale</span>
+                Sécurité <span className="text-primary italic">{t("concept.securityHighlight")}</span>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
                 <div className="garden-card p-8 rounded-2xl relative overflow-hidden group">
-                  <h4 className="text-deep-eden font-headline font-bold text-lg mb-3">Communication Modérée</h4>
-                  <p className="text-muted-foreground text-sm font-body leading-relaxed">Notre système bloque automatiquement le partage de liens externes et de numéros lors des premiers messages pour vous protéger des arnaques.</p>
+                  <h4 className="text-deep-eden font-headline font-bold text-lg mb-3">{t("concept.moderatedCommTitle")}</h4>
+                  <p className="text-muted-foreground text-sm font-body leading-relaxed">{t("concept.moderatedCommDesc")}</p>
                   {/* Golden accent line on hover */}
                   <div className="absolute bottom-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-sage/0 to-transparent group-hover:via-sage/20 transition-all duration-700" aria-hidden="true" />
                 </div>
                 <div className="garden-card p-8 rounded-2xl relative overflow-hidden group">
-                  <h4 className="text-deep-eden font-headline font-bold text-lg mb-3">Vérification en temps réel</h4>
-                  <p className="text-muted-foreground text-sm font-body leading-relaxed">Notre vérification compare votre photo de profil avec votre pièce d'identité pour garantir que vous êtes bien qui vous prétendez être.</p>
+                  <h4 className="text-deep-eden font-headline font-bold text-lg mb-3">{t("concept.realtimeVerificationTitle")}</h4>
+                  <p className="text-muted-foreground text-sm font-body leading-relaxed">{t("concept.realtimeVerificationDesc")}</p>
                   <div className="absolute bottom-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-sage/0 to-transparent group-hover:via-sage/20 transition-all duration-700" aria-hidden="true" />
                 </div>
               </div>

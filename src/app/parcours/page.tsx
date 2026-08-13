@@ -1,3 +1,4 @@
+"use client";
 
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
@@ -5,32 +6,35 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CheckCircle2, Heart, ScrollText, ShieldCheck, Users } from "lucide-react";
 import Image from "next/image";
+import { useI18n } from "@/lib/i18n";
 
 export default function ParcoursPage() {
+  const { t } = useI18n();
+
   const steps = [
     {
-      title: "1. Profil de Foi",
-      description: "Au-delà des critères physiques, vous définissez votre vision spirituelle : dénomination, engagement en paroisse et projets de vie chrétienne.",
+      title: t("parcours.step1Title"),
+      description: t("parcours.step1Desc"),
       icon: <ScrollText className="w-6 h-6 text-accent" />,
-      detail: "Utilisez notre assistant IA pour raffiner votre description et la rendre alignée avec vos valeurs profondes."
+      detail: t("parcours.step1Detail")
     },
     {
-      title: "2. Profil vérifié & sécurisé",
-      description: "La sécurité est notre priorité. Chaque membre est invité à vérifier son identité afin de garantir l'authenticité des profils.",
+      title: t("parcours.step2Title"),
+      description: t("parcours.step2Desc"),
       icon: <ShieldCheck className="w-6 h-6 text-accent" />,
-      detail: "Un badge de certification est attribué aux profils vérifiés, instaurant un climat de confiance sacrée."
+      detail: t("parcours.step2Detail")
     },
     {
-      title: "3. Découverte & Édification",
-      description: "Notre algorithme privilégie les affinités spirituelles. Parcourez des profils qui partagent votre vision de l'alliance et du foyer.",
+      title: t("parcours.step3Title"),
+      description: t("parcours.step3Desc"),
       icon: <Users className="w-6 h-6 text-accent" />,
-      detail: "Accédez à des filtres avancés par pays, niveau d'étude et pratique religieuse."
+      detail: t("parcours.step3Detail")
     },
     {
-      title: "4. Échanges Sincères",
-      description: "Engagez la conversation dans un cadre respectueux. Notre modération IA veille à la courtoisie et prévient les comportements inappropriés.",
+      title: t("parcours.step4Title"),
+      description: t("parcours.step4Desc"),
       icon: <Heart className="w-6 h-6 text-accent" />,
-      detail: "Une communication centrée sur le projet de mariage, loin de la superficialité des réseaux sociaux classiques."
+      detail: t("parcours.step4Detail")
     }
   ];
 
@@ -51,9 +55,9 @@ export default function ParcoursPage() {
             />
           </div>
           <div className="container mx-auto px-4 relative z-10 text-center space-y-6">
-            <h1 className="font-headline text-5xl md:text-6xl font-bold text-foreground">Votre Chemin vers l'Alliance</h1>
+            <h1 className="font-headline text-5xl md:text-6xl font-bold text-foreground">{t("parcours.heroTitle")}</h1>
             <p className="text-xl text-foreground/60 max-w-2xl mx-auto leading-relaxed">
-              Eden Connexion vous accompagne pas à pas dans votre quête d'une union bénie, en alliant technologie moderne et valeurs bibliques immuables.
+              {t("parcours.heroDesc")}
             </p>
           </div>
         </section>
@@ -85,16 +89,16 @@ export default function ParcoursPage() {
         <section className="py-24 bg-accent/5">
           <div className="container mx-auto px-4 text-center space-y-12">
             <div className="max-w-3xl mx-auto space-y-6">
-              <h2 className="font-headline text-4xl font-bold text-foreground">Prêt à commencer votre histoire ?</h2>
+              <h2 className="font-headline text-4xl font-bold text-foreground">{t("parcours.ctaTitle")}</h2>
               <p className="text-lg text-foreground/60">
-                L'amour est un don, mais la rencontre est un choix. Faites le choix de la sincérité et de la foi aujourd'hui.
+                {t("parcours.ctaDesc")}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
                 <Button size="lg" className="bg-accent text-background font-bold px-10 h-14 text-lg" asChild>
-                  <Link href="/register">Créer mon profil gratuit</Link>
+                  <Link href="/register">{t("parcours.ctaButton")}</Link>
                 </Button>
                 <Button size="lg" variant="outline" className="border-accent text-accent hover:bg-accent/10 h-14 text-lg" asChild>
-                  <Link href="/concept">En savoir plus sur l'éthique</Link>
+                  <Link href="/concept">{t("parcours.ctaLink")}</Link>
                 </Button>
               </div>
             </div>
@@ -102,15 +106,15 @@ export default function ParcoursPage() {
             <div className="flex flex-wrap justify-center gap-8 text-foreground/40">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-accent" />
-                <span className="text-sm font-medium">Anonymat garanti</span>
+                <span className="text-sm font-medium">{t("parcours.anonymousGuarantee")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-accent" />
-                <span className="text-sm font-medium">Modération 24/7</span>
+                <span className="text-sm font-medium">{t("parcours.moderation247")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-accent" />
-                <span className="text-sm font-medium">Communauté sérieuse</span>
+                <span className="text-sm font-medium">{t("parcours.seriousCommunity")}</span>
               </div>
             </div>
           </div>

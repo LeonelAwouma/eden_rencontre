@@ -79,12 +79,6 @@ const NAV_ITEMS = [
     section: "engagement",
   },
   {
-    label: "Rendez-vous vidéo",
-    href: "/admin/meetings",
-    icon: CalendarDays,
-    section: "engagement",
-  },
-  {
     label: "Rapports",
     href: "/admin/reports",
     icon: ShieldCheck,

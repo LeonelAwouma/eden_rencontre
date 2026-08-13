@@ -6,16 +6,19 @@ import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
+import { useI18n } from "@/lib/i18n";
+import { LanguageSwitcher } from "@/components/language-switcher";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
+  const { t } = useI18n();
 
   const navLinks = [
-    { name: "Accueil", href: "/" },
-    { name: "Le Concept", href: "/concept" },
-    { name: "Parcours", href: "/parcours" },
-    { name: "Blog", href: "/blog" },
-    { name: "Témoignages", href: "/temoignages" },
+    { name: t("nav.home"), href: "/" },
+    { name: t("nav.concept"), href: "/concept" },
+    { name: t("nav.parcours"), href: "/parcours" },
+    { name: t("nav.blog"), href: "/blog" },
+    { name: t("nav.testimonials"), href: "/temoignages" },
   ];
 
   return (
@@ -33,7 +36,7 @@ export function Navigation() {
           <div className="flex items-center gap-10">
             {navLinks.map((link) => (
               <Link
-                key={link.name}
+                key={link.href}
                 href={link.href}
                 className="text-xs font-black tracking-[0.2em] uppercase text-foreground/60 hover:text-primary transition-all duration-300 relative group/link"
               >
@@ -43,24 +46,28 @@ export function Navigation() {
             ))}
           </div>
           <div className="flex items-center gap-6 border-l border-foreground/10 pl-12">
+            <LanguageSwitcher />
             <Button variant="ghost" asChild className="text-foreground hover:text-primary font-bold text-sm tracking-wide transition-colors">
-              <Link href="/login">Connexion</Link>
+              <Link href="/login">{t("nav.login")}</Link>
             </Button>
             <Button className="garden-btn-primary font-black px-8 h-12 rounded-xl text-sm tracking-tighter group" asChild>
               <Link href="/login" className="flex items-center justify-center">
-                Commencer
+                {t("nav.start")}
               </Link>
             </Button>
           </div>
         </div>
 
         {/* Mobile Nav Toggle */}
-        <button
-          className="lg:hidden text-foreground p-2 hover:bg-foreground/5 rounded-full transition-colors"
-          onClick={() => setIsOpen(!isOpen)}
-        >
-          {isOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
-        </button>
+        <div className="lg:hidden flex items-center gap-2">
+          <LanguageSwitcher />
+          <button
+            className="text-foreground p-2 hover:bg-foreground/5 rounded-full transition-colors"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {isOpen ? <X className="w-7 h-7" /> : <Menu className="w-7 h-7" />}
+          </button>
+        </div>
       </div>
 
       {/* Mobile Menu */}
@@ -73,7 +80,7 @@ export function Navigation() {
         <div className="flex flex-col items-center gap-8 px-6">
           {navLinks.map((link) => (
             <Link
-              key={link.name}
+              key={link.href}
               href={link.href}
               onClick={() => setIsOpen(false)}
               className="text-2xl font-headline font-bold text-foreground/80 hover:text-primary transition-colors"
@@ -83,10 +90,10 @@ export function Navigation() {
           ))}
           <div className="w-full space-y-4 pt-8 border-t border-foreground/5">
             <Button variant="outline" className="w-full border-primary text-primary h-14 text-base font-bold rounded-2xl" asChild>
-              <Link href="/login" onClick={() => setIsOpen(false)}>Se connecter</Link>
+              <Link href="/login" onClick={() => setIsOpen(false)}>{t("nav.signIn")}</Link>
             </Button>
             <Button className="w-full garden-btn-primary h-14 text-base font-black rounded-2xl" asChild>
-              <Link href="/login" onClick={() => setIsOpen(false)}>Commencer mon histoire</Link>
+              <Link href="/login" onClick={() => setIsOpen(false)}>{t("nav.startStory")}</Link>
             </Button>
           </div>
         </div>

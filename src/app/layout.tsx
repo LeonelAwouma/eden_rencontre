@@ -2,6 +2,7 @@ import type {Metadata, Viewport} from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AccentColorProvider } from "@/components/accent-color-provider";
+import { LanguageProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: 'Eden Connexion — L\'alliance bénie commence par une rencontre vraie.',
@@ -29,9 +30,11 @@ export default function RootLayout({
         <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
       </head>
         <body className="font-body antialiased bg-background text-foreground">
-        <AccentColorProvider>
-          {children}
-        </AccentColorProvider>
+        <LanguageProvider>
+          <AccentColorProvider>
+            {children}
+          </AccentColorProvider>
+        </LanguageProvider>
         <Toaster />
       </body>
     </html>

@@ -7,6 +7,7 @@ import { Footer } from "@/components/footer";
 import { GardenHero } from "@/components/garden";
 import { FeaturesSection } from "@/components/garden/features-section";
 import { QuoteSection } from "@/components/garden/quote-section";
+import { useI18n } from "@/lib/i18n";
 
 /** Animated counter that counts up from 0 to `end` when in viewport */
 function AnimatedCounter({ end, suffix = "", duration = 2000 }: { end: number; suffix?: string; duration?: number }) {
@@ -51,14 +52,16 @@ function AnimatedCounter({ end, suffix = "", duration = 2000 }: { end: number; s
   return <span ref={ref}>{count.toLocaleString("fr-FR")}{suffix}</span>;
 }
 
-const stats = [
-  { end: 2500, suffix: "+", label: "Couples bénis" },
-  { end: 15, suffix: "+", label: "Pays représentés" },
-  { end: 98, suffix: "%", label: "Profils vérifiés" },
-];
-
 /** Lightweight stats bar between hero and features */
 function StatsBar() {
+  const { t } = useI18n();
+
+  const stats = [
+    { end: 2500, suffix: "+", label: t("home.blessedCouples") },
+    { end: 15, suffix: "+", label: t("home.countriesRepresented") },
+    { end: 98, suffix: "%", label: t("home.verifiedProfiles") },
+  ];
+
   return (
     <section className="py-12 sm:py-16 bg-background relative">
       {/* Top organic divider */}

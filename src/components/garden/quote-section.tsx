@@ -4,9 +4,11 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { GardenSection } from "@/components/garden";
+import { useI18n } from "@/lib/i18n";
 
 export function QuoteSection() {
   const reduced = useReducedMotion();
+  const { t } = useI18n();
 
   return (
     <GardenSection variant="garden" className="py-20 sm:py-32">
@@ -31,7 +33,7 @@ export function QuoteSection() {
           </div>
 
           <h2 className="font-headline text-[1.7rem] leading-snug sm:text-5xl md:text-6xl font-bold text-foreground sm:leading-tight italic">
-            &ldquo;Ce que Dieu a uni, que l'homme ne le sépare pas.&rdquo;
+            &ldquo;{t("quote.text")}&rdquo;
           </h2>
 
           {/* Olive leaf divider */}
@@ -45,7 +47,7 @@ export function QuoteSection() {
           </div>
 
           <p className="text-lg sm:text-2xl text-primary font-headline tracking-widest uppercase opacity-80">
-            Matthieu 19:6
+            {t("quote.reference")}
           </p>
 
           <div className="pt-4 sm:pt-6">
@@ -54,7 +56,7 @@ export function QuoteSection() {
               className="garden-btn-primary px-8 sm:px-14 h-14 sm:h-20 text-lg sm:text-2xl font-bold rounded-xl w-full sm:w-auto"
               asChild
             >
-              <Link href="/login">Commencer mon histoire</Link>
+              <Link href="/login">{t("quote.cta")}</Link>
             </Button>
           </div>
         </motion.div>

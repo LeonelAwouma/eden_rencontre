@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 
 /** Floating pollen particles */
 function PollenParticles() {
@@ -39,6 +40,7 @@ function PollenParticles() {
 
 export function GardenHero() {
   const reduced = useReducedMotion();
+  const { t } = useI18n();
 
   return (
     <section className="relative overflow-hidden">
@@ -77,19 +79,18 @@ export function GardenHero() {
               >
                 <span className="inline-flex items-center gap-2.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.28em] text-deep-eden/50">
                   <span className="w-6 sm:w-8 h-[1px] bg-deep-eden/20" />
-                  Sanctuaire Numérique
+                  {t("hero.eyebrow")}
                 </span>
               </motion.div>
 
               {/* Headline */}
               <h1 className="font-headline text-[2.5rem] sm:text-5xl md:text-[3.5rem] lg:text-6xl xl:text-[4rem] font-bold leading-[1.08] sm:leading-[1.06] text-foreground tracking-tight">
-                L'union bénie,
+                {t("hero.headline1")}
                 <span className="block mt-1.5">
                   <span className="text-primary italic font-medium">
-                    scellée par la foi,
+                    {t("hero.headline2")}
                   </span>
                 </span>
-                <span className="block mt-1">commence ici.</span>
               </h1>
 
               {/* Olive leaf divider */}
@@ -109,7 +110,7 @@ export function GardenHero() {
 
               {/* Subheading */}
               <p className="text-[0.95rem] sm:text-base lg:text-lg text-muted-foreground leading-relaxed max-w-md font-body mx-auto">
-                Rejoignez la communauté de référence pour les célibataires chrétiens d'Afrique et de la diaspora. Un sanctuaire dédié à la vérité et à l'engagement sacré.
+                {t("hero.subtitle")}
               </p>
 
               {/* CTAs */}
@@ -124,13 +125,13 @@ export function GardenHero() {
                   className="garden-btn-primary px-8 sm:px-9 h-13 sm:h-14 text-[0.95rem] sm:text-base font-semibold rounded-xl w-full sm:w-auto tracking-wide"
                   asChild
                 >
-                  <Link href="/login">Chercher son alliance</Link>
+                  <Link href="/login">{t("hero.cta")}</Link>
                 </Button>
                 <Link
                   href="/concept"
                   className="growing-underline text-foreground/60 hover:text-primary font-medium text-[0.95rem] sm:text-base flex items-center gap-2.5 group transition-colors py-3 sm:py-0"
                 >
-                  Notre Vision Sacrée
+                  {t("hero.visionLink")}
                   <span className="group-hover:translate-x-1.5 transition-transform duration-300 text-sm">→</span>
                 </Link>
               </motion.div>
@@ -144,15 +145,15 @@ export function GardenHero() {
               >
                 <span className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-natural-sage/50" />
-                  2 500+ Couples
+                  {t("hero.couples")}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-sage/50" />
-                  15+ Pays
+                  {t("hero.countries")}
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-deep-eden/30" />
-                  100% Modéré
+                  {t("hero.moderated")}
                 </span>
               </motion.div>
             </motion.div>
