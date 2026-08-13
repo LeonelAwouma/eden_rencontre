@@ -25,17 +25,19 @@ export function Navigation() {
     <nav className="sticky top-0 z-50 w-full garden-nav">
       {/* ── Desktop header ── */}
       <div className="hidden lg:block">
-        <div className="container mx-auto px-6 xl:px-10 h-20 xl:h-24 flex items-center">
-          {/* Three-column layout: logo | centered nav | actions */}
-          <Link href="/" className="flex items-center gap-3 shrink-0 group">
-            <Monogram className="w-11 h-11 xl:w-12 xl:h-12 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
-            <span className="font-headline text-2xl xl:text-3xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors whitespace-nowrap">
-              Eden <span>Connexion</span>
-            </span>
-          </Link>
+        <div className="container mx-auto max-w-screen-2xl px-6 xl:px-10 h-20 xl:h-24 grid grid-cols-3 items-center">
+          {/* Left: Logo — flush left in its equal-third column */}
+          <div className="flex items-center justify-start">
+            <Link href="/" className="flex items-center gap-3 group">
+              <Monogram className="w-11 h-11 xl:w-12 xl:h-12 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
+              <span className="font-headline text-2xl xl:text-3xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors whitespace-nowrap">
+                Eden <span>Connexion</span>
+              </span>
+            </Link>
+          </div>
 
-          {/* Center nav — grows to fill available space, items centered */}
-          <div className="flex-1 flex justify-center">
+          {/* Center: Nav — perfectly centered in its equal-third column */}
+          <div className="flex justify-center">
             <div className="flex items-center gap-6 xl:gap-8">
               {navLinks.map((link) => (
                 <Link
@@ -50,8 +52,8 @@ export function Navigation() {
             </div>
           </div>
 
-          {/* Right actions — pinned to the right edge */}
-          <div className="flex items-center shrink-0">
+          {/* Right: Actions — flush right in its equal-third column */}
+          <div className="flex items-center justify-end">
             {/* Divider */}
             <div className="w-px h-6 bg-foreground/10 mx-4 xl:mx-5" aria-hidden="true" />
 
