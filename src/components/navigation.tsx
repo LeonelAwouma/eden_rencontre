@@ -37,7 +37,7 @@ export function Navigation() {
           </div>
 
           {/* Center: Nav — perfectly centered in its equal-third column */}
-          <div className="flex justify-center pr-6 xl:pr-8">
+          <div className="flex justify-center">
             <div className="flex items-center gap-6 xl:gap-8">
               {navLinks.map((link) => (
                 <Link
@@ -53,20 +53,17 @@ export function Navigation() {
           </div>
 
           {/* Right: Actions — flush right in its equal-third column */}
-          <div className="flex items-center justify-end border-l border-foreground/15 pl-6 xl:pl-8">
-            <div className="flex items-center gap-3 xl:gap-4">
-              <div className="mr-1 xl:mr-2">
-                <LanguageSwitcher />
-              </div>
-              <Button variant="ghost" asChild className="text-foreground hover:text-primary font-bold text-sm tracking-wide transition-colors px-3 xl:px-4">
-                <Link href="/login">{t("nav.login")}</Link>
-              </Button>
-              <Button className="garden-btn-primary font-black px-6 xl:px-8 h-10 xl:h-12 rounded-xl text-xs xl:text-sm tracking-tight group" asChild>
-                <Link href="/login" className="flex items-center justify-center">
-                  {t("nav.start")}
-                </Link>
-              </Button>
-            </div>
+          <div className="flex items-center justify-end border-l border-foreground/15 pl-6 xl:pl-8 gap-4 xl:gap-5">
+            <LanguageSwitcher />
+            <div className="w-px h-5 bg-foreground/15 shrink-0" />
+            <Button variant="ghost" asChild className="text-foreground hover:text-primary font-bold text-sm tracking-wide transition-colors px-3 xl:px-4">
+              <Link href="/login">{t("nav.login")}</Link>
+            </Button>
+            <Button className="garden-btn-primary font-black px-6 xl:px-8 h-10 xl:h-12 rounded-xl text-xs xl:text-sm tracking-tight group" asChild>
+              <Link href="/login" className="flex items-center justify-center">
+                {t("nav.start")}
+              </Link>
+            </Button>
           </div>
         </div>
       </div>
