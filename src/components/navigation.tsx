@@ -37,7 +37,7 @@ export function Navigation() {
           </div>
 
           {/* Center: Nav — perfectly centered in its equal-third column */}
-          <div className="flex justify-center">
+          <div className="flex justify-center pr-6 xl:pr-8">
             <div className="flex items-center gap-6 xl:gap-8">
               {navLinks.map((link) => (
                 <Link
