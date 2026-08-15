@@ -263,6 +263,9 @@ export default function DashboardPage() {
   // Meeting notifications
   const [meetingNotifs, setMeetingNotifs] = useState<{ id: string; meeting_id: string; notification_type: string; title: string; message: string; is_read: boolean; created_at: string }[]>([]);
 
+  // Blog notifications
+  const [blogNotifs, setBlogNotifs] = useState<{ id: string; blog_post_id: string | null; title: string; message: string; thumbnail_url: string | null; link: string | null; is_read: boolean; created_at: string }[]>([]);
+
   // Upcoming events
   const [upcomingEvents, setUpcomingEvents] = useState<{ id: string; title: string; event_date: string; location: string | null; meeting_link: string | null; cover_image_url: string | null }[]>([]);
 
@@ -279,14 +282,29 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((d) => { if (d.notifications) setMeetingNotifs(d.notifications); })
       .catch(() => {});
+    fetch(`/api/blog/notifications?user_id=${user.id}`)
+      .then((r) => r.json())
+      .then((d) => { if (d.notifications) setBlogNotifs(d.notifications); })
+      .catch(() => {});
   }, [activeTab, user?.id]);
 
   const unreadMeetingNotifs = meetingNotifs.filter((n) => !n.is_read);
+  const unreadBlogNotifs = blogNotifs.filter((n) => !n.is_read);
+  const notifCount = unreadMeetingNotifs.length + unreadBlogNotifs.length;
 
   const markMeetingNotifsRead = async () => {
     if (!user?.id || unreadMeetingNotifs.length === 0) return;
     setMeetingNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
     fetch("/api/meetings/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ mark_all: true, user_id: user.id }),
+    }).catch(() => {});
+  };
+  const markBlogNotifsRead = async () => {
+    if (!user?.id || unreadBlogNotifs.length === 0) return;
+    setBlogNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    fetch("/api/blog/notifications", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mark_all: true, user_id: user.id }),
@@ -734,6 +752,7 @@ export default function DashboardPage() {
         displayLocation={displayLocation}
         totalUnread={totalUnread}
         incomingRequestCount={incomingRequests.length}
+        notifCount={notifCount}
         onLogout={handleLogout}
       />
 
@@ -1116,7 +1135,17 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     )}
-                    {visitors.length === 0 && favoriteMembers.length === 0 && incomingRequests.length === 0 && totalUnread === 0 && (
+                    {unreadBlogNotifs.length > 0 && (
+                      <button onClick={() => setActiveTab("Notifications")} className="flex items-center gap-3 w-full">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#EEF5EC" }}>
+                          <BookOpen className="w-4 h-4" style={{ color: "#486B46" }} />
+                        </div>
+                        <p className="text-xs flex-1 text-left" style={{ color: "#2F2F2F" }}>
+                          <span className="font-bold">{unreadBlogNotifs.length}</span> nouvel{unreadBlogNotifs.length > 1 ? "s" : ""} article{unreadBlogNotifs.length > 1 ? "s" : ""} de blog
+                        </p>
+                      </button>
+                    )}
+                    {visitors.length === 0 && favoriteMembers.length === 0 && incomingRequests.length === 0 && totalUnread === 0 && unreadBlogNotifs.length === 0 && (
                       <p className="text-xs" style={{ color: "#777777" }}>Aucune activité récente.</p>
                     )}
                   </div>
@@ -1562,10 +1591,9 @@ export default function DashboardPage() {
         );
 
       case "Notifications":
-        // Mark meeting notifications as read when viewing
-        if (unreadMeetingNotifs.length > 0) {
-          markMeetingNotifsRead();
-        }
+        // Mark notifications as read when viewing
+        if (unreadMeetingNotifs.length > 0) markMeetingNotifsRead();
+        if (unreadBlogNotifs.length > 0) markBlogNotifsRead();
 
         return (
           <div className="space-y-6">
@@ -1643,8 +1671,36 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* Blog article notifications */}
+            {blogNotifs.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>Articles du blog</p>
+                <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
+                  {blogNotifs.map((n) => {
+                    const notifDate = new Date(n.created_at);
+                    const formattedDate = notifDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                    return (
+                      <Link key={n.id} href={n.link || "/blog"} className="flex items-start gap-4 p-4 transition-colors"
+                        style={{ borderLeft: n.is_read ? "3px solid transparent" : "3px solid #486B46" }}
+                        onMouseEnter={e => e.currentTarget.style.background = "#FAF9F6"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
+                        <div className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 overflow-hidden" style={{ background: "#EEF5EC" }}>
+                          {n.thumbnail_url ? <img src={n.thumbnail_url} alt="" className="w-full h-full object-cover" /> : <BookOpen className="w-5 h-5" style={{ color: "#486B46" }} />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold" style={{ color: "#2F2F2F" }}>{n.title}</p>
+                          <p className="text-xs mt-1 leading-relaxed line-clamp-2" style={{ color: "#4B5563" }}>{n.message}</p>
+                          <p className="text-[10px] mt-1.5" style={{ color: "#9CA3AF" }}>{formattedDate}</p>
+                        </div>
+                        {!n.is_read && <span className="w-2 h-2 rounded-full shrink-0 mt-2" style={{ background: "#486B46" }} />}
+                      </Link>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
             {/* Empty state when no notifications at all */}
-            {meetingNotifs.length === 0 && messageNotifs.length === 0 && (
+            {meetingNotifs.length === 0 && messageNotifs.length === 0 && blogNotifs.length === 0 && (
               <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                 {[
                   { icon: Heart, text: "Consultez vos notifications d'activité ici.", when: "" },

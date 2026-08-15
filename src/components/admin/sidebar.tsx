@@ -24,6 +24,7 @@ import {
   PanelLeftOpen,
   Video,
   Library,
+  BookOpen,
 } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 
@@ -83,6 +84,12 @@ const NAV_ITEMS = [
     label: "Médiathèque",
     href: "/admin/mediatheque",
     icon: Library,
+    section: "engagement",
+  },
+  {
+    label: "Blog",
+    href: "/admin/blog",
+    icon: BookOpen,
     section: "engagement",
   },
   {

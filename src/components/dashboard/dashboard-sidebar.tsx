@@ -30,6 +30,7 @@ interface SidebarProps {
   displayLocation: string;
   totalUnread: number;
   incomingRequestCount: number;
+  notifCount: number;
   onLogout: () => void;
 }
 
@@ -54,6 +55,7 @@ export function DashboardSidebar({
   displayLocation,
   totalUnread,
   incomingRequestCount,
+  notifCount,
   onLogout,
 }: SidebarProps) {
   const router = useRouter();
@@ -98,6 +100,8 @@ export function DashboardSidebar({
               ? totalUnread
               : item.name === "Demandes"
               ? incomingRequestCount
+              : item.name === "Notifications"
+              ? notifCount
               : 0;
           return (
             <button

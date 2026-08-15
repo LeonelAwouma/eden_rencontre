@@ -702,6 +702,7 @@ export default function ProfilePage() {
     displayLocation: profile.city || "",
     totalUnread: 0,
     incomingRequestCount: 0,
+    notifCount: 0,
     onLogout: handleLogout,
   };
 

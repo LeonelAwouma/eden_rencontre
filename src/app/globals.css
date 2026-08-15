@@ -614,3 +614,30 @@ html {
 @keyframes circular-progress {
   from { stroke-dashoffset: 283; }
 }
+
+/* ── Blog Editor & Content Styles ── */
+.blog-editor-content h1 { font-size: 1.875rem; font-weight: 700; margin: 1.5rem 0 1rem; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; color: #1a1a1a; }
+.blog-editor-content h2 { font-size: 1.5rem; font-weight: 700; margin: 1.5rem 0 0.75rem; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; color: #1a1a1a; }
+.blog-editor-content h3 { font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.5rem; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; color: #2F2F2F; }
+.blog-editor-content p { margin: 0.75rem 0; line-height: 1.8; }
+.blog-editor-content blockquote { border-left: 4px solid #486B46; padding: 0.75rem 1.25rem; margin: 1.25rem 0; background: #F9FAF8; border-radius: 0 12px 12px 0; font-style: italic; color: #555; }
+.blog-editor-content ul, .blog-editor-content ol { padding-left: 1.5rem; margin: 0.75rem 0; }
+.blog-editor-content li { margin: 0.25rem 0; line-height: 1.7; }
+.blog-editor-content a { color: #486B46; text-decoration: underline; text-underline-offset: 2px; }
+.blog-editor-content img { max-width: 100%; border-radius: 12px; margin: 1rem 0; height: auto; }
+.blog-editor-content figure { margin: 1.5rem 0; }
+.blog-editor-content figcaption { text-align: center; font-size: 0.85rem; color: #777; margin-top: 0.5rem; font-style: italic; }
+.blog-editor-content hr { border: none; border-top: 1px solid #E8E5E0; margin: 2rem 0; }
+
+.blog-content h1 { font-size: 1.875rem; font-weight: 700; margin: 1.5rem 0 1rem; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; color: #1a1a1a; }
+.blog-content h2 { font-size: 1.5rem; font-weight: 700; margin: 1.5rem 0 0.75rem; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; color: #1a1a1a; }
+.blog-content h3 { font-size: 1.25rem; font-weight: 600; margin: 1.25rem 0 0.5rem; font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; color: #2F2F2F; }
+.blog-content p { margin: 0.75rem 0; line-height: 1.8; }
+.blog-content blockquote { border-left: 4px solid #486B46; padding: 0.75rem 1.25rem; margin: 1.25rem 0; background: #F9FAF8; border-radius: 0 12px 12px 0; font-style: italic; color: #555; }
+.blog-content ul, .blog-content ol { padding-left: 1.5rem; margin: 0.75rem 0; }
+.blog-content li { margin: 0.25rem 0; line-height: 1.7; }
+.blog-content a { color: #486B46; text-decoration: underline; text-underline-offset: 2px; }
+.blog-content img { max-width: 100%; border-radius: 12px; margin: 1rem 0; height: auto; }
+.blog-content figure { margin: 1.5rem 0; }
+.blog-content figcaption { text-align: center; font-size: 0.85rem; color: #777; margin-top: 0.5rem; font-style: italic; }
+.blog-content hr { border: none; border-top: 1px solid #E8E5E0; margin: 2rem 0; }
