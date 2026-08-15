@@ -23,6 +23,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Video,
+  Library,
 } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 
@@ -76,6 +77,12 @@ const NAV_ITEMS = [
     label: "Google Meets",
     href: "/admin/meets",
     icon: Video,
+    section: "engagement",
+  },
+  {
+    label: "Médiathèque",
+    href: "/admin/mediatheque",
+    icon: Library,
     section: "engagement",
   },
   {

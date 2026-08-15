@@ -310,5 +310,40 @@
     "yes": "Yes",
     "no": "No",
     "back": "Back"
+  },
+  "mediatheque": {
+    "eyebrow": "Resources",
+    "title": "Media",
+    "titleHighlight": "Library",
+    "subtitle": "Resources to help you grow, discern, and prepare for a healthy relationship and marriage.",
+    "searchPlaceholder": "Search for a resource...",
+    "allContent": "All content",
+    "learningPaths": "Learning Paths",
+    "viewResource": "View resource",
+    "addToFavorites": "Add to favorites",
+    "markCompleted": "Mark as completed",
+    "goFurther": "Go further",
+    "relatedResources": "Related resources",
+    "myProgress": "My progress",
+    "noResources": "No resources found",
+    "noResourcesDesc": "Resources will be available soon.",
+    "duration": "Duration",
+    "pages": "pages",
+    "by": "By",
+    "level": {
+      "beginner": "Beginner",
+      "intermediate": "Intermediate",
+      "advanced": "Advanced"
+    },
+    "type": {
+      "video": "Video",
+      "audio": "Audio",
+      "book": "Book",
+      "pdf": "PDF",
+      "article": "Article",
+      "testimony": "Testimony",
+      "guide": "Guide",
+      "external": "External link"
+    }
   }
 }

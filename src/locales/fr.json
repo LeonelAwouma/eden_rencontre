@@ -310,5 +310,40 @@
     "yes": "Oui",
     "no": "Non",
     "back": "Retour"
+  },
+  "mediatheque": {
+    "eyebrow": "Ressources",
+    "title": "Médiathèque",
+    "titleHighlight": "Chrétienne",
+    "subtitle": "Des ressources pour grandir, discerner et vous préparer à une relation saine et un mariage épanoui.",
+    "searchPlaceholder": "Rechercher une ressource...",
+    "allContent": "Tout le contenu",
+    "learningPaths": "Parcours de formation",
+    "viewResource": "Voir la ressource",
+    "addToFavorites": "Ajouter aux favoris",
+    "markCompleted": "Marquer comme terminé",
+    "goFurther": "Aller plus loin",
+    "relatedResources": "Ressources associées",
+    "myProgress": "Ma progression",
+    "noResources": "Aucune ressource trouvée",
+    "noResourcesDesc": "Les ressources seront bientôt disponibles.",
+    "duration": "Durée",
+    "pages": "pages",
+    "by": "Par",
+    "level": {
+      "beginner": "Débutant",
+      "intermediate": "Intermédiaire",
+      "advanced": "Avancé"
+    },
+    "type": {
+      "video": "Vidéo",
+      "audio": "Audio",
+      "book": "Livre",
+      "pdf": "PDF",
+      "article": "Article",
+      "testimony": "Témoignage",
+      "guide": "Guide",
+      "external": "Lien externe"
+    }
   }
 }
