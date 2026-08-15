@@ -25,9 +25,9 @@ export function Navigation() {
     <nav className="sticky top-0 z-50 w-full garden-nav">
       {/* ── Desktop header ── */}
       <div className="hidden lg:block">
-        <div className="container mx-auto max-w-screen-2xl px-6 xl:px-10 h-20 xl:h-24 grid grid-cols-3 items-center">
+        <div className="container mx-auto max-w-screen-2xl px-6 xl:px-10 h-20 xl:h-24 flex items-center justify-between">
           {/* Left: Logo — flush left in its equal-third column */}
-          <div className="flex items-center justify-start">
+          <div className="flex items-center">
             <Link href="/" className="flex items-center gap-3 group">
               <Monogram className="w-11 h-11 xl:w-12 xl:h-12 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
               <span className="font-headline text-2xl xl:text-3xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors whitespace-nowrap">
@@ -36,24 +36,22 @@ export function Navigation() {
             </Link>
           </div>
 
-          {/* Center: Nav — perfectly centered in its equal-third column */}
-          <div className="flex justify-center">
-            <div className="flex items-center gap-6 xl:gap-8">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-[11px] xl:text-xs font-black tracking-[0.18em] xl:tracking-[0.2em] uppercase text-foreground/60 hover:text-primary transition-all duration-300 relative group/link whitespace-nowrap"
-                >
-                  {link.name}
-                  <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover/link:w-full" />
-                </Link>
-              ))}
-            </div>
+          {/* Center: Nav — centered between logo and actions */}
+          <div className="flex items-center gap-6 xl:gap-8">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-[11px] xl:text-xs font-black tracking-[0.18em] xl:tracking-[0.2em] uppercase text-foreground/60 hover:text-primary transition-all duration-300 relative group/link whitespace-nowrap"
+              >
+                {link.name}
+                <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover/link:w-full" />
+              </Link>
+            ))}
           </div>
 
           {/* Right: Actions — flush right in its equal-third column */}
-          <div className="flex items-center justify-end border-l border-foreground/15 pl-6 xl:pl-8 gap-4 xl:gap-5">
+          <div className="flex items-center gap-4 xl:gap-5">
             <LanguageSwitcher />
             <Button variant="ghost" asChild className="text-foreground hover:text-primary font-bold text-sm tracking-wide transition-colors px-3 xl:px-4">
               <Link href="/login">{t("nav.login")}</Link>
