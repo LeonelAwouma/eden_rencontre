@@ -55,7 +55,6 @@ export function Navigation() {
           {/* Right: Actions — flush right in its equal-third column */}
           <div className="flex items-center justify-end border-l border-foreground/15 pl-6 xl:pl-8 gap-4 xl:gap-5">
             <LanguageSwitcher />
-            <div className="w-px h-5 bg-foreground/15 shrink-0" />
             <Button variant="ghost" asChild className="text-foreground hover:text-primary font-bold text-sm tracking-wide transition-colors px-3 xl:px-4">
               <Link href="/login">{t("nav.login")}</Link>
             </Button>
