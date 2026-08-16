@@ -7,5 +7,6 @@ export { GardenHero } from "./garden-hero";
 export { GardenSection } from "./garden-section";
 export { FeaturesSection } from "./features-section";
 export { QuoteSection } from "./quote-section";
+export { PromoBanner } from "./promo-banner";
 export { GardenFrame, ImposingFloralCorners } from "./garden-frame";
 export { ImposingFloralCorner, ImposingFloralSide, ImposingSingleFlower } from "./imposing-floral-svgs";

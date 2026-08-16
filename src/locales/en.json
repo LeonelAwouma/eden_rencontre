@@ -38,6 +38,14 @@
     "reference": "Matthew 19:6",
     "cta": "Start my story"
   },
+  "promo": {
+    "label": "Join Eden",
+    "title": "Find your faith partner today",
+    "description": "Join thousands of Christians who have found authentic love through Eden Connexion. Our unique approach combines faith and compatibility for lasting relationships blessed by God.",
+    "cta": "Start for free",
+    "learnMore": "Discover our concept",
+    "imageAlt": "Happy Christian couple - Eden Connexion"
+  },
   "home": {
     "blessedCouples": "Blessed couples",
     "countriesRepresented": "Countries represented",
@@ -223,28 +231,34 @@
     "premium": "Premium",
     "securePayment": "100% secure payment",
     "bottomTitle": "💖 Find the right person faster",
-    "bottomDesc": "Choose the plan that matches your goals and enjoy a personalized matching experience.",
+    "bottomDesc": "Choose the plan that suits you and enjoy a quality matching experience.",
     "badgeSecure": "Secure payment",
     "badgeEncrypted": "Encrypted data",
     "badgeCancelable": "Cancel anytime",
     "bronze": {
       "badge": "Ideal to get started",
-      "feature1": "Up to 5 matchings per day",
-      "feature2": "Up to 5 connection requests",
-      "feature3": "Perfect for discovering the platform"
+      "description": "The essentials for making new connections.",
+      "feature1": "5 matchings per day",
+      "feature2": "5 invitation requests",
+      "feature3": "Random matching",
+      "tagline": "Ideal for discovering the platform at a small price."
     },
-    "silver": {
+    "argent": {
       "badge": "Most popular",
-      "feature1": "Up to 10 random matchings",
-      "feature2": "More profiles to discover",
-      "feature3": "More opportunities to find the right person"
+      "description": "More possibilities, more connections.",
+      "feature1": "10 random matchings per day",
+      "feature2": "15 invitation requests",
+      "feature3": "Up to 25 messages per day",
+      "tagline": "The best balance between freedom and features."
     },
-    "gold": {
+    "or": {
       "badge": "Premium",
-      "feature1": "Targeted geographic matching",
-      "feature2": "Discover people near you",
-      "feature3": "Smarter and more relevant recommendations",
-      "feature4": "The best experience for serious relationships"
+      "description": "The premium experience without limits.",
+      "feature1": "Unlimited matching",
+      "feature2": "Geographic targeting",
+      "feature3": "Unlimited messages",
+      "feature4": "Invitation requests",
+      "tagline": "Make the most of the platform and multiply your connection opportunities."
     }
   },
   "blog": {

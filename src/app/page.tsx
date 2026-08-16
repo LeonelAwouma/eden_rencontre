@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenHero } from "@/components/garden";
+import { GardenHero, PromoBanner } from "@/components/garden";
 import { FeaturesSection } from "@/components/garden/features-section";
 import { QuoteSection } from "@/components/garden/quote-section";
 import { useI18n } from "@/lib/i18n";
@@ -96,6 +96,7 @@ export default function Home() {
       <main>
         <GardenHero />
         <StatsBar />
+        <PromoBanner />
         <FeaturesSection />
         <QuoteSection />
       </main>

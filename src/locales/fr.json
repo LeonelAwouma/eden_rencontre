@@ -38,6 +38,14 @@
     "reference": "Matthieu 19:6",
     "cta": "Commencer mon histoire"
   },
+  "promo": {
+    "label": "Rejoignez Eden",
+    "title": "Trouvez votre partenaire de foi aujourd'hui",
+    "description": "Rejoignez des milliers de chrétiens qui ont trouvé l'amour authentique grâce à Eden Connexion. Notre approche unique combine foi et compatibilité pour des relations durables bénies par Dieu.",
+    "cta": "Commencer gratuitement",
+    "learnMore": "Découvrir notre concept",
+    "imageAlt": "Couple chrétien heureux - Eden Connexion"
+  },
   "home": {
     "blessedCouples": "Couples bénis",
     "countriesRepresented": "Pays représentés",
@@ -223,28 +231,34 @@
     "premium": "Premium",
     "securePayment": "Paiement 100% sécurisé",
     "bottomTitle": "💖 Trouvez la bonne personne plus rapidement",
-    "bottomDesc": "Choisissez le plan qui correspond à vos objectifs et profitez d'une expérience de mise en relation personnalisée.",
+    "bottomDesc": "Choisissez la formule qui vous correspond et profitez d'une expérience de mise en relation de qualité.",
     "badgeSecure": "Paiement sécurisé",
     "badgeEncrypted": "Données chiffrées",
     "badgeCancelable": "Résiliable à tout moment",
     "bronze": {
-      "badge": "Idéal pour commencer",
-      "feature1": "Jusqu'à 5 matchings par jour",
-      "feature2": "Jusqu'à 5 demandes de connexion",
-      "feature3": "Parfait pour découvrir la plateforme"
+      "badge": "Idéale pour commencer",
+      "description": "L'essentiel pour faire de nouvelles rencontres.",
+      "feature1": "5 matchings par jour",
+      "feature2": "5 demandes d'invitation",
+      "feature3": "Matching aléatoire",
+      "tagline": "Idéale pour découvrir la plateforme à petit prix."
     },
-    "silver": {
+    "argent": {
       "badge": "Le plus populaire",
-      "feature1": "Jusqu'à 10 matchings aléatoires",
-      "feature2": "Plus de profils à découvrir",
-      "feature3": "Plus d'opportunités de trouver la bonne personne"
+      "description": "Plus de possibilités, plus de connexions.",
+      "feature1": "10 matchings aléatoires par jour",
+      "feature2": "15 demandes d'invitation",
+      "feature3": "Jusqu'à 25 messages par jour",
+      "tagline": "Le meilleur équilibre entre liberté et fonctionnalités."
     },
-    "gold": {
+    "or": {
       "badge": "Premium",
-      "feature1": "Matching géographique ciblé",
-      "feature2": "Découvrez les personnes proches de vous",
-      "feature3": "Recommandations plus intelligentes et pertinentes",
-      "feature4": "La meilleure expérience pour les relations sérieuses"
+      "description": "L'expérience premium sans limites.",
+      "feature1": "Matching illimité",
+      "feature2": "Ciblage géographique",
+      "feature3": "Messages illimités",
+      "feature4": "Demandes d'invitation",
+      "tagline": "Pour profiter pleinement de la plateforme et multiplier vos opportunités de connexion."
     }
   },
   "blog": {

@@ -9,13 +9,10 @@ import {
   ShieldCheck,
   Sparkles,
   Users,
-  Globe,
   MapPin,
   Star,
   Zap,
-  Search,
   MessageCircle,
-  Target,
   Lock,
 } from "lucide-react";
 
@@ -26,47 +23,53 @@ export default function PricingPage() {
       icon: "🥉",
       price: "2 500",
       currency: "F",
-      badge: "Idéal pour commencer",
+      description: "L'essentiel pour faire de nouvelles rencontres.",
+      badge: "Idéale pour commencer",
       badgeColor: { bg: "#F5E6D3", text: "#8B6914" },
       features: [
-        { text: "Jusqu'à 5 matchings par jour", icon: Users },
-        { text: "Jusqu'à 5 demandes de connexion", icon: MessageCircle },
-        { text: "Parfait pour découvrir la plateforme", icon: Search },
+        { text: "5 matchings par jour", icon: Heart },
+        { text: "5 demandes d'invitation", icon: MessageCircle },
+        { text: "Matching aléatoire", icon: Sparkles },
       ],
+      tagline: "Idéale pour découvrir la plateforme à petit prix.",
       cta: "Choisir Bronze",
       popular: false,
       gold: false,
     },
     {
-      name: "Silver",
+      name: "Argent",
       icon: "🥈",
       price: "5 000",
       currency: "F",
+      description: "Plus de possibilités, plus de connexions.",
       badge: "Le plus populaire",
       badgeColor: { bg: "#EEF5EC", text: "#486B46" },
       features: [
-        { text: "Jusqu'à 10 matchings aléatoires", icon: Sparkles },
-        { text: "Plus de profils à découvrir", icon: Users },
-        { text: "Plus d'opportunités de trouver la bonne personne", icon: Heart },
+        { text: "10 matchings aléatoires par jour", icon: Sparkles },
+        { text: "15 demandes d'invitation", icon: MessageCircle },
+        { text: "Jusqu'à 25 messages par jour", icon: Zap },
       ],
-      cta: "Choisir Silver",
+      tagline: "Le meilleur équilibre entre liberté et fonctionnalités.",
+      cta: "Choisir Argent",
       popular: true,
       gold: false,
     },
     {
-      name: "Gold",
+      name: "Or",
       icon: "🥇",
       price: "10 000",
       currency: "F",
+      description: "L'expérience premium sans limites.",
       badge: "Premium",
       badgeColor: { bg: "#FDF6E3", text: "#9B7C15" },
       features: [
-        { text: "Matching géographique ciblé", icon: MapPin },
-        { text: "Découvrez les personnes proches de vous", icon: Globe },
-        { text: "Recommandations plus intelligentes et pertinentes", icon: Target },
-        { text: "La meilleure expérience pour les relations sérieuses", icon: Star },
+        { text: "Matching illimité", icon: Zap },
+        { text: "Ciblage géographique", icon: MapPin },
+        { text: "Messages illimités", icon: MessageCircle },
+        { text: "Demandes d'invitation", icon: Users },
       ],
-      cta: "Passer au Premium",
+      tagline: "Pour profiter pleinement de la plateforme et multiplier vos opportunités de connexion.",
+      cta: "Passer à Or",
       popular: false,
       gold: true,
     },
@@ -96,11 +99,11 @@ export default function PricingPage() {
               </span>
             </div>
             <h1 className="font-headline text-4xl sm:text-5xl lg:text-6xl font-bold mb-6" style={{ color: "#2F2F2F" }}>
-              ✨ Choisissez le plan{" "}
-              <span className="italic" style={{ color: "#486B46" }}>fait pour vous</span>
+              🌟 Choisissez la formule{" "}
+              <span className="italic" style={{ color: "#486B46" }}>qui vous correspond</span>
             </h1>
             <p className="text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto" style={{ color: "#777777" }}>
-              Trouvez des connexions significatives grâce à un plan adapté à vos besoins.
+              Des formules adaptées à chaque parcours, pour des rencontres authentiques au sein de la communauté chrétienne.
             </p>
             <div className="mt-8 flex items-center justify-center gap-3">
               <div className="h-px w-16" style={{ background: "linear-gradient(to right, transparent, #C6D4C0)" }} />
@@ -168,7 +171,7 @@ export default function PricingPage() {
                     )}
 
                     {/* Plan icon & badge */}
-                    <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <span className="text-3xl">{plan.icon}</span>
                         <h3 className="font-headline text-xl font-bold" style={{ color: "#2F2F2F" }}>
@@ -187,6 +190,13 @@ export default function PricingPage() {
                         </span>
                       )}
                     </div>
+
+                    {/* Description */}
+                    {plan.description && (
+                      <p className="text-sm leading-relaxed mb-4" style={{ color: "#777777" }}>
+                        {plan.description}
+                      </p>
+                    )}
 
                     {/* Price */}
                     <div className="mb-6 pb-6" style={{ borderBottom: "1px solid #F0EDE8" }}>
@@ -240,6 +250,13 @@ export default function PricingPage() {
                         </li>
                       ))}
                     </ul>
+
+                    {/* Tagline */}
+                    {plan.tagline && (
+                      <p className="text-xs italic leading-relaxed mb-6" style={{ color: "#9CA3AF" }}>
+                        {plan.tagline}
+                      </p>
+                    )}
 
                     {/* CTA Button */}
                     <Button
@@ -314,8 +331,8 @@ export default function PricingPage() {
                   className="text-base sm:text-lg leading-relaxed max-w-xl mx-auto mb-2"
                   style={{ color: "#555555" }}
                 >
-                  Choisissez le plan qui correspond à vos objectifs et profitez d'une expérience
-                  de mise en relation personnalisée, conçue pour vous aider à construire des
+                  Choisissez la formule qui vous correspond et profitez d&apos;une expérience
+                  de mise en relation de qualité, conçue pour vous aider à construire des
                   relations chrétiennes significatives.
                 </p>
               </div>
