@@ -28,16 +28,15 @@ export function PromoBanner() {
           >
             {/* Organic frame behind image */}
             <div className="absolute -inset-3 sm:-inset-4 bg-gradient-to-br from-sage/10 via-transparent to-deep-eden/5 rounded-3xl -rotate-1" aria-hidden="true" />
-            <div className="relative aspect-[4/3] rounded-2xl overflow-hidden shadow-xl shadow-deep-eden/10">
+            <div className="relative aspect-[16/10] rounded-2xl overflow-hidden shadow-xl shadow-deep-eden/10 bg-white">
               <Image
                 src="/image_pub.png"
                 alt={t("promo.imageAlt")}
                 fill
-                className="object-cover"
+                className="object-contain"
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
-              {/* Subtle vignette overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-deep-eden/10 via-transparent to-transparent" aria-hidden="true" />
+
             </div>
           </motion.div>
 
