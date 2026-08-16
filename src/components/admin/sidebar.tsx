@@ -25,6 +25,7 @@ import {
   Video,
   Library,
   BookOpen,
+  Send,
 } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 
@@ -66,6 +67,12 @@ const NAV_ITEMS = [
     label: "Chat Monitoring",
     href: "/admin/chat-monitoring",
     icon: MessageCircle,
+    section: "engagement",
+  },
+  {
+    label: "Envoyer un message",
+    href: "/admin/messages",
+    icon: Send,
     section: "engagement",
   },
   {
