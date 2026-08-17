@@ -13,6 +13,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { generateBlogIdeas, type GenerateBlogIdeasOutput } from "@/ai/flows/generate-blog-ideas-flow";
 import { useToast } from "@/hooks/use-toast";
+import { useI18n } from "@/lib/i18n";
 
 interface BlogPostItem {
   id: string; title: string; slug: string; excerpt: string | null;
@@ -23,6 +24,7 @@ interface BlogPostItem {
 
 export default function BlogPage() {
   const { toast } = useToast();
+  const { t, locale } = useI18n();
   const [topic, setTopic] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [aiIdeas, setAiIdeas] = useState<GenerateBlogIdeasOutput | null>(null);
@@ -47,8 +49,8 @@ export default function BlogPage() {
   async function handleGenerateIdeas() {
     if (!topic.trim()) {
       toast({
-        title: "Champ requis",
-        description: "Veuillez entrer un sujet pour générer des idées.",
+        title: t("blog.toastRequired"),
+        description: t("blog.toastRequiredDesc"),
         variant: "destructive"
       });
       return;
@@ -59,13 +61,13 @@ export default function BlogPage() {
       const result = await generateBlogIdeas({ topic });
       setAiIdeas(result);
       toast({
-        title: "Idées générées !",
-        description: "L'IA a préparé des pistes de réflexion pour vous.",
+        title: t("blog.toastGenerated"),
+        description: t("blog.toastGeneratedDesc"),
       });
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible de générer les idées pour le moment.",
+        title: t("blog.toastError"),
+        description: t("blog.toastErrorDesc"),
         variant: "destructive"
       });
     } finally {
@@ -90,10 +92,10 @@ export default function BlogPage() {
             />
           </div>
           <div className="container mx-auto px-4 relative z-10 text-center space-y-6">
-            <Badge className="bg-accent text-background border-none px-4 py-1">Édification</Badge>
-            <h1 className="font-headline text-5xl md:text-6xl font-bold text-foreground">Le Blog d'Eden</h1>
+            <Badge className="bg-accent text-background border-none px-4 py-1">{t("blog.eyebrow")}</Badge>
+            <h1 className="font-headline text-5xl md:text-6xl font-bold text-foreground">{t("blog.pageTitle")}</h1>
             <p className="text-xl text-foreground/60 max-w-2xl mx-auto leading-relaxed">
-              Conseils bibliques, témoignages inspirants et réflexions pour bâtir des foyers chrétiens solides.
+              {t("blog.pageSubtitle")}
             </p>
           </div>
         </section>
@@ -106,13 +108,13 @@ export default function BlogPage() {
                 <div className="mx-auto w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mb-4">
                   <BookOpen className="text-accent" />
                 </div>
-                <CardTitle className="font-headline text-2xl">Assistant d'Étude Biblique (IA)</CardTitle>
-                <p className="text-foreground/60 text-sm">Entrez un sujet (ex: "le pardon dans le couple") pour recevoir des pistes de réflexion personnalisées.</p>
+                <CardTitle className="font-headline text-2xl">{t("blog.aiSectionTitle")}</CardTitle>
+                <p className="text-foreground/60 text-sm">{t("blog.aiSectionDesc")}</p>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="flex gap-4">
                   <Input 
-                    placeholder="Sujet de réflexion..." 
+                    placeholder={t("blog.aiTopicPlaceholder")}
                     value={topic}
                     onChange={(e) => setTopic(e.target.value)}
                     className="bg-background border-foreground/10"
@@ -122,7 +124,7 @@ export default function BlogPage() {
                     disabled={isGenerating}
                     className="bg-accent text-background font-bold px-8"
                   >
-                    {isGenerating ? "Génération..." : "Générer des pistes"}
+                    {isGenerating ? t("blog.aiGenerating") : t("blog.aiButton")}
                   </Button>
                 </div>
 
@@ -156,16 +158,16 @@ export default function BlogPage() {
         {/* Blog Posts Grid */}
         <section className="py-24 container mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
-            <h2 className="font-headline text-3xl font-bold">Articles Récents</h2>
+            <h2 className="font-headline text-3xl font-bold">{t("blog.title")} {t("blog.titleHighlight")}</h2>
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
-              <Input placeholder="Rechercher..." value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 bg-card border-none" />
+              <Input placeholder={t("blog.searchPlaceholder")} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 bg-card border-none" />
             </div>
           </div>
 
           {categories.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-10">
-              <Badge onClick={() => setSelectedCategory("all")} className={`cursor-pointer ${selectedCategory==="all" ? "bg-accent text-background" : "bg-card text-foreground/60 hover:bg-accent/10"} border-none`}>Tous</Badge>
+              <Badge onClick={() => setSelectedCategory("all")} className={`cursor-pointer ${selectedCategory==="all" ? "bg-accent text-background" : "bg-card text-foreground/60 hover:bg-accent/10"} border-none`}>{t("blog.allCategories")}</Badge>
               {categories.map((c: any) => (
                 <Badge key={c.id} onClick={() => setSelectedCategory(c.slug)} className={`cursor-pointer ${selectedCategory===c.slug ? "bg-accent text-background" : "bg-card text-foreground/60 hover:bg-accent/10"} border-none`}>{c.name}</Badge>
               ))}
@@ -179,7 +181,7 @@ export default function BlogPage() {
           ) : posts.length === 0 ? (
             <div className="text-center py-16">
               <BookOpen className="w-16 h-16 mx-auto text-foreground/20 mb-4" />
-              <p className="text-foreground/50">Aucun article trouvé.</p>
+              <p className="text-foreground/50">{t("blog.noArticles")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
@@ -198,13 +200,13 @@ export default function BlogPage() {
                     </div>
                     <CardContent className="p-6 flex-1 flex flex-col">
                       <div className="flex items-center gap-4 text-xs text-foreground/40 mb-4">
-                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{post.published_at ? new Date(post.published_at).toLocaleDateString("fr-FR",{day:"2-digit",month:"short",year:"numeric"}) : ""}</span>
+                        <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{post.published_at ? new Date(post.published_at).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR",{day:"2-digit",month:"short",year:"numeric"}) : ""}</span>
                         <span className="flex items-center gap-1"><User className="w-3 h-3" />{post.author}</span>
-                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{post.reading_time_minutes} min</span>
+                        <span className="flex items-center gap-1"><Clock className="w-3 h-3" />{t("blog.readTime", {min: post.reading_time_minutes})}</span>
                       </div>
                       <h3 className="font-headline text-2xl font-bold text-foreground mb-4 group-hover:text-accent transition-colors line-clamp-2">{post.title}</h3>
                       <p className="text-foreground/60 text-sm leading-relaxed mb-6 line-clamp-3">{post.excerpt}</p>
-                      <Button variant="link" className="mt-auto p-0 text-accent hover:text-accent/80 justify-start gap-2">Lire la suite <ArrowRight className="w-4 h-4" /></Button>
+                      <Button variant="link" className="mt-auto p-0 text-accent hover:text-accent/80 justify-start gap-2">{t("blog.readMore")} <ArrowRight className="w-4 h-4" /></Button>
                     </CardContent>
                   </Card>
                 </Link>
@@ -219,14 +221,14 @@ export default function BlogPage() {
             <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-8">
               <BookOpen className="w-8 h-8 text-accent" />
             </div>
-            <h2 className="font-headline text-4xl font-bold mb-6">Restez Édifié</h2>
+            <h2 className="font-headline text-4xl font-bold mb-6">{t("blog.newsletterTitle")}</h2>
             <p className="text-lg text-foreground/60 mb-10">
-              Recevez chaque semaine nos meilleurs conseils et méditations directement dans votre boîte mail.
+              {t("blog.newsletterDesc")}
             </p>
             <form className="flex flex-col sm:flex-row gap-4">
-              <Input placeholder="votre@email.com" className="h-14 bg-background border-foreground/10" required type="email" />
+              <Input placeholder={t("blog.emailPlaceholder")} className="h-14 bg-background border-foreground/10" required type="email" />
               <Button size="lg" className="bg-accent text-background font-bold h-14 px-8 shrink-0">
-                S'abonner
+                {t("blog.subscribe")}
               </Button>
             </form>
           </div>

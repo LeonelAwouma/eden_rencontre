@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Heart, MessageCircleCode, CheckCircle2, MapPin, Calendar, X, Check, ImageIcon, Loader2, Clock } from "lucide-react";
 import { getSession } from "@/lib/auth";
+import { useI18n } from "@/lib/i18n";
 
 interface Testimonial {
   id: number;
@@ -21,6 +22,7 @@ interface Testimonial {
 }
 
 export default function TemoignagesPage() {
+  const { t } = useI18n();
   const [activeTab, setActiveTab] = useState<"tous" | "mariage" | "fiancailles">("tous");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formSubmitted, setFormSubmitted] = useState(false);
@@ -119,7 +121,7 @@ export default function TemoignagesPage() {
 
   const filteredTestimonials = activeTab === "tous"
     ? testimonials
-    : testimonials.filter(t => t.type === activeTab);
+    : testimonials.filter(testimonial => testimonial.type === activeTab);
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -127,13 +129,13 @@ export default function TemoignagesPage() {
 
     // Validate file type
     if (!file.type.startsWith("image/")) {
-      setSubmitError("Veuillez sélectionner un fichier image valide.");
+      setSubmitError(t("testimonials.errorImage"));
       return;
     }
 
     // Validate file size (max 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      setSubmitError("L'image ne doit pas dépasser 10 Mo.");
+      setSubmitError(t("testimonials.errorImageSize"));
       return;
     }
 
@@ -162,7 +164,7 @@ export default function TemoignagesPage() {
     setSubmitError(null);
 
     if (!userId) {
-      setSubmitError("Vous devez être connecté pour soumettre un témoignage.");
+      setSubmitError(t("testimonials.errorLogin"));
       setIsSubmitting(false);
       return;
     }
@@ -185,12 +187,12 @@ export default function TemoignagesPage() {
 
       if (!res.ok) {
         const data = await res.json();
-        throw new Error(data.error || "Erreur lors de la soumission");
+        throw new Error(data.error || t("testimonials.errorSubmit"));
       }
 
       setFormSubmitted(true);
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : "Erreur inconnue";
+      const message = err instanceof Error ? err.message : t("testimonials.errorUnknown");
       setSubmitError(message);
     } finally {
       setIsSubmitting(false);
@@ -226,11 +228,11 @@ export default function TemoignagesPage() {
           </div>
           <div className="container mx-auto px-4 relative z-10 text-center space-y-6">
             <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20 text-primary mb-2 text-sm font-medium">
-              <span>Gloire à Dieu & Alliances Bénies</span>
+              <span>{t("testimonials.heroBadge")}</span>
             </div>
-            <h1 className="font-headline text-5xl md:text-6xl font-bold text-foreground">Témoignages de nos Couples</h1>
+            <h1 className="font-headline text-5xl md:text-6xl font-bold text-foreground">{t("testimonials.heroTitle")}</h1>
             <p className="text-xl text-foreground/60 max-w-3xl mx-auto leading-relaxed">
-              Découvrez les histoires inspirantes de célibataires chrétiens d'Afrique et de la diaspora qui ont trouvé leur partenaire de vie, guidés par la foi et scellés dans le mariage chrétien.
+              {t("testimonials.heroSubtitle")}
             </p>
           </div>
         </section>
@@ -248,7 +250,7 @@ export default function TemoignagesPage() {
                     : "text-foreground/60 hover:text-foreground"
                 }`}
               >
-                Tous les couples
+                {t("testimonials.filterAll")}
               </button>
               <button
                 onClick={() => setActiveTab("mariage")}
@@ -258,7 +260,7 @@ export default function TemoignagesPage() {
                     : "text-foreground/60 hover:text-foreground"
                 }`}
               >
-                Mariages célébrés
+                {t("testimonials.filterMarriage")}
               </button>
               <button
                 onClick={() => setActiveTab("fiancailles")}
@@ -268,7 +270,7 @@ export default function TemoignagesPage() {
                     : "text-foreground/60 hover:text-foreground"
                 }`}
               >
-                Fiançailles
+                {t("testimonials.filterEngagement")}
               </button>
             </div>
 
@@ -277,15 +279,15 @@ export default function TemoignagesPage() {
               onClick={() => setIsModalOpen(true)}
               className="bg-transparent hover:bg-foreground/5 border border-primary text-primary font-bold px-6 h-12 rounded-xl transition-all"
             >
-              Partager notre histoire
+              {t("testimonials.shareStory")}
             </Button>
           </div>
 
           {/* Testimonials Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {filteredTestimonials.map((t) => (
+            {filteredTestimonials.map((testimonial) => (
               <div
-                key={t.id}
+                key={testimonial.id}
                 className="bg-card border border-foreground/5 hover:border-primary/20 hover:scale-[1.02] transition-all duration-300 rounded-3xl p-8 flex flex-col justify-between shadow-2xl relative group overflow-hidden"
               >
                 {/* Accent line */}
@@ -300,21 +302,21 @@ export default function TemoignagesPage() {
                       ))}
                     </div>
                     <span className={`text-xs font-bold uppercase tracking-widest px-3 py-1 rounded-full border ${
-                      t.type === "mariage"
+                      testimonial.type === "mariage"
                         ? "bg-primary/10 border-primary/20 text-primary"
                         : "bg-secondary/10 border-secondary/20 text-secondary"
                     }`}>
-                      {t.type === "mariage" ? "Mariage béni" : "Fiançailles"}
+                      {testimonial.type === "mariage" ? t("testimonials.blessedMarriage") : t("testimonials.engagement")}
                     </span>
                   </div>
 
                   {/* Quote & Story */}
                   <div className="space-y-3">
                     <p className="font-headline text-lg font-bold text-foreground group-hover:text-primary transition-colors">
-                      « {t.quote} »
+                      « {testimonial.quote} »
                     </p>
                     <p className="text-foreground/70 leading-relaxed text-sm italic">
-                      &ldquo;{t.story}&rdquo;
+                      &ldquo;{testimonial.story}&rdquo;
                     </p>
                   </div>
                 </div>
@@ -323,22 +325,22 @@ export default function TemoignagesPage() {
                 <div className="mt-8 pt-6 border-t border-foreground/5 flex items-center gap-4">
                   <div className="relative w-12 h-12 rounded-full overflow-hidden border border-primary/25">
                     <img
-                      src={t.avatar}
-                      alt={t.names}
+                      src={testimonial.avatar}
+                      alt={testimonial.names}
                       className="object-cover w-full h-full"
                     />
                   </div>
                   <div className="space-y-1">
-                    <h4 className="font-headline font-bold text-foreground text-base">{t.names}</h4>
+                    <h4 className="font-headline font-bold text-foreground text-base">{testimonial.names}</h4>
                     <div className="flex flex-col gap-0.5 text-xs text-foreground/40">
                       <span className="flex items-center gap-1">
-                        <MapPin className="w-3 h-3 text-primary" /> {t.location}
+                        <MapPin className="w-3 h-3 text-primary" /> {testimonial.location}
                       </span>
                       <span className="flex items-center gap-1">
-                        <Calendar className="w-3 h-3 text-primary" /> {t.date}
+                        <Calendar className="w-3 h-3 text-primary" /> {testimonial.date}
                       </span>
                       <span className="text-[10px] text-primary/80 font-bold uppercase tracking-wider mt-0.5">
-                        {t.duration}
+                        {testimonial.duration}
                       </span>
                     </div>
                   </div>
@@ -365,9 +367,9 @@ export default function TemoignagesPage() {
                     <div className="inline-flex p-3 bg-primary/10 rounded-2xl border border-primary/20 text-primary">
                       <MessageCircleCode className="w-6 h-6" />
                     </div>
-                    <h2 className="font-headline text-3xl font-bold text-foreground">Partagez votre témoignage</h2>
+                    <h2 className="font-headline text-3xl font-bold text-foreground">{t("testimonials.shareTitle")}</h2>
                     <p className="text-foreground/60 text-sm">
-                      Vous avez trouvé votre futur conjoint sur Eden Connexion ? Racontez votre histoire pour encourager et fortifier la foi de la communauté.
+                      {t("testimonials.shareDesc")}
                     </p>
                   </div>
 
@@ -380,81 +382,81 @@ export default function TemoignagesPage() {
                   <form onSubmit={handleSubmit} className="space-y-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Vos Prénoms</label>
+                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("testimonials.namesLabel")}</label>
                         <input
                           type="text"
                           required
                           value={formData.names}
                           onChange={(e) => setFormData({...formData, names: e.target.value})}
-                          placeholder="Ex: David & Deborah"
+                          placeholder={t("testimonials.namesPlaceholder")}
                           className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-3 text-foreground placeholder-white/20 focus:border-primary focus:outline-none transition-colors"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Type d'Union</label>
+                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("testimonials.typeUnionLabel")}</label>
                         <select
                           value={formData.type}
                           onChange={(e) => setFormData({...formData, type: e.target.value})}
                           className="w-full bg-muted border border-foreground/10 rounded-xl px-4 py-3 text-foreground focus:border-primary focus:outline-none transition-colors"
                         >
-                          <option value="mariage">Mariage célébré</option>
-                          <option value="fiancailles">Fiançailles / Rencontre sérieuse</option>
+                          <option value="mariage">{t("testimonials.marriageCelebrated")}</option>
+                          <option value="fiancailles">{t("testimonials.engagementSerious")}</option>
                         </select>
                       </div>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Villes & Pays</label>
+                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("testimonials.locationLabel")}</label>
                         <input
                           type="text"
                           required
                           value={formData.location}
                           onChange={(e) => setFormData({...formData, location: e.target.value})}
-                          placeholder="Ex: Paris (France) / Lomé (Togo)"
+                          placeholder={t("testimonials.locationExample")}
                           className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-3 text-foreground placeholder-white/20 focus:border-primary focus:outline-none transition-colors"
                         />
                       </div>
                       <div className="space-y-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Date de l'Union</label>
+                        <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("testimonials.dateUnionLabel")}</label>
                         <input
                           type="text"
                           required
                           value={formData.date}
                           onChange={(e) => setFormData({...formData, date: e.target.value})}
-                          placeholder="Ex: Juillet 2026"
+                          placeholder={t("testimonials.dateExample")}
                           className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-3 text-foreground placeholder-white/20 focus:border-primary focus:outline-none transition-colors"
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Titre ou Phrase Clé</label>
+                      <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("testimonials.titleOrKeyPhrase")}</label>
                       <input
                         type="text"
                         required
                         value={formData.quote}
                         onChange={(e) => setFormData({...formData, quote: e.target.value})}
-                        placeholder="Ex: Notre alliance scellée dans la foi."
+                        placeholder={t("testimonials.quoteExample")}
                         className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-3 text-foreground placeholder-white/20 focus:border-primary focus:outline-none transition-colors"
                       />
                     </div>
 
                     <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Votre Témoignage</label>
+                      <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("testimonials.storyLabel")}</label>
                       <textarea
                         required
                         rows={4}
                         value={formData.story}
                         onChange={(e) => setFormData({...formData, story: e.target.value})}
-                        placeholder="Racontez comment vous vous êtes rencontrés, votre parcours spirituel sur la plateforme et les bénédictions qui en découlent..."
+                        placeholder={t("testimonials.storyPlaceholderDetail")}
                         className="w-full bg-foreground/5 border border-foreground/10 rounded-xl px-4 py-3 text-foreground placeholder-white/20 focus:border-primary focus:outline-none transition-colors resize-none"
                       />
                     </div>
 
                     {/* Image Upload with Preview */}
                     <div className="space-y-2">
-                      <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Photo du couple (optionnel)</label>
+                      <label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("testimonials.photoLabel")}</label>
 
                       {imagePreview ? (
                         <div className="relative rounded-2xl overflow-hidden border border-primary/20 bg-foreground/5">
@@ -489,10 +491,10 @@ export default function TemoignagesPage() {
                           </div>
                           <div className="text-center">
                             <p className="text-sm font-medium text-foreground/60">
-                              Cliquez pour ajouter une photo
+                              {t("testimonials.clickToAddPhoto")}
                             </p>
                             <p className="text-xs text-foreground/40 mt-1">
-                              JPG, PNG ou WebP · Max 10 Mo
+                              {t("testimonials.photoFormat")}
                             </p>
                           </div>
                         </div>
@@ -515,15 +517,15 @@ export default function TemoignagesPage() {
                       {isSubmitting ? (
                         <span className="flex items-center gap-2">
                           <Loader2 className="w-5 h-5 animate-spin" />
-                          Envoi en cours...
+                          {t("testimonials.submittingBtn")}
                         </span>
                       ) : (
-                        "Soumettre notre histoire"
+                        t("testimonials.submitStory")
                       )}
                     </Button>
 
                     <p className="text-center text-xs text-foreground/40">
-                      Votre témoignage sera examiné par notre comité avant publication.
+                      {t("testimonials.reviewNote")}
                     </p>
                   </form>
                 </div>
@@ -533,24 +535,24 @@ export default function TemoignagesPage() {
                     <Check className="w-8 h-8" />
                   </div>
                   <div className="space-y-3">
-                    <h2 className="font-headline text-3xl font-bold text-foreground">Merci pour votre témoignage !</h2>
-                    <p className="text-foreground/60 max-w-md mx-auto text-sm leading-relaxed">
-                      Votre témoignage a été soumis avec succès et est actuellement <strong className="text-[#FF9E45]">en attente de validation</strong> par notre comité éthique. Vous serez notifié(e) dès qu'il sera approuvé et publié.
-                    </p>
+                    <h2 className="font-headline text-3xl font-bold text-foreground">{t("testimonials.successTitle")}</h2>
+                    <p className="text-foreground/60 max-w-md mx-auto text-sm leading-relaxed"
+                      dangerouslySetInnerHTML={{ __html: t("testimonials.successDesc") }}
+                    />
                   </div>
                   <div className="inline-flex items-center gap-2 px-4 py-2 bg-[#FF9E45]/10 border border-[#FF9E45]/20 rounded-xl text-[#FF9E45] text-sm font-medium">
                     <Clock className="w-4 h-4" />
-                    En attente d'approbation
+                    {t("testimonials.pendingApproval")}
                   </div>
                   <div className="pt-4 max-w-sm mx-auto text-xs text-primary/70 italic bg-primary/5 p-4 rounded-xl border border-primary/10">
-                    « Que tout ce que vous faites soit fait avec amour. » <br />
-                    <span className="font-bold font-headline block mt-1">— 1 Corinthiens 16:14</span>
+                    « {t("testimonials.successQuote")} » <br />
+                    <span className="font-bold font-headline block mt-1">{t("testimonials.successReference")}</span>
                   </div>
                   <Button
                     onClick={resetForm}
                     className="bg-primary text-primary-foreground font-bold px-8 h-12 rounded-xl mt-6"
                   >
-                    Fermer la fenêtre
+                    {t("testimonials.closeBtn")}
                   </Button>
                 </div>
               )}
@@ -565,16 +567,16 @@ export default function TemoignagesPage() {
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Heart className="w-8 h-8 text-primary fill-primary" />
               </div>
-              <h2 className="font-headline text-4xl font-bold text-foreground">Prêt à écrire votre histoire d'alliance ?</h2>
+              <h2 className="font-headline text-4xl font-bold text-foreground">{t("testimonials.ctaTitle")}</h2>
               <p className="text-lg text-foreground/60">
-                Dieu a préparé pour chacun une histoire d'amour et de fidélité. Franchissez le pas aujourd'hui et rejoignez des milliers de chrétiens sincères.
+                {t("testimonials.ctaDesc")}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
                 <Button size="lg" className="bg-primary text-primary-foreground font-black px-10 h-16 text-lg rounded-xl shadow-2xl shadow-primary/20 hover:scale-105 transition-transform" asChild>
-                  <Link href="/login">Commencer mon histoire</Link>
+                  <Link href="/login">{t("testimonials.ctaBtn")}</Link>
                 </Button>
                 <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 h-16 text-lg rounded-xl" asChild>
-                  <Link href="/concept">En savoir plus sur notre concept</Link>
+                  <Link href="/concept">{t("testimonials.ctaBtnSecondary")}</Link>
                 </Button>
               </div>
             </div>
@@ -582,11 +584,11 @@ export default function TemoignagesPage() {
             <div className="flex flex-wrap justify-center gap-8 text-foreground/40 pt-4">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
-                <span className="text-sm font-medium">Inscriptions sécurisées</span>
+                <span className="text-sm font-medium">{t("testimonials.badgeSecure")}</span>
               </div>
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-5 h-5 text-primary" />
-                <span className="text-sm font-medium">Histoires vérifiées</span>
+                <span className="text-sm font-medium">{t("testimonials.badgeVerified")}</span>
               </div>
             </div>
           </div>
