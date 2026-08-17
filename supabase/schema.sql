@@ -28,6 +28,12 @@ alter table public.profiles add column if not exists birth_date date;
 alter table public.profiles add column if not exists questionnaire jsonb not null default '{}'::jsonb;
 alter table public.profiles add column if not exists onboarding_completed boolean not null default false;
 
+-- Selfie verification fields
+alter table public.profiles add column if not exists selfie_verified boolean not null default false;
+alter table public.profiles add column if not exists selfie_verification_score integer default 0;
+alter table public.profiles add column if not exists selfie_url text;
+alter table public.profiles add column if not exists profile_photos text[];
+
 drop policy if exists profiles_select on public.profiles;
 create policy profiles_select on public.profiles
   for select using (auth.role() = 'authenticated');
@@ -364,6 +370,12 @@ insert into storage.buckets (id, name, public)
 values ('chat-images', 'chat-images', true)
 on conflict (id) do nothing;
 
+-- ── Stockage des photos de profil (bucket public) ───────────
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values ('profile-photos', 'profile-photos', true, 10485760,
+  ARRAY['image/jpeg','image/png','image/webp'])
+on conflict (id) do nothing;
+
 drop policy if exists "chat_images_read" on storage.objects;
 create policy "chat_images_read" on storage.objects
   for select using (bucket_id = 'chat-images');
@@ -371,3 +383,12 @@ create policy "chat_images_read" on storage.objects
 drop policy if exists "chat_images_insert" on storage.objects;
 create policy "chat_images_insert" on storage.objects
   for insert with check (bucket_id = 'chat-images' and auth.uid() is not null);
+
+-- ── Profile photos storage policies ─────────────────────────
+drop policy if exists "profile_photos_read" on storage.objects;
+create policy "profile_photos_read" on storage.objects
+  for select using (bucket_id = 'profile-photos');
+
+drop policy if exists "profile_photos_insert" on storage.objects;
+create policy "profile_photos_insert" on storage.objects
+  for insert with check (bucket_id = 'profile-photos' and auth.uid() is not null);

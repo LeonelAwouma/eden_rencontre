@@ -20,6 +20,9 @@ export async function POST(request: NextRequest) {
       charterAuthorizeVerification,
       charterCommitRespectful,
       charterAcceptFull,
+      selfieVerified,
+      selfieVerificationScore,
+      profilePhotos,
     } = body;
 
     if (!email || !password || !name) {
@@ -106,6 +109,9 @@ export async function POST(request: NextRequest) {
         marriage_vision: marriageVision || [],
         status: "pending",
         onboarding_completed: false,
+        selfie_verified: selfieVerified || false,
+        selfie_verification_score: selfieVerificationScore || 0,
+        profile_photos: profilePhotos || [],
         updated_at: new Date().toISOString(),
       });
 
@@ -126,6 +132,9 @@ export async function POST(request: NextRequest) {
           marriage_vision: marriageVision || [],
           status: "pending",
           onboarding_completed: false,
+          selfie_verified: selfieVerified || false,
+          selfie_verification_score: selfieVerificationScore || 0,
+          profile_photos: profilePhotos || [],
           updated_at: new Date().toISOString(),
         })
         .eq("id", userId);

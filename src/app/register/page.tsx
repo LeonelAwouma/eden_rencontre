@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,7 @@ import {
 import { cn } from "@/lib/utils";
 import { registerUser, ageFromBirthDate, MIN_AGE } from "@/lib/auth";
 import { MARRIAGE_VALUES } from "@/lib/values";
+import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
 import { Monogram } from "@/components/ornaments";
 import { useRouter } from "next/navigation";
 import {
@@ -37,6 +38,8 @@ import {
   MapPin,
   ShieldCheck,
   Heart,
+  Camera,
+  RotateCcw,
 } from "lucide-react";
 
 // TikTok Logo SVG
@@ -85,7 +88,8 @@ const STEP_TITLES = [
   "Vos informations",
   "Vos valeurs",
   "Charte d'engagement",
-  "Votre profil",
+  "Vos photos",
+  "Vérification selfie",
 ];
 
 export default function RegisterPage() {
@@ -121,7 +125,17 @@ export default function RegisterPage() {
     null, null, null
   ]);
 
-  const totalSteps = 10;
+  // Selfie verification state
+  const [selfieDataUri, setSelfieDataUri] = useState<string | null>(null);
+  const [selfieVerifying, setSelfieVerifying] = useState(false);
+  const [selfieResult, setSelfieResult] = useState<{ score: number; verified: boolean; reason: string } | null>(null);
+  const [selfieError, setSelfieError] = useState<string | null>(null);
+  const [cameraActive, setCameraActive] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+
+  const totalSteps = 11;
   const progress = ((step + 1) / totalSteps) * 100;
 
   const nextStep = () => setStep(prev => prev + 1);
@@ -191,6 +205,9 @@ export default function RegisterPage() {
           charterAuthorizeVerification: formData.charterAuthorizeVerification,
           charterCommitRespectful: formData.charterCommitRespectful,
           charterAcceptFull: formData.charterAcceptFull,
+          selfieVerified: selfieResult?.verified || false,
+          selfieVerificationScore: selfieResult?.score || 0,
+          profilePhotos: photos.filter(Boolean),
         }),
       });
 
@@ -209,6 +226,97 @@ export default function RegisterPage() {
       setCreating(false);
     }
   };
+
+  // ── Camera & Selfie Verification ─────────────────────────────
+  const startCamera = async () => {
+    setSelfieError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
+      });
+      streamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play();
+      }
+      setCameraActive(true);
+    } catch {
+      setSelfieError("Impossible d'accéder à la caméra. Veuillez autoriser l'accès.");
+    }
+  };
+
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+    }
+    setCameraActive(false);
+  };
+
+  const captureSelfie = () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    const video = videoRef.current;
+    const canvas = canvasRef.current;
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    // Mirror the image for selfie
+    ctx.translate(canvas.width, 0);
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, 0, 0);
+    const dataUri = canvas.toDataURL("image/jpeg", 0.85);
+    setSelfieDataUri(dataUri);
+    stopCamera();
+  };
+
+  const retakeSelfie = () => {
+    setSelfieDataUri(null);
+    setSelfieResult(null);
+    setSelfieError(null);
+    startCamera();
+  };
+
+  const handleVerifySelfie = async () => {
+    if (!selfieDataUri) return;
+    setSelfieVerifying(true);
+    setSelfieError(null);
+    setSelfieResult(null);
+
+    try {
+      // Validate selfie quality
+      const quality = await validateSelfieQuality(selfieDataUri);
+      if (!quality.valid) {
+        setSelfieError(quality.reason);
+        setSelfieVerifying(false);
+        return;
+      }
+
+      // Run face verification
+      const result = await verifySelfie(selfieDataUri, photos.filter(Boolean) as string[]);
+      setSelfieResult(result);
+
+      if (result.verified) {
+        // Proceed to completion
+        setTimeout(() => nextStep(), 1000);
+      }
+    } catch {
+      setSelfieError("Erreur lors de la vérification. Veuillez réessayer.");
+    } finally {
+      setSelfieVerifying(false);
+    }
+  };
+
+  const allPhotosUploaded = photos.every((p) => p !== null);
+
+  // Cleanup camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((t) => t.stop());
+      }
+    };
+  }, []);
 
   const availableCountries = formData.region === "Afrique" ? AFRICAN_COUNTRIES : DIASPORA_COUNTRIES;
   const filteredCountries = availableCountries.filter(c => c.toLowerCase().includes(countrySearch.toLowerCase()));
@@ -724,22 +832,18 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* ============================================================ */}
-            {/* Step 9 — Photo Upload & Completion */}
-            {/* ============================================================ */}
-            {step >= 9 && (
+            {/* Step 9 — Photo Upload (Mandatory) */}
+            {step === 9 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
-                {/* Success Banner */}
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-6 h-6 text-primary" />
+                    <Upload className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <p className="font-bold text-primary text-sm uppercase tracking-wider">Profil créé avec succès</p>
-                    <p className="text-xs text-foreground/40 mt-0.5">Votre chemin vers l'alliance est ouvert — {formData.city}, {formData.country}.</p>
+                    <p className="font-bold text-primary text-sm uppercase tracking-wider">Photos requises</p>
+                    <p className="text-xs text-foreground/40 mt-0.5">Vous devez ajouter 3 photos pour continuer.</p>
                   </div>
                 </div>
-
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Ajoutez vos photos</h1>
                   <p className="text-foreground/50 text-base">La première impression est le début de la conversation.</p>
@@ -770,6 +874,146 @@ export default function RegisterPage() {
                   ))}
                 </div>
 
+                {!allPhotosUploaded && (
+                  <p className="text-sm text-foreground/40 text-center">
+                    Les 3 photos sont obligatoires pour vérifier l'authenticité de votre profil.
+                  </p>
+                )}
+                <Button
+                  onClick={nextStep}
+                  disabled={!allPhotosUploaded}
+                  className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  Continuer vers la vérification <Camera className="w-5 h-5 ml-2" />
+                </Button>
+                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
+                  <ChevronLeft className="w-4 h-4" /> Retour
+                </button>
+              </div>
+            )}
+
+            {/* Step 10 — Selfie Verification */}
+            {step === 10 && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                    <ShieldCheck className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-primary text-sm uppercase tracking-wider">Vérification d'identité</p>
+                    <p className="text-xs text-foreground/40 mt-0.5">Confirmez que vos photos sont bien les vôtres.</p>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Prenez un selfie</h1>
+                  <p className="text-foreground/50 text-sm">Pour garantir l'authenticité des profils, nous comparons votre selfie avec vos photos de profil.</p>
+                </div>
+
+                {/* Camera / Selfie Area */}
+                <div className="relative w-full aspect-[3/4] max-h-[380px] bg-card border border-foreground/10 rounded-2xl overflow-hidden">
+                  {!cameraActive && !selfieDataUri && (
+                    <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+                      <Camera className="w-16 h-16 text-foreground/15" />
+                      <p className="text-foreground/30 text-sm">Activez votre caméra pour prendre un selfie</p>
+                      <Button onClick={startCamera} className="bg-primary text-primary-foreground font-bold rounded-xl px-8">
+                        <Camera className="w-4 h-4 mr-2" /> Activer la caméra
+                      </Button>
+                    </div>
+                  )}
+                  {cameraActive && (
+                    <>
+                      <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" style={{ transform: "scaleX(-1)" }} />
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="w-48 h-48 border-2 border-primary/50 rounded-full" />
+                      </div>
+                      <div className="absolute bottom-4 left-0 right-0 flex justify-center">
+                        <Button onClick={captureSelfie} className="bg-primary text-primary-foreground font-bold rounded-full w-16 h-16 p-0 shadow-lg">
+                          <Camera className="w-6 h-6" />
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                  {selfieDataUri && (
+                    <>
+                      <Image src={selfieDataUri} alt="Selfie" fill className="object-cover" />
+                      <div className="absolute top-4 right-4">
+                        <Button onClick={retakeSelfie} variant="outline" size="sm" className="bg-black/40 border-white/20 text-white hover:bg-black/60 backdrop-blur-md">
+                          <RotateCcw className="w-4 h-4 mr-1" /> Reprendre
+                        </Button>
+                      </div>
+                    </>
+                  )}
+                </div>
+                <canvas ref={canvasRef} className="hidden" />
+
+                {/* Selfie Error */}
+                {selfieError && (
+                  <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/20 rounded-xl p-4">
+                    <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                    <p className="text-sm text-destructive/90">{selfieError}</p>
+                  </div>
+                )}
+
+                {/* Verification Result */}
+                {selfieResult && (
+                  <div className={`flex items-start gap-3 rounded-xl p-4 border ${selfieResult.verified ? 'bg-primary/10 border-primary/20' : 'bg-destructive/10 border-destructive/20'}`}>
+                    {selfieResult.verified ? (
+                      <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
+                    ) : (
+                      <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
+                    )}
+                    <div>
+                      <p className={`text-sm font-bold ${selfieResult.verified ? 'text-primary' : 'text-destructive/90'}`}>
+                        {selfieResult.verified ? 'Vérification réussie' : 'Vérification échouée'}
+                      </p>
+                      <p className={`text-xs mt-1 ${selfieResult.verified ? 'text-foreground/50' : 'text-destructive/70'}`}>
+                        {selfieResult.reason} (Score : {selfieResult.score}%)
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Verify Button */}
+                {selfieDataUri && !selfieResult?.verified && (
+                  <Button
+                    onClick={handleVerifySelfie}
+                    disabled={selfieVerifying}
+                    className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] transition-transform disabled:opacity-70"
+                  >
+                    {selfieVerifying ? (
+                      <span className="flex items-center gap-3">
+                        <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
+                        Vérification en cours…
+                      </span>
+                    ) : (
+                      <>Vérifier mon identité <ShieldCheck className="w-5 h-5 ml-2" /></>
+                    )}
+                  </Button>
+                )}
+
+                <button onClick={() => { stopCamera(); prevStep(); }} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
+                  <ChevronLeft className="w-4 h-4" /> Retour
+                </button>
+              </div>
+            )}
+
+            {/* Step 11 — Completion */}
+            {step >= 11 && (
+              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                    <CheckCircle2 className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-primary text-sm uppercase tracking-wider">Identité vérifiée</p>
+                    <p className="text-xs text-foreground/40 mt-0.5">Vos photos ont été validées avec succès.</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Profil créé avec succès</h1>
+                  <p className="text-foreground/50 text-base">Votre chemin vers l'alliance est ouvert — {formData.city}, {formData.country}.</p>
+                </div>
                 {createError && (
                   <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/20 rounded-xl p-4">
                     <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />

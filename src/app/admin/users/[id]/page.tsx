@@ -44,6 +44,8 @@ interface UserProfile {
   reviewed_at: string | null;
   questionnaire: Record<string, unknown>;
   onboarding_completed: boolean;
+  selfie_verified: boolean;
+  selfie_verification_score: number;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -348,6 +350,14 @@ export default function AdminUserDetailPage() {
                 <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Onboarding</p>
                 <p className="text-sm text-gray-700 mt-0.5">
                   {user.onboarding_completed ? "✅ Terminé" : "⏳ En cours"}
+                </p>
+              </div>
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Vérification selfie</p>
+                <p className="text-sm text-gray-700 mt-0.5">
+                  {user.selfie_verified
+                    ? `✅ Vérifié (Score : ${user.selfie_verification_score || 0}%)`
+                    : "⏳ Non vérifié"}
                 </p>
               </div>
             </div>
