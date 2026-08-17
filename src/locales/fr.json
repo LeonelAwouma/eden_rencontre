@@ -127,6 +127,10 @@
     "processing": "Traitement en cours...",
     "errorGeneric": "Une erreur est survenue. Veuillez réessayer."
   },
+  "questionnaire": {
+    "honestyNote": "Veuillez compléter ce questionnaire avec honnêteté et authenticité. Vos réponses permettront de garantir une correspondance significative et efficace en reflétant fidèlement vos intérêts, compétences, attentes et besoins.",
+    "dataNote": "Les informations collectées nous permettent de garantir un matching sûr, pertinent et efficace."
+  },
   "concept": {
     "philosophyLabel": "Notre Philosophie",
     "sacredVision": "Notre Vision",

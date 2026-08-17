@@ -1950,6 +1950,13 @@ export default function DashboardPage() {
                   </button>
                   {isExpanded && (
                     <div className="px-5 pb-5" style={{ borderTop: "1px solid #F0EDE8" }}>
+                      {q.note && (
+                        <div className="mt-4 mb-3 px-4 py-3 rounded-xl text-center" style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}>
+                          <p className="text-xs font-semibold leading-relaxed" style={{ color: "#486B46" }}>
+                            {q.note}
+                          </p>
+                        </div>
+                      )}
                       <div className="flex justify-end gap-2 pt-4 mb-4">
                         {!isEditing ? (
                           <button onClick={() => startEditQuestionnaire(q.key)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"

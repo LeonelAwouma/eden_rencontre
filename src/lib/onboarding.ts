@@ -29,6 +29,7 @@ export interface Questionnaire {
   key: string;
   title: string;
   subtitle: string;
+  note?: string;
   sections: Section[];
 }
 
@@ -37,6 +38,7 @@ export const QUESTIONNAIRES: Questionnaire[] = [
     key: "q1",
     title: "Faisons connaissance",
     subtitle: "Informations personnelles",
+    note: "Veuillez compléter ce questionnaire avec honnêteté et authenticité. Vos réponses permettront de garantir une correspondance significative et efficace en reflétant fidèlement vos intérêts, compétences, attentes et besoins.",
     sections: [
       {
         key: "identite",
@@ -102,6 +104,7 @@ export const QUESTIONNAIRES: Questionnaire[] = [
     key: "q2",
     title: "Mon cheminement de foi",
     subtitle: "Maturité spirituelle — le cœur de votre profil",
+    note: "Veuillez compléter ce questionnaire avec honnêteté et authenticité. Vos réponses permettront de garantir une correspondance significative et efficace en reflétant fidèlement vos intérêts, compétences, attentes et besoins.",
     sections: [
       {
         key: "parcoursFoi",
@@ -201,6 +204,7 @@ export const QUESTIONNAIRES: Questionnaire[] = [
     key: "q3",
     title: "Ce que je recherche",
     subtitle: "Préférences et attentes",
+    note: "Veuillez compléter ce questionnaire avec honnêteté et authenticité. Vos réponses permettront de garantir une correspondance significative et efficace en reflétant fidèlement vos intérêts, compétences, attentes et besoins.",
     sections: [
       {
         key: "partenaireIdeal",
@@ -280,9 +284,10 @@ export const QUESTIONNAIRES: Questionnaire[] = [
 export interface OnboardingStep extends Section {
   qTitle: string;
   qSubtitle: string;
+  note?: string;
 }
 export const ONBOARDING_STEPS: OnboardingStep[] = QUESTIONNAIRES.flatMap((q) =>
-  q.sections.map((s) => ({ ...s, qTitle: q.title, qSubtitle: q.subtitle }))
+  q.sections.map((s) => ({ ...s, qTitle: q.title, qSubtitle: q.subtitle, note: q.note }))
 );
 
 // ── Sauvegarde / chargement Supabase ──

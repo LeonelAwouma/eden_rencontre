@@ -442,6 +442,13 @@ function FaithJourneyCard({ profileId, questionnaire, onRefresh }: { profileId: 
 
               {isExpanded && (
                 <div className="px-5 pb-5 border-t border-[#F0EDE8]">
+                  {q.note && (
+                    <div className="mt-4 mb-3 px-4 py-3 rounded-xl text-center" style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}>
+                      <p className="text-xs font-semibold leading-relaxed" style={{ color: "#486B46" }}>
+                        {q.note}
+                      </p>
+                    </div>
+                  )}
                   <div className="flex justify-end gap-2 pt-4 mb-4">
                     {!isEditing ? (
                       <button onClick={() => setEditingQ(q.key)} className="eden-btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5">

@@ -127,6 +127,10 @@
     "processing": "Processing...",
     "errorGeneric": "An error occurred. Please try again."
   },
+  "questionnaire": {
+    "honestyNote": "Please complete this questionnaire with honesty and authenticity. Your responses will help ensure a meaningful and effective match by accurately reflecting your interests, skills, expectations, and needs.",
+    "dataNote": "The information collected allows us to guarantee a safe, relevant, and effective matching experience."
+  },
   "concept": {
     "philosophyLabel": "Our Philosophy",
     "sacredVision": "Our Sacred",
