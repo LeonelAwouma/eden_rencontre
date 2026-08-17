@@ -131,6 +131,20 @@
     "honestyNote": "Please complete this questionnaire with honesty and authenticity. Your responses will help ensure a meaningful and effective match by accurately reflecting your interests, skills, expectations, and needs.",
     "dataNote": "The information collected allows us to guarantee a safe, relevant, and effective matching experience."
   },
+  "onboarding": {
+    "preparing": "Preparing your journey…",
+    "skipForNow": "Skip for now",
+    "stepOf": "Step {current} / {total}",
+    "privateBadge": "Private — visible only to you",
+    "previous": "Previous",
+    "finish": "Finish",
+    "saveAndContinue": "Save and continue",
+    "autoSaveNote": "Your answers are saved at each step — you can come back later.",
+    "saveFailed": "Save failed",
+    "retry": "Please try again.",
+    "profileCompleted": "Profile completed 🙏",
+    "profileCompletedDesc": "Your answers will guide your compatibility suggestions."
+  },
   "concept": {
     "philosophyLabel": "Our Philosophy",
     "sacredVision": "Our Sacred",

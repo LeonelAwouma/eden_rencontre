@@ -4,8 +4,11 @@
 // Les questions sont des DONNÉES (rendu générique côté page) pour rester maintenable.
 
 import { supabase } from "./supabase";
+import { QUESTIONNAIRES_EN } from "./onboarding.en";
 
 export type FieldType = "text" | "textarea" | "single" | "multi" | "qcm" | "agerange";
+
+export type SupportedLocale = "fr" | "en";
 
 export interface Field {
   id: string;
@@ -280,6 +283,11 @@ export const QUESTIONNAIRES: Questionnaire[] = [
   },
 ];
 
+// ── Locale-aware questionnaire getter ──
+export function getQuestionnaires(locale: SupportedLocale = "fr"): Questionnaire[] {
+  return locale === "en" ? QUESTIONNAIRES_EN : QUESTIONNAIRES;
+}
+
 // Liste à plat des sections (= étapes de l'onboarding), avec leur questionnaire parent.
 export interface OnboardingStep extends Section {
   qTitle: string;
@@ -289,6 +297,14 @@ export interface OnboardingStep extends Section {
 export const ONBOARDING_STEPS: OnboardingStep[] = QUESTIONNAIRES.flatMap((q) =>
   q.sections.map((s) => ({ ...s, qTitle: q.title, qSubtitle: q.subtitle, note: q.note }))
 );
+
+// Locale-aware flat list of onboarding steps
+export function getOnboardingSteps(locale: SupportedLocale = "fr"): OnboardingStep[] {
+  const questionnaires = getQuestionnaires(locale);
+  return questionnaires.flatMap((q) =>
+    q.sections.map((s) => ({ ...s, qTitle: q.title, qSubtitle: q.subtitle, note: q.note }))
+  );
+}
 
 // ── Sauvegarde / chargement Supabase ──
 export async function getMyOnboarding(): Promise<{ answers: Record<string, any>; completed: boolean }> {

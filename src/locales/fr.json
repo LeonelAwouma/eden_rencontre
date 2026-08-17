@@ -131,6 +131,20 @@
     "honestyNote": "Veuillez compléter ce questionnaire avec honnêteté et authenticité. Vos réponses permettront de garantir une correspondance significative et efficace en reflétant fidèlement vos intérêts, compétences, attentes et besoins.",
     "dataNote": "Les informations collectées nous permettent de garantir un matching sûr, pertinent et efficace."
   },
+  "onboarding": {
+    "preparing": "Préparation de votre parcours…",
+    "skipForNow": "Passer pour l'instant",
+    "stepOf": "Étape {current} / {total}",
+    "privateBadge": "Privé — visible par vous seul",
+    "previous": "Précédent",
+    "finish": "Terminer",
+    "saveAndContinue": "Enregistrer et continuer",
+    "autoSaveNote": "Vos réponses sont enregistrées à chaque étape — vous pouvez reprendre plus tard.",
+    "saveFailed": "Échec de l'enregistrement",
+    "retry": "Réessayez.",
+    "profileCompleted": "Profil complété 🙏",
+    "profileCompletedDesc": "Vos réponses guideront vos suggestions d'affinité."
+  },
   "concept": {
     "philosophyLabel": "Notre Philosophie",
     "sacredVision": "Notre Vision",

@@ -12,21 +12,24 @@ import { Monogram, Flourish } from "@/components/ornaments";
 import { ArrowLeft, ArrowRight, Check, Lock, Loader2, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { getSession } from "@/lib/auth";
-import { ONBOARDING_STEPS, getMyOnboarding, saveOnboarding, type Field } from "@/lib/onboarding";
+import { useI18n } from "@/lib/i18n";
+import { getOnboardingSteps, getMyOnboarding, saveOnboarding, type Field, type SupportedLocale } from "@/lib/onboarding";
 
 const SKIP_KEY = "eden_onboarding_skipped";
 
 export default function OnboardingPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const { locale, t } = useI18n();
 
   const [loading, setLoading] = useState(true);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
 
-  const total = ONBOARDING_STEPS.length;
-  const step = ONBOARDING_STEPS[stepIndex];
+  const steps = getOnboardingSteps(locale as SupportedLocale);
+  const total = steps.length;
+  const step = steps[stepIndex];
   const progress = Math.round(((stepIndex + 1) / total) * 100);
 
   useEffect(() => {
@@ -50,7 +53,7 @@ export default function OnboardingPage() {
     const res = await saveOnboarding(answers, completed);
     setSaving(false);
     if (!res.ok) {
-      toast({ title: "Échec de l'enregistrement", description: res.error || "Réessayez.", variant: "destructive" });
+      toast({ title: t("onboarding.saveFailed"), description: res.error || t("onboarding.retry"), variant: "destructive" });
       return false;
     }
     return true;
@@ -64,7 +67,7 @@ export default function OnboardingPage() {
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
       localStorage.removeItem(SKIP_KEY);
-      toast({ title: "Profil complété 🙏", description: "Vos réponses guideront vos suggestions d'affinité." });
+      toast({ title: t("onboarding.profileCompleted"), description: t("onboarding.profileCompletedDesc") });
       router.push("/dashboard");
     }
   };
@@ -82,7 +85,7 @@ export default function OnboardingPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <Monogram className="w-12 h-10 text-primary animate-pulse" style={{ animationDuration: "2s" }} />
-        <p className="text-foreground/50 text-sm">Préparation de votre parcours…</p>
+        <p className="text-foreground/50 text-sm">{t("onboarding.preparing")}</p>
       </div>
     );
   }
@@ -96,7 +99,7 @@ export default function OnboardingPage() {
           <span className="font-headline text-xl font-bold text-foreground">Eden <span>Connexion</span></span>
         </div>
         <button onClick={skip} className="text-foreground/50 hover:text-foreground text-sm font-medium transition-colors">
-          Passer pour l'instant
+          {t("onboarding.skipForNow")}
         </button>
       </header>
 
@@ -106,7 +109,7 @@ export default function OnboardingPage() {
           <Progress value={progress} className="h-1.5 bg-foreground/5" />
           <div className="flex justify-between items-center">
             <span className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary">{step.qSubtitle}</span>
-            <span className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">Étape {stepIndex + 1} / {total}</span>
+            <span className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">{t("onboarding.stepOf", { current: stepIndex + 1, total })}</span>
           </div>
         </div>
 
@@ -117,7 +120,7 @@ export default function OnboardingPage() {
           {step.intro && <p className="text-muted-foreground text-sm mt-3 max-w-lg">{step.intro}</p>}
           {step.private && (
             <span className="inline-flex items-center gap-1.5 mt-4 text-[11px] font-bold text-secondary bg-secondary/10 border border-secondary/25 rounded-full px-3 py-1">
-              <Lock className="w-3.5 h-3.5" /> Privé — visible par vous seul
+              <Lock className="w-3.5 h-3.5" /> {t("onboarding.privateBadge")}
             </span>
           )}
           <Flourish className="w-40 h-3 text-secondary/40 mt-5" />
@@ -129,7 +132,7 @@ export default function OnboardingPage() {
             </div>
           ) : (
             <p className="text-[11px] text-muted-foreground/60 mt-4 max-w-md text-center leading-relaxed">
-              Les informations collectées nous permettent de garantir un matching sûr, pertinent et efficace.
+              {t("questionnaire.dataNote")}
             </p>
           )}
         </div>
@@ -149,7 +152,7 @@ export default function OnboardingPage() {
             variant="outline"
             className="h-12 px-5 rounded-xl border-secondary/20 text-foreground/60 hover:text-foreground font-bold gap-2 disabled:opacity-40"
           >
-            <ArrowLeft className="w-4 h-4" /> Précédent
+            <ArrowLeft className="w-4 h-4" /> {t("onboarding.previous")}
           </Button>
           <Button
             onClick={next}
@@ -157,12 +160,12 @@ export default function OnboardingPage() {
             className="h-12 px-7 rounded-xl bg-primary hover:bg-primary/90 text-primary-foreground font-bold gap-2 shadow-lg shadow-primary/15 disabled:opacity-70"
           >
             {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : stepIndex === total - 1 ? <CheckCircle2 className="w-5 h-5" /> : <ArrowRight className="w-5 h-5" />}
-            {stepIndex === total - 1 ? "Terminer" : "Enregistrer et continuer"}
+            {stepIndex === total - 1 ? t("onboarding.finish") : t("onboarding.saveAndContinue")}
           </Button>
         </div>
 
         <p className="text-center text-foreground/30 text-xs mt-6">
-          Vos réponses sont enregistrées à chaque étape — vous pouvez reprendre plus tard.
+          {t("onboarding.autoSaveNote")}
         </p>
       </main>
     </div>
@@ -170,6 +173,7 @@ export default function OnboardingPage() {
 }
 
 function FieldRenderer({ field, value, onChange }: { field: Field; value: any; onChange: (v: any) => void }) {
+  const { t, locale } = useI18n();
   const labelEl = (
     <Label className="text-sm font-bold text-foreground block mb-2">
       {field.label}
@@ -284,13 +288,13 @@ function FieldRenderer({ field, value, onChange }: { field: Field; value: any; o
         {labelEl}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <span className="text-xs text-foreground/40 uppercase tracking-widest">De</span>
+            <span className="text-xs text-foreground/40 uppercase tracking-widest">{locale === "en" ? "From" : "De"}</span>
             <Input type="number" min={18} max={99} value={range.min ?? ""} onChange={(e) => onChange({ ...range, min: e.target.value })} className="w-20 h-12 rounded-xl bg-card border-secondary/15 text-center" />
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-foreground/40 uppercase tracking-widest">à</span>
+            <span className="text-xs text-foreground/40 uppercase tracking-widest">{locale === "en" ? "to" : "à"}</span>
             <Input type="number" min={18} max={99} value={range.max ?? ""} onChange={(e) => onChange({ ...range, max: e.target.value })} className="w-20 h-12 rounded-xl bg-card border-secondary/15 text-center" />
-            <span className="text-xs text-foreground/40 uppercase tracking-widest">ans</span>
+            <span className="text-xs text-foreground/40 uppercase tracking-widest">{locale === "en" ? "years" : "ans"}</span>
           </div>
         </div>
       </div>
