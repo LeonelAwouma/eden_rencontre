@@ -90,6 +90,7 @@ export function DashboardHeader({
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -185,21 +186,19 @@ export function DashboardHeader({
         <div className="flex items-center gap-3 min-w-0">
           <button
             onClick={onMenuClick}
-            className="lg:hidden w-10 h-10 rounded-xl bg-white border border-[#E8E5E0] flex items-center justify-center text-[#777777] hover:text-[#2F2F2F] hover:border-[#D1D5DB] transition-all active:scale-95 flex-shrink-0"
+            className="lg:hidden w-9 h-9 rounded-lg bg-white border border-zinc-200 flex items-center justify-center text-zinc-500 hover:text-zinc-900 hover:border-zinc-300 transition-all active:scale-95 flex-shrink-0"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-4.5 h-4.5" />
           </button>
           <div className="min-w-0">
             <h1
-              className="text-xl sm:text-2xl md:text-[28px] font-bold text-[#2F2F2F] tracking-tight leading-tight truncate"
-              style={{
-                fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
-              }}
+              className="text-xl sm:text-2xl font-bold text-zinc-900 tracking-tight leading-tight truncate"
+              style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
             >
-              Bonjour, {adminName} 👋
+              Bonjour, {adminName} <span className="inline-block animate-bounce-slow">👋</span>
             </h1>
-            <p className="text-xs sm:text-sm text-[#9CA3AF] mt-0.5 font-medium hidden sm:block">
-              Voici un aperçu de l'activité de votre plateforme.
+            <p className="text-xs sm:text-sm text-zinc-400 mt-0.5 font-medium hidden sm:block">
+              Voici un aperçu de l&apos;activité de votre plateforme
             </p>
           </div>
         </div>
@@ -209,24 +208,21 @@ export function DashboardHeader({
           {/* Mobile search toggle */}
           <button
             onClick={() => setSearchOpen(!searchOpen)}
-            className="md:hidden w-10 h-10 rounded-xl bg-white border border-[#E8E5E0] flex items-center justify-center text-[#777777] hover:text-[#2F2F2F] hover:border-[#D1D5DB] transition-all active:scale-95"
+            className="md:hidden w-9 h-9 rounded-lg bg-white border border-zinc-200 flex items-center justify-center text-zinc-500 hover:text-zinc-900 transition-all active:scale-95"
           >
-            {searchOpen ? (
-              <X className="w-[18px] h-[18px]" />
-            ) : (
-              <Search className="w-[18px] h-[18px]" />
-            )}
+            {searchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
           </button>
 
-          {/* Desktop search */}
-          <div className="hidden md:flex items-center gap-2 bg-white border border-[#E8E5E0] rounded-xl px-3 py-2.5 w-56 lg:w-64 hover:border-[#D1D5DB] focus-within:border-[#486B46] focus-within:ring-2 focus-within:ring-[#486B46]/10 transition-all">
-            <Search className="w-4 h-4 text-[#9CA3AF] flex-shrink-0" />
+          <div className="hidden md:flex items-center gap-2 bg-white border border-zinc-200 rounded-lg px-3 py-2 w-52 lg:w-64 hover:border-zinc-300 focus-within:border-[#3D6B3B] focus-within:ring-2 focus-within:ring-[#3D6B3B]/10 transition-all">
+            <Search className="w-4 h-4 text-zinc-300 flex-shrink-0" />
             <input
               type="text"
               placeholder="Rechercher…"
-              className="bg-transparent text-sm text-[#2F2F2F] placeholder:text-[#D1D5DB] outline-none w-full font-medium"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="bg-transparent text-sm text-zinc-900 placeholder:text-zinc-300 outline-none w-full font-medium"
             />
-            <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded-md border border-[#E8E5E0] bg-[#F8F5F2] px-1.5 py-0.5 text-[10px] font-medium text-[#9CA3AF]">
+            <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] font-mono text-zinc-400">
               ⌘K
             </kbd>
           </div>
@@ -236,15 +232,15 @@ export function DashboardHeader({
             <button
               onClick={() => setIsOpen(!isOpen)}
               className={cn(
-                "relative w-10 h-10 rounded-xl bg-white border flex items-center justify-center transition-all active:scale-95",
+                "relative w-9 h-9 rounded-lg bg-white border flex items-center justify-center transition-all active:scale-95",
                 isOpen
-                  ? "border-[#486B46] text-[#2F2F2F] shadow-sm"
-                  : "border-[#E8E5E0] text-[#777777] hover:text-[#2F2F2F] hover:border-[#D1D5DB]"
+                  ? "border-[#3D6B3B] text-zinc-900 shadow-sm"
+                  : "border-zinc-200 text-zinc-500 hover:text-zinc-900 hover:border-zinc-300"
               )}
             >
-              <Bell className="w-[18px] h-[18px]" />
+              <Bell className="w-4 h-4" />
               {unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] bg-[#F56565] rounded-full text-[9px] font-bold text-white flex items-center justify-center px-1 shadow-sm">
+                <span className="absolute -top-1 -right-1 min-w-[16px] h-[16px] bg-red-500 rounded-full text-[8px] font-bold text-white flex items-center justify-center px-0.5 shadow-sm">
                   {unreadCount > 99 ? "99+" : unreadCount}
                 </span>
               )}
@@ -257,39 +253,37 @@ export function DashboardHeader({
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 8, scale: 0.95 }}
                   transition={{ duration: 0.2, ease: "easeOut" }}
-                  className="absolute right-0 top-12 w-[340px] sm:w-[380px] bg-white rounded-2xl shadow-xl border border-[#E8E5E0] z-50 overflow-hidden"
+                  className="absolute right-0 top-12 w-[340px] sm:w-[380px] bg-white rounded-xl shadow-xl border border-zinc-200 z-50 overflow-hidden"
                 >
-                  {/* Header */}
-                  <div className="flex items-center justify-between px-4 py-3 border-b border-[#F3F4F6]">
-                    <h3 className="text-sm font-bold text-[#2F2F2F]">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-100">
+                    <h3 className="text-sm font-bold text-zinc-900">
                       Notifications
                     </h3>
                     {unreadCount > 0 && (
                       <button
                         onClick={markAllAsRead}
-                        className="flex items-center gap-1 text-xs text-[#486B46] hover:text-[#3A5A38] font-semibold transition-colors"
+                        className="flex items-center gap-1 text-xs text-[#3D6B3B] hover:text-[#2D5029] font-semibold transition-colors"
                       >
                         <CheckCheck className="w-3.5 h-3.5" />
-                        Tout marquer comme lu
+                        Tout lire
                       </button>
                     )}
                   </div>
 
-                  {/* Notification list */}
                   <div className="max-h-[400px] overflow-y-auto custom-scrollbar">
                     {loading ? (
                       <div className="flex items-center justify-center py-8">
-                        <div className="w-5 h-5 border-2 border-[#486B46] border-t-transparent rounded-full animate-spin" />
+                        <div className="w-5 h-5 border-2 border-[#3D6B3B] border-t-transparent rounded-full animate-spin" />
                       </div>
                     ) : notifications.length === 0 ? (
                       <div className="flex flex-col items-center justify-center py-10 px-4">
-                        <div className="w-12 h-12 rounded-2xl bg-[#F8F5F2] flex items-center justify-center mb-3">
-                          <Bell className="w-6 h-6 text-[#D1D5DB]" />
+                        <div className="w-12 h-12 rounded-xl bg-zinc-50 flex items-center justify-center mb-3">
+                          <Bell className="w-6 h-6 text-zinc-300" />
                         </div>
-                        <p className="text-sm text-[#777777] font-medium">
+                        <p className="text-sm text-zinc-500 font-medium">
                           Aucune notification
                         </p>
-                        <p className="text-xs text-[#9CA3AF] mt-1">
+                        <p className="text-xs text-zinc-400 mt-1">
                           Les notifications apparaîtront ici
                         </p>
                       </div>
@@ -299,15 +293,15 @@ export function DashboardHeader({
                           key={notif.id}
                           onClick={() => handleNotificationClick(notif)}
                           className={cn(
-                            "flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors border-b border-[#F9FAFB] last:border-0",
+                            "flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors border-b border-zinc-50 last:border-0",
                             notif.is_read
-                              ? "bg-white hover:bg-[#FAF9F6]"
-                              : "bg-[#F0FFF4] hover:bg-[#E6FFED]"
+                              ? "bg-white hover:bg-zinc-50"
+                              : "bg-[#F0FDF4] hover:bg-[#ECFDF5]"
                           )}
                         >
                           <div
                             className={cn(
-                              "w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 mt-0.5",
+                              "w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5",
                               getNotificationColor(notif.type)
                             )}
                           >
@@ -320,20 +314,20 @@ export function DashboardHeader({
                                 className={cn(
                                   "text-sm truncate",
                                   notif.is_read
-                                    ? "font-medium text-[#2F2F2F]"
-                                    : "font-bold text-[#2F2F2F]"
+                                    ? "font-medium text-zinc-700"
+                                    : "font-bold text-zinc-900"
                                 )}
                               >
                                 {notif.title}
                               </p>
                               {!notif.is_read && (
-                                <span className="w-2 h-2 bg-[#486B46] rounded-full flex-shrink-0" />
+                                <span className="w-1.5 h-1.5 bg-[#3D6B3B] rounded-full flex-shrink-0" />
                               )}
                             </div>
-                            <p className="text-xs text-[#777777] mt-0.5 line-clamp-2">
+                            <p className="text-xs text-zinc-500 mt-0.5 line-clamp-2">
                               {notif.message}
                             </p>
-                            <p className="text-[10px] text-[#9CA3AF] mt-1 font-medium">
+                            <p className="text-[10px] text-zinc-400 mt-1 font-medium">
                               {timeAgo(notif.created_at)}
                             </p>
                           </div>
@@ -344,7 +338,7 @@ export function DashboardHeader({
                                 e.stopPropagation();
                                 markAsRead(notif.id);
                               }}
-                              className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#486B46] hover:bg-[#EEF5EC] transition-colors mt-0.5"
+                              className="flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center text-zinc-400 hover:text-[#3D6B3B] hover:bg-[#F0FDF4] transition-colors mt-0.5"
                               title="Marquer comme lu"
                             >
                               <Check className="w-3.5 h-3.5" />
@@ -357,13 +351,13 @@ export function DashboardHeader({
 
                   {/* Footer */}
                   {notifications.length > 0 && (
-                    <div className="border-t border-[#F3F4F6] px-4 py-2.5">
+                    <div className="border-t border-zinc-100 px-4 py-2.5">
                       <button
                         onClick={() => {
                           setIsOpen(false);
                           router.push("/admin/dashboard");
                         }}
-                        className="w-full text-center text-xs text-[#486B46] hover:text-[#3A5A38] font-semibold transition-colors py-1"
+                        className="w-full text-center text-xs text-[#3D6B3B] hover:text-[#2D5029] font-semibold transition-colors py-1"
                       >
                         Voir toutes les notifications
                       </button>
