@@ -59,6 +59,7 @@ const STATUS_OPTIONS = [
   { value: "approved", label: "Approuvés", icon: CheckCircle2 },
   { value: "rejected", label: "Rejetés", icon: XCircle },
   { value: "suspended", label: "Suspendus", icon: Ban },
+  { value: "verification_pending", label: "Vérification", icon: ShieldCheck },
 ];
 
 const STATUS_LABELS: Record<string, string> = {
@@ -299,6 +300,9 @@ export default function AdminUsersPage() {
                       Charte
                     </th>
                     <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
+                      Vérification
+                    </th>
+                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
                       Inscrit le
                     </th>
                     <th className="text-right text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
@@ -369,6 +373,26 @@ export default function AdminUsersPage() {
                             </span>
                           );
                         })()}
+                      </td>
+                      <td className="px-6 py-3.5">
+                        {user.verification_status === "verified" && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#38C172]/10 text-[#38C172]">
+                            ✅ Vérifié
+                          </span>
+                        )}
+                        {user.verification_status === "under_review" && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">
+                            🔍 En révision
+                          </span>
+                        )}
+                        {user.verification_status === "rejected" && (
+                          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-red-50 text-red-500">
+                            ❌ Rejeté
+                          </span>
+                        )}
+                        {(!user.verification_status || user.verification_status === "none") && (
+                          <span className="text-[10px] text-[#9CA3AF]">—</span>
+                        )}
                       </td>
                        <td className="px-6 py-3.5">
                         <p className="text-[13px] text-[#9CA3AF] font-medium">
@@ -473,6 +497,24 @@ export default function AdminUsersPage() {
                         </span>
                       );
                     })()}
+                  </div>
+                  {/* Verification badge — mobile */}
+                  <div className="mb-3">
+                    {user.verification_status === "verified" && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#38C172]/10 text-[#38C172]">
+                        ✅ Profil Vérifié
+                      </span>
+                    )}
+                    {user.verification_status === "under_review" && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">
+                        🔍 Vérification en cours
+                      </span>
+                    )}
+                    {user.verification_status === "rejected" && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-red-50 text-red-500">
+                        ❌ Vérification rejetée
+                      </span>
+                    )}
                   </div>
                   <div className="flex items-center gap-2">
                     <Link

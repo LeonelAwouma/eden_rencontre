@@ -603,3 +603,84 @@ export async function sendAccountSuspendedEmail(
     `,
   });
 }
+
+// ── Verification Approved Email ──────────────────────────────
+export async function sendVerificationApprovedEmail(
+  email: string,
+  name: string
+): Promise<boolean> {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com";
+  return sendEmail({
+    to: email,
+    subject: "✅ Profil Vérifié — Eden Connexion",
+    html: `
+      <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+        </div>
+        <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
+          <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Félicitations ${name} ! ✅</h2>
+          <p style="color: #555; font-size: 16px; line-height: 1.7;">
+            Votre profil a été <strong>vérifié</strong> par notre équipe.
+          </p>
+          <p style="color: #555; font-size: 16px; line-height: 1.7;">
+            Le badge <strong style="color: #2D5016;">« Profil Vérifié »</strong> est maintenant affiché sur votre profil.
+          </p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${appUrl}/dashboard"
+               style="display: inline-block; background: #2D5016; color: white; padding: 16px 40px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px;">
+              Accéder à mon espace
+            </a>
+          </div>
+        </div>
+        <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
+          © ${new Date().getFullYear()} Eden Connexion — L'alliance bénie commence par une rencontre vraie.
+        </p>
+      </div>
+    `,
+  });
+}
+
+// ── Verification Rejected Email ──────────────────────────────
+export async function sendVerificationRejectedEmail(
+  email: string,
+  name: string,
+  reason?: string
+): Promise<boolean> {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com";
+  return sendEmail({
+    to: email,
+    subject: "Vérification de profil — Eden Connexion",
+    html: `
+      <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
+        <div style="text-align: center; margin-bottom: 30px;">
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+        </div>
+        <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
+          <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${name},</h2>
+          <p style="color: #555; font-size: 16px; line-height: 1.7;">
+            Après examen, votre demande de <strong>vérification de profil</strong> n'a pas pu être approuvée à ce stade.
+          </p>
+          ${reason ? `
+          <div style="margin: 20px 0; padding: 16px; background: #fef2f2; border-radius: 12px; border-left: 4px solid #EF4444;">
+            <p style="color: #991B1B; font-size: 14px; margin: 0 0 4px 0; font-weight: bold;">Raison :</p>
+            <p style="color: #555; font-size: 14px; margin: 0; line-height: 1.6;">${reason}</p>
+          </div>
+          ` : ""}
+          <p style="color: #555; font-size: 16px; line-height: 1.7;">
+            Vous pouvez compléter ou mettre à jour votre profil, puis soumettre à nouveau une demande.
+          </p>
+          <div style="text-align: center; margin: 30px 0;">
+            <a href="${appUrl}/dashboard/profile"
+               style="display: inline-block; background: #2D5016; color: white; padding: 16px 40px; border-radius: 12px; text-decoration: none; font-weight: bold; font-size: 16px;">
+              Mettre à jour mon profil
+            </a>
+          </div>
+        </div>
+        <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
+          © ${new Date().getFullYear()} Eden Connexion — L'alliance bénie commence par une rencontre vraie.
+        </p>
+      </div>
+    `,
+  });
+}

@@ -266,6 +266,13 @@ export default function DashboardPage() {
   // Blog notifications
   const [blogNotifs, setBlogNotifs] = useState<{ id: string; blog_post_id: string | null; title: string; message: string; thumbnail_url: string | null; link: string | null; is_read: boolean; created_at: string }[]>([]);
 
+  // Verification notifications
+  const [verificationNotifs, setVerificationNotifs] = useState<{ id: string; notification_type: string; title: string; message: string; is_read: boolean; created_at: string }[]>([]);
+
+  // Verification status
+  const [verificationStatus, setVerificationStatus] = useState<string>("none");
+  const [verificationRejectionReason, setVerificationRejectionReason] = useState<string | null>(null);
+
   // Upcoming events
   const [upcomingEvents, setUpcomingEvents] = useState<{ id: string; title: string; event_date: string; location: string | null; meeting_link: string | null; cover_image_url: string | null }[]>([]);
 
@@ -286,11 +293,35 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((d) => { if (d.notifications) setBlogNotifs(d.notifications); })
       .catch(() => {});
+    fetch(`/api/meetings/notifications?user_id=${user.id}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.notifications) {
+          const vNotifs = d.notifications.filter((n: any) =>
+            n.notification_type === "verification_approved" || n.notification_type === "verification_rejected" || n.notification_type === "verification_pending"
+          );
+          setVerificationNotifs(vNotifs);
+        }
+      })
+      .catch(() => {});
   }, [activeTab, user?.id]);
 
-  const unreadMeetingNotifs = meetingNotifs.filter((n) => !n.is_read);
+  // Fetch verification status on mount
+  useEffect(() => {
+    if (!user?.id) return;
+    fetch(`/api/user/verification-status?user_id=${user.id}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.verification_status) setVerificationStatus(d.verification_status);
+        if (d.verification_rejection_reason) setVerificationRejectionReason(d.verification_rejection_reason);
+      })
+      .catch(() => {});
+  }, [user?.id]);
+
+  const unreadMeetingNotifs = meetingNotifs.filter((n) => !n.is_read && n.notification_type !== "verification_approved" && n.notification_type !== "verification_rejected" && n.notification_type !== "verification_pending");
   const unreadBlogNotifs = blogNotifs.filter((n) => !n.is_read);
-  const notifCount = unreadMeetingNotifs.length + unreadBlogNotifs.length;
+  const unreadVerificationNotifs = verificationNotifs.filter((n) => !n.is_read);
+  const notifCount = unreadMeetingNotifs.length + unreadBlogNotifs.length + unreadVerificationNotifs.length;
 
   const markMeetingNotifsRead = async () => {
     if (!user?.id || unreadMeetingNotifs.length === 0) return;
@@ -308,6 +339,15 @@ export default function DashboardPage() {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ mark_all: true, user_id: user.id }),
+    }).catch(() => {});
+  };
+  const markVerificationNotifsRead = async () => {
+    if (!user?.id || unreadVerificationNotifs.length === 0) return;
+    setVerificationNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    fetch("/api/meetings/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notification_ids: verificationNotifs.map((n) => n.id) }),
     }).catch(() => {});
   };
   const displayInitial = displayName.charAt(0).toUpperCase();
@@ -1058,6 +1098,45 @@ export default function DashboardPage() {
                   </Button>
                 </div>
 
+                {/* Verification Status Card */}
+                {verificationStatus !== "none" && (
+                  <div className="rounded-2xl p-5"
+                    style={{
+                      background: verificationStatus === "verified" ? "linear-gradient(135deg, #EEF5EC 0%, #FAF9F6 100%)"
+                        : verificationStatus === "rejected" ? "linear-gradient(135deg, #FEF2F2 0%, #FAF9F6 100%)"
+                        : "linear-gradient(135deg, #FFFBEB 0%, #FAF9F6 100%)",
+                      border: `1px solid ${verificationStatus === "verified" ? "#C6D4C0" : verificationStatus === "rejected" ? "#FECACA" : "#FDE68A"}`,
+                      boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)"
+                    }}>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                        style={{ background: verificationStatus === "verified" ? "#EEF5EC" : verificationStatus === "rejected" ? "#FEF2F2" : "#FFFBEB" }}>
+                        <ShieldCheck className="w-4 h-4"
+                          style={{ color: verificationStatus === "verified" ? "#38C172" : verificationStatus === "rejected" ? "#EF4444" : "#D97706" }} />
+                      </div>
+                      <p className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>
+                        {verificationStatus === "verified" && "Profil Vérifié ✅"}
+                        {verificationStatus === "under_review" && "Vérification en cours"}
+                        {verificationStatus === "rejected" && "Vérification non approuvée"}
+                      </p>
+                    </div>
+                    <p className="text-xs leading-relaxed" style={{ color: "#777777" }}>
+                      {verificationStatus === "verified" && "Votre profil porte le badge « Profil Vérifié ». Les autres membres voient que votre identité a été confirmée."}
+                      {verificationStatus === "under_review" && "Votre profil est en cours de révision par notre équipe. Vous serez notifié dès qu'une décision sera prise."}
+                      {verificationStatus === "rejected" && (verificationRejectionReason
+                        ? `Raison : ${verificationRejectionReason}`
+                        : "Votre demande n'a pas été approuvée. Vous pouvez mettre à jour votre profil et soumettre à nouveau.")}
+                    </p>
+                    {verificationStatus === "rejected" && (
+                      <Button onClick={() => router.push("/dashboard/profile")} variant="outline"
+                        className="w-full mt-3 h-9 rounded-xl font-bold text-xs"
+                        style={{ borderColor: "#C6D4C0", color: "#486B46", background: "transparent" }}>
+                        Mettre à jour mon profil
+                      </Button>
+                    )}
+                  </div>
+                )}
+
                 {/* Card 3: Upcoming Events */}
                 <div className="rounded-2xl p-5"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
@@ -1594,10 +1673,41 @@ export default function DashboardPage() {
         // Mark notifications as read when viewing
         if (unreadMeetingNotifs.length > 0) markMeetingNotifsRead();
         if (unreadBlogNotifs.length > 0) markBlogNotifsRead();
+        if (unreadVerificationNotifs.length > 0) markVerificationNotifsRead();
 
         return (
           <div className="space-y-6">
             <TabHeader icon={Bell} title="Notifications" subtitle="Tout ce qui se passe dans votre sanctuaire" />
+
+            {/* Verification status notifications */}
+            {verificationNotifs.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>Vérification du profil</p>
+                <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
+                  {verificationNotifs.map((n) => {
+                    const notifDate = new Date(n.created_at);
+                    const formattedDate = notifDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                    const isApproved = n.notification_type === "verification_approved";
+                    return (
+                      <div key={n.id} className="flex items-start gap-4 p-4 transition-colors"
+                        style={{ borderLeft: n.is_read ? "3px solid transparent" : "3px solid #486B46" }}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: isApproved ? "#EEF5EC" : "#FEF2F2" }}>
+                          <ShieldCheck className="w-5 h-5" style={{ color: isApproved ? "#38C172" : "#EF4444" }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold" style={{ color: "#2F2F2F" }}>{n.title}</p>
+                          <p className="text-xs mt-1 leading-relaxed" style={{ color: "#4B5563" }}>{n.message}</p>
+                          <p className="text-[10px] mt-1.5" style={{ color: "#9CA3AF" }}>{formattedDate}</p>
+                        </div>
+                        {!n.is_read && (
+                          <span className="w-2 h-2 rounded-full shrink-0 mt-2" style={{ background: "#486B46" }} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
             {/* Meeting invitation notifications */}
             {meetingNotifs.length > 0 && (
@@ -1700,7 +1810,7 @@ export default function DashboardPage() {
             )}
 
             {/* Empty state when no notifications at all */}
-            {meetingNotifs.length === 0 && messageNotifs.length === 0 && blogNotifs.length === 0 && (
+            {meetingNotifs.length === 0 && messageNotifs.length === 0 && blogNotifs.length === 0 && verificationNotifs.length === 0 && (
               <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                 {[
                   { icon: Heart, text: "Consultez vos notifications d'activité ici.", when: "" },
@@ -1800,9 +1910,16 @@ export default function DashboardPage() {
                     <div className="flex-1 space-y-1.5">
                       <div className="flex items-center gap-2 justify-center sm:justify-start">
                         <h3 className="font-headline text-2xl font-bold" style={{ color: "#2F2F2F" }}>{displayName}</h3>
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1" style={{ background: "#EEF5EC", color: "#486B46" }}>
-                          <CheckCircle2 className="w-3 h-3" /> Vérifié
-                        </span>
+                        {verificationStatus === "verified" && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1" style={{ background: "#EEF5EC", color: "#486B46" }}>
+                            <CheckCircle2 className="w-3 h-3" /> Profil Vérifié
+                          </span>
+                        )}
+                        {verificationStatus === "under_review" && (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1" style={{ background: "#FFFBEB", color: "#D97706" }}>
+                            <Clock className="w-3 h-3" /> En cours de vérification
+                          </span>
+                        )}
                       </div>
                       <p className="text-sm flex items-center gap-1.5 justify-center sm:justify-start" style={{ color: "#777777" }}>
                         <MapPin className="w-3.5 h-3.5" style={{ color: "#486B46" }} /> {displayLocation}

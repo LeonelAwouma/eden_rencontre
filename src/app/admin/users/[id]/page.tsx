@@ -46,6 +46,8 @@ interface UserProfile {
   onboarding_completed: boolean;
   selfie_verified: boolean;
   selfie_verification_score: number;
+  verification_status: string;
+  verification_rejection_reason: string | null;
 }
 
 const STATUS_LABELS: Record<string, string> = {
@@ -74,6 +76,8 @@ export default function AdminUserDetailPage() {
   const [rejectReason, setRejectReason] = useState("");
   const [showSuspendModal, setShowSuspendModal] = useState(false);
   const [suspendReason, setSuspendReason] = useState("");
+  const [showVerifyRejectModal, setShowVerifyRejectModal] = useState(false);
+  const [verifyRejectReason, setVerifyRejectReason] = useState("");
 
   useEffect(() => {
     fetch(`/api/admin/users/${userId}`)
@@ -110,6 +114,32 @@ export default function AdminUserDetailPage() {
       }
     } catch (err) {
       console.error(`Error ${action}ing user:`, err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  const handleVerifyAction = async (action: "approve" | "reject", reason?: string) => {
+    setActionLoading(action === "approve" ? "verify_approve" : "verify_reject");
+    try {
+      const body: Record<string, string> = { action };
+      if (reason) body.reason = reason;
+
+      const res = await fetch(`/api/admin/users/${userId}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (res.ok) {
+        const userRes = await fetch(`/api/admin/users/${userId}`);
+        const userData = await userRes.json();
+        if (userData.user) setUser(userData.user);
+        setShowVerifyRejectModal(false);
+        setVerifyRejectReason("");
+      }
+    } catch (err) {
+      console.error(`Error ${action}ing verification:`, err);
     } finally {
       setActionLoading(null);
     }
@@ -360,7 +390,52 @@ export default function AdminUserDetailPage() {
                     : "⏳ Non vérifié"}
                 </p>
               </div>
+              {/* Verification Status */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Badge « Profil Vérifié »</p>
+                <p className="text-sm mt-0.5">
+                  {(!user.verification_status || user.verification_status === "none") && (
+                    <span className="text-gray-500">⏳ Non demandé</span>
+                  )}
+                  {user.verification_status === "under_review" && (
+                    <span className="text-amber-600 font-medium">🔍 En cours de révision</span>
+                  )}
+                  {user.verification_status === "verified" && (
+                    <span className="text-emerald-600 font-medium">✅ Profil Vérifié</span>
+                  )}
+                  {user.verification_status === "rejected" && (
+                    <span className="text-red-600 font-medium">❌ Non approuvé</span>
+                  )}
+                </p>
+                {user.verification_status === "rejected" && user.verification_rejection_reason && (
+                  <p className="text-xs text-gray-500 mt-1">Raison : {user.verification_rejection_reason}</p>
+                )}
+              </div>
             </div>
+
+            {/* Verification Actions */}
+            {user.verification_status === "under_review" && (
+              <div className="mt-4 p-4 rounded-xl border-2 border-amber-200 bg-amber-50">
+                <p className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-3">Action requise — Vérification du profil</p>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => handleVerifyAction("approve")}
+                    disabled={!!actionLoading}
+                    className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                  >
+                    {actionLoading === "verify_approve" ? "Validation…" : "✅ Approuver le badge"}
+                  </Button>
+                  <Button
+                    onClick={() => setShowVerifyRejectModal(true)}
+                    disabled={!!actionLoading}
+                    variant="outline"
+                    className="flex-1 border-red-200 text-red-600 hover:bg-red-50 rounded-lg"
+                  >
+                    ❌ Rejeter
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -447,6 +522,50 @@ export default function AdminUserDetailPage() {
                 className="flex-1 bg-gray-800 hover:bg-gray-900 text-white rounded-lg"
               >
                 {actionLoading === "suspend" ? "Suspension…" : "Confirmer"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Verification Reject Modal */}
+      {showVerifyRejectModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold text-gray-900">Rejeter la vérification</h3>
+              <button onClick={() => setShowVerifyRejectModal(false)} className="text-gray-400 hover:text-gray-600">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-500">
+              L'utilisateur sera notifié que sa demande de badge « Profil Vérifié » n'a pas été approuvée.
+            </p>
+            <div className="space-y-2">
+              <Label className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                Motif (recommandé)
+              </Label>
+              <textarea
+                value={verifyRejectReason}
+                onChange={(e) => setVerifyRejectReason(e.target.value)}
+                placeholder="Indiquez la raison du rejet de la vérification…"
+                className="w-full h-24 px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-sm text-gray-700 resize-none focus:outline-none focus:border-[#2D5016]"
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setShowVerifyRejectModal(false)}
+                variant="outline"
+                className="flex-1 rounded-lg"
+              >
+                Annuler
+              </Button>
+              <Button
+                onClick={() => handleVerifyAction("reject", verifyRejectReason)}
+                disabled={!!actionLoading}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+              >
+                {actionLoading === "verify_reject" ? "Rejet…" : "Confirmer le rejet"}
               </Button>
             </div>
           </div>

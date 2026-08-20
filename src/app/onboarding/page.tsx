@@ -50,6 +50,30 @@ export default function OnboardingPage() {
 
   const persist = async (completed: boolean) => {
     setSaving(true);
+    if (completed) {
+      // Use the new API that sets verification_status to "under_review" + creates notifications
+      const session = await getSession();
+      if (session?.id) {
+        try {
+          const res = await fetch("/api/onboarding/complete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ user_id: session.id, answers }),
+          });
+          const data = await res.json();
+          setSaving(false);
+          if (!res.ok) {
+            toast({ title: t("onboarding.saveFailed"), description: data.error || t("onboarding.retry"), variant: "destructive" });
+            return false;
+          }
+          return true;
+        } catch {
+          setSaving(false);
+          toast({ title: t("onboarding.saveFailed"), description: t("onboarding.retry"), variant: "destructive" });
+          return false;
+        }
+      }
+    }
     const res = await saveOnboarding(answers, completed);
     setSaving(false);
     if (!res.ok) {

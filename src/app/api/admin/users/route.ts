@@ -21,7 +21,11 @@ export async function GET(request: NextRequest) {
       .order("created_at", { ascending: false, nullsFirst: false });
 
     if (status && status !== "all") {
-      query = query.eq("status", status);
+      if (status === "verification_pending") {
+        query = query.eq("verification_status", "under_review");
+      } else {
+        query = query.eq("status", status);
+      }
     }
 
     if (plan && plan !== "all") {
