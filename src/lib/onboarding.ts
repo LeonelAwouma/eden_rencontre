@@ -284,6 +284,52 @@ export const QUESTIONNAIRES: Questionnaire[] = [
   },
 ];
 
+// ── Questionnaire field helpers (shared, no client deps) ──
+
+/**
+ * Returns all field IDs from the questionnaire definitions,
+ * organized by section. Optionally excludes optional sections.
+ */
+export function getAllQuestionnaireFieldIds(options?: { excludeOptional?: boolean }): string[] {
+  const q = QUESTIONNAIRES[0]; // Single questionnaire
+  if (!q) return [];
+
+  const sections = options?.excludeOptional
+    ? q.sections.filter((s) => !s.private && s.key !== "questionsFinales")
+    : q.sections;
+
+  return sections.flatMap((s) => s.fields.map((f) => f.id));
+}
+
+/**
+ * Checks how many questionnaire fields are answered.
+ * Returns { answered, total, percentage, unansweredIds }.
+ */
+export function checkQuestionnaireCompletion(
+  answers: Record<string, unknown>,
+  options?: { excludeOptional?: boolean }
+): { answered: number; total: number; percentage: number; unansweredIds: string[] } {
+  const fieldIds = getAllQuestionnaireFieldIds(options);
+  const unansweredIds: string[] = [];
+
+  for (const id of fieldIds) {
+    const val = answers[id];
+    if (val === undefined || val === null || val === "") {
+      unansweredIds.push(id);
+    } else if (Array.isArray(val) && val.length === 0) {
+      unansweredIds.push(id);
+    }
+  }
+
+  const answered = fieldIds.length - unansweredIds.length;
+  return {
+    answered,
+    total: fieldIds.length,
+    percentage: fieldIds.length > 0 ? Math.round((answered / fieldIds.length) * 100) : 0,
+    unansweredIds,
+  };
+}
+
 // ── Locale-aware questionnaire getter ──
 export function getQuestionnaires(locale: SupportedLocale = "fr"): Questionnaire[] {
   return locale === "en" ? QUESTIONNAIRES_EN : QUESTIONNAIRES;

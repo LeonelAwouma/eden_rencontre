@@ -31,10 +31,24 @@ export async function POST(
       return NextResponse.json({ error: "Utilisateur introuvable." }, { status: 404 });
     }
 
-    // Check that user is under review
-    if (user.verification_status !== "under_review") {
+    // Check that user has completed onboarding (profile + all questions answered)
+    if (!user.onboarding_completed) {
       return NextResponse.json(
-        { error: "Cet utilisateur n'est pas en attente de vérification." },
+        { error: "Cet utilisateur n'a pas encore complété son profil." },
+        { status: 400 }
+      );
+    }
+
+    // Log questionnaire completion info for audit
+    const { checkQuestionnaireCompletion } = await import("@/lib/onboarding");
+    const answers = (user.questionnaire as Record<string, unknown>) || {};
+    const completion = checkQuestionnaireCompletion(answers, { excludeOptional: true });
+    console.log(`[Admin Verify] User ${id}: ${completion.answered}/${completion.total} required questions answered. Action: ${action}`);
+
+    // Prevent double-verification
+    if (user.verification_status === "verified" && action === "approve") {
+      return NextResponse.json(
+        { error: "Cet utilisateur est déjà vérifié." },
         { status: 400 }
       );
     }

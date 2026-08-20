@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -22,6 +22,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { checkQuestionnaireCompletion } from "@/lib/onboarding";
 
 interface UserProfile {
   id: string;
@@ -78,6 +79,18 @@ export default function AdminUserDetailPage() {
   const [suspendReason, setSuspendReason] = useState("");
   const [showVerifyRejectModal, setShowVerifyRejectModal] = useState(false);
   const [verifyRejectReason, setVerifyRejectReason] = useState("");
+
+  // Compute questionnaire completion status
+  const questionnaireCompletion = useMemo(() => {
+    if (!user?.questionnaire) return { answered: 0, total: 0, percentage: 0, unansweredIds: [] as string[] };
+    return checkQuestionnaireCompletion(
+      (user.questionnaire as Record<string, unknown>) || {},
+      { excludeOptional: true }
+    );
+  }, [user?.questionnaire]);
+
+  // Can admin grant verification badge? User must have completed onboarding + all required questions answered
+  const canGrantBadge = user?.onboarding_completed && questionnaireCompletion.percentage === 100 && user?.verification_status !== "verified";
 
   useEffect(() => {
     fetch(`/api/admin/users/${userId}`)
@@ -382,6 +395,21 @@ export default function AdminUserDetailPage() {
                   {user.onboarding_completed ? "✅ Terminé" : "⏳ En cours"}
                 </p>
               </div>
+              {/* Questionnaire Completion */}
+              <div>
+                <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Questionnaire</p>
+                <p className="text-sm text-gray-700 mt-0.5">
+                  {questionnaireCompletion.percentage === 100 ? (
+                    <span className="text-emerald-600 font-medium">
+                      ✅ Complet ({questionnaireCompletion.answered}/{questionnaireCompletion.total} réponses)
+                    </span>
+                  ) : (
+                    <span className="text-amber-600">
+                      ⏳ {questionnaireCompletion.answered}/{questionnaireCompletion.total} réponses ({questionnaireCompletion.percentage}%)
+                    </span>
+                  )}
+                </p>
+              </div>
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Vérification selfie</p>
                 <p className="text-sm text-gray-700 mt-0.5">
@@ -414,9 +442,18 @@ export default function AdminUserDetailPage() {
             </div>
 
             {/* Verification Actions */}
-            {user.verification_status === "under_review" && (
-              <div className="mt-4 p-4 rounded-xl border-2 border-amber-200 bg-amber-50">
-                <p className="text-xs font-bold text-amber-700 uppercase tracking-wider mb-3">Action requise — Vérification du profil</p>
+            {canGrantBadge && (
+              <div className="mt-4 p-4 rounded-xl border-2 border-emerald-200 bg-emerald-50">
+                <p className="text-xs font-bold text-emerald-700 uppercase tracking-wider mb-3">
+                  {user.verification_status === "under_review"
+                    ? "Action requise — Vérification du profil"
+                    : "Accorder le badge « Profil Vérifié »"}
+                </p>
+                {user.verification_status !== "under_review" && (
+                  <p className="text-xs text-emerald-600 mb-3">
+                    Ce profil est complet. Vous pouvez accorder le badge de vérification directement.
+                  </p>
+                )}
                 <div className="flex gap-3">
                   <Button
                     onClick={() => handleVerifyAction("approve")}
