@@ -277,6 +277,7 @@ export const QUESTIONNAIRES: Questionnaire[] = [
           { id: "attiranceVsAmour", label: "Ce qui différencie une simple attirance d'un amour guidé par Dieu ?", type: "textarea" },
           { id: "mariageReussi", label: "Votre définition d'un mariage réussi selon les standards bibliques", type: "textarea" },
           { id: "heritage", label: "Quel héritage spirituel espérez-vous laisser ?", type: "textarea" },
+          { id: "criteresMatching", label: "Quels sont, selon vous, les critères non négociables pour un matching réussi ?", type: "textarea" },
         ],
       },
     ],

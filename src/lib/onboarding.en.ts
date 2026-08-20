@@ -203,6 +203,7 @@ export const QUESTIONNAIRES_EN: Questionnaire[] = [
           { id: "attiranceVsAmour", label: "What differentiates simple attraction from love guided by God?", type: "textarea" },
           { id: "mariageReussi", label: "Your definition of a successful marriage according to biblical standards", type: "textarea" },
           { id: "heritage", label: "What spiritual legacy do you hope to leave?", type: "textarea" },
+          { id: "criteresMatching", label: "What are, in your opinion, the non-negotiable criteria for a successful match?", type: "textarea" },
         ],
       },
     ],

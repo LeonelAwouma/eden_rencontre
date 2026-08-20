@@ -369,7 +369,7 @@ export function DashboardHeader({
           </div>
 
           {/* Avatar */}
-          <div className="hidden sm:flex ml-1 w-10 h-10 rounded-full bg-gradient-to-br from-[#486B46] to-[#6E8B63] items-center justify-center text-white text-sm font-bold shadow-sm cursor-pointer hover:shadow-md transition-shadow">
+          <div className="hidden sm:flex ml-1 w-9 h-9 rounded-full bg-gradient-to-br from-[#3D6B3B] to-[#5A7D54] items-center justify-center text-white text-xs font-bold shadow-sm cursor-pointer hover:shadow-md transition-shadow">
             {adminName.charAt(0).toUpperCase()}
           </div>
         </div>
