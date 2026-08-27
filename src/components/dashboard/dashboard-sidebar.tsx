@@ -35,15 +35,15 @@ interface SidebarProps {
 }
 
 const sidebarNav: { name: Tab; icon: any; badge?: number; dot?: boolean; highlight?: boolean }[] = [
-  { name: "Accueil", icon: Home },
-  { name: "Découvrir", icon: Search },
+  { name: "Home", icon: Home },
+  { name: "Discover", icon: Search },
   { name: "Messages", icon: MessageCircle },
-  { name: "Demandes", icon: Star },
-  { name: "Visiteurs", icon: Eye },
-  { name: "Favoris", icon: Heart },
+  { name: "Requests", icon: Star },
+  { name: "Visitors", icon: Eye },
+  { name: "Favorites", icon: Heart },
   { name: "Notifications", icon: Bell },
   { name: "Premium", icon: Crown, highlight: true },
-  { name: "Profil", icon: Settings },
+  { name: "Profile", icon: Settings },
 ];
 
 export function DashboardSidebar({
@@ -61,7 +61,7 @@ export function DashboardSidebar({
   const router = useRouter();
 
   const handleNavClick = (name: Tab) => {
-    if (name === "Profil") {
+    if (name === "Profile") {
       router.push("/dashboard/profile");
     } else {
       setActiveTab(name);
@@ -73,7 +73,7 @@ export function DashboardSidebar({
       className="hidden lg:flex lg:flex-col lg:fixed lg:inset-y-0 lg:w-[280px] z-40"
       style={{ background: "#FAF9F6", borderRight: "1px solid #E8E5E0" }}
       role="navigation"
-      aria-label="Navigation principale"
+      aria-label="Main navigation"
     >
       {/* Logo */}
       <div
@@ -98,7 +98,7 @@ export function DashboardSidebar({
           const badgeCount =
             item.name === "Messages"
               ? totalUnread
-              : item.name === "Demandes"
+              : item.name === "Requests"
               ? incomingRequestCount
               : item.name === "Notifications"
               ? notifCount
@@ -155,14 +155,14 @@ export function DashboardSidebar({
             Eden Or
           </p>
           <p className="text-xs mt-1 mb-3 leading-relaxed" style={{ color: "#777777" }}>
-            Visibilité et messages illimités
+            Unlimited visibility and messages
           </p>
           <Button
             onClick={() => setActiveTab("Premium")}
             className="w-full h-9 font-bold rounded-xl text-xs"
             style={{ background: "#486B46", color: "#FFFFFF" }}
           >
-            S'élever
+            Upgrade
           </Button>
         </div>
 
@@ -175,7 +175,7 @@ export function DashboardSidebar({
             </AvatarFallback>
           </Avatar>
           <button
-            onClick={() => handleNavClick("Profil")}
+            onClick={() => handleNavClick("Profile")}
             className="flex-1 min-w-0 text-left group"
           >
             <p
@@ -190,10 +190,10 @@ export function DashboardSidebar({
           </button>
           <button
             onClick={onLogout}
-            title="Se déconnecter"
+            title="Log out"
             className="transition-colors p-1 hover:opacity-70"
             style={{ color: "#777777" }}
-            aria-label="Se déconnecter"
+            aria-label="Log out"
           >
             <LogOut className="w-5 h-5" />
           </button>

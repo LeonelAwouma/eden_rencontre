@@ -243,11 +243,11 @@ export async function listConversations(myId: string): Promise<ChatConversation[
     const unread = rows.filter((m: any) => m.sender_id !== myId && (!lr || m.created_at > lr)).length;
     const otherId = otherByConv[cid] || "";
     const prof = profById[otherId];
-    const preview = lastRow ? (lastRow.content || (lastRow.image_url ? "📷 Photo" : "")) : "Nouvelle conversation";
+    const preview = lastRow ? (lastRow.content || (lastRow.image_url ? "📷 Photo" : "")) : "New conversation";
     return {
       id: cid,
       otherId,
-      name: prof?.name || prof?.email || "Membre",
+      name: prof?.name || prof?.email || "Member",
       avatar: prof?.avatar_url || null,
       last: preview,
       when: lastRow ? fmt(lastRow.created_at) : "",

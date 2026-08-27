@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getSession, updateProfile, logout, EdenUser } from "@/lib/auth";
-import { saveOnboarding, QUESTIONNAIRES, Questionnaire, Section, Field } from "@/lib/onboarding";
+import { saveOnboarding, questionnaire, Questionnaire, Section, Field } from "@/lib/onboarding";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import type { Tab } from "@/components/dashboard/dashboard-types";
 import {
@@ -26,22 +26,22 @@ interface ProfileData {
   gender: string | null;
   civil_status: string | null;
   region: string | null;
-  profession: string | null;
+  Profession: string | null;
   bio: string | null;
   marriage_vision: string[] | null;
   birth_date: string | null;
-  questionnaire: Record<string, any>;
+  Questionnaire: Record<string, any>;
   onboarding_completed: boolean;
   updated_at: string;
 }
 
 /* ─────────────────────── Helpers ─────────────────────────── */
 
-const CIVIL_STATUS_OPTIONS = ["Célibataire", "Divorcé(e)", "Veuf/Veuve", "Séparé(e)"];
-const GENDER_OPTIONS = ["Homme", "Femme"];
+const CIVIL_STATUS_OPTIONS = ["Single", "Divorced", "Widowed", "Separated"];
+const GENDER_OPTIONS = ["Male", "Female"];
 const MARRIAGE_VISION_OPTIONS = [
-  "Mariage biblique", "Fondé sur la prière", "Ministère en couple",
-  "Éducation chrétienne des enfants", "Fidélité absolue", "Communication ouverte"
+  "Biblical marriage", "Prayer-based", "Ministry as a couple",
+  "Christian education of children", "Absolute fidelity", "Open communication"
 ];
 
 function getAvatarLetter(name?: string | null) {
@@ -51,7 +51,7 @@ function getAvatarLetter(name?: string | null) {
 function formatDate(iso?: string | null) {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" });
+    return new Date(iso).toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
   } catch {
     return iso;
   }
@@ -93,7 +93,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
     city: profile.city || "",
     country: profile.country || "",
     region: profile.region || "",
-    profession: profile.profession || "",
+    Profession: profile.Profession || "",
     bio: profile.bio || "",
     civil_status: profile.civil_status || "",
     gender: profile.gender || "",
@@ -104,29 +104,29 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
   useEffect(() => {
     setForm({
       name: profile.name || "", city: profile.city || "", country: profile.country || "",
-      region: profile.region || "", profession: profile.profession || "", bio: profile.bio || "",
+      region: profile.region || "", Profession: profile.Profession || "", bio: profile.bio || "",
       civil_status: profile.civil_status || "", gender: profile.gender || "",
       birth_date: profile.birth_date || "", marriage_vision: profile.marriage_vision || [],
     });
   }, [profile]);
 
   const handleSave = async () => {
-    if (!form.name.trim()) { alert("Le nom est requis."); return; }
+    if (!form.name.trim()) { alert("Name is required."); return; }
     setSaving(true);
     try {
       if (!supabase) return;
       const { error } = await supabase.from("profiles").update({
         name: form.name.trim(), city: form.city.trim(), country: form.country.trim(),
-        region: form.region.trim(), profession: form.profession.trim(), bio: form.bio.trim(),
+        region: form.region.trim(), Profession: form.Profession.trim(), bio: form.bio.trim(),
         civil_status: form.civil_status, gender: form.gender, birth_date: form.birth_date || null,
         marriage_vision: form.marriage_vision, updated_at: new Date().toISOString(),
       }).eq("id", profile.id);
       if (error) throw error;
-      await updateProfile({ name: form.name.trim(), city: form.city, country: form.country, profession: form.profession, bio: form.bio, marriageVision: form.marriage_vision });
+      await updateProfile({ name: form.name.trim(), city: form.city, country: form.country, profession: form.Profession, bio: form.bio, marriageVision: form.marriage_vision });
       setEditing(false);
       onRefresh();
     } catch (e: any) {
-      alert("Erreur: " + e.message);
+      alert("Error: " + e.message);
     } finally { setSaving(false); }
   };
 
@@ -141,17 +141,17 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
     <div className="eden-card p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#2F2F2F] flex items-center gap-2">
-          <User size={20} className="text-[#486B46]" /> Informations personnelles
+          <User size={20} className="text-[#486B46]" /> Personal Information
         </h3>
         {!editing ? (
           <button onClick={() => setEditing(true)} className="eden-btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5">
-            <Edit3 size={14} /> Modifier
+            <Edit3 size={14} /> Edit
           </button>
         ) : (
           <div className="flex gap-2">
             <button onClick={() => setEditing(false)} className="eden-btn-outline text-xs px-3 py-1.5"><X size={14} /></button>
             <button onClick={handleSave} disabled={saving} className="eden-btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5">
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Enregistrer
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save
             </button>
           </div>
         )}
@@ -172,43 +172,43 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
           {/* Personal Info Section */}
           <div>
             <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
-              <User size={14} /> Informations personnelles
+              <User size={14} /> Personal Information
             </h4>
             <div className="space-y-0">
-              <InfoRow label="Nom complet" value={profile.name} />
+              <InfoRow label="Full Name" value={profile.name} />
               <InfoRow label="Email" value={profile.email} />
-              <InfoRow label="Genre" value={profile.gender} />
-              <InfoRow label="Date de naissance" value={formatDate(profile.birth_date)} />
-              <InfoRow label="Statut civil" value={profile.civil_status} />
+              <InfoRow label="Gender" value={profile.gender} />
+              <InfoRow label="Date of Birth" value={formatDate(profile.birth_date)} />
+              <InfoRow label="Civil Status" value={profile.civil_status} />
             </div>
           </div>
 
           {/* Location Section */}
           <div>
             <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
-              <MapPin size={14} /> Localisation
+              <MapPin size={14} /> Location
             </h4>
             <div className="space-y-0">
-              <InfoRow label="Ville" value={profile.city} />
-              <InfoRow label="Pays" value={profile.country} />
-              <InfoRow label="Région" value={profile.region} />
+              <InfoRow label="City" value={profile.city} />
+              <InfoRow label="Country" value={profile.country} />
+              <InfoRow label="Region" value={profile.region} />
             </div>
           </div>
 
           {/* Professional Info */}
           <div>
             <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Briefcase size={14} /> Parcours professionnel
+              <Briefcase size={14} /> Professional Background
             </h4>
             <div className="space-y-0">
-              <InfoRow label="Profession" value={profile.profession} />
+              <InfoRow label="Profession" value={profile.Profession} />
             </div>
           </div>
 
           {/* Bio */}
           {profile.bio && (
             <div>
-              <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3">À propos de moi</h4>
+              <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3">About Me</h4>
               <p className="text-sm text-[#2F2F2F] leading-relaxed whitespace-pre-wrap bg-[#FAFAF7] rounded-xl p-4 border border-[#F0EDE8]">{profile.bio}</p>
             </div>
           )}
@@ -217,7 +217,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
           {profile.marriage_vision && profile.marriage_vision.length > 0 && (
             <div>
               <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Heart size={14} /> Vision du mariage
+                <Heart size={14} /> Marriage Vision
               </h4>
               <div className="flex flex-wrap gap-2">
                 {profile.marriage_vision.map(v => (
@@ -228,31 +228,31 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
           )}
 
           {/* Onboarding Summary */}
-          {profile.questionnaire && Object.keys(profile.questionnaire).length > 0 && (
+          {profile.Questionnaire && Object.keys(profile.Questionnaire).length > 0 && (
             <div>
               <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
-                <BookOpen size={14} /> Données du parcours de foi
+                <BookOpen size={14} /> Faith Journey Data
               </h4>
-              <p className="text-xs text-[#777777] mb-3">Réponses enregistrées lors de l'onboarding. Modifiables dans l'onglet &laquo; Parcours de foi &raquo;.</p>
+              <p className="text-xs text-[#777777] mb-3">Answers saved during onboarding. Editable in the "Faith Journey" tab.</p>
               <div className="space-y-0">
-                {QUESTIONNAIRES.flatMap(q => q.sections.flatMap(s => s.fields))
+                {questionnaire.flatMap(q => q.sections.flatMap(s => s.fields))
                   .filter(f => {
-                    const v = profile.questionnaire[f.id];
+                    const v = profile.Questionnaire[f.id];
                     return v && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "");
                   })
                   .slice(0, 15)
                   .map(f => {
-                    const v = profile.questionnaire[f.id];
+                    const v = profile.Questionnaire[f.id];
                     const display = Array.isArray(v) ? v.join(", ") : String(v);
                     return <InfoRow key={f.id} label={f.label} value={display} />;
                   })}
               </div>
-              {Object.keys(profile.questionnaire).filter(k => {
-                const v = profile.questionnaire[k];
+              {Object.keys(profile.Questionnaire).filter(k => {
+                const v = profile.Questionnaire[k];
                 return v && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "");
               }).length > 15 && (
                 <button onClick={onSwitchToFaith} className="text-xs text-[#486B46] font-semibold mt-3 hover:underline">
-                  Voir toutes les réponses dans Parcours de foi →
+                  View all answers in Faith Journey →
                 </button>
               )}
             </div>
@@ -263,43 +263,43 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
           {/* Section: Identité */}
           <div>
             <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 flex items-center gap-2 pb-2 border-b border-[#F0EDE8]">
-              <User size={14} /> Identité
+              <User size={14} /> Identity
             </h4>
             <div className="space-y-4">
-              <EditField label="Nom complet" value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} required />
+              <EditField label="Full Name" value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} required />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <EditField label="Genre" value={form.gender} onChange={v => setForm(f => ({ ...f, gender: v }))} type="select" options={GENDER_OPTIONS} />
-                <EditField label="Date de naissance" value={form.birth_date} onChange={v => setForm(f => ({ ...f, birth_date: v }))} type="date" />
-                <EditField label="Statut civil" value={form.civil_status} onChange={v => setForm(f => ({ ...f, civil_status: v }))} type="select" options={CIVIL_STATUS_OPTIONS} />
-                <EditField label="Profession" value={form.profession} onChange={v => setForm(f => ({ ...f, profession: v }))} />
+                <EditField label="Gender" value={form.gender} onChange={v => setForm(f => ({ ...f, gender: v }))} type="select" options={GENDER_OPTIONS} />
+                <EditField label="Date of Birth" value={form.birth_date} onChange={v => setForm(f => ({ ...f, birth_date: v }))} type="date" />
+                <EditField label="Civil Status" value={form.civil_status} onChange={v => setForm(f => ({ ...f, civil_status: v }))} type="select" options={CIVIL_STATUS_OPTIONS} />
+                <EditField label="Profession" value={form.Profession} onChange={v => setForm(f => ({ ...f, Profession: v }))} />
               </div>
             </div>
           </div>
 
-          {/* Section: Localisation */}
+          {/* Section: Location */}
           <div>
             <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 flex items-center gap-2 pb-2 border-b border-[#F0EDE8]">
-              <MapPin size={14} /> Localisation
+              <MapPin size={14} /> Location
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <EditField label="Ville" value={form.city} onChange={v => setForm(f => ({ ...f, city: v }))} />
-              <EditField label="Pays" value={form.country} onChange={v => setForm(f => ({ ...f, country: v }))} />
-              <EditField label="Région" value={form.region} onChange={v => setForm(f => ({ ...f, region: v }))} />
+              <EditField label="City" value={form.city} onChange={v => setForm(f => ({ ...f, city: v }))} />
+              <EditField label="Country" value={form.country} onChange={v => setForm(f => ({ ...f, country: v }))} />
+              <EditField label="Region" value={form.region} onChange={v => setForm(f => ({ ...f, region: v }))} />
             </div>
           </div>
 
           {/* Section: Bio */}
           <div>
-            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 pb-2 border-b border-[#F0EDE8]">À propos de moi</h4>
+            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 pb-2 border-b border-[#F0EDE8]">About Me</h4>
             <textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} rows={4}
-              placeholder="Décrivez-vous en quelques mots…"
+              placeholder="Describe yourself in a few words…"
               className="w-full border border-[#E0DDD8] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#486B46] focus:ring-2 focus:ring-[#486B46]/20 resize-none" />
           </div>
 
-          {/* Section: Vision du mariage */}
+          {/* Section: Marriage Vision */}
           <div>
             <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 flex items-center gap-2 pb-2 border-b border-[#F0EDE8]">
-              <Heart size={14} /> Vision du mariage
+              <Heart size={14} /> Marriage Vision
             </h4>
             <div className="flex flex-wrap gap-2">
               {MARRIAGE_VISION_OPTIONS.map(v => (
@@ -317,7 +317,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
               <X size={16} className="mr-1.5 inline" /> Annuler
             </button>
             <button onClick={handleSave} disabled={saving} className="eden-btn-primary text-sm px-6 py-2.5 flex items-center gap-2">
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Enregistrer les modifications
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save les modifications
             </button>
           </div>
         </div>
@@ -371,13 +371,13 @@ function EditField({ label, value, onChange, type = "text", options, required, p
 
 /* ────────────────── Faith Journey Section ─────────────────────── */
 
-function FaithJourneyCard({ profileId, questionnaire, onRefresh }: { profileId: string; questionnaire: Record<string, any>; onRefresh: () => void }) {
+function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string; answers: Record<string, any>; onRefresh: () => void }) {
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editingQ, setEditingQ] = useState<string | null>(null);
-  const [localAnswers, setLocalAnswers] = useState<Record<string, any>>(questionnaire || {});
+  const [localAnswers, setLocalAnswers] = useState<Record<string, any>>(answers || {});
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => { setLocalAnswers(questionnaire || {}); }, [questionnaire]);
+  useEffect(() => { setLocalAnswers(answers || {}); }, [answers]);
 
   const handleFieldChange = (fieldId: string, value: any) => {
     setLocalAnswers(prev => ({ ...prev, [fieldId]: value }));
@@ -396,7 +396,7 @@ function FaithJourneyCard({ profileId, questionnaire, onRefresh }: { profileId: 
       setEditingQ(null);
       onRefresh();
     } catch (e: any) {
-      alert("Erreur: " + e.message);
+      alert("Error: " + e.message);
     } finally { setSaving(false); }
   };
 
@@ -413,10 +413,10 @@ function FaithJourneyCard({ profileId, questionnaire, onRefresh }: { profileId: 
   return (
     <div className="eden-card p-6">
       <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#2F2F2F] flex items-center gap-2 mb-6">
-        <BookOpen size={20} className="text-[#486B46]" /> Mon Parcours de Foi
+        <BookOpen size={20} className="text-[#486B46]" /> Mon Faith Journey
       </h3>
       <div className="space-y-4">
-        {QUESTIONNAIRES.map(q => {
+        {questionnaire.map(q => {
           const { filled, total, pct } = getCompletionCount(q);
           const isExpanded = expanded === q.key;
           const isEditing = editingQ === q.key;
@@ -452,13 +452,13 @@ function FaithJourneyCard({ profileId, questionnaire, onRefresh }: { profileId: 
                   <div className="flex justify-end gap-2 pt-4 mb-4">
                     {!isEditing ? (
                       <button onClick={() => setEditingQ(q.key)} className="eden-btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5">
-                        <Edit3 size={14} /> Modifier
+                        <Edit3 size={14} /> Edit
                       </button>
                     ) : (
                       <>
-                        <button onClick={() => { setEditingQ(null); setLocalAnswers(questionnaire || {}); }} className="eden-btn-outline text-xs px-3 py-1.5"><X size={14} /></button>
+                        <button onClick={() => { setEditingQ(null); setLocalAnswers(answers || {}); }} className="eden-btn-outline text-xs px-3 py-1.5"><X size={14} /></button>
                         <button onClick={handleSaveQuestionnaire} disabled={saving} className="eden-btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5">
-                          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Enregistrer
+                          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save
                         </button>
                       </>
                     )}
@@ -503,7 +503,7 @@ function FieldDisplay({ field, value, isEditing, onChange, onMultiToggle }: {
   onChange: (v: any) => void; onMultiToggle: (opt: string) => void;
 }) {
   const displayValue = () => {
-    if (!value) return <span className="text-[#BBBBBB] italic text-sm">Non renseigné</span>;
+    if (!value) return <span className="text-[#BBBBBB] italic text-sm">Not specified</span>;
     if (Array.isArray(value)) {
       return (
         <div className="flex flex-wrap gap-1.5">
@@ -589,21 +589,21 @@ function FieldDisplay({ field, value, isEditing, onChange, onMultiToggle }: {
 
 function ProfileCompletionCard({ profile }: { profile: ProfileData }) {
   const checks = [
-    { label: "Photo de profil", done: !!profile.avatar_url },
-    { label: "Nom complet", done: !!profile.name },
+    { label: "Profile Photo", done: !!profile.avatar_url },
+    { label: "Full Name", done: !!profile.name },
     { label: "Bio", done: !!profile.bio },
-    { label: "Ville", done: !!profile.city },
-    { label: "Profession", done: !!profile.profession },
-    { label: "Statut civil", done: !!profile.civil_status },
-    { label: "Vision du mariage", done: !!(profile.marriage_vision && profile.marriage_vision.length > 0) },
-    { label: "Parcours de foi", done: profile.onboarding_completed },
+    { label: "City", done: !!profile.city },
+    { label: "Profession", done: !!profile.Profession },
+    { label: "Civil Status", done: !!profile.civil_status },
+    { label: "Marriage Vision", done: !!(profile.marriage_vision && profile.marriage_vision.length > 0) },
+    { label: "Faith Journey", done: profile.onboarding_completed },
   ];
   const done = checks.filter(c => c.done).length;
   const pct = Math.round((done / checks.length) * 100);
 
   return (
     <div className="eden-card p-6">
-      <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#2F2F2F] mb-4">Complétion du profil</h3>
+      <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#2F2F2F] mb-4">Profile Completion</h3>
       <div className="flex items-center gap-4 mb-4">
         <div className="relative w-16 h-16">
           <svg className="w-16 h-16 -rotate-90" viewBox="0 0 56 56">
@@ -614,8 +614,8 @@ function ProfileCompletionCard({ profile }: { profile: ProfileData }) {
           <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[#486B46]">{pct}%</span>
         </div>
         <div>
-          <p className="text-sm font-semibold text-[#2F2F2F]">{done}/{checks.length} complétés</p>
-          <p className="text-xs text-[#777777]">Complétez votre profil pour plus de visibilité</p>
+          <p className="text-sm font-semibold text-[#2F2F2F]">{done}/{checks.length} completed</p>
+          <p className="text-xs text-[#777777]">Complete your profile for more visibility</p>
         </div>
       </div>
       <div className="space-y-2">
@@ -649,7 +649,7 @@ export default function ProfilePage() {
       if (!session?.id) { router.replace("/login"); return; }
 
       const { data, error } = await supabase.from("profiles")
-        .select("id, email, name, city, country, avatar_url, gender, civil_status, region, profession, bio, marriage_vision, birth_date, questionnaire, onboarding_completed, updated_at")
+        .select("id, email, name, city, country, avatar_url, gender, civil_status, region, Profession, bio, marriage_vision, birth_date, Questionnaire, onboarding_completed, updated_at")
         .eq("id", session.id)
         .maybeSingle();
       if (error) throw error;
@@ -663,7 +663,7 @@ export default function ProfilePage() {
 
   const handleRefresh = () => {
     loadProfile();
-    setToast({ message: "Profil mis à jour avec succès", type: "success" });
+    setToast({ message: "Profile updated successfully", type: "success" });
   };
 
   const handleLogout = async () => {
@@ -672,7 +672,7 @@ export default function ProfilePage() {
   };
 
   const handleSetActiveTab = (t: Tab) => {
-    if (t === "Profil") return;
+    if (t === "Profile") return;
     router.push("/dashboard");
   };
 
@@ -681,7 +681,7 @@ export default function ProfilePage() {
       <div className="flex h-screen items-center justify-center bg-[#FAF9F6]">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-[#486B46] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-[#777777]">Chargement du profil…</p>
+          <p className="text-sm text-[#777777]">Loading profile…</p>
         </div>
       </div>
     );
@@ -692,18 +692,18 @@ export default function ProfilePage() {
       <div className="flex h-screen items-center justify-center bg-[#FAF9F6]">
         <div className="text-center p-8 eden-card max-w-md mx-4">
           <AlertCircle size={40} className="text-[#C6A15B] mx-auto mb-4" />
-          <h2 className="font-['Playfair_Display'] text-xl font-bold text-[#2F2F2F] mb-2">Profil introuvable</h2>
-          <p className="text-sm text-[#777777] mb-4">Impossible de charger votre profil. Veuillez réessayer.</p>
-          <Link href="/dashboard" className="eden-btn-primary inline-flex items-center gap-2 text-sm px-5 py-2.5">Retour au tableau de bord</Link>
+          <h2 className="font-['Playfair_Display'] text-xl font-bold text-[#2F2F2F] mb-2">Profile not found</h2>
+          <p className="text-sm text-[#777777] mb-4">Unable to load your profile. Please try again.</p>
+          <Link href="/dashboard" className="eden-btn-primary inline-flex items-center gap-2 text-sm px-5 py-2.5">Back to dashboard</Link>
         </div>
       </div>
     );
   }
 
   const sidebarProps = {
-    activeTab: "Profil" as Tab,
+    activeTab: "Profile" as Tab,
     setActiveTab: handleSetActiveTab,
-    displayName: profile.name || "Membre",
+    displayName: profile.name || "Member",
     displayInitial: getAvatarLetter(profile.name),
     myAvatar: profile.avatar_url || undefined,
     displayLocation: profile.city || "",
@@ -743,12 +743,12 @@ export default function ProfilePage() {
           <div className="max-w-4xl mx-auto flex items-center gap-4">
             <ProfileAvatar name={profile.name} avatarUrl={profile.avatar_url} size="md" />
             <div className="flex-1 min-w-0">
-              <h1 className="font-['Playfair_Display'] text-xl sm:text-2xl font-bold text-[#2F2F2F] truncate">{profile.name || "Mon Profil"}</h1>
+              <h1 className="font-['Playfair_Display'] text-xl sm:text-2xl font-bold text-[#2F2F2F] truncate">{profile.name || "My Profile"}</h1>
               <p className="text-sm text-[#777777] truncate">{profile.email} {profile.city ? `· ${profile.city}` : ""}</p>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setTab("profile")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "profile" ? "bg-[#486B46] text-white" : "bg-white text-[#777777] hover:bg-[#EEF5EC]"}`}>Profil</button>
-              <button onClick={() => setTab("faith")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "faith" ? "bg-[#486B46] text-white" : "bg-white text-[#777777] hover:bg-[#EEF5EC]"}`}>Parcours de foi</button>
+              <button onClick={() => setTab("profile")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "profile" ? "bg-[#486B46] text-white" : "bg-white text-[#777777] hover:bg-[#EEF5EC]"}`}>Profile</button>
+              <button onClick={() => setTab("faith")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "faith" ? "bg-[#486B46] text-white" : "bg-white text-[#777777] hover:bg-[#EEF5EC]"}`}>Faith Journey</button>
             </div>
           </div>
         </div>
@@ -762,7 +762,7 @@ export default function ProfilePage() {
               <ProfileCompletionCard profile={profile} />
             </>
           ) : (
-            <FaithJourneyCard profileId={profile.id} questionnaire={profile.questionnaire || {}} onRefresh={handleRefresh} />
+            <FaithJourneyCard profileId={profile.id} answers={profile.Questionnaire || {}} onRefresh={handleRefresh} />
           )}
         </div>
       </main>

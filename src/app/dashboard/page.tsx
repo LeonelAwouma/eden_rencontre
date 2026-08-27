@@ -49,7 +49,7 @@ import { Tab, TABS, ComposerType, FeedPost, EDIT_WINDOW_MS, DAILY_VERSES, VERSE_
 
 // ── Helper ──
 function formatTime(iso: string) {
-  try { return new Date(iso).toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" }); }
+  try { return new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }); }
   catch { return ""; }
 }
 
@@ -80,12 +80,12 @@ function PostActions({ likes, comments, onLike, onComment, onPray, onShare }: {
       <button onClick={onPray} className={cn(btn)} style={{ color: "#777777" }}
         onMouseEnter={e => { e.currentTarget.style.background = "#EEF5EC"; e.currentTarget.style.color = "#486B46"; }}
         onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#777777"; }}>
-        🙏 Prier
+        🙏 Pray
       </button>
       <button onClick={onShare} className={cn(btn)} style={{ color: "#777777" }}
         onMouseEnter={e => { e.currentTarget.style.background = "#EEF5EC"; e.currentTarget.style.color = "#486B46"; }}
         onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#777777"; }}>
-        <Share2 className="w-4 h-4" /> Partager
+        <Share2 className="w-4 h-4" /> Share
       </button>
     </div>
   );
@@ -373,7 +373,7 @@ export default function DashboardPage() {
   const handleStartConversation = async (other: DirectoryUser) => {
     const convId = await startConversation(other.id);
     if (!convId) {
-      toast({ title: "Réservé aux amis 🙏", description: `Vous devez d'abord être amis avec ${other.name}.`, variant: "destructive" });
+      toast({ title: "Friends only 🙏", description: `You must first be friends with ${other.name}.`, variant: "destructive" });
       return;
     }
     setShowNewChat(false); setUserQuery(""); setUserResults([]);
@@ -406,7 +406,7 @@ export default function DashboardPage() {
       const res = await uploadChatImage(pendingImage, activeConvId);
       setUploading(false);
       if (res.error || !res.url) {
-        toast({ title: "Échec de l'envoi", description: res.error || "Réessayez.", variant: "destructive" });
+        toast({ title: "Upload failed", description: res.error || "Please retry.", variant: "destructive" });
         return;
       }
     const sentImg = await sendChatMessage(activeConvId, text, res.url, meId, activeConv?.otherId);
@@ -429,16 +429,16 @@ export default function DashboardPage() {
   const notifySendError = (error: string) => {
     if (/row-level|policy|not_friends|permission/i.test(error)) {
       const name = activeConv?.name || "ce membre";
-      toast({ title: "Devenez amis pour discuter 🤝", description: `Envoyez une demande d'alliance à ${name}.` });
+      toast({ title: "Become friends to chat 🤝", description: `Send an alliance request to ${name}.` });
       return;
     }
-    toast({ title: "Message non envoyé", description: error, variant: "destructive" });
+    toast({ title: "Message not sent", description: error, variant: "destructive" });
   };
 
   const handlePickImage = (file: File | undefined) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) { toast({ title: "Format non supporté", variant: "destructive" }); return; }
-    if (file.size > 5 * 1024 * 1024) { toast({ title: "Image trop lourde", variant: "destructive" }); return; }
+    if (!file.type.startsWith("image/")) { toast({ title: "Unsupported format", variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "Image too large", variant: "destructive" }); return; }
     if (pendingPreview) URL.revokeObjectURL(pendingPreview);
     setPendingImage(file);
     setPendingPreview(URL.createObjectURL(file));
@@ -453,13 +453,13 @@ export default function DashboardPage() {
     setProfileForm((prev) => {
       const current = prev.marriageVision;
       if (current.includes(id)) return { ...prev, marriageVision: current.filter((v) => v !== id) };
-      if (current.length >= 3) { toast({ title: "3 valeurs maximum" }); return prev; }
+      if (current.length >= 3) { toast({ title: "3 values maximum" }); return prev; }
       return { ...prev, marriageVision: [...current, id] };
     });
   };
 
   const handleSaveProfile = async () => {
-    if (!profileForm.name.trim()) { toast({ title: "Nom requis", variant: "destructive" }); return; }
+    if (!profileForm.name.trim()) { toast({ title: "Name required", variant: "destructive" }); return; }
     setSavingProfile(true);
     const res = await updateProfile({
       name: profileForm.name.trim(), city: profileForm.city.trim(), country: profileForm.country.trim(),
@@ -467,23 +467,23 @@ export default function DashboardPage() {
       bio: profileForm.bio.trim(), marriageVision: profileForm.marriageVision,
     });
     setSavingProfile(false);
-    if (!res.ok) { toast({ title: "Échec", description: res.error, variant: "destructive" }); return; }
+    if (!res.ok) { toast({ title: "Failed", description: res.error, variant: "destructive" }); return; }
     setUser(res.user); setEditingProfile(false);
-    toast({ title: "Profil mis à jour 🙏" });
+    toast({ title: "Profile updated 🙏" });
   };
 
   const handlePickAvatar = async (file: File | undefined) => {
     if (!file || !user) return;
-    if (!file.type.startsWith("image/")) { toast({ title: "Format non supporté", variant: "destructive" }); return; }
-    if (file.size > 5 * 1024 * 1024) { toast({ title: "Image trop lourde", variant: "destructive" }); return; }
+    if (!file.type.startsWith("image/")) { toast({ title: "Unsupported format", variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: "Image too large", variant: "destructive" }); return; }
     setUploadingAvatar(true);
     const up = await uploadAvatar(file, user.id || "anon");
     setUploadingAvatar(false);
-    if (up.error || !up.url) { toast({ title: "Échec", description: up.error || "Réessayez.", variant: "destructive" }); return; }
+    if (up.error || !up.url) { toast({ title: "Failed", description: up.error || "Please retry.", variant: "destructive" }); return; }
     const res = await updateProfile({ avatar_url: up.url });
-    if (!res.ok) { toast({ title: "Échec", description: res.error, variant: "destructive" }); return; }
+    if (!res.ok) { toast({ title: "Failed", description: res.error, variant: "destructive" }); return; }
     setUser(res.user);
-    toast({ title: "Photo mise à jour 🙏" });
+    toast({ title: "Photo updated 🙏" });
   };
 
   // ── Social ──
@@ -512,7 +512,7 @@ export default function DashboardPage() {
     if (!res.ok) {
       setFavoriteIds((prev) => { const n = new Set(prev); isFav ? n.add(member.id) : n.delete(member.id); return n; });
       setFavoriteMembers((prev) => (isFav ? [member, ...prev] : prev.filter((m) => m.id !== member.id)));
-      toast({ title: "Échec", description: res.error || "Réessayez.", variant: "destructive" });
+      toast({ title: "Failed", description: res.error || "Please retry.", variant: "destructive" });
     }
   };
 
@@ -521,14 +521,14 @@ export default function DashboardPage() {
     const res = await sendFriendRequest(member.id);
     if (!res.ok) {
       setRelations((prev) => { const n = { ...prev }; delete n[member.id]; return n; });
-      toast({ title: "Échec", description: res.error || "Réessayez.", variant: "destructive" }); return;
+      toast({ title: "Failed", description: res.error || "Please retry.", variant: "destructive" }); return;
     }
-    toast({ title: "Invitation envoyée 🙏" });
+    toast({ title: "Invitation sent 🙏" });
   };
 
   const handleRespondRequest = async (req: FriendRequest, accept: boolean) => {
     const res = await respondToRequest(req.id, accept);
-    if (!res.ok) { toast({ title: "Échec", description: res.error, variant: "destructive" }); return; }
+    if (!res.ok) { toast({ title: "Failed", description: res.error, variant: "destructive" }); return; }
     setIncomingRequests((prev) => prev.filter((r) => r.id !== req.id));
     setRelations((prev) => ({ ...prev, [req.requester.id]: { status: accept ? "friends" : "declined", requestId: req.id } }));
     toast({ title: accept ? "Alliance acceptée 🙏" : "Demande déclinée" });
@@ -539,8 +539,8 @@ export default function DashboardPage() {
   const handleComposerImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; e.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) { toast({ title: "Format non supporté", variant: "destructive" }); return; }
-    if (file.size > 10 * 1024 * 1024) { toast({ title: "Image trop lourde (max 10 Mo)", variant: "destructive" }); return; }
+    if (!file.type.startsWith("image/")) { toast({ title: "Unsupported format", variant: "destructive" }); return; }
+    if (file.size > 10 * 1024 * 1024) { toast({ title: "Image too large (max 10 Mo)", variant: "destructive" }); return; }
     setComposerImageFile(file);
     const reader = new FileReader();
     reader.onload = () => { setComposerImage(reader.result as string); setComposerOpen(true); };
@@ -576,17 +576,17 @@ export default function DashboardPage() {
         const res = await fetch("/api/testimonials", { method: "POST", body });
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error || "Erreur lors de la soumission");
+          throw new Error(data.error || "Error lors de la soumission");
         }
 
         setTestimonialSubmitted(true);
         setTestimonialSubmitting(false);
-        toast({ title: "Témoignage soumis 🙏", description: "Il sera visible après approbation par un administrateur." });
+        toast({ title: "Testimony submitted 🙏", description: "It will be visible after approval by an administrator." });
         return;
       } catch (err) {
         setTestimonialSubmitting(false);
-        const message = err instanceof Error ? err.message : "Erreur inconnue";
-        toast({ title: "Échec de la soumission", description: message, variant: "destructive" });
+        const message = err instanceof Error ? err.message : "Unknown error";
+        toast({ title: "Failed de la soumission", description: message, variant: "destructive" });
         return;
       }
     }
@@ -661,7 +661,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user?.id) return;
     upsertMyProfile(user).then((r) => {
-      if (r.error) toast({ title: "Annuaire indisponible", description: r.error, variant: "destructive" });
+      if (r.error) toast({ title: "Directory unavailable", description: r.error, variant: "destructive" });
       else loadSocial();
     });
     loadConversations();
@@ -723,7 +723,7 @@ export default function DashboardPage() {
         loadConversations();
         if (activeConvId !== m.conversation_id) {
           const conv = conversations.find((c) => c.id === m.conversation_id);
-          toast({ title: conv ? `Nouveau message de ${conv.name}` : "Nouveau message", description: m.image_url ? "📷 Photo" : m.content });
+          toast({ title: conv ? `New message from ${conv.name}` : "New message", description: m.image_url ? "📷 Photo" : m.content });
         }
       });
     }
@@ -769,9 +769,9 @@ export default function DashboardPage() {
       if (!result.ok) throw new Error(result.error);
       setQuestionnaireAnswers(localQAnswers);
       setEditingQuestionnaire(null);
-      toast({ title: "Parcours de foi mis à jour 🙏" });
+      toast({ title: "Faith journey updated 🙏" });
     } catch (e: any) {
-      toast({ title: "Erreur", description: e.message, variant: "destructive" });
+      toast({ title: "Error", description: e.message, variant: "destructive" });
     } finally {
       setSavingQuestionnaire(false);
     }
@@ -866,7 +866,7 @@ export default function DashboardPage() {
                   <div className="relative z-10 flex flex-col items-center">
                     <Monogram className="w-10 h-8 mb-4" style={{ color: "#6E8B63" }} />
                     <span className="text-[10px] font-bold uppercase tracking-[0.4em] mb-4" style={{ color: "#6E8B63" }}>
-                      Parole du jour
+                      Word of the Day
                     </span>
                     <p key={(dailyQuote ?? VERSE_OF_DAY).ref} className="font-headline text-xl sm:text-2xl lg:text-[1.75rem] italic leading-relaxed max-w-xl animate-in fade-in duration-700"
                       style={{ color: "#2F2F2F" }}>
@@ -877,7 +877,7 @@ export default function DashboardPage() {
                     </p>
                     <span style={{ color: "#C6D4C0" }}><Flourish className="w-36 h-3 mt-4" /></span>
                     <p className="text-sm mt-3" style={{ color: "#777777" }}>
-                      Que la paix soit avec vous, <span className="font-semibold" style={{ color: "#2F2F2F" }}>{displayName}</span>.
+                      Peace be with you, <span className="font-semibold" style={{ color: "#2F2F2F" }}>{displayName}</span>.
                     </p>
                   </div>
                 </motion.section>
@@ -900,19 +900,19 @@ export default function DashboardPage() {
                               <CheckCircle2 className="w-7 h-7" style={{ color: "#486B46" }} />
                             </div>
                             <div className="space-y-1">
-                              <p className="font-headline text-lg font-bold" style={{ color: "#2F2F2F" }}>Merci pour votre témoignage !</p>
+                              <p className="font-headline text-lg font-bold" style={{ color: "#2F2F2F" }}>Thank you for your testimony!</p>
                               <p className="text-sm" style={{ color: "#777777" }}>
-                                Votre témoignage est <strong style={{ color: "#C6A15B" }}>en attente de validation</strong> par notre comité. Il sera publié dès approbation.
+                                Your testimony is <strong style={{ color: "#C6A15B" }}>pending validation</strong> by our committee. It will be published once approved.
                               </p>
                             </div>
                             <button onClick={resetComposer} className="h-10 px-6 rounded-xl text-sm font-bold transition-colors" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                              Fermer
+                              Close
                             </button>
                           </div>
                         ) : (
                           <>
                             <div className="flex items-center gap-2 flex-wrap">
-                              {(["Publication", "Témoignage", "Prière"] as ComposerType[]).map((t) => (
+                              {(["Post", "Testimony", "Prayer"] as ComposerType[]).map((t) => (
                                 <button key={t} onClick={() => setComposerType(t)}
                                   className="px-3 h-7 rounded-full text-[11px] font-bold transition-colors"
                                   style={composerType === t
@@ -923,7 +923,7 @@ export default function DashboardPage() {
                               ))}
                             </div>
                             <Textarea autoFocus value={composerText} onChange={(e) => setComposerText(e.target.value)}
-                              placeholder={composerType === "Témoignage" ? "Racontez comment vous vous êtes rencontrés et les bénédictions qui en découlent…" : "Partagez une parole, un témoignage, une intention de prière…"}
+                              placeholder={composerType === "Testimony" ? "Share how you met and the blessings that followed…" : "Share a word, a testimony, a prayer request…"}
                               className="min-h-[88px] rounded-xl text-sm resize-none"
                               style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
                             {composerImage && (
@@ -947,37 +947,37 @@ export default function DashboardPage() {
                                   className="h-9 px-5 font-bold rounded-lg gap-2 text-sm disabled:opacity-50"
                                   style={{ background: "#486B46", color: "#FFFFFF" }}>
                                   {testimonialSubmitting ? (
-                                    <><Loader2 className="w-4 h-4 animate-spin" /> Envoi…</>
-                                  ) : composerType === "Témoignage" ? (
-                                    <>Soumettre <Send className="w-4 h-4" /></>
+                                    <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</>
+                                  ) : composerType === "Testimony" ? (
+                                    <>Submit <Send className="w-4 h-4" /></>
                                   ) : (
-                                    <>Publier <Send className="w-4 h-4" /></>
+                                    <>Post <Send className="w-4 h-4" /></>
                                   )}
                                 </Button>
                               </div>
                             </div>
-                            {composerType === "Témoignage" && (
+                            {composerType === "Testimony" && (
                               <p className="text-[11px]" style={{ color: "#9CA3AF" }}>
-                                Votre témoignage sera examiné par notre comité avant publication.
+                                Your testimony will be reviewed by our committee before publication.
                               </p>
                             )}
                           </>
                         )}
                       </div>
                     ) : (
-                      <button onClick={() => openComposer("Publication")}
+                      <button onClick={() => openComposer("Post")}
                         className="flex-1 text-left h-11 px-4 rounded-full text-sm transition-colors truncate"
                         style={{ background: "#FAF9F6", color: "#777777" }}>
-                        Partagez un témoignage, une prière…
+                        Share a testimony, a prayer…
                       </button>
                     )}
                   </div>
                   {!composerOpen && (
                     <div className="grid grid-cols-3 gap-2 mt-3 pt-3" style={{ borderTop: "1px solid #F0EDE8" }}>
                       {[
-                        { label: "Témoignage", icon: Quote, type: "Témoignage" as ComposerType, photo: false },
-                        { label: "Prière", icon: HeartHandshake, type: "Prière" as ComposerType, photo: false },
-                        { label: "Photo", icon: Camera, type: "Publication" as ComposerType, photo: true },
+                        { label: "Testimony", icon: Quote, type: "Testimony" as ComposerType, photo: false },
+                        { label: "Prayer", icon: HeartHandshake, type: "Prayer" as ComposerType, photo: false },
+                        { label: "Photo", icon: Camera, type: "Post" as ComposerType, photo: true },
                       ].map((b) => (
                         <button key={b.label} onClick={() => { openComposer(b.type); if (b.photo) composerImageRef.current?.click(); }}
                           className="flex items-center justify-center gap-2 h-10 rounded-xl text-xs font-bold transition-colors"
@@ -1007,7 +1007,7 @@ export default function DashboardPage() {
                           <p className="text-xs" style={{ color: "#777777" }}>{p.when}</p>
                         </div>
                         <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
-                          style={p.type === "Témoignage" ? { background: "#EEF5EC", color: "#486B46" } : { background: "#F5EDE8", color: "#C6A15B" }}>
+                          style={p.type === "Testimony" ? { background: "#EEF5EC", color: "#486B46" } : { background: "#F5EDE8", color: "#C6A15B" }}>
                           {p.type}
                         </span>
                       </div>
@@ -1022,7 +1022,7 @@ export default function DashboardPage() {
                 {feed.length === 0 && (
                   <div className="text-center py-8 rounded-2xl" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                     <MessageCircle className="w-10 h-10 mx-auto mb-3" style={{ color: "#C6D4C0" }} />
-                    <p className="text-sm" style={{ color: "#777777" }}>Votre fil d'actualité apparaîtra ici.</p>
+                    <p className="text-sm" style={{ color: "#777777" }}>Your news feed will appear here.</p>
                   </div>
                 )}
 
@@ -1031,12 +1031,12 @@ export default function DashboardPage() {
                   <section className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-headline text-lg font-bold" style={{ color: "#2F2F2F" }}>Profils recommandés</h3>
-                        <p className="text-xs" style={{ color: "#777777" }}>Des profils alignés sur votre foi</p>
+                        <h3 className="font-headline text-lg font-bold" style={{ color: "#2F2F2F" }}>Recommended Profiles</h3>
+                        <p className="text-xs" style={{ color: "#777777" }}>Profiles aligned with your faith</p>
                       </div>
-                      <button onClick={() => setActiveTab("Découvrir")} className="text-xs font-bold flex items-center gap-1 transition-colors"
+                      <button onClick={() => setActiveTab("Discover")} className="text-xs font-bold flex items-center gap-1 transition-colors"
                         style={{ color: "#486B46" }}>
-                        Voir tout <ChevronRight className="w-3.5 h-3.5" />
+                        See all <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1115,23 +1115,23 @@ export default function DashboardPage() {
                           style={{ color: verificationStatus === "verified" ? "#38C172" : verificationStatus === "rejected" ? "#EF4444" : "#D97706" }} />
                       </div>
                       <p className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>
-                        {verificationStatus === "verified" && "Profil Vérifié ✅"}
-                        {verificationStatus === "under_review" && "Vérification en cours"}
-                        {verificationStatus === "rejected" && "Vérification non approuvée"}
+                        {verificationStatus === "verified" && "Verified Profile ✅"}
+                        {verificationStatus === "under_review" && "Verification in progress"}
+                        {verificationStatus === "rejected" && "Verification not approved"}
                       </p>
                     </div>
                     <p className="text-xs leading-relaxed" style={{ color: "#777777" }}>
-                      {verificationStatus === "verified" && "Votre profil porte le badge « Profil Vérifié ». Les autres membres voient que votre identité a été confirmée."}
-                      {verificationStatus === "under_review" && "Votre profil est en cours de révision par notre équipe. Vous serez notifié dès qu'une décision sera prise."}
+                      {verificationStatus === "verified" && "Your profile displays the 'Verified Profile' badge. Other members can see that your identity has been confirmed."}
+                      {verificationStatus === "under_review" && "Your profile is being reviewed by our team. You will be notified once a decision is made."}
                       {verificationStatus === "rejected" && (verificationRejectionReason
-                        ? `Raison : ${verificationRejectionReason}`
-                        : "Votre demande n'a pas été approuvée. Vous pouvez mettre à jour votre profil et soumettre à nouveau.")}
+                        ? `Reason: ${verificationRejectionReason}`
+                        : "Your request was not approved. You can update your profile and submit again.")}
                     </p>
                     {verificationStatus === "rejected" && (
                       <Button onClick={() => router.push("/dashboard/profile")} variant="outline"
                         className="w-full mt-3 h-9 rounded-xl font-bold text-xs"
                         style={{ borderColor: "#C6D4C0", color: "#486B46", background: "transparent" }}>
-                        Mettre à jour mon profil
+                        Update my profile
                       </Button>
                     )}
                   </div>
@@ -1141,12 +1141,12 @@ export default function DashboardPage() {
                 <div className="rounded-2xl p-5"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
                   <p className="font-headline font-bold text-sm flex items-center gap-2 mb-3" style={{ color: "#2F2F2F" }}>
-                    <CalendarDays className="w-4 h-4" style={{ color: "#486B46" }} /> Événements à venir
+                    <CalendarDays className="w-4 h-4" style={{ color: "#486B46" }} /> Upcoming Events
                   </p>
                   <div className="space-y-3">
                     {upcomingEvents.length > 0 ? upcomingEvents.map((e) => {
                       const evDate = new Date(e.event_date);
-                      const formattedEvDate = evDate.toLocaleDateString("fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                      const formattedEvDate = evDate.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
                       return (
                         <div key={e.id} className="flex items-center gap-3 group cursor-pointer">
                           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"
@@ -1164,7 +1164,7 @@ export default function DashboardPage() {
                         </div>
                       );
                     }) : (
-                      <p className="text-xs text-center py-2" style={{ color: "#9CA3AF" }}>Aucun événement prévu</p>
+                      <p className="text-xs text-center py-2" style={{ color: "#9CA3AF" }}>No events scheduled</p>
                     )}
                   </div>
                 </div>
@@ -1172,7 +1172,7 @@ export default function DashboardPage() {
                 {/* Card 4: Recent Activity */}
                 <div className="rounded-2xl p-5"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
-                  <p className="font-headline font-bold text-sm mb-3" style={{ color: "#2F2F2F" }}>Activité récente</p>
+                  <p className="font-headline font-bold text-sm mb-3" style={{ color: "#2F2F2F" }}>Recent Activity</p>
                   <div className="space-y-3">
                     {visitors.length > 0 && (
                       <div className="flex items-center gap-3">
@@ -1180,7 +1180,7 @@ export default function DashboardPage() {
                           <Eye className="w-4 h-4" style={{ color: "#486B46" }} />
                         </div>
                         <p className="text-xs flex-1" style={{ color: "#2F2F2F" }}>
-                          <span className="font-bold">{visitors.length}</span> visiteur{visitors.length > 1 ? "s" : ""} récent{visitors.length > 1 ? "s" : ""}
+                          <span className="font-bold">{visitors.length}</span> recent visitor{visitors.length > 1 ? "s" : ""}
                         </p>
                       </div>
                     )}
@@ -1190,7 +1190,7 @@ export default function DashboardPage() {
                           <Heart className="w-4 h-4" style={{ color: "#C6A15B" }} />
                         </div>
                         <p className="text-xs flex-1" style={{ color: "#2F2F2F" }}>
-                          <span className="font-bold">{favoriteMembers.length}</span> favori{favoriteMembers.length > 1 ? "s" : ""}
+                          <span className="font-bold">{favoriteMembers.length}</span> favorite{favoriteMembers.length > 1 ? "s" : ""}
                         </p>
                       </div>
                     )}
@@ -1200,7 +1200,7 @@ export default function DashboardPage() {
                           <Star className="w-4 h-4" style={{ color: "#C6A15B" }} />
                         </div>
                         <p className="text-xs flex-1" style={{ color: "#2F2F2F" }}>
-                          <span className="font-bold">{incomingRequests.length}</span> demande{incomingRequests.length > 1 ? "s" : ""} d'alliance
+                          <span className="font-bold">{incomingRequests.length}</span> alliance request{incomingRequests.length > 1 ? "s" : ""}
                         </p>
                       </div>
                     )}
@@ -1210,7 +1210,7 @@ export default function DashboardPage() {
                           <MessageCircle className="w-4 h-4" style={{ color: "#486B46" }} />
                         </div>
                         <p className="text-xs flex-1" style={{ color: "#2F2F2F" }}>
-                          <span className="font-bold">{totalUnread}</span> message{totalUnread > 1 ? "s" : ""} non lu{totalUnread > 1 ? "s" : ""}
+                          <span className="font-bold">{totalUnread}</span> unread message{totalUnread > 1 ? "s" : ""}
                         </p>
                       </div>
                     )}
@@ -1220,12 +1220,12 @@ export default function DashboardPage() {
                           <BookOpen className="w-4 h-4" style={{ color: "#486B46" }} />
                         </div>
                         <p className="text-xs flex-1 text-left" style={{ color: "#2F2F2F" }}>
-                          <span className="font-bold">{unreadBlogNotifs.length}</span> nouvel{unreadBlogNotifs.length > 1 ? "s" : ""} article{unreadBlogNotifs.length > 1 ? "s" : ""} de blog
+                          <span className="font-bold">{unreadBlogNotifs.length}</span> new blog article{unreadBlogNotifs.length > 1 ? "s" : ""}
                         </p>
                       </button>
                     )}
                     {visitors.length === 0 && favoriteMembers.length === 0 && incomingRequests.length === 0 && totalUnread === 0 && unreadBlogNotifs.length === 0 && (
-                      <p className="text-xs" style={{ color: "#777777" }}>Aucune activité récente.</p>
+                      <p className="text-xs" style={{ color: "#777777" }}>No recent activity.</p>
                     )}
                   </div>
                 </div>
@@ -1233,13 +1233,13 @@ export default function DashboardPage() {
                 {/* Card 5: Dashboard Statistics */}
                 <div className="rounded-2xl p-5"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
-                  <p className="font-headline font-bold text-sm mb-4" style={{ color: "#2F2F2F" }}>Statistiques</p>
+                  <p className="font-headline font-bold text-sm mb-4" style={{ color: "#2F2F2F" }}>Statistics</p>
                   <div className="grid grid-cols-2 gap-3">
                     {[
                       { label: "Messages", value: totalUnread, icon: MessageCircle },
-                      { label: "Visiteurs", value: visitors.length, icon: Eye },
-                      { label: "Favoris", value: favoriteMembers.length, icon: Heart },
-                      { label: "Demandes", value: incomingRequests.length, icon: Star },
+                      { label: "Visitors", value: visitors.length, icon: Eye },
+                      { label: "Favorites", value: favoriteMembers.length, icon: Heart },
+                      { label: "Requests", value: incomingRequests.length, icon: Star },
                     ].map((s) => (
                       <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "#FAF9F6" }}>
                         <s.icon className="w-4 h-4 mx-auto mb-1.5" style={{ color: "#486B46" }} />
@@ -1310,17 +1310,17 @@ export default function DashboardPage() {
         const shown = discoverResults.slice(0, discoverCount);
         return (
           <div className="space-y-6">
-            <TabHeader icon={Search} title="Découvrir" subtitle="Explorez les profils que la grâce place sur votre chemin" />
+            <TabHeader icon={Search} title="Discover" subtitle="Explore the profiles that grace places on your path" />
             <div className="relative max-w-xl">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: "#486B46" }} />
               <Input value={discoverSearch} onChange={(e) => { setDiscoverSearch(e.target.value); setDiscoverCount(24); }}
-                placeholder="Rechercher un prénom, une ville, une profession…"
+                placeholder="Search by name, city, profession…"
                 className="h-12 pl-12 pr-12 rounded-2xl text-sm"
                 style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }} />
               {discoverSearch && <button onClick={() => setDiscoverSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: "#777777" }}><X className="w-4 h-4" /></button>}
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-              {["Tous", "Proches de moi", "Nouveaux profils", "Affinité élevée", "Vérifiés"].map((filter) => (
+              {["All", "Near me", "New profiles", "High affinity", "Verified"].map((filter) => (
                 <button key={filter} onClick={() => setDiscoverFilter(filter)}
                   className="shrink-0 px-5 h-10 rounded-full text-xs font-bold transition-all flex items-center gap-2"
                   style={discoverFilter === filter
@@ -1333,10 +1333,10 @@ export default function DashboardPage() {
             {socialLoading && discoverMembers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#486B46" }} />
-                <p className="text-sm" style={{ color: "#777777" }}>Chargement des membres…</p>
+                <p className="text-sm" style={{ color: "#777777" }}>Loading members…</p>
               </div>
             ) : shown.length === 0 ? (
-              <EmptyState icon={Search} title="Aucun profil trouvé" text="Invitez vos proches à rejoindre Eden !" cta="Explorer" />
+              <EmptyState icon={Search} title="No profiles found" text="Invite your loved ones to join Eden!" cta="Explore" />
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {shown.map((m) => {
@@ -1349,15 +1349,15 @@ export default function DashboardPage() {
                         status === "friends" ? (
                           <Button onClick={() => router.push(`/dashboard/profile/${m.id}`)} variant="outline"
                             className="h-9 rounded-xl font-bold gap-1.5 text-xs" style={{ borderColor: "#C6D4C0", color: "#486B46" }}>
-                            <Check className="w-3.5 h-3.5" /> Amis
+                            <Check className="w-3.5 h-3.5" /> Friends
                           </Button>
                         ) : status === "pending_out" ? (
                           <Button disabled variant="outline" className="h-9 rounded-xl font-bold gap-1.5 text-xs" style={{ borderColor: "#E8E5E0", color: "#777777" }}>
-                            <Check className="w-3.5 h-3.5" /> Envoyée
+                            <Check className="w-3.5 h-3.5" /> Sent
                           </Button>
                         ) : (
                           <Button onClick={() => handleAddFriend(m)} className="h-9 rounded-xl font-bold gap-1.5 text-xs" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                            <UserPlus className="w-3.5 h-3.5" /> Ajouter
+                            <UserPlus className="w-3.5 h-3.5" /> Add
                           </Button>
                         )
                       } />
@@ -1369,17 +1369,17 @@ export default function DashboardPage() {
         );
       }
 
-      case "Visiteurs":
+      case "Visitors":
         return (
           <div className="space-y-6">
-            <TabHeader icon={Eye} title="Visiteurs" subtitle="Découvrez qui a consulté votre profil" />
+            <TabHeader icon={Eye} title="Visitors" subtitle="Discover who viewed your profile" />
             {socialLoading && visitors.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#486B46" }} />
-                <p className="text-sm" style={{ color: "#777777" }}>Chargement…</p>
+                <p className="text-sm" style={{ color: "#777777" }}>Loading…</p>
               </div>
             ) : visitors.length === 0 ? (
-              <EmptyState icon={Eye} title="Aucun visiteur" text="Lorsqu'un membre consultera votre profil, il apparaîtra ici." cta="Découvrir des profils" onClick={() => setActiveTab("Découvrir")} />
+              <EmptyState icon={Eye} title="No visitors" text="When a member views your profile, they will appear here." cta="Discover profiles" onClick={() => setActiveTab("Discover")} />
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {visitors.map((v) => (
@@ -1408,17 +1408,17 @@ export default function DashboardPage() {
           </div>
         );
 
-      case "Favoris":
+      case "Favorites":
         return (
           <div className="space-y-6">
-            <TabHeader icon={Heart} title="Mes Favoris" subtitle="Les profils que votre cœur a mis de côté" />
+            <TabHeader icon={Heart} title="My Favorites" subtitle="Profiles your heart has set aside" />
             {socialLoading && favoriteMembers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#486B46" }} />
-                <p className="text-sm" style={{ color: "#777777" }}>Chargement…</p>
+                <p className="text-sm" style={{ color: "#777777" }}>Loading…</p>
               </div>
             ) : favoriteMembers.length === 0 ? (
-              <EmptyState icon={Heart} title="Aucun favori" text="Parcourez les profils et touchez l'étoile pour conserver ceux qui résonnent avec vos valeurs." cta="Découvrir des profils" onClick={() => setActiveTab("Découvrir")} />
+              <EmptyState icon={Heart} title="No favorites" text="Browse profiles and tap the star to save those that resonate with your values." cta="Discover profiles" onClick={() => setActiveTab("Discover")} />
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {favoriteMembers.map((m) => (
@@ -1437,17 +1437,17 @@ export default function DashboardPage() {
           </div>
         );
 
-      case "Demandes":
+      case "Requests":
         return (
           <div className="space-y-6">
-            <TabHeader icon={Star} title="Demandes d'alliance" subtitle="Ces personnes souhaitent cheminer avec vous" />
+            <TabHeader icon={Star} title="Alliance Requests" subtitle="These people wish to walk with you" />
             {socialLoading && incomingRequests.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#486B46" }} />
-                <p className="text-sm" style={{ color: "#777777" }}>Chargement…</p>
+                <p className="text-sm" style={{ color: "#777777" }}>Loading…</p>
               </div>
             ) : incomingRequests.length === 0 ? (
-              <EmptyState icon={Star} title="Aucune demande en attente" text="Lorsque quelqu'un souhaitera faire votre connaissance, sa demande apparaîtra ici." cta="Découvrir des profils" onClick={() => setActiveTab("Découvrir")} />
+              <EmptyState icon={Star} title="No pending requests" text="When someone wishes to get to know you, their request will appear here." cta="Discover profiles" onClick={() => setActiveTab("Discover")} />
             ) : (
               <div className="space-y-4">
                 {incomingRequests.map((r) => {
@@ -1474,15 +1474,15 @@ export default function DashboardPage() {
                           <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                             <Button onClick={() => router.push(`/dashboard/profile/${m.id}`)} variant="outline"
                               className="h-10 px-5 rounded-xl font-bold gap-1.5" style={{ borderColor: "#C6D4C0", color: "#486B46" }}>
-                              <Eye className="w-4 h-4" /> Profil
+                              <Eye className="w-4 h-4" /> Profile
                             </Button>
                             <Button onClick={() => handleRespondRequest(r, true)}
                               className="h-10 px-5 rounded-xl font-bold gap-1.5" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                              <Check className="w-4 h-4" /> Accepter
+                              <Check className="w-4 h-4" /> Accept
                             </Button>
                             <Button onClick={() => handleRespondRequest(r, false)} variant="outline"
                               className="h-10 px-5 rounded-xl font-bold gap-1.5" style={{ borderColor: "#E8E5E0", color: "#777777" }}>
-                              <X className="w-4 h-4" /> Décliner
+                              <X className="w-4 h-4" /> Decline
                             </Button>
                           </div>
                         </div>
@@ -1510,12 +1510,12 @@ export default function DashboardPage() {
                     </button>
                     <div className="relative flex-1">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#777777" }} />
-                      <Input autoFocus value={userQuery} onChange={(e) => setUserQuery(e.target.value)} placeholder="Nom ou email…" className="pl-9 h-10 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "none" }} />
+                      <Input autoFocus value={userQuery} onChange={(e) => setUserQuery(e.target.value)} placeholder="Name or email…" className="pl-9 h-10 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "none" }} />
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {userResults.length === 0 ? (
-                      <p className="p-4 text-sm" style={{ color: "#777777" }}>{userQuery.trim().length < 2 ? "Saisissez au moins 2 caractères." : "Aucun membre trouvé."}</p>
+                      <p className="p-4 text-sm" style={{ color: "#777777" }}>{userQuery.trim().length < 2 ? "Enter at least 2 characters." : "No members found."}</p>
                     ) : userResults.map((u) => (
                       <button key={u.id} onClick={() => handleStartConversation(u)} className="w-full flex items-center gap-3 p-3 text-left transition-colors"
                         onMouseEnter={e => e.currentTarget.style.background = "#FAF9F6"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
@@ -1535,14 +1535,14 @@ export default function DashboardPage() {
                 <>
                   <div className="p-3" style={{ borderBottom: "1px solid #E8E5E0" }}>
                     <Button onClick={() => setShowNewChat(true)} className="w-full h-10 font-bold rounded-xl gap-2 text-sm" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                      + Nouvelle conversation
+                      + New conversation
                     </Button>
                   </div>
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {conversations.length === 0 ? (
                       <div className="p-6 text-center">
                         <MessageCircle className="w-10 h-10 mx-auto mb-3" style={{ color: "#C6D4C0" }} />
-                        <p className="text-sm" style={{ color: "#777777" }}>Aucune conversation.</p>
+                        <p className="text-sm" style={{ color: "#777777" }}>No conversations yet.</p>
                       </div>
                     ) : conversations.map((c) => {
                       const sel = activeConvId === c.id;
@@ -1645,7 +1645,7 @@ export default function DashboardPage() {
                         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
                       </button>
                       <Input value={chatInput} onChange={(e) => handleChatInput(e.target.value)}
-                        placeholder={pendingImage ? "Légende…" : "Écrivez un message…"}
+                        placeholder={pendingImage ? "Caption…" : "Type a message…"}
                         className="flex-1 h-10 rounded-full px-4 text-sm"
                         style={{ background: "#FAF9F6", border: "none" }} />
                       <Button type="submit" disabled={(!chatInput.trim() && !pendingImage) || uploading}
@@ -1661,8 +1661,8 @@ export default function DashboardPage() {
                   <div className="w-16 h-16 rounded-3xl flex items-center justify-center mb-4" style={{ background: "#EEF5EC" }}>
                     <MessageCircle className="w-8 h-8" style={{ color: "#486B46" }} />
                   </div>
-                  <h3 className="font-headline text-xl font-bold mb-1" style={{ color: "#2F2F2F" }}>Vos conversations</h3>
-                  <p className="text-sm max-w-xs" style={{ color: "#777777" }}>Sélectionnez une conversation ou démarrez-en une nouvelle.</p>
+                  <h3 className="font-headline text-xl font-bold mb-1" style={{ color: "#2F2F2F" }}>Your conversations</h3>
+                  <p className="text-sm max-w-xs" style={{ color: "#777777" }}>Select a conversation or start a new one.</p>
                 </div>
               )}
             </div>
@@ -1677,16 +1677,16 @@ export default function DashboardPage() {
 
         return (
           <div className="space-y-6">
-            <TabHeader icon={Bell} title="Notifications" subtitle="Tout ce qui se passe dans votre sanctuaire" />
+            <TabHeader icon={Bell} title="Notifications" subtitle="Everything happening in your sanctuary" />
 
             {/* Verification status notifications */}
             {verificationNotifs.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>Vérification du profil</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>Profile Verification</p>
                 <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                   {verificationNotifs.map((n) => {
                     const notifDate = new Date(n.created_at);
-                    const formattedDate = notifDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                    const formattedDate = notifDate.toLocaleDateString("en-US", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
                     const isApproved = n.notification_type === "verification_approved";
                     return (
                       <div key={n.id} className="flex items-start gap-4 p-4 transition-colors"
@@ -1712,11 +1712,11 @@ export default function DashboardPage() {
             {/* Meeting invitation notifications */}
             {meetingNotifs.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>Invitations aux rendez-vous vidéo</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>Video Meeting Invitations</p>
                 <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                   {meetingNotifs.map((n) => {
                     const notifDate = new Date(n.created_at);
-                    const formattedDate = notifDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                    const formattedDate = notifDate.toLocaleDateString("en-US", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
                     const typeIcon = n.notification_type === "created" ? Video
                       : n.notification_type === "cancelled" ? X
                       : n.notification_type === "rescheduled" ? Clock
@@ -1788,7 +1788,7 @@ export default function DashboardPage() {
                 <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                   {blogNotifs.map((n) => {
                     const notifDate = new Date(n.created_at);
-                    const formattedDate = notifDate.toLocaleDateString("fr-FR", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                    const formattedDate = notifDate.toLocaleDateString("en-US", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
                     return (
                       <Link key={n.id} href={n.link || "/blog"} className="flex items-start gap-4 p-4 transition-colors"
                         style={{ borderLeft: n.is_read ? "3px solid transparent" : "3px solid #486B46" }}
@@ -1813,7 +1813,7 @@ export default function DashboardPage() {
             {meetingNotifs.length === 0 && messageNotifs.length === 0 && blogNotifs.length === 0 && verificationNotifs.length === 0 && (
               <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                 {[
-                  { icon: Heart, text: "Consultez vos notifications d'activité ici.", when: "" },
+                  { icon: Heart, text: "View your activity notifications here.", when: "" },
                 ].map((n, i) => (
                   <div key={i} className="flex items-center gap-4 p-4">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#EEF5EC" }}>
@@ -1833,16 +1833,16 @@ export default function DashboardPage() {
             <div className="text-center space-y-3 max-w-xl mx-auto">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest"
                 style={{ background: "#EEF5EC", color: "#486B46", border: "1px solid #C6D4C0" }}>
-                <Crown className="w-3.5 h-3.5" style={{ color: "#C6A15B" }} /> Nos Formules
+                <Crown className="w-3.5 h-3.5" style={{ color: "#C6A15B" }} /> Our Plans
               </div>
-              <h2 className="font-headline text-3xl sm:text-4xl font-bold" style={{ color: "#2F2F2F" }}>Élevez votre chemin</h2>
-              <p className="text-base" style={{ color: "#777777" }}>Accédez à la pleine mesure d'Eden pour bâtir votre alliance.</p>
+              <h2 className="font-headline text-3xl sm:text-4xl font-bold" style={{ color: "#2F2F2F" }}>Elevate your path</h2>
+              <p className="text-base" style={{ color: "#777777" }}>Access the full measure of Eden to build your alliance.</p>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {[
-                { name: "Découverte", price: "Gratuite", period: "", accent: false, features: ["Création de profil basique", "5 matches par jour", "Messages limités", "Accès aux événements publics"], cta: "Votre offre actuelle", current: true },
-                { name: "Croissance", price: "5 000", period: "FCFA/mois", accent: true, features: ["Matches illimités", "Messages illimités", "Profil vérifié", "Filtres avancés", "Support prioritaire"], cta: "Choisir Croissance", current: false },
-                { name: "Bénédiction", price: "40 000", period: "FCFA/an", accent: false, badge: "Meilleur", features: ["Tous les avantages Premium", "Conseil matrimonial gratuit", "Événements VIP", "Matching prioritaire", "Ressources spirituelles"], cta: "Choisir Bénédiction", current: false },
+                { name: "Discovery", price: "Free", period: "", accent: false, features: ["Basic profile creation", "5 matches per day", "Limited messages", "Access to public events"], cta: "Your current plan", current: true },
+                { name: "Growth", price: "5,000", period: "FCFA/month", accent: true, features: ["Unlimited matches", "Unlimited messages", "Verified profile", "Advanced filters", "Priority support"], cta: "Choose Growth", current: false },
+                { name: "Blessing", price: "40,000", period: "FCFA/year", accent: false, badge: "Best", features: ["All Premium benefits", "Free marriage counseling", "VIP events", "Priority matching", "Spiritual resources"], cta: "Choose Blessing", current: false },
               ].map((plan) => (
                 <div key={plan.name} className="rounded-2xl p-6 sm:p-8 overflow-hidden relative"
                   style={{ background: plan.accent ? "linear-gradient(135deg, #FFFFFF 0%, #EEF5EC 100%)" : "#FFFFFF", border: `1px solid ${plan.accent ? "#C6D4C0" : "#E8E5E0"}`, boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
@@ -1869,7 +1869,7 @@ export default function DashboardPage() {
                       ))}
                     </ul>
                     <Button disabled={plan.current}
-                      onClick={() => toast({ title: "Le paiement sécurisé arrive prochainement." })}
+                      onClick={() => toast({ title: "Secure payment coming soon." })}
                       className="w-full h-12 rounded-xl font-bold text-sm gap-2"
                       style={plan.accent ? { background: "#486B46", color: "#FFFFFF" } : { background: "#FAF9F6", color: "#777777" }}>
                       {plan.accent && <Crown className="w-4 h-4" />}
@@ -1880,15 +1880,15 @@ export default function DashboardPage() {
               ))}
             </div>
             <div className="flex items-center justify-center gap-2 text-xs" style={{ color: "#777777" }}>
-              <ShieldCheck className="w-4 h-4" style={{ color: "#486B46" }} /> Paiement sécurisé • Résiliable à tout moment
+              <ShieldCheck className="w-4 h-4" style={{ color: "#486B46" }} /> Secure payment • Cancel anytime
             </div>
           </div>
         );
 
-      case "Profil":
+      case "Profile":
         return (
           <div className="space-y-6">
-            <TabHeader icon={Settings} title="Mon Profil" subtitle="Gérez votre présence dans le sanctuaire" />
+            <TabHeader icon={Settings} title="My Profile" subtitle="Manage your presence in the sanctuary" />
             <div className="rounded-2xl p-6 sm:p-8"
               style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
               {!editingProfile ? (
@@ -1912,12 +1912,12 @@ export default function DashboardPage() {
                         <h3 className="font-headline text-2xl font-bold" style={{ color: "#2F2F2F" }}>{displayName}</h3>
                         {verificationStatus === "verified" && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1" style={{ background: "#EEF5EC", color: "#486B46" }}>
-                            <CheckCircle2 className="w-3 h-3" /> Profil Vérifié
+                            <CheckCircle2 className="w-3 h-3" /> Verified Profile
                           </span>
                         )}
                         {verificationStatus === "under_review" && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1" style={{ background: "#FFFBEB", color: "#D97706" }}>
-                            <Clock className="w-3 h-3" /> En cours de vérification
+                            <Clock className="w-3 h-3" /> Verification in progress
                           </span>
                         )}
                       </div>
@@ -1927,7 +1927,7 @@ export default function DashboardPage() {
                       {user?.email && <p className="text-xs" style={{ color: "#777777" }}>{user.email}</p>}
                     </div>
                     <Button onClick={startEditProfile} className="h-10 px-5 rounded-xl font-bold gap-1.5" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                      <Pencil className="w-3.5 h-3.5" /> Modifier
+                      <Pencil className="w-3.5 h-3.5" /> Edit
                     </Button>
                   </div>
                 </>
@@ -1936,7 +1936,7 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between">
                     <h3 className="font-headline text-lg font-bold" style={{ color: "#2F2F2F" }}>
                       <Pencil className="w-4 h-4 inline mr-2" style={{ color: "#486B46" }} />
-                      Modifier mon profil
+                      Edit my profile
                     </h3>
                     <button onClick={() => setEditingProfile(false)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                       style={{ color: "#777777" }}>
@@ -1947,27 +1947,27 @@ export default function DashboardPage() {
                   {/* Identity section */}
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
-                      Identité
+                      Identity
                     </h4>
                     <div className="space-y-4">
                       <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Nom complet *</label>
+                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Full Name *</label>
                         <Input value={profileForm.name} onChange={(e) => setProfileForm((f) => ({ ...f, name: e.target.value }))}
-                          placeholder="Votre nom complet" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                          placeholder="Your full name" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Statut civil</label>
+                          <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Civil Status</label>
                           <select value={profileForm.civilStatus} onChange={(e) => setProfileForm((f) => ({ ...f, civilStatus: e.target.value }))}
                             className="w-full h-11 rounded-xl px-4 text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0", color: "#2F2F2F" }}>
-                            <option value="">Sélectionner…</option>
-                            {["Célibataire", "Divorcé(e)", "Veuf/Veuve", "Séparé(e)"].map((o) => <option key={o} value={o}>{o}</option>)}
+                            <option value="">Select…</option>
+                            {["Single", "Divorced", "Widowed", "Separated"].map((o) => <option key={o} value={o}>{o}</option>)}
                           </select>
                         </div>
                         <div>
                           <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Profession</label>
                           <Input value={profileForm.profession} onChange={(e) => setProfileForm((f) => ({ ...f, profession: e.target.value }))}
-                            placeholder="Votre profession" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                            placeholder="Your profession" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
                         </div>
                       </div>
                     </div>
@@ -1976,18 +1976,18 @@ export default function DashboardPage() {
                   {/* Location section */}
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
-                      Localisation
+                      Location
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Ville</label>
+                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>City</label>
                         <Input value={profileForm.city} onChange={(e) => setProfileForm((f) => ({ ...f, city: e.target.value }))}
-                          placeholder="Votre ville" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                          placeholder="Your city" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
                       </div>
                       <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Pays</label>
+                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Country</label>
                         <Input value={profileForm.country} onChange={(e) => setProfileForm((f) => ({ ...f, country: e.target.value }))}
-                          placeholder="Votre pays" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                          placeholder="Your country" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
                       </div>
                     </div>
                   </div>
@@ -1995,17 +1995,17 @@ export default function DashboardPage() {
                   {/* Bio section */}
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
-                      À propos de moi
+                      About Me
                     </h4>
                     <Textarea value={profileForm.bio} onChange={(e) => setProfileForm((f) => ({ ...f, bio: e.target.value }))}
-                      rows={4} placeholder="Décrivez-vous en quelques mots…"
+                      rows={4} placeholder="Describe yourself in a few words…"
                       className="rounded-xl text-sm resize-none" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
                   </div>
 
                   {/* Marriage vision */}
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2 flex items-center gap-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
-                      <Heart className="w-3.5 h-3.5" /> Vision du mariage (max 3)
+                      <Heart className="w-3.5 h-3.5" /> Marriage Vision (max 3)
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {MARRIAGE_VALUES.map((v) => (
@@ -2024,13 +2024,13 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-end gap-3 pt-4" style={{ borderTop: "1px solid #F0EDE8" }}>
                     <Button onClick={() => setEditingProfile(false)} variant="outline" className="h-10 px-5 rounded-xl font-bold text-sm"
                       style={{ borderColor: "#E8E5E0", color: "#777777" }}>
-                      <X className="w-4 h-4 mr-1.5" /> Annuler
+                      <X className="w-4 h-4 mr-1.5" /> Cancel
                     </Button>
                     <Button onClick={handleSaveProfile} disabled={savingProfile}
                       className="h-10 px-6 rounded-xl font-bold text-sm gap-2"
                       style={{ background: "#486B46", color: "#FFFFFF" }}>
                       {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                      Enregistrer
+                      Save
                     </Button>
                   </div>
                 </div>
@@ -2078,17 +2078,17 @@ export default function DashboardPage() {
                         {!isEditing ? (
                           <button onClick={() => startEditQuestionnaire(q.key)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
                             style={{ background: "#486B46", color: "#FFFFFF" }}>
-                            <Pencil className="w-3.5 h-3.5" /> Modifier
+                            <Pencil className="w-3.5 h-3.5" /> Edit
                           </button>
                         ) : (
                           <>
                             <button onClick={() => { setEditingQuestionnaire(null); setLocalQAnswers({}); }}
                               className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold" style={{ border: "1px solid #E8E5E0", color: "#777777" }}>
-                              <X className="w-3.5 h-3.5" /> Annuler
+                              <X className="w-3.5 h-3.5" /> Cancel
                             </button>
                             <button onClick={handleSaveQuestionnaire} disabled={savingQuestionnaire}
                               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                              {savingQuestionnaire ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Enregistrer
+                              {savingQuestionnaire ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Save
                             </button>
                           </>
                         )}
@@ -2156,7 +2156,7 @@ export default function DashboardPage() {
                                   {displayVal && displayVal !== "" ? (
                                     <p className="text-sm" style={{ color: "#2F2F2F" }}>{displayVal}</p>
                                   ) : (
-                                    <p className="text-sm italic" style={{ color: "#BBBBBB" }}>Non renseigné</p>
+                                    <p className="text-sm italic" style={{ color: "#BBBBBB" }}>Not specified</p>
                                   )}
                                 </div>
                               );
@@ -2175,14 +2175,14 @@ export default function DashboardPage() {
               <Button onClick={handleLogout} variant="outline"
                 className="w-full h-12 rounded-xl font-bold"
                 style={{ borderColor: "#E8E5E0", color: "#777777" }}>
-                Se déconnecter
+                Log out
               </Button>
             )}
           </div>
         );
 
       default:
-        return <div className="py-20 text-center" style={{ color: "#777777" }}>Contenu en développement…</div>;
+        return <div className="py-20 text-center" style={{ color: "#777777" }}>Content under development…</div>;
     }
   }
 }

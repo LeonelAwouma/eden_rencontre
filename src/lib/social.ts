@@ -43,7 +43,7 @@ function mapRow(d: any): MemberProfile {
 
 function whenLabel(iso: string): string {
   try {
-    return new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short" });
+    return new Date(iso).toLocaleDateString("en-US", { day: "numeric", month: "short" });
   } catch {
     return "";
   }

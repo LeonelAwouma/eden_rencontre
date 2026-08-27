@@ -1,8 +1,8 @@
-export type Tab = "Accueil" | "Découvrir" | "Visiteurs" | "Favoris" | "Demandes" | "Premium" | "Messages" | "Notifications" | "Profil";
+export type Tab = "Home" | "Discover" | "Visitors" | "Favorites" | "Requests" | "Premium" | "Messages" | "Notifications" | "Profile";
 
-export const TABS: Tab[] = ["Accueil", "Découvrir", "Visiteurs", "Favoris", "Demandes", "Premium", "Messages", "Notifications", "Profil"];
+export const TABS: Tab[] = ["Home", "Discover", "Visitors", "Favorites", "Requests", "Premium", "Messages", "Notifications", "Profile"];
 
-export type ComposerType = "Publication" | "Témoignage" | "Prière";
+export type ComposerType = "Post" | "Testimony" | "Prayer";
 
 export type FeedPost = {
   id: string;
@@ -22,36 +22,36 @@ export const EDIT_WINDOW_MS = 10 * 60 * 1000;
 
 // ── Neutral verses (suitable for all) ──
 const NEUTRAL_VERSES = [
-  { text: "Que le mariage soit honoré de tous, et le lit conjugal exempt de souillure.", ref: "Hébreux 13:4" },
-  { text: "L'amour est patient, il est plein de bonté.", ref: "1 Corinthiens 13:4" },
-  { text: "Ce que Dieu a uni, que l'homme ne le sépare point.", ref: "Matthieu 19:6" },
-  { text: "Il n'est pas bon que l'homme soit seul.", ref: "Genèse 2:18" },
-  { text: "Deux valent mieux qu'un… si l'un tombe, l'autre le relève.", ref: "Ecclésiaste 4:9-10" },
-  { text: "Que l'amour soit sans hypocrisie.", ref: "Romains 12:9" },
-  { text: "Au-dessus de tout, revêtez-vous de l'amour, lien de la perfection.", ref: "Colossiens 3:14" },
-  { text: "Soumettez-vous les uns aux autres dans la crainte de Christ.", ref: "Éphésiens 5:21" },
-  { text: "L'amour couvre une multitude de péchés.", ref: "1 Pierre 4:8" },
-  { text: "Si l'Éternel ne bâtit la maison, ceux qui la bâtissent travaillent en vain.", ref: "Psaume 127:1" },
-  { text: "Confie-toi en l'Éternel de tout ton cœur.", ref: "Proverbes 3:5" },
-  { text: "L'amour ne périt jamais.", ref: "1 Corinthiens 13:8" },
+  { text: "Let marriage be held in honor among all, and let the marriage bed be undefiled.", ref: "Hebrews 13:4" },
+  { text: "Love is patient, love is kind.", ref: "1 Corinthians 13:4" },
+  { text: "What God has joined together, let no one separate.", ref: "Matthew 19:6" },
+  { text: "It is not good that the man should be alone.", ref: "Genesis 2:18" },
+  { text: "Two are better than one… if one falls, the other lifts him up.", ref: "Ecclesiastes 4:9-10" },
+  { text: "Let love be genuine.", ref: "Romans 12:9" },
+  { text: "Above all, put on love, which binds everything together in perfect harmony.", ref: "Colossians 3:14" },
+  { text: "Submit to one another out of reverence for Christ.", ref: "Ephesians 5:21" },
+  { text: "Love covers a multitude of sins.", ref: "1 Peter 4:8" },
+  { text: "Unless the Lord builds the house, those who build it labor in vain.", ref: "Psalm 127:1" },
+  { text: "Trust in the Lord with all your heart.", ref: "Proverbs 3:5" },
+  { text: "Love never ends.", ref: "1 Corinthians 13:8" },
 ];
 
 // ── Male-specific verses ──
 const MALE_VERSES = [
-  { text: "Celui qui trouve une femme trouve le bonheur ; c'est une grâce de l'Éternel.", ref: "Proverbes 18:22" },
-  { text: "Maris, aimez vos femmes comme Christ a aimé l'Église.", ref: "Éphésiens 5:25" },
-  { text: "Réjouis-toi avec la femme de ta jeunesse.", ref: "Proverbes 5:18" },
-  { text: "Qui a trouvé une femme vertueuse ? Elle vaut bien plus que les perles.", ref: "Proverbes 31:10" },
-  { text: "Que celui qui est sans péché lui jette la première pierre.", ref: "Jean 8:7" },
+  { text: "He who finds a wife finds a good thing and obtains favor from the Lord.", ref: "Proverbs 18:22" },
+  { text: "Husbands, love your wives, as Christ loved the church.", ref: "Ephesians 5:25" },
+  { text: "Rejoice in the wife of your youth.", ref: "Proverbs 5:18" },
+  { text: "An excellent wife who can find? She is far more precious than jewels.", ref: "Proverbs 31:10" },
+  { text: "Let him who is without sin cast the first stone.", ref: "John 8:7" },
 ];
 
 // ── Female-specific verses ──
 const FEMALE_VERSES = [
-  { text: "Femme vertueuse, qui la trouvera ? Son prix surpasse celui des perles.", ref: "Proverbes 31:10" },
-  { text: "Femmes, soumettez-vous à vos maris, comme au Seigneur.", ref: "Éphésiens 5:22" },
-  { text: "L'Éternel est ma force et mon bouclier ; en lui mon cœur se confie.", ref: "Psaume 28:7" },
-  { text: "Elle est revêtue de force et de dignité, et elle sourit à l'avenir.", ref: "Proverbes 31:25" },
-  { text: "L'Éternel donne la joie à la femme de sa jeunesse.", ref: "Psaume 46:17" },
+  { text: "An excellent wife, who can find? Her worth is far above jewels.", ref: "Proverbs 31:10" },
+  { text: "Wives, submit to your own husbands, as to the Lord.", ref: "Ephesians 5:22" },
+  { text: "The Lord is my strength and my shield; in him my heart trusts.", ref: "Psalm 28:7" },
+  { text: "She is clothed with strength and dignity, and she laughs at the time to come.", ref: "Proverbs 31:25" },
+  { text: "The Lord gives joy to the wife of her youth.", ref: "Psalm 46:17" },
 ];
 
 export function getDailyVerses(gender?: string | null): { text: string; ref: string }[] {

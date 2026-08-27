@@ -15,56 +15,56 @@ interface Session {
 const SESSIONS: Session[] = [
   {
     number: 1,
-    title: "Les Centres d'Intérêt, Passions & Loisirs",
-    objective: "Briser la glace naturellement et découvrir ce qui anime votre journée.",
+    title: "Interests, Passions & Hobbies",
+    objective: "Break the ice naturally and discover what drives your day.",
     questions: [
-      "Comment occupez-vous votre temps libre après le travail ou les engagements ecclésiaux ?",
-      "Quels sont les hobbies ou centres d'intérêt qui vous permettent de vous ressourcer ?",
-      "Y a-t-il une passion ou une activité créative que vous aimeriez développer à l'avenir ?",
+      "How do you spend your free time after work or church commitments?",
+      "What hobbies or interests help you recharge?",
+      "Is there a passion or creative activity you'd like to develop in the future?",
     ],
   },
   {
     number: 2,
-    title: "L'Enfance, les Racines & les Valeurs Familiales",
-    objective: "Comprendre votre arrière-plan culturel, familial et l'origine de vos valeurs.",
+    title: "Childhood, Roots & Family Values",
+    objective: "Understand your cultural, familial background and the origin of your values.",
     questions: [
-      "Dans quelle ville ou région avez-vous grandi et quel est votre plus beau souvenir d'enfance ?",
-      "Quelle est la valeur clé que vos parents ou tuteurs vous ont transmise et qui vous guide aujourd'hui ?",
-      "Comment définissez-vous la place de la famille et de la fraternité dans votre vie ?",
+      "What city or region did you grow up in and what is your fondest childhood memory?",
+      "What is the key value your parents or guardians passed on to you that guides you today?",
+      "How do you define the place of family and brotherhood in your life?",
     ],
   },
   {
     number: 3,
-    title: "La Marche Spirituelle & le Service dans l'Église",
-    objective: "Échanger sur votre appel, vos engagements et votre vie de foi au quotidien.",
+    title: "Spiritual Walk & Service in the Church",
+    objective: "Share about your calling, commitments and daily faith life.",
     questions: [
-      "Dans quel département ou ministère vous investissez-vous au sein de votre assemblée locale ?",
-      "Comment s'articule votre appel ministériel ou spirituel avec votre vie professionnelle ?",
-      "Quel est le passage biblique ou le principe de foi qui soutient votre marche en ce moment ?",
+      "What department or ministry are you involved in at your local assembly?",
+      "How does your ministerial or spiritual calling align with your professional life?",
+      "What Bible passage or faith principle sustains your walk right now?",
     ],
-    example: "« Je sers au sein du département d'accueil à l'église, ce qui m'apprend la patience. Quel est le domaine dans lequel tu sens que Dieu t'appelle à servir activement ? »",
+    example: "\"I serve in the welcome department at church, which teaches me patience. What area do you feel God is calling you to actively serve in?\"",
   },
   {
     number: 4,
-    title: "L'Amitié, les Relations & le Rapport aux Autres",
-    objective: "Observer votre maturité relationnelle, le pardon et la gestion du cercle d'amis.",
+    title: "Friendship, Relationships & Interacting with Others",
+    objective: "Observe your relational maturity, forgiveness and management of your social circle.",
     questions: [
-      "Selon vous, quelles sont les qualités indispensables pour construire une amitié solide et durable ?",
-      "Comment gérez-vous la communication lorsque survient un désaccord ou une mauvaise compréhension ?",
-      "Quelle importance accordez-vous au conseil spirituel et aux redevabilités dans votre entourage ?",
+      "In your opinion, what are the essential qualities for building a solid and lasting friendship?",
+      "How do you handle communication when a disagreement or misunderstanding arises?",
+      "What importance do you place on spiritual counsel and accountability in your circle?",
     ],
-    example: "« Pour moi, la sincérité et l'écoute sont les piliers de l'amitié. Selon toi, comment réagir avec sagesse lorsque quelqu'un nous déçoit ? »",
+    example: "\"For me, sincerity and listening are the pillars of friendship. In your opinion, how should one react wisely when someone disappoints us?\"",
   },
   {
     number: 5,
-    title: "Appréhensions, Frustrations Passées & Projections Saines",
-    objective: "Aborder avec vulnérabilité et maturité vos craintes et aspirations profondes.",
+    title: "Fears, Past Frustrations & Healthy Projections",
+    objective: "Address with vulnerability and maturity your fears and deep aspirations.",
     questions: [
-      "Quelles sont les craintes ou appréhensions que vous avez apprises à surmonter dans votre parcours ?",
-      "Quels sont les enseignements que vous tirez de vos difficultés passées pour bâtir un avenir serein ?",
-      "Quelle est votre vision d'une communication saine et transparente au sein d'un couple chrétien ?",
+      "What fears or apprehensions have you learned to overcome in your journey?",
+      "What lessons do you draw from past difficulties to build a serene future?",
+      "What is your vision of healthy and transparent communication within a Christian couple?",
     ],
-    example: "« Il n'est pas toujours facile d'exprimer ses appréhensions, mais la prière m'a beaucoup aidé(e) à apaiser mes inquiétudes. Quels sont les défis qui t'ont le plus fortifié(e) spirituellement ? »",
+    example: "\"It's not always easy to express one's fears, but prayer has greatly helped me calm my worries. What challenges have strengthened you the most spiritually?\"",
   },
 ];
 
@@ -104,51 +104,51 @@ export function ChatGuide({ onDismiss }: { onDismiss: () => void }) {
             <BookOpen className="w-7 h-7" style={{ color: COLORS.green }} />
           </div>
           <h2 className="font-headline text-xl sm:text-2xl font-bold" style={{ color: COLORS.text }}>
-            Guide des 5 Premières Conversations
+            Guide to Your First 5 Conversations
           </h2>
           <p className="italic text-sm max-w-md mx-auto leading-relaxed" style={{ color: COLORS.textMuted }}>
-            « Des paroles agréables sont un rayon de miel, Douces pour l'âme et salutaires pour le corps. »
-            <span className="block mt-1 not-italic font-semibold text-xs" style={{ color: COLORS.green }}>— Proverbes 16:24</span>
+            "Gracious words are a honeycomb, sweet to the soul and healing to the body."
+            <span className="block mt-1 not-italic font-semibold text-xs" style={{ color: COLORS.green }}>— Proverbs 16:24</span>
           </p>
         </div>
 
         {/* Charter reminder */}
         <div className="rounded-xl p-4" style={{ background: COLORS.lightGold, border: `1px solid ${COLORS.gold}30` }}>
           <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: COLORS.gold }}>
-            <Heart className="w-3 h-3 inline mr-1" /> Rappel de la Charte d'Engagement
+            <Heart className="w-3 h-3 inline mr-1" /> Commitment Charter Reminder
           </p>
           <p className="text-xs leading-relaxed" style={{ color: COLORS.text }}>
-            Vos échanges dans la messagerie intégrée doivent refléter la sainteté, la dignité et la bienveillance chrétienne.
-            Sont strictement proscrits : les propos vulgaires, l'impureté verbale, les insinuations charnelles et tout manque de respect.
-            <strong> Que la paix et la grâce de Christ dirigent chacune de vos paroles.</strong>
+            Your exchanges in the integrated messaging must reflect holiness, dignity and Christian kindness.
+            Strictly prohibited: vulgar language, verbal impurity, carnal insinuations and any lack of respect.
+            <strong> May the peace and grace of Christ guide each of your words.</strong>
           </p>
         </div>
 
         {/* Security rules */}
         <div className="rounded-xl p-4" style={{ background: "#FEF2F2", border: "1px solid #EF444430" }}>
           <p className="text-[11px] font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5" style={{ color: "#EF4444" }}>
-            <ShieldAlert className="w-3.5 h-3.5" /> Consignes de Sécurité & Interdiction Formelle
+            <ShieldAlert className="w-3.5 h-3.5" /> Safety Rules & Strict Prohibition
           </p>
           <ul className="space-y-2 text-xs leading-relaxed" style={{ color: COLORS.text }}>
             <li className="flex gap-2">
               <span style={{ color: "#EF4444" }}>•</span>
-              <span>Ne communiquez <strong>AUCUNE</strong> donnée personnelle sensible (adresse résidentielle exacte, informations financières, lieux de travail précis).</span>
+              <span>Do not share <strong>ANY</strong> sensitive personal data (exact residential address, financial information, precise workplace locations).</span>
             </li>
             <li className="flex gap-2">
               <span style={{ color: "#EF4444" }}>•</span>
-              <span><strong>INTERDICTION FORMELLE</strong> de transmettre vos numéros de téléphone, adresses e-mail ou liens vers des réseaux sociaux durant ces premières interactions. Tout partage précoce de coordonnées constitue un motif d'avertissement.</span>
+              <span><strong>STRICTLY PROHIBITED</strong> from sharing your phone numbers, email addresses or links to social networks during these initial interactions. Any premature sharing of contact details constitutes grounds for a warning.</span>
             </li>
           </ul>
           {!acceptedRules && (
             <button onClick={() => setAcceptedRules(true)}
               className="mt-3 w-full h-9 rounded-lg text-xs font-bold transition-colors"
               style={{ background: "#EF4444", color: "#FFFFFF" }}>
-              J'ai lu et j'accepte ces règles de sécurité
+              I have read and accept these safety rules
             </button>
           )}
           {acceptedRules && (
             <p className="mt-2 text-[11px] font-bold flex items-center gap-1.5" style={{ color: COLORS.green }}>
-              ✓ Règles acceptées — vous pouvez commencer vos échanges
+              ✓ Rules accepted — you may begin your exchanges
             </p>
           )}
         </div>
@@ -156,18 +156,18 @@ export function ChatGuide({ onDismiss }: { onDismiss: () => void }) {
         {/* Rewards */}
         <div className="rounded-xl p-4" style={{ background: COLORS.lightGreen, border: `1px solid ${COLORS.borderGreen}` }}>
           <p className="text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: COLORS.green }}>
-            <Calendar className="w-3 h-3 inline mr-1" /> Un Cadre Sécurisé & des Rendez-Vous Récompensés
+            <Calendar className="w-3 h-3 inline mr-1" /> A Secure Setting & Rewarded Meetings
           </p>
           <div className="space-y-2 text-xs" style={{ color: COLORS.text }}>
             <div className="flex gap-2">
               <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black"
                 style={{ background: COLORS.green, color: "#FFFFFF" }}>1</span>
-              <span><strong>Après 1 mois</strong> d'échange régulier et édifiant : Les administrateurs organiseront un tête-à-tête vidéo privilégié (webinaire privé sécurisé).</span>
+              <span><strong>After 1 month</strong> of regular and edifying exchange: The administrators will arrange a private video one-on-one (secure private webinar).</span>
             </div>
             <div className="flex gap-2">
               <span className="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-black"
                 style={{ background: COLORS.green, color: "#FFFFFF" }}>2</span>
-              <span><strong>Après 2 mois</strong> d'interaction : Pour les membres résidant dans la même ville, un tête-à-tête physique en restaurant sera offert et organisé par la plateforme en récompense de votre constance.</span>
+              <span><strong>After 2 months</strong> of interaction: For members residing in the same city, an in-person one-on-one dinner will be offered and organized by the platform as a reward for your consistency.</span>
             </div>
           </div>
         </div>
@@ -175,7 +175,7 @@ export function ChatGuide({ onDismiss }: { onDismiss: () => void }) {
         {/* 5 Sessions */}
         <div className="space-y-3">
           <h3 className="font-headline text-base font-bold text-center" style={{ color: COLORS.text }}>
-            Guide des 5 Premières Séances de Discussion
+            Guide to Your First 5 Discussion Sessions
           </h3>
           {SESSIONS.map((session) => {
             const isOpen = expanded === session.number;
@@ -212,7 +212,7 @@ export function ChatGuide({ onDismiss }: { onDismiss: () => void }) {
                     {session.example && (
                       <div className="rounded-lg p-3" style={{ background: COLORS.bg, border: `1px solid ${COLORS.border}` }}>
                         <p className="text-[10px] font-bold uppercase tracking-wider mb-1" style={{ color: COLORS.green }}>
-                          💬 Exemple d'échange
+                          💬 Example exchange
                         </p>
                         <p className="text-xs italic leading-relaxed" style={{ color: COLORS.text }}>
                           {session.example}
@@ -231,10 +231,10 @@ export function ChatGuide({ onDismiss }: { onDismiss: () => void }) {
           <button onClick={onDismiss}
             className="h-10 px-6 rounded-xl text-sm font-bold transition-colors"
             style={{ background: COLORS.green, color: "#FFFFFF" }}>
-            Compris, démarrer la conversation
+            Got it, start the conversation
           </button>
           <p className="text-[10px] mt-2" style={{ color: COLORS.textMuted }}>
-            Vous pourrez retrouver ce guide dans votre profil à tout moment.
+            You can find this guide in your profile at any time.
           </p>
         </div>
       </div>

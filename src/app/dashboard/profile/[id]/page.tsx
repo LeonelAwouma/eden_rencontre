@@ -64,7 +64,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     setLoading(true);
     setLoadError(null);
 
-    // Membre réel (id uuid Supabase)
+    // Real member (Supabase uuid id)
     if (UUID_RE.test(id)) {
       getProfileById(id).then(({ profile, error }) => {
         if (!active) return;
@@ -74,11 +74,11 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
       });
       getRelationStatus(id).then((s) => { if (active) setRelation(s); });
       isFavorited(id).then((f) => { if (active) setFavoriteState(f); });
-      recordProfileView(id); // enregistre la visite (alimente l'onglet Visiteurs)
+      recordProfileView(id); // records the visit (feeds the Visitors tab)
       return () => { active = false; };
     }
 
-    // Profil de démonstration (id numérique) — repli sur les contacts fictifs
+    // Demo profile (numeric id) — fallback to mock contacts
     const mock = PROFILES.find((p) => String(p.id) === id);
     setMember(
       mock
@@ -90,7 +90,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
             country: mock.country,
             region: null,
             gender: mock.gender,
-            civilStatus: "Célibataire",
+            civilStatus: "Single",
             profession: mock.profession,
             bio: mock.bio,
             marriageVision: null,
@@ -116,15 +116,15 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     try {
       const result = await generateMessageIdeas({
         profileName: member.name,
-        visionMarriage: member.bio || "Bâtir un foyer chrétien fondé sur la foi.",
-        search: member.bio || "Une personne sincère qui partage les mêmes valeurs.",
+        visionMarriage: member.bio || "Building a Christian home founded on faith.",
+        search: member.bio || "A sincere person who shares the same values.",
       });
       setMessageSuggestions(result.suggestions);
       setShowIdeasDialog(true);
     } catch (error) {
       toast({
-        title: "Erreur",
-        description: "Impossible de générer des idées pour le moment.",
+        title: "Error",
+        description: "Unable to generate ideas at the moment.",
         variant: "destructive",
       });
     } finally {
@@ -135,7 +135,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
   async function handleToggleFavorite() {
     if (!member) return;
     if (!UUID_RE.test(member.id)) {
-      toast({ title: "Profil de démonstration", description: "Les favoris ne sont possibles qu'entre membres réels." });
+      toast({ title: "Demo profile", description: "Favorites are only possible between real members." });
       return;
     }
     const next = !favorite;
@@ -143,14 +143,14 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     const res = await setFavorite(member.id, next);
     if (!res.ok) {
       setFavoriteState(!next);
-      toast({ title: "Échec", description: res.error || "Réessayez.", variant: "destructive" });
+      toast({ title: "Failed", description: res.error || "Please retry.", variant: "destructive" });
     }
   }
 
   async function handleSendMessage() {
     if (!member) return;
     if (relation !== "friends") {
-      toast({ title: "Réservé aux amis 🙏", description: `Vous pourrez écrire à ${member.name} une fois votre demande d'alliance acceptée.` });
+      toast({ title: "Friends only 🙏", description: `You will be able to write to ${member.name} once your alliance request is accepted.` });
       return;
     }
     setStartingChat(true);
@@ -161,35 +161,35 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
 
   async function handleAddFriend() {
     if (!member) return;
-    // Profil de démonstration (id non-uuid) : pas de demande réelle possible
+    // Demo profile (non-uuid id): no real request possible
     if (!UUID_RE.test(member.id)) {
-      toast({ title: "Profil de démonstration", description: "Les demandes d'amitié ne sont possibles qu'entre membres réels." });
+      toast({ title: "Demo profile", description: "Friend requests are only possible between real members." });
       return;
     }
     setSendingFriend(true);
     const res = await sendFriendRequest(member.id);
     setSendingFriend(false);
     if (!res.ok) {
-      toast({ title: "Échec", description: res.error || "Réessayez.", variant: "destructive" });
+      toast({ title: "Failed", description: res.error || "Please retry.", variant: "destructive" });
       return;
     }
     setFriendSent(true);
-    toast({ title: "Invitation envoyée 🙏", description: `${member.name} recevra votre demande d'alliance. Si ${pronoun} l'accepte, vous pourrez échanger.` });
+    toast({ title: "Invitation sent 🙏", description: `${member.name} will receive your alliance request. If ${pronoun} accepts, you will be able to chat.` });
   }
 
   function copyToClipboard(text: string, index: number) {
     navigator.clipboard.writeText(text);
     setCopiedIndex(index);
-    toast({ title: "Copié !", description: "Le message est prêt à être envoyé." });
+    toast({ title: "Copied!", description: "The message is ready to be sent." });
     setTimeout(() => setCopiedIndex(null), 2000);
   }
 
-  // ── États de chargement / introuvable ──
+  // ── Loading / not found states ──
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
-        <p className="text-foreground/50 text-sm">Chargement du profil…</p>
+        <p className="text-foreground/50 text-sm">Loading profile…</p>
       </div>
     );
   }
@@ -199,13 +199,13 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-5 px-6 text-center">
         <div className="w-16 h-16 rounded-2xl bg-foreground/5 flex items-center justify-center"><UserPlus className="w-8 h-8 text-foreground/30" /></div>
         <div className="space-y-1">
-          <h1 className="font-headline text-2xl font-bold text-foreground">Profil introuvable</h1>
+          <h1 className="font-headline text-2xl font-bold text-foreground">Profile not found</h1>
           <p className="text-foreground/50 text-sm max-w-sm">
-            {loadError ? `Erreur : ${loadError}` : "Ce membre n'existe pas ou n'est plus disponible."}
+            {loadError ? `Error: ${loadError}` : "This member does not exist or is no longer available."}
           </p>
         </div>
         <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 px-6 rounded-xl gap-2">
-          <Link href="/dashboard"><ArrowLeft className="w-4 h-4" /> Retour au tableau de bord</Link>
+          <Link href="/dashboard"><ArrowLeft className="w-4 h-4" /> Back to dashboard</Link>
         </Button>
       </div>
     );
@@ -218,7 +218,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
         <Button variant="ghost" asChild className="text-foreground/40 hover:text-primary hover:bg-transparent group pl-0">
           <Link href="/dashboard">
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-            Retour aux profils
+            Back to profiles
           </Link>
         </Button>
 
@@ -254,7 +254,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
 
                 <div className="flex flex-wrap gap-3 pt-2">
                   {memberAge && (
-                    <Badge className="bg-primary/15 text-primary border-none rounded-xl px-4 py-2 font-bold text-sm">{memberAge} ans</Badge>
+                    <Badge className="bg-primary/15 text-primary border-none rounded-xl px-4 py-2 font-bold text-sm">{memberAge} years old</Badge>
                   )}
                   {member.civilStatus && (
                     <Badge className="bg-primary/15 text-primary border-none rounded-xl px-4 py-2 flex items-center gap-2 font-bold text-sm">
@@ -277,7 +277,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
               </div>
               <button
                 onClick={handleToggleFavorite}
-                aria-label={favorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+                aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
                 className={cn(
                   "shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center border transition-all",
                   favorite ? "bg-primary text-primary-foreground border-primary" : "bg-foreground/5 text-foreground/40 border-foreground/10 hover:text-primary hover:border-primary/40"
@@ -287,19 +287,19 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
               </button>
             </div>
 
-            {/* Action Banner — dépend de la relation */}
+            {/* Action Banner — depends on relationship */}
             <div className="bg-primary/10 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
               <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center shrink-0">
                 {areFriends ? <Check className="w-5 h-5 text-primary-foreground" /> : <UserPlus className="w-5 h-5 text-primary-foreground" />}
               </div>
               <p className="text-primary text-sm font-bold leading-relaxed">
                 {areFriends
-                  ? <>Vous êtes amis avec {member.name}. <span className="font-medium text-primary/70">Vous pouvez échanger des messages.</span></>
+                  ? <>You are friends with {member.name}. <span className="font-medium text-primary/70">You can exchange messages.</span></>
                   : effStatus === "pending_out"
-                  ? <>Demande envoyée à {member.name}. <span className="font-medium text-primary/70">La messagerie s'ouvrira dès que {pronoun} acceptera.</span></>
+                  ? <>Request sent to {member.name}. <span className="font-medium text-primary/70">Messaging will open once {pronoun} accepts.</span></>
                   : effStatus === "pending_in"
-                  ? <>{member.name} souhaite faire votre connaissance. <span className="font-medium text-primary/70">Acceptez sa demande pour échanger.</span></>
-                  : <>Ajoute {member.name} gratuitement. <span className="font-medium text-primary/70">Si {pronoun} accepte, tu pourras échanger des messages.</span></>}
+                  ? <>{member.name} wishes to get to know you. <span className="font-medium text-primary/70">Accept their request to start chatting.</span></>
+                  : <>Add {member.name} for free. <span className="font-medium text-primary/70">If {pronoun} accepts, you will be able to exchange messages.</span></>}
               </p>
             </div>
 
@@ -307,18 +307,18 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {areFriends ? (
                 <Button disabled className="bg-secondary/10 text-secondary border border-secondary/25 font-bold h-16 rounded-2xl gap-3 text-lg disabled:opacity-100">
-                  <Check className="w-6 h-6" /> Vous êtes amis
+                  <Check className="w-6 h-6" /> Friends
                 </Button>
               ) : effStatus === "pending_out" ? (
                 <Button disabled className="bg-primary/80 text-primary-foreground font-bold h-16 rounded-2xl gap-3 text-lg disabled:opacity-70">
-                  <Check className="w-6 h-6" /> Demande envoyée
+                  <Check className="w-6 h-6" /> Request sent
                 </Button>
               ) : effStatus === "pending_in" ? (
                 <Button
-                  onClick={() => router.push("/dashboard?tab=Demandes")}
+                  onClick={() => router.push("/dashboard?tab=Requests")}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-16 rounded-2xl gap-3 shadow-xl shadow-primary/15 text-lg"
                 >
-                  <Star className="w-6 h-6" /> Répondre à sa demande
+                  <Star className="w-6 h-6" /> Respond to request
                 </Button>
               ) : (
                 <Button
@@ -327,7 +327,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                   className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-16 rounded-2xl gap-3 shadow-xl shadow-primary/15 text-lg disabled:opacity-70"
                 >
                   {sendingFriend ? <Loader2 className="w-6 h-6 animate-spin" /> : <UserPlus className="w-6 h-6" />}
-                  Ajouter en ami
+                  Add as friend
                 </Button>
               )}
               <Button
@@ -341,7 +341,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                     : "border-foreground/10 bg-transparent text-foreground/40 hover:text-foreground/60 hover:bg-foreground/5"
                 )}
               >
-                {startingChat ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />} Envoyer un message
+                {startingChat ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />} Send a message
               </Button>
             </div>
 
@@ -353,7 +353,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
               className="w-full bg-foreground/5 text-foreground/80 hover:bg-foreground/10 hover:text-foreground h-14 rounded-2xl gap-2 text-xs font-bold uppercase tracking-widest"
             >
               {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lightbulb className="w-4 h-4 text-primary" />}
-              Idées de message
+              Message ideas
             </Button>
           </CardContent>
         </Card>
@@ -365,7 +365,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
               <div className="w-12 h-12 bg-secondary/10 border border-secondary/25 rounded-2xl flex items-center justify-center">
                 <Church className="w-6 h-6 text-secondary" />
               </div>
-              <CardTitle className="text-secondary font-bold text-xl">Ses valeurs &amp; croyances</CardTitle>
+              <CardTitle className="text-secondary font-bold text-xl">Values &amp; Beliefs</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-8 pt-6">
@@ -381,7 +381,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                 })}
               </div>
             ) : (
-              <p className="text-muted-foreground italic">Ce membre n'a pas encore renseigné ses valeurs.</p>
+              <p className="text-muted-foreground italic">This member has not yet specified their values.</p>
             )}
           </CardContent>
         </Card>
@@ -394,7 +394,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
                   <Heart className="w-6 h-6 text-primary fill-primary" />
                 </div>
-                <CardTitle className="text-primary font-bold text-xl">Sa vision du foyer</CardTitle>
+                <CardTitle className="text-primary font-bold text-xl">Vision for the Home</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="p-8 pt-6">
@@ -411,9 +411,9 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
             <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto">
               <Lightbulb className="w-6 h-6 text-primary" />
             </div>
-            <DialogTitle className="text-2xl font-bold text-center">Suggestions d'Eden</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-center">Eden Suggestions</DialogTitle>
             <DialogDescription className="text-muted-foreground text-center">
-              Voici 3 messages personnalisés pour aborder {member.name} avec respect et sincérité.
+              Here are 3 personalized messages to approach {member.name} with respect and sincerity.
             </DialogDescription>
           </DialogHeader>
 
@@ -428,9 +428,9 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                     className="w-full bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary font-bold gap-2 h-10 rounded-xl text-xs uppercase tracking-widest"
                   >
                     {copiedIndex === index ? (
-                      <><Check className="w-4 h-4" /> Copié</>
+                      <><Check className="w-4 h-4" /> Copied</>
                     ) : (
-                      <><Copy className="w-4 h-4" /> Copier le message</>
+                      <><Copy className="w-4 h-4" /> Copy message</>
                     )}
                   </Button>
                 </CardContent>
@@ -443,7 +443,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
             onClick={() => setShowIdeasDialog(false)}
             className="w-full mt-6 text-foreground/40 hover:text-primary hover:bg-transparent"
           >
-            Fermer
+            Close
           </Button>
         </DialogContent>
       </Dialog>
