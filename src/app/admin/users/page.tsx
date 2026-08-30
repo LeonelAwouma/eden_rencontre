@@ -51,6 +51,8 @@ interface UserProfile {
   charter_accepted?: boolean;
   charter_accepted_at?: string | null;
   charter_acceptances?: CharterAcceptance | CharterAcceptance[] | null;
+  onboarding_completed?: boolean;
+  verification_status?: string;
 }
 
 const STATUS_OPTIONS = [
@@ -146,6 +148,29 @@ export default function AdminUsersPage() {
       }
     } catch (err) {
       console.error(`Error ${action}ing user:`, err);
+      setActionError("Erreur réseau. Veuillez réessayer.");
+      setTimeout(() => setActionError(null), 5000);
+    }
+  };
+
+  const handleVerifyBadge = async (userId: string) => {
+    try {
+      setActionError(null);
+      const res = await fetch(`/api/admin/users/${userId}/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "approve" }),
+      });
+
+      if (res.ok) {
+        fetchUsers();
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActionError(data.error || "Erreur lors de l'attribution du badge.");
+        setTimeout(() => setActionError(null), 5000);
+      }
+    } catch (err) {
+      console.error("Error granting verification badge:", err);
       setActionError("Erreur réseau. Veuillez réessayer.");
       setTimeout(() => setActionError(null), 5000);
     }
@@ -433,6 +458,15 @@ export default function AdminUsersPage() {
                               </button>
                             </>
                           )}
+                          {user.status === "approved" && user.onboarding_completed && user.verification_status !== "verified" && (
+                            <button
+                              onClick={() => handleVerifyBadge(user.id)}
+                              className="w-9 h-9 rounded-full flex items-center justify-center bg-[#8B5CF6]/10 text-[#7C3AED] shadow-sm border border-[#8B5CF6]/20 hover:bg-[#8B5CF6]/20 hover:text-[#6D28D9] hover:border-[#8B5CF6]/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7C3AED] transition-all duration-200"
+                              title="Attribuer le badge « Profil Vérifié »"
+                            >
+                              <ShieldCheck className="w-4 h-4" />
+                            </button>
+                          )}
                         </div>
                       </td>
                     </motion.tr>
@@ -545,6 +579,15 @@ export default function AdminUsersPage() {
                           Rejeter
                         </button>
                       </>
+                    )}
+                    {user.status === "approved" && user.onboarding_completed && user.verification_status !== "verified" && (
+                      <button
+                        onClick={() => handleVerifyBadge(user.id)}
+                        className="flex-1 text-center text-[12px] font-semibold text-[#7C3AED] bg-[#8B5CF6]/5 py-2.5 rounded-xl hover:bg-[#8B5CF6]/10 transition-colors flex items-center justify-center gap-1.5"
+                      >
+                        <ShieldCheck className="w-3.5 h-3.5" />
+                        Badge Vérifié
+                      </button>
                     )}
                   </div>
                 </motion.div>
