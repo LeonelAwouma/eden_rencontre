@@ -253,6 +253,7 @@ export default function DashboardPage() {
   const [favoriteIds, setFavoriteIds] = useState<Set<string>>(new Set());
   const [favoriteMembers, setFavoriteMembers] = useState<MemberProfile[]>([]);
   const [visitors, setVisitors] = useState<Visitor[]>([]);
+  const [profileCompletionPct, setProfileCompletionPct] = useState<number | null>(null);
 
   const meId = user?.id || "";
   const totalUnread = conversations.reduce((s, c) => s + c.unread, 0);
@@ -670,6 +671,29 @@ export default function DashboardPage() {
       const skipped = typeof window !== "undefined" && localStorage.getItem("eden_onboarding_skipped") === "1";
       if (!completed && !skipped) router.replace("/onboarding");
     });
+
+    // Fetch full profile data to calculate real completion percentage
+    if (supabase) {
+      supabase.from("profiles")
+        .select("avatar_url, name, bio, city, Profession, civil_status, marriage_vision, onboarding_completed")
+        .eq("id", user.id)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (!data) return;
+          const checks = [
+            !!data.avatar_url,
+            !!data.name,
+            !!data.bio,
+            !!data.city,
+            !!data.Profession,
+            !!data.civil_status,
+            !!(data.marriage_vision && (data.marriage_vision as string[]).length > 0),
+            !!data.onboarding_completed,
+          ];
+          const done = checks.filter(Boolean).length;
+          setProfileCompletionPct(Math.round((done / checks.length) * 100));
+        });
+    }
   }, [user]);
 
   useEffect(() => {
@@ -1054,16 +1078,17 @@ export default function DashboardPage() {
 
               {/* ─── LAYER 3: INFORMATION PANEL (≈320px) ─── */}
               <aside className="hidden xl:block w-[320px] shrink-0 space-y-4 sticky top-20">
-                {/* Card 1: Profile Completion */}
+                {/* Card 1: Profile Completion — hidden when profile is 100% complete */}
+                {profileCompletionPct !== null && profileCompletionPct < 100 && (
                 <div className="rounded-2xl p-5"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
                   <div className="flex justify-between items-end mb-3">
                     <span className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>Profil complété</span>
-                    <span className="font-black text-xl" style={{ color: "#486B46" }}>86%</span>
+                    <span className="font-black text-xl" style={{ color: "#486B46" }}>{profileCompletionPct}%</span>
                   </div>
-                  <Progress value={86} className="h-2" style={{ background: "#F0EDE8" }} />
+                  <Progress value={profileCompletionPct} className="h-2" style={{ background: "#F0EDE8" }} />
                   <p className="text-xs mt-3 leading-relaxed" style={{ color: "#777777" }}>
-                    Complétez les 14% restants pour apparaître dans toutes les recherches.
+                    Complétez les {100 - profileCompletionPct}% restants pour apparaître dans toutes les recherches.
                   </p>
                   <Button onClick={() => setActiveTab("Profil")} variant="outline"
                     className="w-full mt-3 h-9 rounded-xl font-bold text-xs"
@@ -1071,6 +1096,7 @@ export default function DashboardPage() {
                     Compléter mon profil
                   </Button>
                 </div>
+                )}
 
                 {/* Card 2: Profile Visibility */}
                 <div className="rounded-2xl p-5"

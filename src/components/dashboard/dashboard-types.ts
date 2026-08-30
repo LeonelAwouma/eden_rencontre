@@ -1,8 +1,8 @@
-export type Tab = "Home" | "Discover" | "Visitors" | "Favorites" | "Requests" | "Premium" | "Messages" | "Notifications" | "Profile";
+export type Tab = "Home" | "Discover" | "Visitors" | "Favorites" | "Requests" | "Premium" | "Messages" | "Notifications" | "Profile" | "Accueil" | "Découvrir" | "Visiteurs" | "Favoris" | "Demandes" | "Profil";
 
 export const TABS: Tab[] = ["Home", "Discover", "Visitors", "Favorites", "Requests", "Premium", "Messages", "Notifications", "Profile"];
 
-export type ComposerType = "Post" | "Testimony" | "Prayer";
+export type ComposerType = "Post" | "Testimony" | "Prayer" | "Publication" | "Témoignage";
 
 export type FeedPost = {
   id: string;

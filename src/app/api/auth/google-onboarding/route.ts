@@ -17,6 +17,8 @@ export async function POST(request: NextRequest) {
       charterAuthorizeVerification,
       charterCommitRespectful,
       charterAcceptFull,
+      selfieVerified,
+      selfieVerificationScore,
     } = body;
 
     // Validate required fields
@@ -144,6 +146,8 @@ export async function POST(request: NextRequest) {
       marriage_vision: marriageVision || [],
       status: "pending",
       onboarding_completed: true,
+      selfie_verified: selfieVerified || false,
+      selfie_verification_score: selfieVerificationScore || 0,
       updated_at: new Date().toISOString(),
     };
 
@@ -166,6 +170,8 @@ export async function POST(request: NextRequest) {
         marriage_vision: marriageVision || [],
         status: "pending",
         onboarding_completed: true,
+        selfie_verified: selfieVerified || false,
+        selfie_verification_score: selfieVerificationScore || 0,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
