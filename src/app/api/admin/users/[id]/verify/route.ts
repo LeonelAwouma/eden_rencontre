@@ -40,10 +40,11 @@ export async function POST(
     }
 
     // Log questionnaire completion info for audit
-    const { checkQuestionnaireCompletion } = await import("@/lib/onboarding");
     const answers = (user.questionnaire as Record<string, unknown>) || {};
-    const completion = checkQuestionnaireCompletion(answers, { excludeOptional: true });
-    console.log(`[Admin Verify] User ${id}: ${completion.answered}/${completion.total} required questions answered. Action: ${action}`);
+    const answeredCount = Object.values(answers).filter(
+      (v) => v !== undefined && v !== null && v !== "" && !(Array.isArray(v) && v.length === 0)
+    ).length;
+    console.log(`[Admin Verify] User ${id}: ${answeredCount} questions answered. Action: ${action}`);
 
     // Prevent double-verification
     if (user.verification_status === "verified" && action === "approve") {
