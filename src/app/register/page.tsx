@@ -19,6 +19,7 @@ import { MARRIAGE_VALUES } from "@/lib/values";
 import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
 import { Monogram } from "@/components/ornaments";
 import { useRouter } from "next/navigation";
+import { useI18n } from "@/lib/i18n";
 import {
   AlertTriangle,
   ArrowRight,
@@ -93,6 +94,7 @@ const STEP_TITLES = [
 ];
 
 export default function RegisterPage() {
+  const { t } = useI18n();
   const [step, setStep] = useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingGender, setPendingGender] = useState<string | null>(null);
@@ -124,6 +126,37 @@ export default function RegisterPage() {
   const [photos, setPhotos] = useState<(string | null)[]>([
     null, null, null
   ]);
+  const [activePhotoSlot, setActivePhotoSlot] = useState<number | null>(null);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || activePhotoSlot === null) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhotos(prev => {
+        const next = [...prev];
+        next[activePhotoSlot] = reader.result as string;
+        return next;
+      });
+    };
+    reader.readAsDataURL(file);
+    // Reset input so the same file can be re-selected
+    e.target.value = "";
+  };
+
+  const openPhotoPicker = (slotIndex: number) => {
+    setActivePhotoSlot(slotIndex);
+    photoInputRef.current?.click();
+  };
+
+  const removePhoto = (slotIndex: number) => {
+    setPhotos(prev => {
+      const next = [...prev];
+      next[slotIndex] = null;
+      return next;
+    });
+  };
 
   // Selfie verification state
   const [selfieDataUri, setSelfieDataUri] = useState<string | null>(null);
@@ -214,7 +247,7 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setCreateError(data.error || "Erreur lors de l'inscription.");
+        setCreateError(data.error || t("register.errorGeneric"));
         setCreating(false);
         return;
       }
@@ -241,7 +274,7 @@ export default function RegisterPage() {
       }
       setCameraActive(true);
     } catch {
-      setSelfieError("Impossible d'accéder à la caméra. Veuillez autoriser l'accès.");
+      setSelfieError("Unable to access camera. Please allow access.");
     }
   };
 
@@ -301,7 +334,7 @@ export default function RegisterPage() {
         setTimeout(() => nextStep(), 1000);
       }
     } catch {
-      setSelfieError("Erreur lors de la vérification. Veuillez réessayer.");
+      setSelfieError("Verification error. Please try again.");
     } finally {
       setSelfieVerifying(false);
     }
@@ -328,9 +361,9 @@ export default function RegisterPage() {
     { name: "TikTok", icon: <TikTokIcon className="w-5 h-5 text-[#ff0050]" /> },
     { name: "Instagram", icon: <Instagram className="w-5 h-5 text-[#E4405F]" /> },
     { name: "Facebook", icon: <Facebook className="w-5 h-5 text-[#1877F2]" /> },
-    { name: "Bouche à oreille", icon: <MessageCircle className="w-5 h-5 text-primary" /> },
+    { name: t("register.wordOfMouth"), icon: <MessageCircle className="w-5 h-5 text-primary" /> },
     { name: "YouTube", icon: <Youtube className="w-5 h-5 text-[#FF0000]" /> },
-    { name: "Autre", icon: <Plus className="w-5 h-5 text-foreground/40" /> },
+    { name: t("register.other"), icon: <Plus className="w-5 h-5 text-foreground/40" /> },
   ];
 
   return (
@@ -358,11 +391,11 @@ export default function RegisterPage() {
           <div className="space-y-8">
             <div className="space-y-4">
               <h2 className="font-headline text-4xl xl:text-5xl font-bold text-foreground leading-tight">
-                Commencez votre <br />
-                <span className="text-primary italic font-normal">histoire sacrée.</span>
+                {t("register.leftTitle")} <br />
+                <span className="text-primary italic font-normal">{t("register.leftTitleHighlight")}</span>
               </h2>
               <p className="text-foreground/60 text-lg max-w-md leading-relaxed">
-                Rejoignez la communauté chrétienne de référence pour bâtir un foyer sur les fondements de la foi.
+                {t("register.leftSubtitle")}
               </p>
             </div>
 
@@ -371,19 +404,19 @@ export default function RegisterPage() {
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <ShieldCheck className="w-4 h-4 text-primary" />
                 </div>
-                <span className="text-sm font-medium">Vérification d'identité par IA</span>
+                <span className="text-sm font-medium">{t("register.aiVerification")}</span>
               </div>
               <div className="flex items-center gap-3 text-foreground/50">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <Heart className="w-4 h-4 text-primary fill-primary" />
                 </div>
-                <span className="text-sm font-medium">Affinités spirituelles avancées</span>
+                <span className="text-sm font-medium">{t("register.spiritualAffinities")}</span>
               </div>
               <div className="flex items-center gap-3 text-foreground/50">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <ShieldCheck className="w-4 h-4 text-primary" />
                 </div>
-                <span className="text-sm font-medium">Communauté modérée 24/7</span>
+                <span className="text-sm font-medium">{t("register.moderatedCommunity")}</span>
               </div>
             </div>
           </div>
@@ -401,7 +434,7 @@ export default function RegisterPage() {
             </span>
           </Link>
           <Link href="/login" className="text-sm text-primary font-bold hover:text-primary/80 transition-colors">
-            Se connecter
+            {t("register.mobileSignIn")}
           </Link>
         </div>
 
@@ -414,10 +447,10 @@ export default function RegisterPage() {
                 <Progress value={progress} className="h-1.5 bg-foreground/5" />
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
-                    Étape {step + 1} / {totalSteps}
+                    {t("register.stepProgress", { step: step + 1, total: totalSteps })}
                   </span>
                   <span className="text-[10px] font-bold text-foreground/20 uppercase tracking-widest">
-                    {Math.round(progress)}% complété
+                    {t("register.percentComplete", { percent: Math.round(progress) })}
                   </span>
                 </div>
               </div>
@@ -429,8 +462,8 @@ export default function RegisterPage() {
             {step === 0 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Confirmons une chose</h1>
-                  <p className="text-foreground/50 text-base">Cette information est cruciale pour votre recherche d'alliance.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step0Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("register.step0Subtitle")}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -439,8 +472,8 @@ export default function RegisterPage() {
                     className="bg-card hover:bg-foreground/5 transition-all p-8 sm:p-10 rounded-3xl text-center border border-foreground/5 group shadow-xl hover:border-primary/50 hover:shadow-primary/5"
                   >
                     <span className="text-5xl block mb-4 group-hover:scale-110 transition-transform">👦</span>
-                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">Homme</p>
-                    <p className="text-primary/50 text-xs mt-1 font-medium">Je verrai des femmes</p>
+                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{t("register.male")}</p>
+                    <p className="text-primary/50 text-xs mt-1 font-medium">{t("register.maleDesc")}</p>
                   </button>
 
                   <button
@@ -448,15 +481,15 @@ export default function RegisterPage() {
                     className="bg-card hover:bg-foreground/5 transition-all p-8 sm:p-10 rounded-3xl text-center border border-foreground/5 group shadow-xl hover:border-primary/50 hover:shadow-primary/5"
                   >
                     <span className="text-5xl block mb-4 group-hover:scale-110 transition-transform">👧</span>
-                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">Femme</p>
-                    <p className="text-primary/50 text-xs mt-1 font-medium">Je verrai des hommes</p>
+                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{t("register.female")}</p>
+                    <p className="text-primary/50 text-xs mt-1 font-medium">{t("register.femaleDesc")}</p>
                   </button>
                 </div>
 
                 <div className="flex justify-center">
                   <div className="bg-olive/10 border border-olive/20 rounded-full py-2 px-5 flex items-center gap-2">
                     <AlertTriangle className="w-3.5 h-3.5 text-olive" />
-                    <p className="text-olive/80 text-[10px] font-bold uppercase tracking-widest">Information définitive</p>
+                    <p className="text-olive/80 text-[10px] font-bold uppercase tracking-widest">{t("register.finalInfo")}</p>
                   </div>
                 </div>
               </div>
@@ -468,8 +501,8 @@ export default function RegisterPage() {
             {step === 1 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Votre venue parmi nous</h1>
-                  <p className="text-foreground/50 text-base">Comment avez-vous découvert Eden Connexion ?</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step1Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("register.step1Subtitle")}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {discoverySources.map(source => (
@@ -485,7 +518,7 @@ export default function RegisterPage() {
                   ))}
                 </div>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("register.back")}
                 </button>
               </div>
             )}
@@ -496,11 +529,11 @@ export default function RegisterPage() {
             {step === 2 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Votre situation actuelle</h1>
-                  <p className="text-foreground/50 text-base">Pour mieux comprendre votre parcours de vie.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step2Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("register.step2Subtitle")}</p>
                 </div>
                 <div className="space-y-3">
-                  {["Célibataire", "Veuf / Veuve", "Divorcé(e)"].map(s => (
+                  {[t("register.single"), t("register.widowed"), t("register.divorced")].map(s => (
                     <Button
                       key={s}
                       variant="outline"
@@ -512,7 +545,7 @@ export default function RegisterPage() {
                   ))}
                 </div>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("register.back")}
                 </button>
               </div>
             )}
@@ -523,8 +556,8 @@ export default function RegisterPage() {
             {step === 3 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Votre résidence</h1>
-                  <p className="text-foreground/50 text-base">Où vivez-vous actuellement ?</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step3Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("register.step3Subtitle")}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <button
@@ -543,7 +576,7 @@ export default function RegisterPage() {
                   </button>
                 </div>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("register.back")}
                 </button>
               </div>
             )}
@@ -554,14 +587,14 @@ export default function RegisterPage() {
             {step === 4 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Sélectionnez votre pays</h1>
-                  <p className="text-foreground/50 text-base">Votre pays de résidence en {formData.region}.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step4Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("register.step4Subtitle", { region: formData.region })}</p>
                 </div>
 
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 w-5 h-5" />
                   <Input
-                    placeholder="Rechercher un pays..."
+                    placeholder={t("register.searchCountry")}
                     value={countrySearch}
                     onChange={(e) => setCountrySearch(e.target.value)}
                     className="pl-12 h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20"
@@ -582,7 +615,7 @@ export default function RegisterPage() {
                   ))}
                 </div>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("register.back")}
                 </button>
               </div>
             )}
@@ -593,14 +626,14 @@ export default function RegisterPage() {
             {step === 5 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Dans quelle ville ?</h1>
-                  <p className="text-foreground/50 text-base">Précisez votre localisation à {formData.country}.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step5Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("register.step5Subtitle", { country: formData.country })}</p>
                 </div>
 
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 w-5 h-5" />
                   <Input
-                    placeholder="Rechercher une ville..."
+                    placeholder={t("register.searchCity")}
                     value={citySearch}
                     onChange={(e) => setCitySearch(e.target.value)}
                     className="pl-12 h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20"
@@ -625,11 +658,11 @@ export default function RegisterPage() {
                     className="h-14 rounded-xl border-foreground/5 bg-card hover:bg-foreground/5 hover:border-primary/50 text-base font-bold text-foreground/40 group text-left justify-start px-6 italic"
                   >
                     <Plus className="w-4 h-4 text-foreground/20 group-hover:text-primary mr-2" />
-                    Saisir &quot;{citySearch || "autre ville"}&quot;
+                    {t("register.enterCity", { city: citySearch || t("register.otherCity") })}
                   </Button>
                 </div>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("register.back")}
                 </button>
               </div>
             )}
@@ -640,21 +673,21 @@ export default function RegisterPage() {
             {step === 6 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Vos informations</h1>
-                  <p className="text-foreground/50 text-base">Ces informations resteront confidentielles.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step6Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("register.step6Subtitle")}</p>
                 </div>
                 <div className="space-y-5">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Prénom ou Nom</Label>
+                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.nameLabel")}</Label>
                     <Input
-                      placeholder="Ex: Jean-Paul"
+                      placeholder={t("register.namePlaceholder")}
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
                       className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Date de naissance</Label>
+                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.birthDateLabel")}</Label>
                     <Input
                       type="date"
                       value={formData.birthDate}
@@ -662,24 +695,24 @@ export default function RegisterPage() {
                       className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30"
                     />
                     {formData.birthDate && !ageValid && (
-                      <p className="text-xs text-destructive flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Vous devez avoir au moins {MIN_AGE} ans pour rejoindre Eden.</p>
+                      <p className="text-xs text-destructive flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {t("register.ageError", { minAge: MIN_AGE })}</p>
                     )}
                     {formData.birthDate && ageValid && (
-                      <p className="text-[11px] text-foreground/30 uppercase tracking-widest">{age} ans</p>
+                      <p className="text-[11px] text-foreground/30 uppercase tracking-widest">{t("register.ageYears", { age: age })}</p>
                     )}
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Adresse email</Label>
+                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.emailLabel")}</Label>
                     <Input
                       type="email"
-                      placeholder="votre@email.com"
+                      placeholder={t("register.emailPlaceholder")}
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
                       className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30"
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Mot de passe</Label>
+                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.passwordLabel")}</Label>
                     <div className="relative">
                       <Input
                         type={showPassword ? "text" : "password"}
@@ -696,18 +729,18 @@ export default function RegisterPage() {
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
-                    <p className="text-[10px] text-foreground/20 uppercase tracking-widest mt-1">Minimum 8 caractères</p>
+                    <p className="text-[10px] text-foreground/20 uppercase tracking-widest mt-1">Minimum 8 characters</p>
                   </div>
                   <Button
                     onClick={nextStep}
                     disabled={!formData.name || !ageValid || !formData.email || formData.password.length < 8}
                     className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                   >
-                    Continuer <ArrowRight className="w-5 h-5 ml-2" />
+                    {t("register.continue")} <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </div>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("register.back")}
                 </button>
               </div>
             )}
@@ -718,8 +751,8 @@ export default function RegisterPage() {
             {step === 7 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Vos valeurs</h1>
-                  <p className="text-foreground/50 text-base">Choisissez ce qui définit le mieux votre vision du foyer (max 3).</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step7Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("register.step7Subtitle")}</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {MARRIAGE_VALUES.map((item) => (
@@ -746,10 +779,10 @@ export default function RegisterPage() {
                   disabled={formData.marriageVision.length === 0}
                   className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
-                  Continuer <ArrowRight className="w-5 h-5 ml-2" />
+                  {t("register.continue")} <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("register.back")}
                 </button>
               </div>
             )}
@@ -760,25 +793,25 @@ export default function RegisterPage() {
             {step === 8 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-3xl font-headline font-bold text-foreground">Charte d&#39;Engagement</h1>
-                  <p className="text-foreground/50 text-sm">Lisez attentivement et acceptez chaque engagement pour accéder au Sanctuaire.</p>
+                  <h1 className="text-2xl sm:text-3xl font-headline font-bold text-foreground">{t("register.step8Title")}</h1>
+                  <p className="text-foreground/50 text-sm">{t("register.step8Subtitle")}</p>
                 </div>
 
                 {/* Charter content — scrollable */}
                 <div className="bg-card border border-foreground/10 rounded-2xl p-5 max-h-[340px] overflow-y-auto custom-scrollbar space-y-5 text-sm text-foreground/70 leading-relaxed">
                   <div className="space-y-3">
-                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">AXE I — Authenticité et Vérification</h3>
-                    <p><strong>Art. 1.</strong> L&#39;utilisateur s&#39;engage à fournir des informations rigoureusement exactes, à jour et conformes à sa situation réelle (identité, âge, statut matrimonial, situation professionnelle, engagement ecclésial). Tout mensonge volontaire entraînera l&#39;exclusion immédiate.</p>
-                    <p><strong>Art. 2.</strong> L&#39;utilisateur donne son accord formel aux administrateurs pour procéder à la vérification de l&#39;ensemble des informations fournies, y compris l&#39;exigence de pièces justificatives ou le contact des référents pastoraux.</p>
+                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">{t("register.charterAxis1")}</h3>
+                    <p>{t("register.charterArt1")}</p>
+                    <p>{t("register.charterArt2")}</p>
                   </div>
                   <div className="space-y-3">
-                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">AXE II — Alignement Spirituel</h3>
-                    <p><strong>Art. 3.</strong> L&#39;utilisateur reconnaît la Bible comme autorité suprême. Sa démarche et ses critères de recherche doivent être alignés sur les principes des Saintes Écritures concernant la pureté, le mariage et les relations humaines.</p>
-                    <p><strong>Art. 4.</strong> Toutes les interactions doivent être empreintes de dignité et de bienveillance chrétienne. Sont strictement interdits : propos grossiers, insinuations sexuelles, harcèlement, intimidation et chantage.</p>
+                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">{t("register.charterAxis2")}</h3>
+                    <p>{t("register.charterArt3")}</p>
+                    <p>{t("register.charterArt4")}</p>
                   </div>
                   <div className="space-y-3">
-                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">AXE III — Confidentialité</h3>
-                    <p><strong>Art. 5.</strong> Toutes les informations concernant d&#39;autres membres doivent rester strictement confidentielles. Il est interdit de capturer ou divulguer des éléments de profil sans accord écrit.</p>
+                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">{t("register.charterAxis3")}</h3>
+                    <p>{t("register.charterArt5")}</p>
                   </div>
                 </div>
 
@@ -792,7 +825,7 @@ export default function RegisterPage() {
                       className="mt-1 w-5 h-5 rounded border-foreground/20 text-primary focus:ring-primary/30 shrink-0"
                     />
                     <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
-                      J&#39;autorise expressément les administrateurs à vérifier la véracité de mes informations personnelles et ecclésiales.
+                      {t("register.authorizeVerification")}
                     </span>
                   </label>
                   <label className="flex items-start gap-3 cursor-pointer group">
@@ -803,7 +836,7 @@ export default function RegisterPage() {
                       className="mt-1 w-5 h-5 rounded border-foreground/20 text-primary focus:ring-primary/30 shrink-0"
                     />
                     <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
-                      Je m&#39;engage à maintenir des conversations saines et respectueuses, soumises à la Parole de Dieu.
+                      {t("register.commitRespectful")}
                     </span>
                   </label>
                   <label className="flex items-start gap-3 cursor-pointer group">
@@ -814,7 +847,7 @@ export default function RegisterPage() {
                       className="mt-1 w-5 h-5 rounded border-foreground/20 text-primary focus:ring-primary/30 shrink-0"
                     />
                     <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
-                      J&#39;ai lu, compris et j&#39;accepte l&#39;intégralité de la présente charte d&#39;engagement.
+                      {t("register.acceptFull")}
                     </span>
                   </label>
                 </div>
@@ -824,10 +857,10 @@ export default function RegisterPage() {
                   disabled={!formData.charterAuthorizeVerification || !formData.charterCommitRespectful || !formData.charterAcceptFull}
                   className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
-                  Accepter et continuer <ShieldCheck className="w-5 h-5 ml-2" />
+                  {t("register.acceptAndContinue")} <ShieldCheck className="w-5 h-5 ml-2" />
                 </Button>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("register.back")}
                 </button>
               </div>
             )}
@@ -835,27 +868,34 @@ export default function RegisterPage() {
             {/* Step 9 — Photo Upload (Mandatory) */}
             {step === 9 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoSelect}
+                />
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                     <Upload className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <p className="font-bold text-primary text-sm uppercase tracking-wider">Photos requises</p>
-                    <p className="text-xs text-foreground/40 mt-0.5">Vous devez ajouter 3 photos pour continuer.</p>
+                    <p className="font-bold text-primary text-sm uppercase tracking-wider">{t("register.photosRequired")}</p>
+                    <p className="text-xs text-foreground/40 mt-0.5">{t("register.photosRequiredDesc")}</p>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Ajoutez vos photos</h1>
-                  <p className="text-foreground/50 text-base">La première impression est le début de la conversation.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.addPhotos")}</h1>
+                  <p className="text-foreground/50 text-base">{t("register.addPhotosDesc")}</p>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4 w-full">
                   {photos.map((src, i) => (
-                    <div key={i} className="relative aspect-[2/3] bg-card border border-foreground/5 rounded-2xl overflow-hidden group shadow-xl hover:border-primary/30 transition-all cursor-pointer">
+                    <div key={i} onClick={() => openPhotoPicker(i)} className="relative aspect-[2/3] bg-card border border-foreground/5 rounded-2xl overflow-hidden group shadow-xl hover:border-primary/30 transition-all cursor-pointer">
                       {src ? (
                         <>
                           <Image src={src} alt="" fill className="object-cover group-hover:scale-105 transition-transform" />
-                          <button className="absolute top-3 right-3 w-7 h-7 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-foreground/60 hover:text-foreground transition-colors">
+                          <button onClick={(e) => { e.stopPropagation(); removePhoto(i); }} className="absolute top-3 right-3 w-7 h-7 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-foreground/60 hover:text-foreground transition-colors">
                             <X className="w-3.5 h-3.5" />
                           </button>
                           {i === 0 && (
@@ -876,7 +916,7 @@ export default function RegisterPage() {
 
                 {!allPhotosUploaded && (
                   <p className="text-sm text-foreground/40 text-center">
-                    Les 3 photos sont obligatoires pour vérifier l'authenticité de votre profil.
+                    {t("register.photosMandatory")}
                   </p>
                 )}
                 <Button
@@ -884,10 +924,10 @@ export default function RegisterPage() {
                   disabled={!allPhotosUploaded}
                   className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
-                  Continuer vers la vérification <Camera className="w-5 h-5 ml-2" />
+                  {t("register.continueToVerification")} <Camera className="w-5 h-5 ml-2" />
                 </Button>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("register.back")}
                 </button>
               </div>
             )}
@@ -900,14 +940,14 @@ export default function RegisterPage() {
                     <ShieldCheck className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <p className="font-bold text-primary text-sm uppercase tracking-wider">Vérification d'identité</p>
-                    <p className="text-xs text-foreground/40 mt-0.5">Confirmez que vos photos sont bien les vôtres.</p>
+                    <p className="font-bold text-primary text-sm uppercase tracking-wider">{t("register.selfieBadge")}</p>
+                    <p className="text-xs text-foreground/40 mt-0.5">{t("register.selfieConfirmPhotos")}</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Prenez un selfie</h1>
-                  <p className="text-foreground/50 text-sm">Pour garantir l'authenticité des profils, nous comparons votre selfie avec vos photos de profil.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.selfieTitle")}</h1>
+                  <p className="text-foreground/50 text-sm">{t("register.selfieDesc")}</p>
                 </div>
 
                 {/* Camera / Selfie Area */}
@@ -915,9 +955,9 @@ export default function RegisterPage() {
                   {!cameraActive && !selfieDataUri && (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-4">
                       <Camera className="w-16 h-16 text-foreground/15" />
-                      <p className="text-foreground/30 text-sm">Activez votre caméra pour prendre un selfie</p>
+                      <p className="text-foreground/30 text-sm">{t("register.selfieActivatePrompt")}</p>
                       <Button onClick={startCamera} className="bg-primary text-primary-foreground font-bold rounded-xl px-8">
-                        <Camera className="w-4 h-4 mr-2" /> Activer la caméra
+                        <Camera className="w-4 h-4 mr-2" /> {t("register.selfieActivateBtn")}
                       </Button>
                     </div>
                   )}
@@ -939,7 +979,7 @@ export default function RegisterPage() {
                       <Image src={selfieDataUri} alt="Selfie" fill className="object-cover" />
                       <div className="absolute top-4 right-4">
                         <Button onClick={retakeSelfie} variant="outline" size="sm" className="bg-black/40 border-white/20 text-white hover:bg-black/60 backdrop-blur-md">
-                          <RotateCcw className="w-4 h-4 mr-1" /> Reprendre
+                          <RotateCcw className="w-4 h-4 mr-1" /> {t("register.selfieRetake")}
                         </Button>
                       </div>
                     </>
@@ -965,10 +1005,10 @@ export default function RegisterPage() {
                     )}
                     <div>
                       <p className={`text-sm font-bold ${selfieResult.verified ? 'text-primary' : 'text-destructive/90'}`}>
-                        {selfieResult.verified ? 'Vérification réussie' : 'Vérification échouée'}
+                        {selfieResult.verified ? 'Verification passed' : 'Verification failed'}
                       </p>
                       <p className={`text-xs mt-1 ${selfieResult.verified ? 'text-foreground/50' : 'text-destructive/70'}`}>
-                        {selfieResult.reason} (Score : {selfieResult.score}%)
+                        {selfieResult.reason} (Score: {selfieResult.score}%)
                       </p>
                     </div>
                   </div>
@@ -984,16 +1024,16 @@ export default function RegisterPage() {
                     {selfieVerifying ? (
                       <span className="flex items-center gap-3">
                         <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        Vérification en cours…
+                        {t("register.selfieVerifying")}
                       </span>
                     ) : (
-                      <>Vérifier mon identité <ShieldCheck className="w-5 h-5 ml-2" /></>
+                      <>{t("register.selfieVerifyBtn")} <ShieldCheck className="w-5 h-5 ml-2" /></>
                     )}
                   </Button>
                 )}
 
                 <button onClick={() => { stopCamera(); prevStep(); }} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("register.back")}
                 </button>
               </div>
             )}
@@ -1006,13 +1046,13 @@ export default function RegisterPage() {
                     <CheckCircle2 className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <p className="font-bold text-primary text-sm uppercase tracking-wider">Identité vérifiée</p>
-                    <p className="text-xs text-foreground/40 mt-0.5">Vos photos ont été validées avec succès.</p>
+                    <p className="font-bold text-primary text-sm uppercase tracking-wider">{t("register.completionBadge")}</p>
+                    <p className="text-xs text-foreground/40 mt-0.5">{t("register.completionBadgeDesc")}</p>
                   </div>
                 </div>
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Profil créé avec succès</h1>
-                  <p className="text-foreground/50 text-base">Votre chemin vers l'alliance est ouvert — {formData.city}, {formData.country}.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.profileCreated")}</h1>
+                  <p className="text-foreground/50 text-base">{t("register.profileCreatedDesc", { city: formData.city, country: formData.country })}</p>
                 </div>
                 {createError && (
                   <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/20 rounded-xl p-4">
@@ -1028,10 +1068,10 @@ export default function RegisterPage() {
                   {creating ? (
                     <span className="flex items-center gap-3">
                       <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      Création du profil…
+                      {t("register.creatingProfile")}
                     </span>
                   ) : (
-                    <>Accéder au Sanctuaire <Heart className="w-6 h-6 fill-primary-foreground" /></>
+                    <>{t("register.accessSanctuary")} <Heart className="w-6 h-6 fill-primary-foreground" /></>
                   )}
                 </Button>
               </div>
@@ -1041,9 +1081,9 @@ export default function RegisterPage() {
             {step <= 8 && (
               <div className="text-center pt-2">
                 <p className="text-foreground/30 text-sm">
-                  Déjà membre ?{" "}
+                  {t("register.alreadyMember")}{" "}
                   <Link href="/login" className="text-primary font-bold hover:text-primary/80 transition-colors">
-                    Se connecter
+                    {t("register.signInLink")}
                   </Link>
                 </p>
               </div>
@@ -1055,10 +1095,10 @@ export default function RegisterPage() {
         {step <= 8 && (
           <div className="px-6 py-4 border-t border-foreground/5">
             <p className="text-center text-foreground/15 text-[10px] font-medium uppercase tracking-widest">
-              En créant votre compte, vous acceptez notre{" "}
-              <Link href="/charte" className="text-foreground/25 hover:text-primary/60 transition-colors">Charte Éthique</Link>
-              {" "}et nos{" "}
-              <Link href="/cgu" className="text-foreground/25 hover:text-primary/60 transition-colors">CGU</Link>.
+              {t("register.termsFooter")}{" "}
+              <Link href="/charte" className="text-foreground/25 hover:text-primary/60 transition-colors">{t("register.ethicalCharter")}</Link>
+              {" "}{t("register.andOur")}{" "}
+              <Link href="/cgu" className="text-foreground/25 hover:text-primary/60 transition-colors">{t("register.termsOfUse")}</Link>.
             </p>
           </div>
         )}
@@ -1072,23 +1112,25 @@ export default function RegisterPage() {
               {pendingGender === "homme" ? "👦" : "👧"}
             </div>
             <div className="space-y-2">
-              <DialogTitle className="text-2xl font-bold text-foreground">Est-ce bien cela ?</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-foreground">{t("register.dialogTitle")}</DialogTitle>
               <DialogDescription className="text-foreground/50">
-                Vous avez sélectionné <span className="font-bold text-primary uppercase">{pendingGender === "homme" ? "Homme" : "Femme"}</span>.
+                {t("register.dialogSelected")} <span className="font-bold text-primary uppercase">{pendingGender === "homme" ? t("register.male") : t("register.female")}</span>.
               </DialogDescription>
             </div>
             <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl flex gap-3 text-left">
               <AlertTriangle className="w-5 h-5 text-primary shrink-0" />
               <p className="text-xs text-foreground/40 italic">
-                Ce choix est <span className="text-foreground font-bold">définitif</span> pour garantir l'intégrité de notre communauté.
+                {t("register.dialogWarning").split(t("register.dialogWarningBold"))[0]}
+                <span className="text-foreground font-bold">{t("register.dialogWarningBold")}</span>
+                {t("register.dialogWarning").split(t("register.dialogWarningBold"))[1]}
               </p>
             </div>
             <div className="flex flex-col w-full gap-3">
               <Button onClick={confirmGender} className="w-full h-14 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors">
-                Je confirme
+                {t("register.dialogConfirm")}
               </Button>
               <Button variant="ghost" onClick={() => setShowConfirmDialog(false)} className="w-full text-foreground/40 hover:text-primary transition-colors">
-                Annuler
+                {t("register.dialogCancel")}
               </Button>
             </div>
           </div>

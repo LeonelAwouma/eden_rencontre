@@ -102,7 +102,7 @@ export default function LoginPage() {
     setIsLoading(true);
     const res = await signInWithGoogle();
     if (!res.ok) {
-      setError(res.error || "Connexion Google impossible.");
+      setError(res.error || t("login.googleError"));
       setIsLoading(false);
     }
     // Si ok : redirection vers Google puis retour sur /searching
@@ -113,7 +113,7 @@ export default function LoginPage() {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
         <Monogram className="w-14 h-14 text-primary animate-pulse" style={{ animationDuration: "2s" }} />
-        <p className="text-foreground/50 text-sm tracking-wide">Un instant…</p>
+        <p className="text-foreground/50 text-sm tracking-wide">{t("login.checkingSession")}</p>
       </div>
     );
   }
@@ -149,11 +149,11 @@ export default function LoginPage() {
           <div className="space-y-8">
             <div className="space-y-4">
               <h2 className="font-headline text-4xl xl:text-5xl font-bold text-foreground leading-tight">
-                Retrouvez votre <br />
-                <span className="text-primary italic font-normal">sanctuaire.</span>
+                {t("login.leftTitle")} <br />
+                <span className="text-primary italic font-normal">{t("login.leftTitleHighlight")}</span>
               </h2>
               <p className="text-foreground/60 text-lg max-w-md leading-relaxed">
-                Connectez-vous pour continuer votre chemin vers l'alliance bénie.
+                {t("login.leftSubtitle")}
               </p>
             </div>
 
@@ -161,11 +161,11 @@ export default function LoginPage() {
             <div className="flex flex-wrap gap-6">
               <div className="flex items-center gap-2 text-foreground/40">
                 <ShieldCheck className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest">Connexion sécurisée</span>
+                <span className="text-xs font-bold uppercase tracking-widest">{t("login.secureConnection")}</span>
               </div>
               <div className="flex items-center gap-2 text-foreground/40">
                 <Heart className="w-4 h-4 text-primary fill-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest">Données protégées</span>
+                <span className="text-xs font-bold uppercase tracking-widest">{t("login.protectedData")}</span>
               </div>
             </div>
           </div>
@@ -204,7 +204,9 @@ export default function LoginPage() {
             <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-xl p-4 animate-in fade-in slide-in-from-top-1 duration-300">
               <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
               <p className="text-sm text-foreground/70 leading-relaxed">
-                Votre profil a été créé avec succès. <span className="text-primary font-bold">Connectez-vous</span> pour accéder à votre sanctuaire.
+                {t("login.justRegistered", { bold: "" })}
+                <span className="text-primary font-bold">{t("login.justRegisteredBold")}</span>
+                {t("login.justRegistered").split("{bold}")[1]}
               </p>
             </div>
           )}
