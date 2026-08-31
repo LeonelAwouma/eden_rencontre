@@ -18,7 +18,7 @@ export function VerifiedBadgeIcon({ size = 16, className = "" }: { size?: number
            L138 200 L130 226 L122 200 L102 214 L90 190 L66 196 L66 170
            L42 166 L52 142 L32 128 L50 108 L36 86 L60 72 L54 46 L82 44
            L88 18 L112 30 Z"
-        fill="#2563eb"
+        fill="#486B46"
       />
       {/* White checkmark */}
       <path
