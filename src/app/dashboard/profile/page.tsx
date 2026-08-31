@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getSession, updateProfile, logout, EdenUser } from "@/lib/auth";
-import { saveOnboarding, questionnaire, Questionnaire, Section, Field } from "@/lib/onboarding";
+import { saveOnboarding, QUESTIONNAIRES, Questionnaire, Section, Field } from "@/lib/onboarding";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import type { Tab } from "@/components/dashboard/dashboard-types";
 import {
@@ -26,11 +26,11 @@ interface ProfileData {
   gender: string | null;
   civil_status: string | null;
   region: string | null;
-  Profession: string | null;
+  profession: string | null;
   bio: string | null;
   marriage_vision: string[] | null;
   birth_date: string | null;
-  Questionnaire: Record<string, any>;
+  questionnaire: Record<string, any>;
   onboarding_completed: boolean;
   updated_at: string;
 }
@@ -93,7 +93,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
     city: profile.city || "",
     country: profile.country || "",
     region: profile.region || "",
-    Profession: profile.Profession || "",
+    profession: profile.profession || "",
     bio: profile.bio || "",
     civil_status: profile.civil_status || "",
     gender: profile.gender || "",
@@ -104,7 +104,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
   useEffect(() => {
     setForm({
       name: profile.name || "", city: profile.city || "", country: profile.country || "",
-      region: profile.region || "", Profession: profile.Profession || "", bio: profile.bio || "",
+      region: profile.region || "", profession: profile.profession || "", bio: profile.bio || "",
       civil_status: profile.civil_status || "", gender: profile.gender || "",
       birth_date: profile.birth_date || "", marriage_vision: profile.marriage_vision || [],
     });
@@ -117,12 +117,12 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
       if (!supabase) return;
       const { error } = await supabase.from("profiles").update({
         name: form.name.trim(), city: form.city.trim(), country: form.country.trim(),
-        region: form.region.trim(), Profession: form.Profession.trim(), bio: form.bio.trim(),
+        region: form.region.trim(), profession: form.profession.trim(), bio: form.bio.trim(),
         civil_status: form.civil_status, gender: form.gender, birth_date: form.birth_date || null,
         marriage_vision: form.marriage_vision, updated_at: new Date().toISOString(),
       }).eq("id", profile.id);
       if (error) throw error;
-      await updateProfile({ name: form.name.trim(), city: form.city, country: form.country, profession: form.Profession, bio: form.bio, marriageVision: form.marriage_vision });
+      await updateProfile({ name: form.name.trim(), city: form.city, country: form.country, profession: form.profession, bio: form.bio, marriageVision: form.marriage_vision });
       setEditing(false);
       onRefresh();
     } catch (e: any) {
@@ -201,7 +201,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
               <Briefcase size={14} /> Professional Background
             </h4>
             <div className="space-y-0">
-              <InfoRow label="Profession" value={profile.Profession} />
+              <InfoRow label="Profession" value={profile.profession} />
             </div>
           </div>
 
@@ -228,27 +228,27 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
           )}
 
           {/* Onboarding Summary */}
-          {profile.Questionnaire && Object.keys(profile.Questionnaire).length > 0 && (
+          {profile.questionnaire && Object.keys(profile.questionnaire).length > 0 && (
             <div>
               <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
                 <BookOpen size={14} /> Faith Journey Data
               </h4>
               <p className="text-xs text-[#777777] mb-3">Answers saved during onboarding. Editable in the "Faith Journey" tab.</p>
               <div className="space-y-0">
-                {questionnaire.flatMap(q => q.sections.flatMap(s => s.fields))
+                {QUESTIONNAIRES.flatMap(q => q.sections.flatMap(s => s.fields))
                   .filter(f => {
-                    const v = profile.Questionnaire[f.id];
+                    const v = profile.questionnaire[f.id];
                     return v && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "");
                   })
                   .slice(0, 15)
                   .map(f => {
-                    const v = profile.Questionnaire[f.id];
+                    const v = profile.questionnaire[f.id];
                     const display = Array.isArray(v) ? v.join(", ") : String(v);
                     return <InfoRow key={f.id} label={f.label} value={display} />;
                   })}
               </div>
-              {Object.keys(profile.Questionnaire).filter(k => {
-                const v = profile.Questionnaire[k];
+              {Object.keys(profile.questionnaire).filter(k => {
+                const v = profile.questionnaire[k];
                 return v && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "");
               }).length > 15 && (
                 <button onClick={onSwitchToFaith} className="text-xs text-[#486B46] font-semibold mt-3 hover:underline">
@@ -271,7 +271,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
                 <EditField label="Gender" value={form.gender} onChange={v => setForm(f => ({ ...f, gender: v }))} type="select" options={GENDER_OPTIONS} />
                 <EditField label="Date of Birth" value={form.birth_date} onChange={v => setForm(f => ({ ...f, birth_date: v }))} type="date" />
                 <EditField label="Civil Status" value={form.civil_status} onChange={v => setForm(f => ({ ...f, civil_status: v }))} type="select" options={CIVIL_STATUS_OPTIONS} />
-                <EditField label="Profession" value={form.Profession} onChange={v => setForm(f => ({ ...f, Profession: v }))} />
+                <EditField label="Profession" value={form.profession} onChange={v => setForm(f => ({ ...f, profession: v }))} />
               </div>
             </div>
           </div>
@@ -416,7 +416,7 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
         <BookOpen size={20} className="text-[#486B46]" /> Mon Faith Journey
       </h3>
       <div className="space-y-4">
-        {questionnaire.map(q => {
+        {QUESTIONNAIRES.map(q => {
           const { filled, total, pct } = getCompletionCount(q);
           const isExpanded = expanded === q.key;
           const isEditing = editingQ === q.key;
@@ -593,7 +593,7 @@ function ProfileCompletionCard({ profile }: { profile: ProfileData }) {
     { label: "Full Name", done: !!profile.name },
     { label: "Bio", done: !!profile.bio },
     { label: "City", done: !!profile.city },
-    { label: "Profession", done: !!profile.Profession },
+    { label: "Profession", done: !!profile.profession },
     { label: "Civil Status", done: !!profile.civil_status },
     { label: "Marriage Vision", done: !!(profile.marriage_vision && profile.marriage_vision.length > 0) },
     { label: "Faith Journey", done: profile.onboarding_completed },
@@ -649,7 +649,7 @@ export default function ProfilePage() {
       if (!session?.id) { router.replace("/login"); return; }
 
       const { data, error } = await supabase.from("profiles")
-        .select("id, email, name, city, country, avatar_url, gender, civil_status, region, Profession, bio, marriage_vision, birth_date, Questionnaire, onboarding_completed, updated_at")
+        .select("id, email, name, city, country, avatar_url, gender, civil_status, region, profession, bio, marriage_vision, birth_date, questionnaire, onboarding_completed, updated_at")
         .eq("id", session.id)
         .maybeSingle();
       if (error) throw error;
@@ -762,7 +762,7 @@ export default function ProfilePage() {
               <ProfileCompletionCard profile={profile} />
             </>
           ) : (
-            <FaithJourneyCard profileId={profile.id} answers={profile.Questionnaire || {}} onRefresh={handleRefresh} />
+            <FaithJourneyCard profileId={profile.id} answers={profile.questionnaire || {}} onRefresh={handleRefresh} />
           )}
         </div>
       </main>

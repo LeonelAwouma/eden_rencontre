@@ -675,7 +675,7 @@ export default function DashboardPage() {
     // Fetch full profile data to calculate real completion percentage
     if (supabase) {
       supabase.from("profiles")
-        .select("avatar_url, name, bio, city, Profession, civil_status, marriage_vision, onboarding_completed")
+        .select("avatar_url, name, bio, city, profession, civil_status, marriage_vision, onboarding_completed")
         .eq("id", user.id)
         .maybeSingle()
         .then(({ data }) => {
@@ -685,7 +685,7 @@ export default function DashboardPage() {
             !!data.name,
             !!data.bio,
             !!data.city,
-            !!data.Profession,
+            !!data.profession,
             !!data.civil_status,
             !!(data.marriage_vision && (data.marriage_vision as string[]).length > 0),
             !!data.onboarding_completed,
