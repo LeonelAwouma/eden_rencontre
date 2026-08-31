@@ -37,6 +37,7 @@ import { sendFriendRequest, getRelationStatus, recordProfileView, isFavorited, s
 import { getValue } from "@/lib/values";
 import { ageFromBirthDate } from "@/lib/auth";
 import { PROFILES } from "@/lib/profiles";
+import { VerifiedBadge } from "@/components/VerifiedBadge";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -241,7 +242,10 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
           <CardContent className="p-8 sm:p-10 space-y-8">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-4">
-                <h1 className="text-4xl font-black text-foreground font-headline">{member.name}</h1>
+                <h1 className="text-4xl font-black text-foreground font-headline inline-flex items-center gap-2">
+                  {member.name}
+                  {member.verification_status === "verified" && <VerifiedBadge size={28} />}
+                </h1>
 
                 <div className="space-y-1 text-muted-foreground font-medium">
                   {location && (

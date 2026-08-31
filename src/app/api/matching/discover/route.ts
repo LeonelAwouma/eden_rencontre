@@ -171,6 +171,7 @@ async function loadUserProfile(supabase: any, userId: string): Promise<EdenUserP
     civil_status: profile.civil_status,
     subscription_plan: profile.subscription_plan || "free",
     onboarding_completed: profile.onboarding_completed || false,
+    verification_status: profile.verification_status || "none",
     profile_completion_pct: questionnaire.completion_pct || 0,
     questionnaire: qResponse,
     created_at: profile.created_at,
@@ -235,7 +236,7 @@ async function loadCandidates(
   // Step 1: Query profiles with basic filters
   const { data: profiles, error } = await supabase
     .from("profiles")
-    .select("id, name, full_name, email, gender, birth_date, city, country, region, avatar_url, bio, profession, civil_status, subscription_plan, onboarding_completed, created_at, updated_at")
+    .select("id, name, full_name, email, gender, birth_date, city, country, region, avatar_url, bio, profession, civil_status, subscription_plan, onboarding_completed, verification_status, created_at, updated_at")
     .eq("gender", oppositeGender)
     .eq("onboarding_completed", true)
     .gte("birth_date", minBirthDate)
@@ -286,6 +287,7 @@ async function loadCandidates(
       civil_status: profile.civil_status,
       subscription_plan: profile.subscription_plan || "free",
       onboarding_completed: profile.onboarding_completed || false,
+      verification_status: profile.verification_status || "none",
       profile_completion_pct: q.completion_pct || 0,
       questionnaire: mapQuestionnaireFromDB(q),
       created_at: profile.created_at,

@@ -247,6 +247,7 @@ export interface EdenUserProfile {
   civil_status?: string;
   subscription_plan: "free" | "essentiel" | "premium" | "elite";
   onboarding_completed: boolean;
+  verification_status?: string;
   profile_completion_pct: number;
   questionnaire: QuestionnaireResponse;
   created_at: string;

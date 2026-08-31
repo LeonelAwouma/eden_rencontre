@@ -21,7 +21,7 @@ export interface Friendship {
 }
 
 const PROFILE_COLS =
-  "id, name, email, city, country, region, gender, birth_date, civil_status, profession, bio, marriage_vision, avatar_url";
+  "id, name, email, city, country, region, gender, birth_date, civil_status, profession, bio, marriage_vision, avatar_url, verification_status";
 
 function mapRow(d: any): MemberProfile {
   return {
@@ -38,6 +38,7 @@ function mapRow(d: any): MemberProfile {
     bio: d.bio,
     marriageVision: d.marriage_vision,
     avatar_url: d.avatar_url,
+    verification_status: d.verification_status,
   };
 }
 

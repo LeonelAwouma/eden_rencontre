@@ -45,6 +45,7 @@ export interface MemberProfile {
   bio?: string | null;
   marriageVision?: string[] | null;
   avatar_url?: string | null;
+  verification_status?: string | null;
 }
 
 // ── Fluent Emoji (Microsoft, MIT) — rendu 3D via CDN jsDelivr ──
@@ -146,7 +147,7 @@ export async function getProfileById(id: string): Promise<{ profile?: MemberProf
   if (!id) return {};
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, name, email, city, country, region, gender, birth_date, civil_status, profession, bio, marriage_vision, avatar_url")
+    .select("id, name, email, city, country, region, gender, birth_date, civil_status, profession, bio, marriage_vision, avatar_url, verification_status")
     .eq("id", id)
     .maybeSingle();
   if (error) {
@@ -170,6 +171,7 @@ export async function getProfileById(id: string): Promise<{ profile?: MemberProf
       bio: d.bio,
       marriageVision: d.marriage_vision,
       avatar_url: d.avatar_url,
+      verification_status: d.verification_status,
     },
   };
 }
