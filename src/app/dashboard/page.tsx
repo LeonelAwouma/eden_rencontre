@@ -1130,7 +1130,7 @@ export default function DashboardPage() {
                 </div>
 
                 {/* Verification Status Card */}
-                {verificationStatus !== "none" && (
+                {verificationStatus !== "none" && !(verificationStatus === "verified" && profileCompletionPct !== null && profileCompletionPct < 100) && (
                   <div className="rounded-2xl p-5"
                     style={{
                       background: verificationStatus === "verified" ? "linear-gradient(135deg, #EEF5EC 0%, #FAF9F6 100%)"
@@ -1947,7 +1947,7 @@ export default function DashboardPage() {
                     <div className="flex-1 space-y-1.5">
                       <div className="flex items-center gap-2 justify-center sm:justify-start">
                         <h3 className="font-headline text-2xl font-bold" style={{ color: "#2F2F2F" }}>{displayName}</h3>
-                        {verificationStatus === "verified" && (
+                        {verificationStatus === "verified" && profileCompletionPct === 100 && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1" style={{ background: "#EEF5EC", color: "#486B46" }}>
                             <CheckCircle2 className="w-3 h-3" /> Verified Profile
                           </span>
