@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { sendVerificationApprovedEmail, sendVerificationRejectedEmail } from "@/lib/email";
+import { isProfileFullyComplete, getProfileCompletion } from "@/lib/profile-completion";
 
 export async function POST(
   request: NextRequest,
@@ -37,6 +38,20 @@ export async function POST(
         { error: "Cet utilisateur n'a pas encore complété son profil." },
         { status: 400 }
       );
+    }
+
+    // Check that profile is 100% complete before allowing badge grant
+    if (action === "approve") {
+      const completion = getProfileCompletion(user);
+      if (completion.percentage < 100) {
+        return NextResponse.json(
+          {
+            error: `Le profil n'est pas complet (${completion.percentage}%). Champs manquants : ${completion.missing.join(", ")}.`,
+            completion: completion,
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Log questionnaire completion info for audit

@@ -46,6 +46,7 @@ import { ImposingFloralCorners, ImposingFloralSide } from "@/components/garden";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { ChatGuide } from "@/components/dashboard/chat-guide";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { Tab, TABS, ComposerType, FeedPost, EDIT_WINDOW_MS, DAILY_VERSES, VERSE_OF_DAY, getDailyVerses } from "@/components/dashboard/dashboard-types";
 
 // ── Helper ──
@@ -162,7 +163,7 @@ function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match }: {
           <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
             <h4 className="font-headline text-sm sm:text-lg font-bold text-white truncate group-hover:transition-colors inline-flex items-center gap-1">
               {m.name}
-              {m.verification_status === "verified" && <VerifiedBadge size={14} />}
+              {m.verification_status === "verified" && isProfileFullyComplete(m) && <VerifiedBadge size={14} />}
             </h4>
             {loc && <div className="flex items-center gap-1 text-white/80 text-[9px] sm:text-xs font-bold tracking-wide uppercase truncate">
               <MapPin className="w-3 h-3 shrink-0" /> {loc}
@@ -1427,7 +1428,7 @@ export default function DashboardPage() {
                       <div className="absolute inset-x-0 bottom-0 p-3">
                         <h4 className="font-headline text-base font-bold text-white truncate inline-flex items-center gap-1">
                           {v.member.name}
-                          {v.member.verification_status === "verified" && <VerifiedBadge size={14} />}
+                          {v.member.verification_status === "verified" && isProfileFullyComplete(v.member) && <VerifiedBadge size={14} />}
                         </h4>
                       </div>
                     </div>
@@ -1500,7 +1501,7 @@ export default function DashboardPage() {
                           <div>
                             <h4 className="font-headline text-lg font-bold inline-flex items-center gap-1.5" style={{ color: "#2F2F2F" }}>
                               {m.name}
-                              {m.verification_status === "verified" && <VerifiedBadge size={16} />}
+                              {m.verification_status === "verified" && isProfileFullyComplete(m) && <VerifiedBadge size={16} />}
                             </h4>
                             {loc && <p className="text-xs flex items-center gap-1 justify-center sm:justify-start" style={{ color: "#777777" }}>
                               <MapPin className="w-3 h-3" /> {loc}{m.profession ? ` • ${m.profession}` : ""}

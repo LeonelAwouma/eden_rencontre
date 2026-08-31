@@ -13,6 +13,7 @@ import {
   MapPin, Briefcase, BookOpen, Lock, Heart
 } from "lucide-react";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
+import { isProfileFullyComplete } from "@/lib/profile-completion";
 
 
 /* ─────────────────────────── Types ─────────────────────────── */
@@ -167,7 +168,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
             <div className="min-w-0">
               <h4 className="text-xl font-bold text-[#2F2F2F] truncate inline-flex items-center gap-2">
                 {profile.name || "—"}
-                {profile.verification_status === "verified" && <VerifiedBadge size={18} />}
+                {profile.verification_status === "verified" && isProfileFullyComplete(profile) && <VerifiedBadge size={18} />}
               </h4>
               <p className="text-sm text-[#777777] truncate">{profile.email}</p>
               {profile.city && <p className="text-sm text-[#777777] flex items-center gap-1 mt-0.5"><MapPin size={12} />{profile.city}{profile.country ? `, ${profile.country}` : ""}</p>}
@@ -750,7 +751,7 @@ export default function ProfilePage() {
             <div className="flex-1 min-w-0">
               <h1 className="font-['Playfair_Display'] text-xl sm:text-2xl font-bold text-[#2F2F2F] truncate inline-flex items-center gap-2">
                 {profile.name || "My Profile"}
-                {profile.verification_status === "verified" && <VerifiedBadge size={20} />}
+                {profile.verification_status === "verified" && isProfileFullyComplete(profile) && <VerifiedBadge size={20} />}
               </h1>
               <p className="text-sm text-[#777777] truncate">{profile.email} {profile.city ? `· ${profile.city}` : ""}</p>
             </div>

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 import { DashboardHeader } from "@/components/admin/dashboard-header";
+import { isProfileFullyComplete } from "@/lib/profile-completion";
 
 interface CharterAcceptance {
   authorize_verification: boolean;
@@ -458,7 +459,7 @@ export default function AdminUsersPage() {
                               </button>
                             </>
                           )}
-                          {user.status === "approved" && user.onboarding_completed && user.verification_status !== "verified" && (
+                          {user.status === "approved" && user.onboarding_completed && isProfileFullyComplete(user) && user.verification_status !== "verified" && (
                             <button
                               onClick={() => handleVerifyBadge(user.id)}
                               className="w-9 h-9 rounded-full flex items-center justify-center bg-[#8B5CF6]/10 text-[#7C3AED] shadow-sm border border-[#8B5CF6]/20 hover:bg-[#8B5CF6]/20 hover:text-[#6D28D9] hover:border-[#8B5CF6]/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7C3AED] transition-all duration-200"
@@ -580,7 +581,7 @@ export default function AdminUsersPage() {
                         </button>
                       </>
                     )}
-                    {user.status === "approved" && user.onboarding_completed && user.verification_status !== "verified" && (
+                    {user.status === "approved" && user.onboarding_completed && isProfileFullyComplete(user) && user.verification_status !== "verified" && (
                       <button
                         onClick={() => handleVerifyBadge(user.id)}
                         className="flex-1 text-center text-[12px] font-semibold text-[#7C3AED] bg-[#8B5CF6]/5 py-2.5 rounded-xl hover:bg-[#8B5CF6]/10 transition-colors flex items-center justify-center gap-1.5"

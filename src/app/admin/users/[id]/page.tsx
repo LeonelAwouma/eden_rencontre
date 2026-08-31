@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { checkQuestionnaireCompletion } from "@/lib/onboarding";
+import { isProfileFullyComplete } from "@/lib/profile-completion";
 
 interface UserProfile {
   id: string;
@@ -89,8 +90,8 @@ export default function AdminUserDetailPage() {
     );
   }, [user?.questionnaire]);
 
-  // Can admin grant verification badge? User must have completed onboarding + all required questions answered
-  const canGrantBadge = user?.onboarding_completed && questionnaireCompletion.percentage === 100 && user?.verification_status !== "verified";
+  // Can admin grant verification badge? User must have completed onboarding + all required questions answered + profile 100%
+  const canGrantBadge = user?.onboarding_completed && questionnaireCompletion.percentage === 100 && isProfileFullyComplete(user || {}) && user?.verification_status !== "verified";
 
   useEffect(() => {
     fetch(`/api/admin/users/${userId}`)
