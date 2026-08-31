@@ -702,8 +702,8 @@ export default function DashboardPage() {
   }, [user]);
 
   useEffect(() => {
-    if (activeTab === "Messages" || activeTab === "Notifications" || activeTab === "Accueil") loadConversations();
-    if (["Découvrir", "Demandes", "Notifications", "Favoris", "Visiteurs", "Accueil"].includes(activeTab)) loadSocial();
+    if (activeTab === "Messages" || activeTab === "Notifications" || activeTab === "Accueil" || activeTab === "Home") loadConversations();
+    if (["Découvrir", "Discover", "Demandes", "Requests", "Notifications", "Favoris", "Favorites", "Visiteurs", "Visitors", "Accueil", "Home"].includes(activeTab)) loadSocial();
   }, [activeTab]);
 
   useEffect(() => {
@@ -879,7 +879,7 @@ export default function DashboardPage() {
         {/* ═══════════════════════════════════════════════════ */}
         {/* THREE-LAYER CONTENT */}
         {/* ═══════════════════════════════════════════════════ */}
-        {activeTab === "Accueil" ? (
+        {(activeTab === "Accueil" || activeTab === "Home") ? (
           /* ══ HOME: 3-COLUMN LAYOUT ══ */
           <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6 max-w-[1400px] mx-auto">
             <div className="flex gap-6 items-start">
@@ -1328,7 +1328,8 @@ export default function DashboardPage() {
   // ═══════════════════════════════════════════════════════════
   function renderOtherTabs() {
     switch (activeTab) {
-      case "Découvrir": {
+      case "Découvrir":
+      case "Discover": {
         const q = discoverSearch.trim().toLowerCase();
         const scoreOf = (m: MemberProfile) => (user ? computeMatchScore(user, m).score : 0);
         const discoverResults = discoverMembers.filter((m) => {
@@ -1401,6 +1402,7 @@ export default function DashboardPage() {
       }
 
       case "Visitors":
+      case "Visiteurs":
         return (
           <div className="space-y-6">
             <TabHeader icon={Eye} title="Visitors" subtitle="Discover who viewed your profile" />
@@ -1443,6 +1445,7 @@ export default function DashboardPage() {
         );
 
       case "Favorites":
+      case "Favoris":
         return (
           <div className="space-y-6">
             <TabHeader icon={Heart} title="My Favorites" subtitle="Profiles your heart has set aside" />
@@ -1472,6 +1475,7 @@ export default function DashboardPage() {
         );
 
       case "Requests":
+      case "Demandes":
         return (
           <div className="space-y-6">
             <TabHeader icon={Star} title="Alliance Requests" subtitle="These people wish to walk with you" />
@@ -1923,6 +1927,7 @@ export default function DashboardPage() {
         );
 
       case "Profile":
+      case "Profil":
         return (
           <div className="space-y-6">
             <TabHeader icon={Settings} title="My Profile" subtitle="Manage your presence in the sanctuary" />
