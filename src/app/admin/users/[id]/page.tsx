@@ -429,8 +429,13 @@ export default function AdminUserDetailPage() {
                   {user.verification_status === "under_review" && (
                     <span className="text-amber-600 font-medium">🔍 En cours de révision</span>
                   )}
-                  {user.verification_status === "verified" && (
+                  {user.verification_status === "verified" && isProfileFullyComplete(user) && (
                     <span className="text-emerald-600 font-medium">✅ Profil Vérifié</span>
+                  )}
+                  {user.verification_status === "verified" && !isProfileFullyComplete(user) && (
+                    <span className="text-amber-600 font-medium" title="Le profil est passé sous 100% de complétion depuis l'attribution du badge.">
+                      ⚠️ Vérifié, mais profil incomplet
+                    </span>
                   )}
                   {user.verification_status === "rejected" && (
                     <span className="text-red-600 font-medium">❌ Non approuvé</span>

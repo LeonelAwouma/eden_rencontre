@@ -401,9 +401,15 @@ export default function AdminUsersPage() {
                         })()}
                       </td>
                       <td className="px-6 py-3.5">
-                        {user.verification_status === "verified" && (
+                        {user.verification_status === "verified" && isProfileFullyComplete(user) && (
                           <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#38C172]/10 text-[#38C172]">
                             ✅ Vérifié
+                          </span>
+                        )}
+                        {user.verification_status === "verified" && !isProfileFullyComplete(user) && (
+                          <span title="Le profil est passé sous 100% de complétion depuis l'attribution du badge."
+                            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">
+                            ⚠️ Profil incomplet
                           </span>
                         )}
                         {user.verification_status === "under_review" && (
@@ -535,9 +541,15 @@ export default function AdminUsersPage() {
                   </div>
                   {/* Verification badge — mobile */}
                   <div className="mb-3">
-                    {user.verification_status === "verified" && (
+                    {user.verification_status === "verified" && isProfileFullyComplete(user) && (
                       <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#38C172]/10 text-[#38C172]">
                         ✅ Profil Vérifié
+                      </span>
+                    )}
+                    {user.verification_status === "verified" && !isProfileFullyComplete(user) && (
+                      <span title="Le profil est passé sous 100% de complétion depuis l'attribution du badge."
+                        className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">
+                        ⚠️ Profil incomplet
                       </span>
                     )}
                     {user.verification_status === "under_review" && (
