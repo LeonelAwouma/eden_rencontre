@@ -811,9 +811,11 @@ export default function DashboardPage() {
     setLocalQAnswers(prev => ({ ...prev, [fieldId]: value }));
   };
 
-  const handleQMultiToggle = (fieldId: string, option: string) => {
+  const handleQMultiToggle = (fieldId: string, option: string, max?: number) => {
     const current: string[] = localQAnswers[fieldId] || [];
-    handleQFieldChange(fieldId, current.includes(option) ? current.filter(x => x !== option) : [...current, option]);
+    if (current.includes(option)) { handleQFieldChange(fieldId, current.filter(x => x !== option)); return; }
+    if (max && current.length >= max) return;
+    handleQFieldChange(fieldId, [...current, option]);
   };
 
   const handleSaveQuestionnaire = async () => {
@@ -2213,9 +2215,10 @@ export default function DashboardPage() {
                                         <div className="flex flex-wrap gap-2">
                                           {field.options?.map((opt) => {
                                             const selected = Array.isArray(value) && value.includes(opt);
+                                            const maxReached = !!field.max && !selected && (localQAnswers[field.id]?.length || 0) >= field.max;
                                             return (
-                                              <button key={opt} onClick={() => handleQMultiToggle(field.id, opt)}
-                                                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all"
+                                              <button key={opt} disabled={maxReached} onClick={() => handleQMultiToggle(field.id, opt, field.max)}
+                                                className="px-3 py-1.5 rounded-full text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                 style={selected ? { background: "#486B46", color: "#FFFFFF" } : { background: "#F5F3F0", color: "#777777", border: "1px solid #E8E5E0" }}>
                                                 {selected ? "✓ " : ""}{opt}
                                               </button>

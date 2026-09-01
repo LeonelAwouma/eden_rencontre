@@ -5,6 +5,40 @@
 
 import type { Questionnaire } from "./onboarding";
 
+// Structured options for the "non-negotiable" boundary questions — mirrors the French options in
+// onboarding.ts so the matching algorithm (src/lib/matching.ts) can compare answers reliably.
+const SPIRITUAL_VALUES_OPTIONS_EN = [
+  "Daily prayer life",
+  "Regular Bible reading",
+  "Faithful to a local church",
+  "Purity before marriage",
+  "Marital faithfulness",
+  "Same denomination or doctrine",
+  "Involvement in service or ministry",
+  "Tithing and generosity",
+  "Respect for biblical roles in marriage",
+  "Christian upbringing of children",
+];
+const BEHAVIORAL_DEALBREAKERS_OPTIONS_EN = [
+  "Alcohol consumption",
+  "Tobacco or smoking",
+  "Infidelity",
+  "Violence or disrespect",
+  "Repeated lying",
+  "Excessive jealousy or control",
+  "Lack of ambition or direction",
+  "Poor financial management",
+  "No involvement in church",
+  "Lack of communication",
+];
+const PHYSICAL_BOUNDARIES_OPTIONS_EN = [
+  "No physical contact before marriage",
+  "Hand-holding only",
+  "Hugs and affection, no kissing",
+  "Kissing, with restraint",
+  "To define together with my partner",
+];
+
 export const QUESTIONNAIRES_EN: Questionnaire[] = [
   {
     key: "q1",
@@ -178,9 +212,9 @@ export const QUESTIONNAIRES_EN: Questionnaire[] = [
         key: "limitesNonNegociables",
         title: "Non-Negotiable Boundaries",
         fields: [
-          { id: "limitesSpirituelles", label: "3 to 5 spiritual values that are absolutely non-negotiable", type: "textarea" },
-          { id: "limitesComportementales", label: "Behaviors you could not accept", type: "textarea", help: "Ex: alcohol, tobacco, lack of respect…" },
-          { id: "limitesRelationnelles", label: "Your physical boundaries before marriage", type: "textarea" },
+          { id: "limitesSpirituelles", label: "3 to 5 spiritual values that are absolutely non-negotiable", type: "multi", options: SPIRITUAL_VALUES_OPTIONS_EN, help: "Choose 3 to 5 values", max: 5 },
+          { id: "limitesComportementales", label: "Behaviors you could not accept", type: "multi", options: BEHAVIORAL_DEALBREAKERS_OPTIONS_EN, help: "Select everything that applies", max: 6 },
+          { id: "limitesRelationnelles", label: "Your physical boundaries before marriage", type: "single", options: PHYSICAL_BOUNDARIES_OPTIONS_EN },
         ],
       },
       {

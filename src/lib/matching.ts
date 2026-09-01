@@ -1,8 +1,7 @@
 // Algorithme de compatibilité (matching) entre deux membres — 100 % local et déterministe.
 // Combine : valeurs/croyances communes, proximité géographique, situation et complétude du profil,
 // ainsi que les réponses au questionnaire d'onboarding (âge souhaité, langues, convictions, style de
-// vie, niveau d'études, non négociables de fin de questionnaire) quand elles sont disponibles pour
-// les deux personnes.
+// vie, non négociables de fin de questionnaire) quand elles sont disponibles pour les deux personnes.
 
 // Type souple acceptant aussi bien EdenUser (string | undefined) que MemberProfile (string | null).
 type MatchInput = {
@@ -35,6 +34,13 @@ function ageFrom(iso?: string | null): number | null {
 
 const eq = (a?: string | null, b?: string | null) => !!a && !!b && a.trim().toLowerCase() === b.trim().toLowerCase();
 
+// Nombre d'éléments communs entre deux listes à choix multiples (ex: valeurs, langues).
+function overlapCount(a: unknown, b: unknown): number {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length === 0 || b.length === 0) return 0;
+  const setA = new Set(a.map(String));
+  return b.map(String).filter((v) => setA.has(v)).length;
+}
+
 // La tranche d'âge du questionnaire ("trancheAge") est saisie sous la forme { min, max }.
 function hasAgePref(range: any): boolean {
   return !!range && typeof range === "object" && (range.min !== "" && range.min != null || range.max !== "" && range.max != null);
@@ -52,35 +58,6 @@ function inAgeRange(age: number | null, range: any): boolean {
 const QCM_KEYS = ["qcmDecision", "qcmPeche", "qcmMature", "qcmTentations"];
 // Choix simples liés au style de vie / attentes du couple.
 const LIFESTYLE_KEYS = ["rythme", "organisation", "financesCouple", "enfants"];
-
-// Questions "non négociables" de fin de questionnaire (texte libre, cf. src/lib/onboarding.ts,
-// section "limites" + les deux champs qui reprennent explicitement ce terme). Comme ce sont des
-// réponses en texte libre, on ne peut pas détecter un "refus" de façon fiable (négation, ironie…) :
-// on se limite donc à un signal positif — les mots-clés significatifs qui reviennent des DEUX côtés
-// dans ce que chacun décrit comme non négociable. Jamais de pénalité sur la base de ce texte libre.
-const NON_NEGOTIABLE_KEYS = ["criteresSpirituels", "limitesSpirituelles", "limitesComportementales", "limitesRelationnelles", "criteresMatching"];
-
-const STOPWORDS = new Set([
-  "avec", "sans", "pour", "dans", "sur", "sous", "chez", "vers", "entre", "avant", "après", "apres",
-  "être", "etre", "avoir", "fait", "faire", "cela", "ceci", "comme", "tout", "tous", "toute", "toutes",
-  "ainsi", "donc", "mais", "plus", "moins", "très", "tres", "plutot", "plutôt", "beaucoup", "peu",
-  "mon", "mes", "notre", "nos", "votre", "vos", "leur", "leurs", "cette", "ces", "quelque", "quelques",
-  "qui", "que", "quoi", "dont", "leurs", "elle", "elles", "nous", "vous", "ils", "être", "sont", "était",
-  "etait", "seront", "sera", "peut", "peux", "pouvoir", "veux", "veut", "vouloir", "doit", "dois", "devoir",
-  "important", "importante", "importants", "importantes", "surtout", "aussi", "encore", "toujours", "jamais",
-]);
-
-const DIACRITICS_RE = new RegExp("[\\u0300-\\u036f]", "g");
-
-function extractKeywords(text: string): Set<string> {
-  const normalized = text
-    .normalize("NFD")
-    .replace(DIACRITICS_RE, "")
-    .toLowerCase()
-    .replace(/[^a-z0-9\s]/g, " ");
-  const words = normalized.split(/\s+/).filter((w) => w.length >= 4 && !STOPWORDS.has(w));
-  return new Set(words);
-}
 
 export function computeMatchScore(me: MatchInput, other: MatchInput): MatchResult {
   let score = 50;
@@ -131,11 +108,10 @@ export function computeMatchScore(me: MatchInput, other: MatchInput): MatchResul
   }
 
   // 6) Langues parlées en commun
-  const myLangs = new Set((Array.isArray(myQ.langues) ? myQ.langues : []).map(String));
-  const sharedLangs = (Array.isArray(otherQ.langues) ? otherQ.langues : []).map(String).filter((l) => myLangs.has(l));
-  if (sharedLangs.length > 0) {
-    score += Math.min(sharedLangs.length * 4, 8);
-    reasons.push(`${sharedLangs.length} langue${sharedLangs.length > 1 ? "s" : ""} en commun`);
+  const sharedLangs = overlapCount(myQ.langues, otherQ.langues);
+  if (sharedLangs > 0) {
+    score += Math.min(sharedLangs * 4, 8);
+    reasons.push(`${sharedLangs} langue${sharedLangs > 1 ? "s" : ""} en commun`);
   }
 
   // 7) Convictions spirituelles alignées (mêmes réponses aux QCM)
@@ -152,23 +128,37 @@ export function computeMatchScore(me: MatchInput, other: MatchInput): MatchResul
     reasons.push("Style de vie compatible");
   }
 
-  // 9) Même niveau d'études
-  if (myQ.niveauEtudes && otherQ.niveauEtudes && eq(String(myQ.niveauEtudes), String(otherQ.niveauEtudes))) {
-    score += 4;
+  // 9) Non négociables (fin du questionnaire) — désormais des choix structurés (cf. src/lib/onboarding.ts,
+  // section "limites" + "criteresSpirituels"), donc comparables de façon fiable plutôt que par mots-clés.
+
+  // 9a) Valeurs spirituelles non négociables partagées par les deux
+  const sharedSpiritualValues = overlapCount(myQ.limitesSpirituelles, otherQ.limitesSpirituelles);
+  if (sharedSpiritualValues > 0) {
+    score += Math.min(sharedSpiritualValues * 4, 16);
+    reasons.push("Valeurs non négociables communes");
   }
 
-  // 10) Non négociables (fin du questionnaire) — écho de vocabulaire entre ce que chacun décrit
-  // comme non négociable (valeurs spirituelles, comportements inacceptables, limites relationnelles,
-  // critères de matching). Signal uniquement positif : on ne pénalise jamais sur du texte libre.
-  const myNonNeg = extractKeywords(NON_NEGOTIABLE_KEYS.map((k) => (typeof myQ[k] === "string" ? myQ[k] : "")).join(" "));
-  const otherNonNeg = extractKeywords(NON_NEGOTIABLE_KEYS.map((k) => (typeof otherQ[k] === "string" ? otherQ[k] : "")).join(" "));
-  if (myNonNeg.size > 0 && otherNonNeg.size > 0) {
-    let sharedNonNeg = 0;
-    myNonNeg.forEach((w) => { if (otherNonNeg.has(w)) sharedNonNeg++; });
-    if (sharedNonNeg > 0) {
-      score += Math.min(sharedNonNeg * 3, 15);
-      reasons.push("Valeurs non négociables en écho");
-    }
+  // 9b) Ce que je recherche chez un(e) partenaire correspond à ce que l'autre tient pour non négociable
+  // chez lui/elle-même (et réciproquement) — signal de compatibilité, jamais de pénalité en l'absence.
+  const meetsMyCriteria = overlapCount(myQ.criteresSpirituels, otherQ.limitesSpirituelles);
+  const meetsOtherCriteria = overlapCount(otherQ.criteresSpirituels, myQ.limitesSpirituelles);
+  if (meetsMyCriteria > 0 || meetsOtherCriteria > 0) {
+    score += Math.min((meetsMyCriteria + meetsOtherCriteria) * 3, 14);
+    reasons.push("Répond aux critères spirituels recherchés");
+  }
+
+  // 9c) Mêmes limites comportementales (ce que chacun juge inacceptable) — un vrai signal d'alignement
+  // de valeurs, même si l'algorithme ne peut pas vérifier le comportement réel de l'autre.
+  const sharedDealbreakers = overlapCount(myQ.limitesComportementales, otherQ.limitesComportementales);
+  if (sharedDealbreakers > 0) {
+    score += Math.min(sharedDealbreakers * 3, 12);
+    reasons.push("Mêmes comportements jugés inacceptables");
+  }
+
+  // 9d) Mêmes limites relationnelles avant le mariage (choix unique)
+  if (myQ.limitesRelationnelles && otherQ.limitesRelationnelles && eq(String(myQ.limitesRelationnelles), String(otherQ.limitesRelationnelles))) {
+    score += 6;
+    reasons.push("Mêmes limites avant le mariage");
   }
 
   score = Math.max(40, Math.min(99, Math.round(score)));

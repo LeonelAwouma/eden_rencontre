@@ -36,6 +36,41 @@ export interface Questionnaire {
   sections: Section[];
 }
 
+// ── Options structurées pour les questions "non négociables" ──
+// Choix fixes (plutôt que texte libre) pour que l'algorithme de matching (src/lib/matching.ts)
+// puisse comparer ces réponses de façon fiable entre deux profils.
+const SPIRITUAL_VALUES_OPTIONS = [
+  "Vie de prière quotidienne",
+  "Lecture régulière de la Bible",
+  "Fidélité à l'église locale",
+  "Pureté avant le mariage",
+  "Fidélité conjugale",
+  "Même dénomination ou doctrine",
+  "Engagement dans le service ou le ministère",
+  "Dîme et générosité",
+  "Respect des rôles bibliques dans le couple",
+  "Éducation chrétienne des enfants",
+];
+const BEHAVIORAL_DEALBREAKERS_OPTIONS = [
+  "Consommation d'alcool",
+  "Tabac ou cigarette",
+  "Infidélité",
+  "Violence ou manque de respect",
+  "Mensonge répété",
+  "Jalousie excessive ou contrôle",
+  "Manque d'ambition ou de projets",
+  "Mauvaise gestion financière",
+  "Absence d'implication dans l'église",
+  "Manque de communication",
+];
+const PHYSICAL_BOUNDARIES_OPTIONS = [
+  "Aucun contact physique avant le mariage",
+  "Tenue de la main uniquement",
+  "Étreintes et marques d'affection, sans baisers",
+  "Baisers avec retenue",
+  "À définir ensemble avec le/la partenaire",
+];
+
 export const QUESTIONNAIRES: Questionnaire[] = [
   {
     key: "q1",
@@ -213,7 +248,7 @@ export const QUESTIONNAIRES: Questionnaire[] = [
         key: "partenaireIdeal",
         title: "Le partenaire idéal",
         fields: [
-          { id: "criteresSpirituels", label: "Maturité spirituelle recherchée (et non négociables)", type: "textarea" },
+          { id: "criteresSpirituels", label: "Maturité spirituelle non négociable recherchée chez le/la partenaire", type: "multi", options: SPIRITUAL_VALUES_OPTIONS, help: "Sélectionnez ce qui est indispensable pour vous", max: 6 },
           { id: "caractere", label: "Qualités de caractère essentielles", type: "textarea" },
           { id: "aspectsPratiques", label: "Préférences pratiques (études, profession, localisation)", type: "textarea" },
         ],
@@ -252,9 +287,9 @@ export const QUESTIONNAIRES: Questionnaire[] = [
         key: "limites",
         title: "Limites non négociables",
         fields: [
-          { id: "limitesSpirituelles", label: "3 à 5 valeurs spirituelles absolument non négociables", type: "textarea" },
-          { id: "limitesComportementales", label: "Comportements que vous ne pourriez pas accepter", type: "textarea", help: "Ex : alcool, tabac, manque de respect…" },
-          { id: "limitesRelationnelles", label: "Vos limites physiques avant le mariage", type: "textarea" },
+          { id: "limitesSpirituelles", label: "3 à 5 valeurs spirituelles absolument non négociables", type: "multi", options: SPIRITUAL_VALUES_OPTIONS, help: "Choisissez 3 à 5 valeurs", max: 5 },
+          { id: "limitesComportementales", label: "Comportements que vous ne pourriez pas accepter", type: "multi", options: BEHAVIORAL_DEALBREAKERS_OPTIONS, help: "Sélectionnez tout ce qui s'applique", max: 6 },
+          { id: "limitesRelationnelles", label: "Vos limites physiques avant le mariage", type: "single", options: PHYSICAL_BOUNDARIES_OPTIONS },
         ],
       },
       {
