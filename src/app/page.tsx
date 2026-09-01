@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenHero, PromoBanner } from "@/components/garden";
+import { GardenHero, PromoBanner, AnnouncementBar } from "@/components/garden";
 import { FeaturesSection } from "@/components/garden/features-section";
 import { QuoteSection } from "@/components/garden/quote-section";
 import { useI18n } from "@/lib/i18n";
@@ -91,6 +91,7 @@ function StatsBar() {
 export default function Home() {
   return (
     <div className="flex flex-col min-h-screen bg-background text-foreground">
+      <AnnouncementBar />
       <Navigation />
 
       <main>

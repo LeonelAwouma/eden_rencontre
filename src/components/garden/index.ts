@@ -9,5 +9,6 @@ export { GardenSection } from "./garden-section";
 export { FeaturesSection } from "./features-section";
 export { QuoteSection } from "./quote-section";
 export { PromoBanner } from "./promo-banner";
+export { AnnouncementBar } from "./announcement-bar";
 export { GardenFrame, ImposingFloralCorners } from "./garden-frame";
 export { ImposingFloralCorner, ImposingFloralSide, ImposingSingleFlower } from "./imposing-floral-svgs";

@@ -333,15 +333,8 @@ function AppearanceSection({
   settings: SettingsData;
   editedValues: Record<string, unknown>;
 }) {
-  const currentTheme = String(getValue("appearance", "theme") || "light");
   const currentAccent = String(getValue("appearance", "accent_color") || "#486B46");
   const currentBanner = String(getValue("appearance", "banner_text") || "");
-
-  const themes = [
-    { id: "light", label: "Clair", bg: "#FFFFFF", border: "#E5E7EB" },
-    { id: "dark", label: "Sombre", bg: "#1a1a1a", border: "#374151" },
-    { id: "system", label: "Système", bg: "linear-gradient(135deg, #FFFFFF 50%, #1a1a1a 50%)", border: "#E5E7EB" },
-  ];
 
   const accentColors = [
     { color: "#486B46", label: "Vert Eden" },
@@ -355,32 +348,6 @@ function AppearanceSection({
   return (
     <div className="space-y-0">
       <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-4">Apparence</h3>
-
-      {/* Theme Selection */}
-      <div className="py-4 border-b border-[#F3F4F6]">
-        <p className="text-[13px] font-semibold text-[#1a1a1a] mb-1">Thème</p>
-        <p className="text-[11px] text-[#9CA3AF] mb-3">Choisissez le thème de la plateforme</p>
-        <div className="flex gap-3">
-          {themes.map((theme) => (
-            <button
-              key={theme.id}
-              onClick={() => setValue("appearance", "theme", theme.id)}
-              className={cn(
-                "flex flex-col items-center gap-2 px-5 py-4 rounded-xl border-2 transition-all",
-                currentTheme === theme.id
-                  ? "border-[#38C172] bg-[#38C172]/5"
-                  : "border-[#E5E7EB] hover:border-[#38C172]/50"
-              )}
-            >
-              <div
-                className="w-10 h-10 rounded-lg shadow-sm"
-                style={{ background: theme.bg, border: `1px solid ${theme.border}` }}
-              />
-              <span className="text-[12px] font-semibold text-[#374151]">{theme.label}</span>
-            </button>
-          ))}
-        </div>
-      </div>
 
       {/* Accent Color */}
       <div className="py-4 border-b border-[#F3F4F6]">
