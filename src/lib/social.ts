@@ -207,6 +207,7 @@ export async function setFavorite(targetId: string, fav: boolean): Promise<{ ok:
 export interface Visitor {
   member: MemberProfile;
   when: string;
+  viewedAt: string; // ISO — kept alongside the display label `when` so callers can compute real windows (e.g. "this week")
 }
 
 export async function recordProfileView(profileId: string): Promise<void> {
@@ -234,7 +235,7 @@ export async function listVisitors(myId: string): Promise<Visitor[]> {
   (profs || []).forEach((p: any) => (byId[p.id] = mapRow(p)));
   return rows
     .filter((r: any) => byId[r.viewer_id])
-    .map((r: any) => ({ member: byId[r.viewer_id], when: whenLabel(r.viewed_at) }));
+    .map((r: any) => ({ member: byId[r.viewer_id], when: whenLabel(r.viewed_at), viewedAt: r.viewed_at }));
 }
 
 // État de la relation avec un membre précis (utilisé sur sa fiche profil).

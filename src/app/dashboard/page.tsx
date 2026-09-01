@@ -68,6 +68,17 @@ function formatTime(iso: string) {
   catch { return ""; }
 }
 
+// ── Emoji picker: group the flat list by category once, in source order ──
+const EMOJI_CATEGORIES: { category: string; emojis: typeof CHAT_EMOJIS }[] = CHAT_EMOJIS.reduce(
+  (groups: { category: string; emojis: typeof CHAT_EMOJIS }[], emoji) => {
+    const group = groups.find((g) => g.category === emoji.category);
+    if (group) group.emojis.push(emoji);
+    else groups.push({ category: emoji.category, emojis: [emoji] });
+    return groups;
+  },
+  []
+);
+
 // ── Fluent Emoji ──
 function FluentEmoji({ char, url, className }: { char: string; url: string; className?: string }) {
   const [err, setErr] = useState(false);
@@ -248,6 +259,7 @@ export default function DashboardPage() {
   const typingTimeoutRef = useRef<any>(null);
   const lastTypingRef = useRef(0);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const emojiPickerRef = useRef<HTMLDivElement | null>(null);
 
   // Feed
   const [feed, setFeed] = useState<FeedPost[]>([]);
@@ -279,6 +291,7 @@ export default function DashboardPage() {
 
   const meId = user?.id || "";
   const totalUnread = conversations.reduce((s, c) => s + c.unread, 0);
+  const visitsThisWeek = visitors.filter((v) => Date.now() - new Date(v.viewedAt).getTime() < 7 * 24 * 60 * 60 * 1000).length;
   const activeConv = conversations.find((c) => c.id === activeConvId) || null;
   const messageNotifs = conversations.filter((c) => c.unread > 0);
   const displayName = user?.name || "Membre";
@@ -412,6 +425,19 @@ export default function DashboardPage() {
       chatChannelRef.current.send({ type: "broadcast", event: "typing", payload: { from: meId } });
     }
   };
+
+  const insertEmoji = (char: string) => handleChatInput(chatInput + char);
+
+  useEffect(() => {
+    if (!showEmoji) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+        setShowEmoji(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showEmoji]);
 
   const clearPendingImage = () => {
     if (pendingPreview) URL.revokeObjectURL(pendingPreview);
@@ -1131,29 +1157,23 @@ export default function DashboardPage() {
                 </div>
                 )}
 
-                {/* Card 2: Profile Visibility */}
+                {/* Card 2: Profile Visibility — real visitor count, not a fabricated percentage */}
                 <div className="rounded-2xl p-5"
                   style={{ background: "linear-gradient(135deg, #FFFFFF 0%, #EEF5EC 100%)", border: "1px solid #C6D4C0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
                   <p className="font-headline font-bold text-sm mb-3" style={{ color: "#2F2F2F" }}>{t("dashboard.profileVisibility")}</p>
                   <div className="flex items-center gap-4">
-                    <div className="relative w-16 h-16">
-                      <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
-                        <circle cx="50" cy="50" r="42" fill="none" stroke="#E8E5E0" strokeWidth="8" />
-                        <circle cx="50" cy="50" r="42" fill="none" stroke="#486B46" strokeWidth="8"
-                          strokeLinecap="round" strokeDasharray={`${72 * 2.64} ${100 * 2.64}`}
-                          style={{ animation: "circular-progress 1s ease-out" }} />
-                      </svg>
-                      <span className="absolute inset-0 flex items-center justify-center font-black text-lg" style={{ color: "#486B46" }}>72%</span>
+                    <div className="w-16 h-16 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: "#FFFFFF", border: "1px solid #C6D4C0" }}>
+                      <Eye className="w-7 h-7" style={{ color: "#486B46" }} />
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium" style={{ color: "#777777" }}>{t("dashboard.thisWeek")}</p>
-                      <p className="text-sm font-bold" style={{ color: "#2F2F2F" }}>{t("dashboard.visibilityIncrease")}</p>
+                      <p className="font-black text-2xl leading-none" style={{ color: "#486B46" }}>{visitsThisWeek}</p>
+                      <p className="text-xs font-medium mt-1" style={{ color: "#777777" }}>{t("dashboard.visitsThisWeek")}</p>
                     </div>
                   </div>
-                  <Button onClick={() => setActiveTab("Profil")} variant="outline"
+                  <Button onClick={() => setActiveTab("Visitors")} variant="outline"
                     className="w-full mt-3 h-9 rounded-xl font-bold text-xs"
                     style={{ borderColor: "#C6D4C0", color: "#486B46", background: "transparent" }}>
-                    {t("dashboard.improveVisibility")}
+                    {t("dashboard.seeMyVisitors")}
                   </Button>
                 </div>
 
@@ -1700,7 +1720,36 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   {/* Message input */}
-                  <div style={{ borderTop: "1px solid #E8E5E0" }}>
+                  <div className="relative" style={{ borderTop: "1px solid #E8E5E0" }}>
+                    <AnimatePresence>
+                      {showEmoji && (
+                        <motion.div
+                          ref={emojiPickerRef}
+                          initial={{ opacity: 0, y: 8, scale: 0.97 }}
+                          animate={{ opacity: 1, y: 0, scale: 1 }}
+                          exit={{ opacity: 0, y: 8, scale: 0.97 }}
+                          transition={{ duration: 0.15 }}
+                          className="absolute bottom-full left-3 mb-2 w-[300px] sm:w-[340px] max-h-[320px] overflow-y-auto custom-scrollbar rounded-2xl z-20"
+                          style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 8px 32px rgba(72,107,70,0.12)" }}
+                        >
+                          {EMOJI_CATEGORIES.map((group) => (
+                            <div key={group.category} className="px-3 pt-3">
+                              <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "#9CA3AF" }}>
+                                {group.category}
+                              </p>
+                              <div className="grid grid-cols-7 gap-0.5 pb-1">
+                                {group.emojis.map((e) => (
+                                  <button key={e.char} type="button" onClick={() => insertEmoji(e.char)}
+                                    className="w-9 h-9 rounded-lg flex items-center justify-center text-xl transition-colors hover:bg-[#F0FDF4]">
+                                    <FluentEmoji char={e.char} url={e.url} className="w-6 h-6" />
+                                  </button>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
                     {pendingPreview && (
                       <div className="px-3 pt-3 flex items-center gap-3">
                         <div className="relative shrink-0">
@@ -1719,6 +1768,11 @@ export default function DashboardPage() {
                         className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors"
                         style={{ color: "#777777" }}>
                         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
+                      </button>
+                      <button type="button" onClick={() => setShowEmoji((v) => !v)}
+                        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors"
+                        style={showEmoji ? { color: "#486B46", background: "#EEF5EC" } : { color: "#777777" }}>
+                        <Smile className="w-4 h-4" />
                       </button>
                       <Input value={chatInput} onChange={(e) => handleChatInput(e.target.value)}
                         placeholder={pendingImage ? t("dashboard.captionPlaceholder") : t("dashboard.typeMessagePlaceholder")}

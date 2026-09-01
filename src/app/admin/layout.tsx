@@ -3,6 +3,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/admin/sidebar";
+import { cn } from "@/lib/utils";
 
 interface AdminInfo {
   id: string;
@@ -121,10 +122,10 @@ export default function AdminLayout({
         />
 
         <div
-          className="flex-1 flex flex-col min-h-screen transition-all duration-300 ease-in-out"
-          style={{
-            marginLeft: 0,
-          }}
+          className={cn(
+            "flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ease-in-out",
+            sidebarCollapsed ? "lg:ml-[68px]" : "lg:ml-[256px]"
+          )}
         >
           <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-[1600px] w-full mx-auto">
             {children}

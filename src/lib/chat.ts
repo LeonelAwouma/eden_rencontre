@@ -68,44 +68,106 @@ function fluentUrl(name: string, tone = false) {
 export interface PickerEmoji {
   char: string;
   url: string;
+  category: string;
 }
 
-// [char, nom CLDR (= dossier Fluent), a des teintes de peau ?]
-const EMOJI_DEFS: [string, string, boolean?][] = [
-  ["😀", "Grinning face"],
-  ["😁", "Beaming face with smiling eyes"],
-  ["😊", "Smiling face with smiling eyes"],
-  ["🥰", "Smiling face with hearts"],
-  ["😍", "Smiling face with heart-eyes"],
-  ["😘", "Face blowing a kiss"],
-  ["😉", "Winking face"],
-  ["🙂", "Slightly smiling face"],
-  ["😇", "Smiling face with halo"],
-  ["🙏", "Folded hands", true],
-  ["❤️", "Red heart"],
-  ["💕", "Two hearts"],
-  ["💖", "Sparkling heart"],
-  ["💍", "Ring"],
-  ["💐", "Bouquet"],
-  ["🌹", "Rose"],
-  ["✨", "Sparkles"],
-  ["🕊️", "Dove"],
-  ["⛪", "Church"],
-  ["😢", "Crying face"],
-  ["😅", "Grinning face with sweat"],
-  ["😎", "Smiling face with sunglasses"],
-  ["🤔", "Thinking face"],
-  ["👍", "Thumbs up", true],
-  ["👏", "Clapping hands", true],
-  ["🙌", "Raising hands", true],
-  ["🔥", "Fire"],
-  ["🎉", "Party popper"],
-  ["☀️", "Sun"],
+// [char, nom CLDR (= dossier Fluent), catégorie, a des teintes de peau ?]
+const EMOJI_DEFS: [string, string, string, boolean?][] = [
+  // ── Smileys ──
+  ["😀", "Grinning face", "Smileys"],
+  ["😁", "Beaming face with smiling eyes", "Smileys"],
+  ["😂", "Face with tears of joy", "Smileys"],
+  ["🤣", "Rolling on the floor laughing", "Smileys"],
+  ["😊", "Smiling face with smiling eyes", "Smileys"],
+  ["😇", "Smiling face with halo", "Smileys"],
+  ["🙂", "Slightly smiling face", "Smileys"],
+  ["😉", "Winking face", "Smileys"],
+  ["😍", "Smiling face with heart-eyes", "Smileys"],
+  ["🥰", "Smiling face with hearts", "Smileys"],
+  ["😘", "Face blowing a kiss", "Smileys"],
+  ["😋", "Face savoring food", "Smileys"],
+  ["😎", "Smiling face with sunglasses", "Smileys"],
+  ["🤔", "Thinking face", "Smileys"],
+  ["😅", "Grinning face with sweat", "Smileys"],
+  ["😆", "Grinning squinting face", "Smileys"],
+  ["😜", "Winking face with tongue", "Smileys"],
+  ["😴", "Sleeping face", "Smileys"],
+  ["😢", "Crying face", "Smileys"],
+  ["😭", "Loudly crying face", "Smileys"],
+  ["🥺", "Pleading face", "Smileys"],
+  ["😳", "Flushed face", "Smileys"],
+  ["😬", "Grimacing face", "Smileys"],
+  ["🙄", "Face with rolling eyes", "Smileys"],
+
+  // ── Gestes ──
+  ["👍", "Thumbs up", "Gestes", true],
+  ["👎", "Thumbs down", "Gestes", true],
+  ["👏", "Clapping hands", "Gestes", true],
+  ["🙌", "Raising hands", "Gestes", true],
+  ["🙏", "Folded hands", "Gestes", true],
+  ["👋", "Waving hand", "Gestes", true],
+  ["✌️", "Victory hand", "Gestes", true],
+  ["🤝", "Handshake", "Gestes", true],
+  ["💪", "Flexed biceps", "Gestes", true],
+  ["🤲", "Palms up together", "Gestes", true],
+
+  // ── Amour ──
+  ["❤️", "Red heart", "Amour"],
+  ["🧡", "Orange heart", "Amour"],
+  ["💛", "Yellow heart", "Amour"],
+  ["💚", "Green heart", "Amour"],
+  ["💙", "Blue heart", "Amour"],
+  ["💜", "Purple heart", "Amour"],
+  ["🤎", "Brown heart", "Amour"],
+  ["🖤", "Black heart", "Amour"],
+  ["🤍", "White heart", "Amour"],
+  ["💕", "Two hearts", "Amour"],
+  ["💖", "Sparkling heart", "Amour"],
+  ["💗", "Growing heart", "Amour"],
+  ["💓", "Beating heart", "Amour"],
+  ["💞", "Revolving hearts", "Amour"],
+  ["💘", "Heart with arrow", "Amour"],
+  ["💝", "Heart with ribbon", "Amour"],
+  ["💍", "Ring", "Amour"],
+
+  // ── Foi ──
+  ["⛪", "Church", "Foi"],
+  ["✝️", "Latin cross", "Foi"],
+  ["📖", "Open book", "Foi"],
+  ["🕊️", "Dove", "Foi"],
+  ["🕯️", "Candle", "Foi"],
+  ["✨", "Sparkles", "Foi"],
+  ["🌟", "Glowing star", "Foi"],
+
+  // ── Nature ──
+  ["🌹", "Rose", "Nature"],
+  ["🌸", "Cherry blossom", "Nature"],
+  ["💐", "Bouquet", "Nature"],
+  ["🌻", "Sunflower", "Nature"],
+  ["🌷", "Tulip", "Nature"],
+  ["☀️", "Sun", "Nature"],
+  ["🌙", "Crescent moon", "Nature"],
+  ["⭐", "Star", "Nature"],
+  ["🌈", "Rainbow", "Nature"],
+  ["🍀", "Four leaf clover", "Nature"],
+
+  // ── Célébration ──
+  ["🎉", "Party popper", "Célébration"],
+  ["🎊", "Confetti ball", "Célébration"],
+  ["🥳", "Partying face", "Célébration"],
+  ["🎂", "Birthday cake", "Célébration"],
+  ["☕", "Hot beverage", "Célébration"],
+  ["🍷", "Wine glass", "Célébration"],
+  ["🍰", "Shortcake", "Célébration"],
+  ["🔥", "Fire", "Célébration"],
+  ["💯", "Hundred points", "Célébration"],
+  ["✅", "Check mark button", "Célébration"],
 ];
 
-export const CHAT_EMOJIS: PickerEmoji[] = EMOJI_DEFS.map(([char, name, tone]) => ({
+export const CHAT_EMOJIS: PickerEmoji[] = EMOJI_DEFS.map(([char, name, category, tone]) => ({
   char,
   url: fluentUrl(name, tone),
+  category,
 }));
 
 function fmt(iso: string) {
