@@ -52,7 +52,6 @@ const sidebarNav: { name: Tab; icon: any; badge?: number; dot?: boolean; highlig
   { name: "Requests", icon: Star },
   { name: "Visitors", icon: Eye },
   { name: "Favorites", icon: Heart },
-  { name: "Premium", icon: Crown, highlight: true },
   { name: "Profile", icon: UserCircle },
 ];
 

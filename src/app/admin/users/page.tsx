@@ -19,6 +19,8 @@ import {
   Crown,
   CreditCard,
   MessageCircle,
+  X,
+  User,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 import { DashboardHeader } from "@/components/admin/dashboard-header";
@@ -92,6 +94,7 @@ export default function AdminUsersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [viewingUser, setViewingUser] = useState<UserProfile | null>(null);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -346,17 +349,17 @@ export default function AdminUsersPage() {
                       className="hover:bg-[#FAFAFA] transition-colors"
                     >
                       <td className="px-6 py-3.5">
-                        <div className="flex items-center gap-3">
+                        <Link href={`/admin/users/${user.id}`} className="flex items-center gap-3 group/name">
                           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#38C172]/20 to-[#86EFAC]/30 flex items-center justify-center text-[13px] font-bold text-[#38C172] shrink-0">
                             {(user.name || "U").charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="text-[13px] font-semibold text-[#1a1a1a]">
+                            <p className="text-[13px] font-semibold text-[#1a1a1a] group-hover/name:text-[#38C172] transition-colors">
                               {user.name || "Sans nom"}
                             </p>
                             <p className="text-[11px] text-[#9CA3AF] font-medium">{user.email}</p>
                           </div>
-                        </div>
+                        </Link>
                       </td>
                       <td className="px-6 py-3.5">
                         <p className="text-[13px] text-[#6B7280] font-medium">
@@ -433,13 +436,13 @@ export default function AdminUsersPage() {
                       </td>
                        <td className="px-6 py-3.5">
                         <div className="flex items-center justify-end gap-2">
-                          <Link
-                            href={`/admin/users/${user.id}`}
+                          <button
+                            onClick={() => setViewingUser(user)}
                             className="w-9 h-9 rounded-full flex items-center justify-center bg-[#F9FAFB] text-[#9CA3AF] shadow-sm border border-[#E5E7EB] hover:bg-[#E8F5E9] hover:text-[#486B46] hover:border-[#C6D4C0] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#486B46] transition-all duration-200"
-                            title="Voir le profil"
+                            title="Voir la photo"
                           >
                             <Eye className="w-4 h-4" />
-                          </Link>
+                          </button>
                           <Link
                             href={`/admin/chat-monitoring?user=${user.id}`}
                             className="w-9 h-9 rounded-full flex items-center justify-center bg-[#486B46]/10 text-[#486B46] shadow-sm border border-[#486B46]/20 hover:bg-[#486B46]/20 hover:text-[#3A5A3A] hover:border-[#486B46]/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#486B46] transition-all duration-200"
@@ -564,6 +567,13 @@ export default function AdminUsersPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setViewingUser(user)}
+                      className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-[#9CA3AF] bg-[#F9FAFB] border border-[#E5E7EB] hover:bg-[#E8F5E9] hover:text-[#486B46] transition-colors"
+                      title="Voir la photo"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
                     <Link
                       href={`/admin/users/${user.id}`}
                       className="flex-1 text-center text-[12px] font-semibold text-[#38C172] bg-[#38C172]/5 py-2.5 rounded-xl hover:bg-[#38C172]/10 transition-colors"
@@ -634,6 +644,55 @@ export default function AdminUsersPage() {
           </>
         )}
       </motion.div>
+
+      {/* Photo lightbox */}
+      {viewingUser && (
+        <div
+          className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+          onClick={() => setViewingUser(null)}
+        >
+          <button
+            onClick={() => setViewingUser(null)}
+            className="absolute top-5 right-5 w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20 transition-all"
+            title="Fermer"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <div
+            className="bg-white rounded-2xl overflow-hidden max-w-md w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="relative w-full aspect-square bg-[#F9FAFB] flex items-center justify-center">
+              {viewingUser.avatar_url ? (
+                <img
+                  src={viewingUser.avatar_url}
+                  alt={viewingUser.name || "Photo de profil"}
+                  className="w-full h-full object-contain"
+                />
+              ) : (
+                <div className="flex flex-col items-center gap-2 text-[#D1D5DB]">
+                  <User className="w-16 h-16" />
+                  <p className="text-[12px] font-medium">Aucune photo</p>
+                </div>
+              )}
+            </div>
+            <div className="p-4 flex items-center justify-between gap-3">
+              <div className="min-w-0">
+                <p className="text-[14px] font-semibold text-[#1a1a1a] truncate">
+                  {viewingUser.name || "Sans nom"}
+                </p>
+                <p className="text-[12px] text-[#9CA3AF] truncate">{viewingUser.email}</p>
+              </div>
+              <Link
+                href={`/admin/users/${viewingUser.id}`}
+                className="shrink-0 text-[12px] font-semibold text-[#38C172] bg-[#38C172]/10 px-3.5 py-2 rounded-xl hover:bg-[#38C172]/20 transition-colors"
+              >
+                Voir le profil
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

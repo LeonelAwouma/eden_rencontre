@@ -162,12 +162,70 @@ function EmptyState({ icon: Icon, title, text, cta, onClick }: { icon: any; titl
 }
 
 // ── Member Card ──
-function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match }: {
+function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match, framed, onViewPhoto }: {
   m: MemberProfile; isFavorite: boolean; onToggleFav: () => void; onOpen: () => void;
-  action?: React.ReactNode; match?: number | null;
+  action?: React.ReactNode; match?: number | null; framed?: boolean; onViewPhoto?: () => void;
 }) {
   const { t } = useI18n();
   const loc = [m.city, m.country].filter(Boolean).join(", ");
+
+  if (framed) {
+    return (
+      <div className="group overflow-hidden rounded-2xl flex flex-col transition-all duration-200"
+        style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}
+        onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 24px rgba(72,107,70,0.12)"; e.currentTarget.style.borderColor = "#C6D4C0"; }}
+        onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)"; e.currentTarget.style.borderColor = "#E8E5E0"; }}>
+        <div className="p-2.5 sm:p-3 pb-0">
+          <div className="relative aspect-square rounded-xl overflow-hidden" style={{ background: "#EEF5EC", border: "1px solid #E8E5E0" }}>
+            {m.avatar_url ? (
+              <Image src={m.avatar_url} alt={m.name} fill className="object-contain" unoptimized />
+            ) : (
+              <span className="absolute inset-0 flex items-center justify-center font-headline text-5xl font-bold" style={{ color: "#6E8B63" }}>
+                {m.name?.[0]?.toUpperCase() || "?"}
+              </span>
+            )}
+            {typeof match === "number" && (
+              <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1"
+                style={{ background: "#486B46", color: "#FFFFFF" }}>
+                <Heart className="w-3 h-3" style={{ fill: "#FFFFFF" }} /> {match}%
+              </div>
+            )}
+            {m.avatar_url && (
+              <button onClick={onViewPhoto} aria-label={t("memberCard.viewPhoto")} title={t("memberCard.viewPhoto")}
+                className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl bg-black/40 text-white hover:bg-black/60 transition-all">
+                <Eye className="w-4 h-4" />
+              </button>
+            )}
+            <button onClick={onToggleFav} aria-label={isFavorite ? t("memberCard.removeFavorite") : t("memberCard.addFavorite")}
+              className={cn("absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl transition-all",
+                isFavorite ? "text-white" : "bg-black/30 text-white hover:text-white")}
+              style={isFavorite ? { background: "#C6A15B" } : {}}>
+              <Star className={cn("w-4 h-4", isFavorite && "fill-white")} />
+            </button>
+          </div>
+        </div>
+        <button onClick={onOpen} className="p-2.5 sm:p-3 flex flex-col gap-2 text-left">
+          <div>
+            <h4 className="font-headline text-sm sm:text-base font-bold truncate inline-flex items-center gap-1" style={{ color: "#2F2F2F" }}>
+              {m.name}
+              {m.verification_status === "verified" && isProfileFullyComplete(m) && <VerifiedBadge size={14} />}
+            </h4>
+            {loc && <div className="flex items-center gap-1 text-[9px] sm:text-xs font-bold tracking-wide uppercase truncate" style={{ color: "#777777" }}>
+              <MapPin className="w-3 h-3 shrink-0" /> {loc}
+            </div>}
+          </div>
+          {m.profession && (
+            <div className="flex items-center gap-2 text-xs font-medium" style={{ color: "#777777" }}>
+              <Briefcase className="w-3.5 h-3.5 shrink-0" style={{ color: "#6E8B63" }} />
+              <span className="truncate">{m.profession}</span>
+            </div>
+          )}
+        </button>
+        {action && <div className="px-2.5 sm:px-3 pb-2.5 sm:pb-3">{action}</div>}
+      </div>
+    );
+  }
+
   return (
     <div className="group overflow-hidden rounded-2xl flex flex-col transition-all duration-200 cursor-pointer"
       style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}
@@ -293,6 +351,7 @@ export default function DashboardPage() {
   const [favoriteMembers, setFavoriteMembers] = useState<MemberProfile[]>([]);
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [profileCompletionPct, setProfileCompletionPct] = useState<number | null>(null);
+  const [viewingPhoto, setViewingPhoto] = useState<{ url: string; name: string } | null>(null);
 
   const meId = user?.id || "";
   const totalUnread = conversations.reduce((s, c) => s + c.unread, 0);
@@ -1419,6 +1478,21 @@ export default function DashboardPage() {
           <span className="text-[9px] font-bold uppercase tracking-wider">{t("dashboard.menu")}</span>
         </button>
       </nav>
+
+      {/* ══ PHOTO LIGHTBOX ══ */}
+      {viewingPhoto && (
+        <div className="fixed inset-0 z-[80] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 sm:p-10"
+          onClick={() => setViewingPhoto(null)}>
+          <button onClick={() => setViewingPhoto(null)} aria-label={t("memberCard.closePhoto")}
+            className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20 transition-all">
+            <X className="w-5 h-5" />
+          </button>
+          <div className="relative w-full h-full max-w-xl max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
+            <Image src={viewingPhoto.url} alt={viewingPhoto.name} fill className="object-contain" unoptimized sizes="100vw" />
+          </div>
+          <p className="absolute bottom-6 inset-x-0 text-center font-headline text-lg font-bold text-white">{viewingPhoto.name}</p>
+        </div>
+      )}
     </div>
   );
 
@@ -1481,6 +1555,8 @@ export default function DashboardPage() {
                   const status = relations[m.id]?.status ?? "none";
                   return (
                     <MemberCard key={m.id} m={m} match={scoreOf(m)} isFavorite={favoriteIds.has(m.id)}
+                      framed
+                      onViewPhoto={() => m.avatar_url && setViewingPhoto({ url: m.avatar_url, name: m.name })}
                       onToggleFav={() => handleToggleFavorite(m)}
                       onOpen={() => router.push(`/dashboard/profile/${m.id}`)}
                       action={

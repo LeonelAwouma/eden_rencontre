@@ -966,7 +966,9 @@
   },
   "memberCard": {
     "removeFavorite": "Retirer des favoris",
-    "addFavorite": "Ajouter aux favoris"
+    "addFavorite": "Ajouter aux favoris",
+    "viewPhoto": "Voir la photo",
+    "closePhoto": "Fermer la photo"
   },
   "dashboard": {
     "boost": "Boost",
