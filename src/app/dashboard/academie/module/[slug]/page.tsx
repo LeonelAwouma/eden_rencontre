@@ -27,7 +27,8 @@ import {
   HeartHandshake,
 } from "lucide-react";
 import { Monogram, Flourish, VitrailPattern } from "@/components/ornaments";
-import { ACADEMY_MODULES, getModule } from "@/lib/academy";
+import { getAcademyModules, getModule } from "@/lib/academy";
+import { useI18n } from "@/lib/i18n";
 
 const ICONS: Record<string, any> = {
   church: Church,
@@ -47,12 +48,14 @@ const ICONS: Record<string, any> = {
 export default function AcademyModulePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = use(params);
   const router = useRouter();
-  const mod = getModule(slug);
+  const { t, locale } = useI18n();
+  const mod = getModule(locale, slug);
   if (!mod) notFound();
 
-  const idx = ACADEMY_MODULES.findIndex((m) => m.slug === slug);
-  const prev = idx > 0 ? ACADEMY_MODULES[idx - 1] : null;
-  const next = idx < ACADEMY_MODULES.length - 1 ? ACADEMY_MODULES[idx + 1] : null;
+  const modules = getAcademyModules(locale);
+  const idx = modules.findIndex((m) => m.slug === slug);
+  const prev = idx > 0 ? modules[idx - 1] : null;
+  const next = idx < modules.length - 1 ? modules[idx + 1] : null;
   const Icon = ICONS[mod.icon] || BookOpen;
 
   return (
@@ -64,7 +67,7 @@ export default function AcademyModulePage({ params }: { params: Promise<{ slug: 
           <span className="font-headline text-xl font-bold text-foreground">Eden <span className="text-primary italic font-normal">Académie</span></span>
         </Link>
         <Button variant="ghost" onClick={() => router.push("/dashboard/academie")} className="text-foreground/60 gap-2 hover:bg-foreground/5 hover:text-secondary">
-          <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">L'Académie</span>
+          <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">{t("academyModule.academyLink")}</span>
         </Button>
       </header>
 
@@ -75,7 +78,7 @@ export default function AcademyModulePage({ params }: { params: Promise<{ slug: 
             <Icon className="w-8 h-8 text-secondary" />
           </div>
           <Badge className="bg-secondary/10 text-secondary border border-secondary/25 font-bold px-5 py-1.5 uppercase tracking-[0.25em] text-[10px] rounded-full">
-            Module {String(idx + 1).padStart(2, "0")} / {ACADEMY_MODULES.length}
+            {t("academyModule.moduleLabel")} {String(idx + 1).padStart(2, "0")} / {modules.length}
           </Badge>
           <h1 className="font-headline text-3xl sm:text-5xl font-bold text-foreground leading-tight">{mod.title}</h1>
           <p className="text-base sm:text-lg text-muted-foreground max-w-2xl">{mod.subtitle}</p>
@@ -116,7 +119,7 @@ export default function AcademyModulePage({ params }: { params: Promise<{ slug: 
 
         {/* Prière */}
         <Card className="border border-secondary/15 bg-card rounded-2xl p-8 text-center">
-          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary mb-4">Prière du module</p>
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary mb-4">{t("academyModule.prayerLabel")}</p>
           <p className="font-headline text-xl italic leading-relaxed text-foreground/85">&ldquo;{mod.prayer}&rdquo;</p>
         </Card>
 
@@ -126,7 +129,7 @@ export default function AcademyModulePage({ params }: { params: Promise<{ slug: 
             <button onClick={() => router.push(`/dashboard/academie/module/${prev.slug}`)} className="group flex items-center gap-2 text-left text-foreground/60 hover:text-secondary transition-colors min-w-0">
               <ChevronLeft className="w-5 h-5 shrink-0" />
               <span className="min-w-0">
-                <span className="block text-[10px] uppercase tracking-widest text-foreground/30">Précédent</span>
+                <span className="block text-[10px] uppercase tracking-widest text-foreground/30">{t("academyModule.previous")}</span>
                 <span className="block text-sm font-bold truncate">{prev.title}</span>
               </span>
             </button>
@@ -134,21 +137,21 @@ export default function AcademyModulePage({ params }: { params: Promise<{ slug: 
           {next ? (
             <button onClick={() => router.push(`/dashboard/academie/module/${next.slug}`)} className="group flex items-center gap-2 text-right text-foreground/60 hover:text-secondary transition-colors min-w-0 ml-auto">
               <span className="min-w-0">
-                <span className="block text-[10px] uppercase tracking-widest text-foreground/30">Suivant</span>
+                <span className="block text-[10px] uppercase tracking-widest text-foreground/30">{t("academyModule.next")}</span>
                 <span className="block text-sm font-bold truncate">{next.title}</span>
               </span>
               <ArrowRight className="w-5 h-5 shrink-0" />
             </button>
           ) : (
             <Button onClick={() => router.push("/dashboard/academie")} className="ml-auto bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-11 px-6 rounded-xl gap-2">
-              Terminer le parcours
+              {t("academyModule.finishJourney")}
             </Button>
           )}
         </div>
 
         <div className="flex flex-col items-center text-center pt-2">
           <Flourish className="w-36 h-3 text-secondary/40 mb-3" />
-          <p className="text-foreground/30 text-xs font-headline italic">« Si l'Éternel ne bâtit la maison, ceux qui la bâtissent travaillent en vain. » — Psaume 127:1</p>
+          <p className="text-foreground/30 text-xs font-headline italic">{t("academyModule.footerVerse")}</p>
         </div>
       </main>
     </div>

@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 import { ImposingFloralCorners } from "@/components/garden";
+import { useI18n } from "@/lib/i18n";
 
 // ── OTP Duration ────────────────────────────────────────────
 const OTP_DURATION = 10 * 60; // 10 minutes in seconds
@@ -24,6 +25,7 @@ const OTP_DURATION = 10 * 60; // 10 minutes in seconds
 function VerifyOTPContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
   const emailFromQuery = searchParams.get("email") || "";
 
   const [email] = useState(emailFromQuery);
@@ -160,12 +162,12 @@ function VerifyOTPContent() {
 
     const otpString = otp.join("");
     if (otpString.length !== 6) {
-      setError("Veuillez entrer le code complet à 6 chiffres.");
+      setError(t("verifyOtp.incompleteCode"));
       return;
     }
 
     if (!email) {
-      setError("Adresse email manquante.");
+      setError(t("verifyOtp.missingEmail"));
       return;
     }
 
@@ -181,7 +183,7 @@ function VerifyOTPContent() {
       const data = await res.json();
 
       if (!res.ok || !data.verified) {
-        setError(data.message || "Échec de la vérification.");
+        setError(data.message || t("verifyOtp.verificationFailed"));
         setIsLoading(false);
         // Clear OTP on error for security
         setOtp(["", "", "", "", "", ""]);
@@ -193,7 +195,7 @@ function VerifyOTPContent() {
       const token = encodeURIComponent(data.temporaryResetToken);
       router.push(`/reset-password?token=${token}`);
     } catch {
-      setError("Erreur de connexion au serveur.");
+      setError(t("verifyOtp.serverError"));
       setIsLoading(false);
     }
   };
@@ -215,7 +217,7 @@ function VerifyOTPContent() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data.message || "Impossible d'envoyer un nouveau code.");
+        setError(data.message || t("verifyOtp.resendFailed"));
         setIsResending(false);
         return;
       }
@@ -227,7 +229,7 @@ function VerifyOTPContent() {
       setOtp(["", "", "", "", "", ""]);
       inputRefs.current[0]?.focus();
     } catch {
-      setError("Erreur de connexion au serveur.");
+      setError(t("verifyOtp.serverError"));
     } finally {
       setIsResending(false);
     }
@@ -238,9 +240,9 @@ function VerifyOTPContent() {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center space-y-4">
-          <p className="text-foreground/50">Adresse email manquante.</p>
+          <p className="text-foreground/50">{t("verifyOtp.missingEmail")}</p>
           <Link href="/forgot-password">
-            <Button variant="outline">Retour</Button>
+            <Button variant="outline">{t("verifyOtp.back")}</Button>
           </Link>
         </div>
       </div>
@@ -273,22 +275,22 @@ function VerifyOTPContent() {
           <div className="space-y-8">
             <div className="space-y-4">
               <h2 className="font-headline text-4xl xl:text-5xl font-bold text-foreground leading-tight">
-                Vérification <br />
-                <span className="text-primary italic font-normal"> sécurisée.</span>
+                {t("verifyOtp.leftTitle")} <br />
+                <span className="text-primary italic font-normal"> {t("verifyOtp.leftTitleHighlight")}</span>
               </h2>
               <p className="text-foreground/60 text-lg max-w-md leading-relaxed">
-                Entrez le code à 6 chiffres envoyé à votre adresse email.
+                {t("verifyOtp.leftSubtitle")}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-6">
               <div className="flex items-center gap-2 text-foreground/40">
                 <ShieldCheck className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest">Code unique</span>
+                <span className="text-xs font-bold uppercase tracking-widest">{t("verifyOtp.uniqueCode")}</span>
               </div>
               <div className="flex items-center gap-2 text-foreground/40">
                 <Clock className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest">Expire dans 10 min</span>
+                <span className="text-xs font-bold uppercase tracking-widest">{t("verifyOtp.expiresIn10")}</span>
               </div>
             </div>
           </div>
@@ -316,20 +318,20 @@ function VerifyOTPContent() {
             className="inline-flex items-center gap-2 text-foreground/50 hover:text-primary text-sm font-medium transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour
+            {t("verifyOtp.back")}
           </Link>
 
           {/* Header */}
           <div className="space-y-3">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-2">
               <ShieldCheck className="w-3.5 h-3.5" />
-              Vérification
+              {t("verifyOtp.badge")}
             </div>
             <h1 className="font-headline text-3xl sm:text-5xl font-bold text-foreground">
-              Code de vérification
+              {t("verifyOtp.title")}
             </h1>
             <p className="text-foreground/50 text-base">
-              Un code à 6 chiffres a été envoyé à{" "}
+              {t("verifyOtp.subtitleSentTo")}{" "}
               <strong className="text-foreground/70">{email}</strong>
             </p>
           </div>
@@ -386,7 +388,7 @@ function VerifyOTPContent() {
               <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/20 rounded-xl p-4 animate-in fade-in duration-300">
                 <AlertCircle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
                 <p className="text-sm text-destructive/90 leading-relaxed">
-                  Le code a expiré. Veuillez demander un nouveau code.
+                  {t("verifyOtp.codeExpired")}
                 </p>
               </div>
             )}
@@ -399,11 +401,11 @@ function VerifyOTPContent() {
               {isLoading ? (
                 <span className="flex items-center gap-3">
                   <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                  Vérification...
+                  {t("verifyOtp.verifying")}
                 </span>
               ) : (
                 <span className="flex items-center gap-2">
-                  Vérifier le code
+                  {t("verifyOtp.verifyCode")}
                   <ArrowRight className="w-5 h-5" />
                 </span>
               )}
@@ -413,11 +415,11 @@ function VerifyOTPContent() {
           {/* Resend */}
           <div className="text-center space-y-2 pt-2">
             <p className="text-foreground/40 text-sm">
-              Vous n'avez pas reçu le code ?
+              {t("verifyOtp.noCode")}
             </p>
             {resendCooldown > 0 ? (
               <p className="text-foreground/40 text-sm">
-                Nouveau code disponible dans{" "}
+                {t("verifyOtp.newCodeIn")}{" "}
                 <span className="font-mono font-bold text-primary">{resendCooldown}s</span>
               </p>
             ) : (
@@ -429,7 +431,7 @@ function VerifyOTPContent() {
                 <RefreshCw
                   className={`w-4 h-4 ${isResending ? "animate-spin" : ""}`}
                 />
-                {isResending ? "Envoi en cours..." : "Renvoyer le code"}
+                {isResending ? t("verifyOtp.sending") : t("verifyOtp.resend")}
               </button>
             )}
           </div>
@@ -441,6 +443,7 @@ function VerifyOTPContent() {
 
 // ── Page component with Suspense boundary ───────────────────
 export default function VerifyOTPPage() {
+  const { t } = useI18n();
   return (
     <Suspense
       fallback={
@@ -449,7 +452,7 @@ export default function VerifyOTPPage() {
             className="w-14 h-14 text-primary animate-pulse"
             style={{ animationDuration: "2s" }}
           />
-          <p className="text-foreground/50 text-sm tracking-wide">Un instant…</p>
+          <p className="text-foreground/50 text-sm tracking-wide">{t("verifyOtp.loading")}</p>
         </div>
       }
     >

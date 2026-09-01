@@ -17,8 +17,10 @@ import {
 } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 import { ImposingFloralCorners } from "@/components/garden";
+import { useI18n } from "@/lib/i18n";
 
 export default function ForgotPasswordPage() {
+  const { t } = useI18n();
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,11 +30,11 @@ export default function ForgotPasswordPage() {
   const validateEmail = (value: string): boolean => {
     const trimmed = value.trim();
     if (!trimmed) {
-      setEmailError("L'adresse email est requise.");
+      setEmailError(t("forgotPassword.emailRequired"));
       return false;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
-      setEmailError("Veuillez entrer une adresse email valide.");
+      setEmailError(t("forgotPassword.emailInvalid"));
       return false;
     }
     setEmailError(null);
@@ -57,7 +59,7 @@ export default function ForgotPasswordPage() {
       const data = await res.json();
 
       if (!res.ok && res.status !== 200) {
-        setError(data.message || "Une erreur est survenue. Veuillez réessayer.");
+        setError(data.message || t("forgotPassword.genericError"));
         setIsLoading(false);
         return;
       }
@@ -65,7 +67,7 @@ export default function ForgotPasswordPage() {
       // Always show success — generic response prevents enumeration
       setSuccess(true);
     } catch {
-      setError("Erreur de connexion au serveur.");
+      setError(t("forgotPassword.serverError"));
     } finally {
       setIsLoading(false);
     }
@@ -97,22 +99,22 @@ export default function ForgotPasswordPage() {
           <div className="space-y-8">
             <div className="space-y-4">
               <h2 className="font-headline text-4xl xl:text-5xl font-bold text-foreground leading-tight">
-                Retrouvez votre <br />
-                <span className="text-primary italic font-normal">accès.</span>
+                {t("forgotPassword.leftTitle")} <br />
+                <span className="text-primary italic font-normal">{t("forgotPassword.leftTitleHighlight")}</span>
               </h2>
               <p className="text-foreground/60 text-lg max-w-md leading-relaxed">
-                Ne vous inquiétez pas, nous allons vous aider à récupérer votre compte en toute sécurité.
+                {t("forgotPassword.leftSubtitle")}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-6">
               <div className="flex items-center gap-2 text-foreground/40">
                 <ShieldCheck className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest">Processus sécurisé</span>
+                <span className="text-xs font-bold uppercase tracking-widest">{t("forgotPassword.secureProcess")}</span>
               </div>
               <div className="flex items-center gap-2 text-foreground/40">
                 <Heart className="w-4 h-4 text-primary fill-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest">Données protégées</span>
+                <span className="text-xs font-bold uppercase tracking-widest">{t("forgotPassword.protectedData")}</span>
               </div>
             </div>
           </div>
@@ -140,7 +142,7 @@ export default function ForgotPasswordPage() {
             className="inline-flex items-center gap-2 text-foreground/50 hover:text-primary text-sm font-medium transition-colors"
           >
             <ArrowLeft className="w-4 h-4" />
-            Retour à la connexion
+            {t("forgotPassword.backToLogin")}
           </Link>
 
           {!success ? (
@@ -149,13 +151,13 @@ export default function ForgotPasswordPage() {
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-2">
                   <Mail className="w-3.5 h-3.5" />
-                  Récupération
+                  {t("forgotPassword.badge")}
                 </div>
                 <h1 className="font-headline text-3xl sm:text-5xl font-bold text-foreground">
-                  Mot de passe oublié
+                  {t("forgotPassword.title")}
                 </h1>
                 <p className="text-foreground/50 text-base">
-                  Entrez votre adresse email et nous vous enverrons un code de vérification pour réinitialiser votre mot de passe.
+                  {t("forgotPassword.subtitle")}
                 </p>
               </div>
 
@@ -163,12 +165,12 @@ export default function ForgotPasswordPage() {
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">
-                    Adresse email
+                    {t("forgotPassword.emailLabel")}
                   </Label>
                   <Input
                     type="email"
                     required
-                    placeholder="votre@email.com"
+                    placeholder={t("forgotPassword.emailPlaceholder")}
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
@@ -200,11 +202,11 @@ export default function ForgotPasswordPage() {
                   {isLoading ? (
                     <span className="flex items-center gap-3">
                       <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      Envoi en cours...
+                      {t("forgotPassword.sending")}
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
-                      Envoyer le code
+                      {t("forgotPassword.submit")}
                       <ArrowRight className="w-5 h-5" />
                     </span>
                   )}
@@ -219,11 +221,10 @@ export default function ForgotPasswordPage() {
                   <CheckCircle2 className="w-10 h-10 text-primary" />
                 </div>
                 <h2 className="font-headline text-2xl sm:text-3xl font-bold text-foreground">
-                  Vérifiez votre boîte email
+                  {t("forgotPassword.checkInbox")}
                 </h2>
                 <p className="text-foreground/50 text-base max-w-sm">
-                  Si un compte existe avec l'adresse <strong className="text-foreground/70">{email.trim().toLowerCase()}</strong>,
-                  un code de vérification à 6 chiffres a été envoyé.
+                  {t("forgotPassword.checkInboxDesc", { email: email.trim().toLowerCase() })}
                 </p>
               </div>
 
@@ -231,14 +232,14 @@ export default function ForgotPasswordPage() {
                 <Link href={`/verify-otp?email=${encodeURIComponent(email.trim().toLowerCase())}`}>
                   <Button className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:shadow-primary/25 transition-all hover:scale-[1.02]">
                     <span className="flex items-center gap-2">
-                      Entrer le code
+                      {t("forgotPassword.enterCode")}
                       <ArrowRight className="w-5 h-5" />
                     </span>
                   </Button>
                 </Link>
 
                 <p className="text-center text-foreground/40 text-sm">
-                  Vous n'avez pas reçu le code ?{" "}
+                  {t("forgotPassword.noCode")}{" "}
                   <button
                     onClick={() => {
                       setSuccess(false);
@@ -246,7 +247,7 @@ export default function ForgotPasswordPage() {
                     }}
                     className="text-primary font-bold hover:text-primary/80 transition-colors"
                   >
-                    Réessayer
+                    {t("forgotPassword.retry")}
                   </button>
                 </p>
               </div>

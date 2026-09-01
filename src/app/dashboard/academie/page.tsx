@@ -27,50 +27,50 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { Monogram, Flourish, VitrailPattern } from "@/components/ornaments";
-
-// Leçons de discernement (avant l'engagement) — réellement disponibles
-const discernementLessons = [
-  {
-    title: "Critères essentiels du choix",
-    desc: "Discerner les qualités fondamentales d'un futur conjoint selon la Parole.",
-    icon: Star,
-    href: "/dashboard/academie/criteres-essentiels",
-    duration: "8 min",
-  },
-  {
-    title: "La période de connaissance",
-    desc: "Vivre les fiançailles dans la pureté et la sagesse, étape par étape.",
-    icon: Clock,
-    href: "/dashboard/academie/periode-connaissance",
-    duration: "6 min",
-  },
-  {
-    title: "La Prière de Discernement",
-    desc: "Confier son choix à Dieu et reconnaître Sa direction paisible.",
-    icon: ScrollText,
-    href: "/dashboard/academie/prie-discernement",
-    duration: "5 min",
-  },
-];
-
-// Programme — modules sur la vie de couple (reliés à /dashboard/academie/module/<slug>)
-const academyThemes = [
-  { slug: "vision-biblique", title: "La vision biblique du Mariage", description: "L'alliance sacrée, reflet de l'amour de Christ pour son Église.", icon: Church },
-  { slug: "communication", title: "Communication & Conflits", description: "Les langages de l'amour et l'art de la résolution loyale.", icon: MessageSquare },
-  { slug: "finances", title: "Gestion des Finances", description: "Budget commun, transparence et générosité au foyer.", icon: Wallet },
-  { slug: "belle-famille", title: "Belle-famille & Limites", description: "« Quitter » pour s'attacher, et poser des frontières saines.", icon: Users },
-  { slug: "intimite", title: "Intimité conjugale", description: "Le plaisir comme don de Dieu pour l'unité du couple.", icon: Flame },
-  { slug: "roles", title: "Rôles & Responsabilités", description: "Leadership serviteur et équilibre famille / ambitions.", icon: Briefcase },
-  { slug: "vie-spirituelle", title: "Vie spirituelle de couple", description: "Cultiver l'autel familial : prier et méditer ensemble.", icon: Heart },
-  { slug: "enfants", title: "Éducation des enfants", description: "Discipline, transmission de la foi aux générations futures.", icon: Baby },
-  { slug: "temps-loisirs", title: "Temps & Loisirs", description: "Préserver son jardin secret tout en cultivant l'unité.", icon: Clock },
-  { slug: "cinq-piliers", title: "Les 5 piliers d'un foyer", description: "Bâtir sur le roc : foi, prière, vérité, fidélité, pardon.", icon: Mountain },
-  { slug: "celibat-foi", title: "Célibat & Foi", description: "Vivre l'attente comme une saison féconde de préparation.", icon: Sprout },
-  { slug: "conflits-bibliques", title: "Gérer les conflits selon la Bible", description: "Du désaccord à la réconciliation, à la lumière de l'Écriture.", icon: HeartHandshake },
-];
+import { useI18n } from "@/lib/i18n";
 
 export default function AcademyIndexPage() {
   const router = useRouter();
+  const { t } = useI18n();
+
+  const discernementLessons = [
+    {
+      title: t("academie.lessons.criteresEssentiels.title"),
+      desc: t("academie.lessons.criteresEssentiels.desc"),
+      icon: Star,
+      href: "/dashboard/academie/criteres-essentiels",
+      duration: t("academie.lessons.criteresEssentiels.duration"),
+    },
+    {
+      title: t("academie.lessons.periodeConnaissance.title"),
+      desc: t("academie.lessons.periodeConnaissance.desc"),
+      icon: Clock,
+      href: "/dashboard/academie/periode-connaissance",
+      duration: t("academie.lessons.periodeConnaissance.duration"),
+    },
+    {
+      title: t("academie.lessons.prieDiscernement.title"),
+      desc: t("academie.lessons.prieDiscernement.desc"),
+      icon: ScrollText,
+      href: "/dashboard/academie/prie-discernement",
+      duration: t("academie.lessons.prieDiscernement.duration"),
+    },
+  ];
+
+  const academyThemes = [
+    { slug: "vision-biblique", title: t("academie.themes.vision-biblique.title"), description: t("academie.themes.vision-biblique.description"), icon: Church },
+    { slug: "communication", title: t("academie.themes.communication.title"), description: t("academie.themes.communication.description"), icon: MessageSquare },
+    { slug: "finances", title: t("academie.themes.finances.title"), description: t("academie.themes.finances.description"), icon: Wallet },
+    { slug: "belle-famille", title: t("academie.themes.belle-famille.title"), description: t("academie.themes.belle-famille.description"), icon: Users },
+    { slug: "intimite", title: t("academie.themes.intimite.title"), description: t("academie.themes.intimite.description"), icon: Flame },
+    { slug: "roles", title: t("academie.themes.roles.title"), description: t("academie.themes.roles.description"), icon: Briefcase },
+    { slug: "vie-spirituelle", title: t("academie.themes.vie-spirituelle.title"), description: t("academie.themes.vie-spirituelle.description"), icon: Heart },
+    { slug: "enfants", title: t("academie.themes.enfants.title"), description: t("academie.themes.enfants.description"), icon: Baby },
+    { slug: "temps-loisirs", title: t("academie.themes.temps-loisirs.title"), description: t("academie.themes.temps-loisirs.description"), icon: Clock },
+    { slug: "cinq-piliers", title: t("academie.themes.cinq-piliers.title"), description: t("academie.themes.cinq-piliers.description"), icon: Mountain },
+    { slug: "celibat-foi", title: t("academie.themes.celibat-foi.title"), description: t("academie.themes.celibat-foi.description"), icon: Sprout },
+    { slug: "conflits-bibliques", title: t("academie.themes.conflits-bibliques.title"), description: t("academie.themes.conflits-bibliques.description"), icon: HeartHandshake },
+  ];
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -81,7 +81,7 @@ export default function AcademyIndexPage() {
           <span className="font-headline text-xl font-bold text-foreground">Eden <span className="text-primary italic font-normal">Académie</span></span>
         </Link>
         <Button variant="ghost" onClick={() => router.back()} className="text-foreground/60 gap-2 hover:bg-foreground/5 hover:text-secondary">
-          <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">Retour au tableau de bord</span>
+          <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">{t("academie.backToDashboard")}</span>
         </Button>
       </header>
 
@@ -90,13 +90,13 @@ export default function AcademyIndexPage() {
         <section className="text-center flex flex-col items-center space-y-5">
           <Monogram className="w-12 h-10 text-secondary" />
           <Badge className="bg-secondary/10 text-secondary border border-secondary/25 font-bold px-5 py-1.5 uppercase tracking-[0.25em] text-[10px] rounded-full">
-            Académie du Mariage
+            {t("academie.badge")}
           </Badge>
           <h1 className="font-headline text-3xl sm:text-5xl md:text-6xl font-bold text-foreground leading-tight max-w-3xl">
-            Préparez votre <span className="text-primary italic font-normal">alliance</span>
+            {t("academie.heroTitle")} <span className="text-primary italic font-normal">{t("academie.heroTitleHighlight")}</span>
           </h1>
           <p className="text-base sm:text-xl text-muted-foreground max-w-2xl leading-relaxed">
-            Bâtir un foyer, c'est creuser jusqu'au roc. Discernez avant de vous engager, puis édifiez votre couple sur des fondations bibliques.
+            {t("academie.heroSubtitle")}
           </p>
           <Flourish className="w-48 h-3 text-secondary/50" />
         </section>
@@ -108,8 +108,8 @@ export default function AcademyIndexPage() {
               <ScrollText className="w-5 h-5 text-secondary" />
             </div>
             <div>
-              <h2 className="font-headline text-2xl font-bold text-foreground">Avant de s'engager</h2>
-              <p className="text-muted-foreground text-sm">Le discernement, étape par étape</p>
+              <h2 className="font-headline text-2xl font-bold text-foreground">{t("academie.beforeCommitting")}</h2>
+              <p className="text-muted-foreground text-sm">{t("academie.discernmentSubtitle")}</p>
             </div>
           </div>
 
@@ -127,7 +127,7 @@ export default function AcademyIndexPage() {
                 <p className="text-muted-foreground text-sm leading-relaxed mt-2 flex-1">{l.desc}</p>
                 <div className="flex items-center justify-between mt-5 pt-4 border-t border-secondary/10">
                   <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {l.duration}</span>
-                  <span className="text-secondary text-xs font-bold inline-flex items-center gap-1 group-hover:gap-2 transition-all">Étudier <ArrowRight className="w-4 h-4" /></span>
+                  <span className="text-secondary text-xs font-bold inline-flex items-center gap-1 group-hover:gap-2 transition-all">{t("academie.study")} <ArrowRight className="w-4 h-4" /></span>
                 </div>
               </button>
             ))}
@@ -141,8 +141,8 @@ export default function AcademyIndexPage() {
               <BookOpen className="w-5 h-5 text-secondary" />
             </div>
             <div>
-              <h2 className="font-headline text-2xl font-bold text-foreground">Le programme</h2>
-              <p className="text-muted-foreground text-sm">9 modules pour édifier la vie de couple</p>
+              <h2 className="font-headline text-2xl font-bold text-foreground">{t("academie.program")}</h2>
+              <p className="text-muted-foreground text-sm">{t("academie.programSubtitle")}</p>
             </div>
           </div>
 
@@ -163,7 +163,7 @@ export default function AcademyIndexPage() {
                       <h3 className="font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{theme.title}</h3>
                     </div>
                     <p className="text-muted-foreground text-sm leading-relaxed mt-1.5">{theme.description}</p>
-                    <span className="inline-flex items-center gap-1 text-secondary text-xs font-bold mt-3 group-hover:gap-2 transition-all">Étudier <ArrowRight className="w-3.5 h-3.5" /></span>
+                    <span className="inline-flex items-center gap-1 text-secondary text-xs font-bold mt-3 group-hover:gap-2 transition-all">{t("academie.study")} <ArrowRight className="w-3.5 h-3.5" /></span>
                   </div>
                 </div>
               </Card>
@@ -172,7 +172,7 @@ export default function AcademyIndexPage() {
 
           <div className="flex justify-center pt-2">
             <Button onClick={() => router.push(discernementLessons[0].href)} className="h-12 px-8 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold gap-2">
-              Commencer le parcours <ChevronRight className="w-5 h-5" />
+              {t("academie.startJourney")} <ChevronRight className="w-5 h-5" />
             </Button>
           </div>
         </section>
@@ -185,17 +185,17 @@ export default function AcademyIndexPage() {
             <div className="relative z-10 flex flex-col md:flex-row items-center gap-10 text-center md:text-left">
               <div className="flex-1 space-y-5">
                 <Monogram className="w-11 h-9 text-secondary mx-auto md:mx-0" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary/80 block">Accompagnement</span>
-                <h2 className="font-headline text-2xl sm:text-3xl font-bold text-foreground">Un mentor pour votre couple</h2>
+                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary/80 block">{t("academie.mentorBadge")}</span>
+                <h2 className="font-headline text-2xl sm:text-3xl font-bold text-foreground">{t("academie.mentorTitle")}</h2>
                 <p className="text-foreground/60 leading-relaxed max-w-xl">
-                  Cheminer avec un pasteur ou un couple mentor permet d'aborder chaque sujet avec sagesse, bien avant que les défis n'arrivent.
+                  {t("academie.mentorText")}
                 </p>
                 <div className="flex flex-col sm:flex-row gap-3 pt-2 justify-center md:justify-start">
                   <Button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold h-12 px-7 rounded-xl gap-2">
-                    Trouver un mentor <Users className="w-5 h-5" />
+                    {t("academie.findMentor")} <Users className="w-5 h-5" />
                   </Button>
                   <Button variant="outline" className="border-secondary/30 text-foreground hover:bg-secondary/15 hover:text-foreground h-12 px-7 rounded-xl gap-2 bg-transparent">
-                    Lectures conseillées <BookOpen className="w-5 h-5" />
+                    {t("academie.suggestedReadings")} <BookOpen className="w-5 h-5" />
                   </Button>
                 </div>
               </div>
@@ -208,7 +208,7 @@ export default function AcademyIndexPage() {
 
         <div className="flex flex-col items-center text-center pt-2">
           <Flourish className="w-40 h-3 text-secondary/40 mb-3" />
-          <p className="text-foreground/30 text-xs font-headline italic">« Si l'Éternel ne bâtit la maison, ceux qui la bâtissent travaillent en vain. » — Psaume 127:1</p>
+          <p className="text-foreground/30 text-xs font-headline italic">{t("academie.footerVerse")}</p>
         </div>
       </main>
     </div>

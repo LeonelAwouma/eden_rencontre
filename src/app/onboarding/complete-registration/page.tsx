@@ -20,14 +20,13 @@ import { supabase } from "@/lib/supabase";
 import { MARRIAGE_VALUES } from "@/lib/values";
 import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
 import { Monogram } from "@/components/ornaments";
+import { useI18n } from "@/lib/i18n";
 import {
   AlertTriangle,
   ArrowRight,
   ChevronLeft,
-  Upload,
   Star,
   CheckCircle2,
-  X,
   Instagram,
   Facebook,
   Youtube,
@@ -77,22 +76,9 @@ const DIASPORA_COUNTRIES = [
   "France", "Belgique", "Canada", "USA", "Suisse", "Royaume-Uni"
 ];
 
-const STEP_TITLES = [
-  "Votre identité",
-  "Comment nous avez-vous trouvé ?",
-  "Votre situation",
-  "Votre résidence",
-  "Votre pays",
-  "Votre ville",
-  "Vos informations",
-  "Vos valeurs",
-  "Charte d'engagement",
-  "Vérification selfie",
-  "Bienvenue !",
-];
-
 export default function CompleteRegistrationPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [step, setStep] = useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingGender, setPendingGender] = useState<string | null>(null);
@@ -120,7 +106,7 @@ export default function CompleteRegistrationPage() {
   const ageValid = age !== null && age >= MIN_AGE;
 
   // Photo uploads for selfie verification
-  const [photos, setPhotos] = useState<(string | null)[]>([null, null, null]);
+  const [photos] = useState<(string | null)[]>([null, null, null]);
 
   // Selfie verification state
   const [selfieDataUri, setSelfieDataUri] = useState<string | null>(null);
@@ -208,13 +194,13 @@ export default function CompleteRegistrationPage() {
       }
       setCameraActive(true);
     } catch {
-      setSelfieError("Impossible d'accéder à la caméra. Veuillez autoriser l'accès.");
+      setSelfieError(t("completeRegistration.cameraError"));
     }
   };
 
   const stopCamera = () => {
     if (streamRef.current) {
-      streamRef.current.getTracks().forEach((t) => t.stop());
+      streamRef.current.getTracks().forEach((tr) => tr.stop());
       streamRef.current = null;
     }
     setCameraActive(false);
@@ -264,7 +250,7 @@ export default function CompleteRegistrationPage() {
         setTimeout(() => nextStep(), 1000);
       }
     } catch {
-      setSelfieError("Erreur lors de la vérification. Veuillez réessayer.");
+      setSelfieError(t("completeRegistration.verifyError"));
     } finally {
       setSelfieVerifying(false);
     }
@@ -274,7 +260,7 @@ export default function CompleteRegistrationPage() {
   useEffect(() => {
     return () => {
       if (streamRef.current) {
-        streamRef.current.getTracks().forEach((t) => t.stop());
+        streamRef.current.getTracks().forEach((tr) => tr.stop());
       }
     };
   }, []);
@@ -321,7 +307,7 @@ export default function CompleteRegistrationPage() {
       const data = await res.json();
 
       if (!res.ok) {
-        setSaveError(data.error || "Erreur lors de l'enregistrement.");
+        setSaveError(data.error || t("completeRegistration.saveErrorGeneric"));
         setSaving(false);
         return;
       }
@@ -329,7 +315,7 @@ export default function CompleteRegistrationPage() {
       // Redirect to pending approval page (admin must approve before user can access)
       router.push(`/register/pending?email=${encodeURIComponent(userEmail)}`);
     } catch {
-      setSaveError("Erreur de connexion au serveur.");
+      setSaveError(t("completeRegistration.saveErrorServer"));
       setSaving(false);
     }
   };
@@ -341,19 +327,28 @@ export default function CompleteRegistrationPage() {
   const filteredCities = availableCities.filter((c) => c.toLowerCase().includes(citySearch.toLowerCase()));
 
   const discoverySources = [
-    { name: "TikTok", icon: <TikTokIcon className="w-5 h-5 text-[#ff0050]" /> },
-    { name: "Instagram", icon: <Instagram className="w-5 h-5 text-[#E4405F]" /> },
-    { name: "Facebook", icon: <Facebook className="w-5 h-5 text-[#1877F2]" /> },
-    { name: "Bouche à oreille", icon: <MessageCircle className="w-5 h-5 text-primary" /> },
-    { name: "YouTube", icon: <Youtube className="w-5 h-5 text-[#FF0000]" /> },
-    { name: "Autre", icon: <Plus className="w-5 h-5 text-foreground/40" /> },
+    { name: "TikTok", label: "TikTok", icon: <TikTokIcon className="w-5 h-5 text-[#ff0050]" /> },
+    { name: "Instagram", label: "Instagram", icon: <Instagram className="w-5 h-5 text-[#E4405F]" /> },
+    { name: "Facebook", label: "Facebook", icon: <Facebook className="w-5 h-5 text-[#1877F2]" /> },
+    { name: "Bouche à oreille", label: t("completeRegistration.sourceWordOfMouth"), icon: <MessageCircle className="w-5 h-5 text-primary" /> },
+    { name: "YouTube", label: "YouTube", icon: <Youtube className="w-5 h-5 text-[#FF0000]" /> },
+    { name: "Autre", label: t("completeRegistration.sourceOther"), icon: <Plus className="w-5 h-5 text-foreground/40" /> },
   ];
+
+  const civilStatusOptions = [
+    { value: "Célibataire", label: t("completeRegistration.civilStatusSingle") },
+    { value: "Veuf / Veuve", label: t("completeRegistration.civilStatusWidowed") },
+    { value: "Divorcé(e)", label: t("completeRegistration.civilStatusDivorced") },
+  ];
+
+  const regionLabel = (r: string) => (r === "Afrique" ? t("completeRegistration.regionAfrica") : t("completeRegistration.regionDiaspora"));
+  const genderDisplay = (g: string) => (g === "homme" ? t("completeRegistration.genderMale") : t("completeRegistration.genderFemale"));
 
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
         <Monogram className="w-14 h-14 text-primary animate-pulse" style={{ animationDuration: "2s" }} />
-        <p className="text-foreground/50 text-sm tracking-wide">Chargement de votre profil…</p>
+        <p className="text-foreground/50 text-sm tracking-wide">{t("completeRegistration.loadingProfile")}</p>
       </div>
     );
   }
@@ -383,11 +378,11 @@ export default function CompleteRegistrationPage() {
           <div className="space-y-8">
             <div className="space-y-4">
               <h2 className="font-headline text-4xl xl:text-5xl font-bold text-foreground leading-tight">
-                Complétez votre <br />
-                <span className="text-primary italic font-normal">profil sacré.</span>
+                {t("completeRegistration.leftTitle")} <br />
+                <span className="text-primary italic font-normal">{t("completeRegistration.leftTitleHighlight")}</span>
               </h2>
               <p className="text-foreground/60 text-lg max-w-md leading-relaxed">
-                Bienvenue {userName} ! Quelques informations supplémentaires sont nécessaires pour rejoindre la communauté Eden.
+                {t("completeRegistration.leftSubtitle", { name: userName })}
               </p>
             </div>
 
@@ -396,19 +391,19 @@ export default function CompleteRegistrationPage() {
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <ShieldCheck className="w-4 h-4 text-primary" />
                 </div>
-                <span className="text-sm font-medium">Vérification d'identité par IA</span>
+                <span className="text-sm font-medium">{t("completeRegistration.feature1")}</span>
               </div>
               <div className="flex items-center gap-3 text-foreground/50">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <Heart className="w-4 h-4 text-primary fill-primary" />
                 </div>
-                <span className="text-sm font-medium">Affinités spirituelles avancées</span>
+                <span className="text-sm font-medium">{t("completeRegistration.feature2")}</span>
               </div>
               <div className="flex items-center gap-3 text-foreground/50">
                 <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
                   <ShieldCheck className="w-4 h-4 text-primary" />
                 </div>
-                <span className="text-sm font-medium">Communauté modérée 24/7</span>
+                <span className="text-sm font-medium">{t("completeRegistration.feature3")}</span>
               </div>
             </div>
           </div>
@@ -435,7 +430,7 @@ export default function CompleteRegistrationPage() {
                 <CheckCircle2 className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="font-bold text-primary text-sm">Connexion Google réussie</p>
+                <p className="font-bold text-primary text-sm">{t("completeRegistration.googleConnected")}</p>
                 <p className="text-xs text-foreground/40">{userEmail}</p>
               </div>
             </div>
@@ -446,10 +441,10 @@ export default function CompleteRegistrationPage() {
                 <Progress value={progress} className="h-1.5 bg-foreground/5" />
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
-                    Étape {step + 1} / {totalSteps}
+                    {t("completeRegistration.stepOf", { current: step + 1, total: totalSteps })}
                   </span>
                   <span className="text-[10px] font-bold text-foreground/20 uppercase tracking-widest">
-                    {Math.round(progress)}% complété
+                    {t("completeRegistration.percentComplete", { pct: Math.round(progress) })}
                   </span>
                 </div>
               </div>
@@ -461,8 +456,8 @@ export default function CompleteRegistrationPage() {
             {step === 0 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Confirmons une chose</h1>
-                  <p className="text-foreground/50 text-base">Cette information est cruciale pour votre recherche d'alliance.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step0Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("completeRegistration.step0Subtitle")}</p>
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
@@ -471,8 +466,8 @@ export default function CompleteRegistrationPage() {
                     className="bg-card hover:bg-foreground/5 transition-all p-8 sm:p-10 rounded-3xl text-center border border-foreground/5 group shadow-xl hover:border-primary/50 hover:shadow-primary/5"
                   >
                     <span className="text-5xl block mb-4 group-hover:scale-110 transition-transform">👦</span>
-                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">Homme</p>
-                    <p className="text-primary/50 text-xs mt-1 font-medium">Je verrai des femmes</p>
+                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{t("completeRegistration.genderMale")}</p>
+                    <p className="text-primary/50 text-xs mt-1 font-medium">{t("completeRegistration.genderMaleSubtext")}</p>
                   </button>
 
                   <button
@@ -480,15 +475,15 @@ export default function CompleteRegistrationPage() {
                     className="bg-card hover:bg-foreground/5 transition-all p-8 sm:p-10 rounded-3xl text-center border border-foreground/5 group shadow-xl hover:border-primary/50 hover:shadow-primary/5"
                   >
                     <span className="text-5xl block mb-4 group-hover:scale-110 transition-transform">👧</span>
-                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">Femme</p>
-                    <p className="text-primary/50 text-xs mt-1 font-medium">Je verrai des hommes</p>
+                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{t("completeRegistration.genderFemale")}</p>
+                    <p className="text-primary/50 text-xs mt-1 font-medium">{t("completeRegistration.genderFemaleSubtext")}</p>
                   </button>
                 </div>
 
                 <div className="flex justify-center">
                   <div className="bg-olive/10 border border-olive/20 rounded-full py-2 px-5 flex items-center gap-2">
                     <AlertTriangle className="w-3.5 h-3.5 text-olive" />
-                    <p className="text-olive/80 text-[10px] font-bold uppercase tracking-widest">Information définitive</p>
+                    <p className="text-olive/80 text-[10px] font-bold uppercase tracking-widest">{t("completeRegistration.definitiveInfo")}</p>
                   </div>
                 </div>
               </div>
@@ -500,8 +495,8 @@ export default function CompleteRegistrationPage() {
             {step === 1 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Votre venue parmi nous</h1>
-                  <p className="text-foreground/50 text-base">Comment avez-vous découvert Eden Connexion ?</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step1Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("completeRegistration.step1Subtitle")}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   {discoverySources.map((source) => (
@@ -512,12 +507,12 @@ export default function CompleteRegistrationPage() {
                       className="h-14 rounded-xl border-foreground/5 bg-card hover:bg-foreground/5 hover:border-primary/50 text-base font-medium text-foreground/80 gap-3 group"
                     >
                       <span className="group-hover:scale-110 transition-transform">{source.icon}</span>
-                      <span className="group-hover:text-primary transition-colors">{source.name}</span>
+                      <span className="group-hover:text-primary transition-colors">{source.label}</span>
                     </Button>
                   ))}
                 </div>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
                 </button>
               </div>
             )}
@@ -528,23 +523,23 @@ export default function CompleteRegistrationPage() {
             {step === 2 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Votre situation actuelle</h1>
-                  <p className="text-foreground/50 text-base">Pour mieux comprendre votre parcours de vie.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step2Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("completeRegistration.step2Subtitle")}</p>
                 </div>
                 <div className="space-y-3">
-                  {["Célibataire", "Veuf / Veuve", "Divorcé(e)"].map((s) => (
+                  {civilStatusOptions.map((s) => (
                     <Button
-                      key={s}
+                      key={s.value}
                       variant="outline"
-                      onClick={() => { setFormData({ ...formData, civilStatus: s }); nextStep(); }}
+                      onClick={() => { setFormData({ ...formData, civilStatus: s.value }); nextStep(); }}
                       className="w-full h-16 rounded-xl border-foreground/5 bg-card hover:bg-foreground/5 hover:border-primary/50 text-lg font-bold text-foreground hover:text-primary"
                     >
-                      {s}
+                      {s.label}
                     </Button>
                   ))}
                 </div>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
                 </button>
               </div>
             )}
@@ -555,8 +550,8 @@ export default function CompleteRegistrationPage() {
             {step === 3 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Votre résidence</h1>
-                  <p className="text-foreground/50 text-base">Où vivez-vous actuellement ?</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step3Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("completeRegistration.step3Subtitle")}</p>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <button
@@ -564,18 +559,18 @@ export default function CompleteRegistrationPage() {
                     className="bg-card border-foreground/5 p-10 rounded-3xl text-center hover:border-primary/50 border cursor-pointer transition-all group shadow-xl"
                   >
                     <span className="text-5xl block mb-4 group-hover:scale-110 transition-transform">🌍</span>
-                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">Afrique</p>
+                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{t("completeRegistration.regionAfrica")}</p>
                   </button>
                   <button
                     onClick={() => handleRegionSelect("Diaspora")}
                     className="bg-card border-foreground/5 p-10 rounded-3xl text-center hover:border-primary/50 border cursor-pointer transition-all group shadow-xl"
                   >
                     <span className="text-5xl block mb-4 group-hover:scale-110 transition-transform">✈️</span>
-                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">Diaspora</p>
+                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{t("completeRegistration.regionDiaspora")}</p>
                   </button>
                 </div>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
                 </button>
               </div>
             )}
@@ -586,14 +581,14 @@ export default function CompleteRegistrationPage() {
             {step === 4 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Sélectionnez votre pays</h1>
-                  <p className="text-foreground/50 text-base">Votre pays de résidence en {formData.region}.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step4Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("completeRegistration.step4Subtitle", { region: regionLabel(formData.region) })}</p>
                 </div>
 
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 w-5 h-5" />
                   <Input
-                    placeholder="Rechercher un pays..."
+                    placeholder={t("completeRegistration.searchCountryPlaceholder")}
                     value={countrySearch}
                     onChange={(e) => setCountrySearch(e.target.value)}
                     className="pl-12 h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20"
@@ -614,7 +609,7 @@ export default function CompleteRegistrationPage() {
                   ))}
                 </div>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
                 </button>
               </div>
             )}
@@ -625,14 +620,14 @@ export default function CompleteRegistrationPage() {
             {step === 5 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Dans quelle ville ?</h1>
-                  <p className="text-foreground/50 text-base">Précisez votre localisation à {formData.country}.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step5Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("completeRegistration.step5Subtitle", { country: formData.country })}</p>
                 </div>
 
                 <div className="relative">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 w-5 h-5" />
                   <Input
-                    placeholder="Rechercher une ville..."
+                    placeholder={t("completeRegistration.searchCityPlaceholder")}
                     value={citySearch}
                     onChange={(e) => setCitySearch(e.target.value)}
                     className="pl-12 h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20"
@@ -657,11 +652,11 @@ export default function CompleteRegistrationPage() {
                     className="h-14 rounded-xl border-foreground/5 bg-card hover:bg-foreground/5 hover:border-primary/50 text-base font-bold text-foreground/40 group text-left justify-start px-6 italic"
                   >
                     <Plus className="w-4 h-4 text-foreground/20 group-hover:text-primary mr-2" />
-                    Saisir "{citySearch || "autre ville"}"
+                    {t("completeRegistration.typeOtherCity", { value: citySearch || t("completeRegistration.otherCityFallback") })}
                   </Button>
                 </div>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
                 </button>
               </div>
             )}
@@ -672,8 +667,8 @@ export default function CompleteRegistrationPage() {
             {step === 6 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Vos informations</h1>
-                  <p className="text-foreground/50 text-base">Ces informations resteront confidentielles.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step6Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("completeRegistration.step6Subtitle")}</p>
                 </div>
                 <div className="space-y-5">
                   <div className="bg-card border border-foreground/10 rounded-xl p-4 flex items-center gap-3">
@@ -686,7 +681,7 @@ export default function CompleteRegistrationPage() {
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">Date de naissance</Label>
+                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("completeRegistration.birthDateLabel")}</Label>
                     <Input
                       type="date"
                       value={formData.birthDate}
@@ -694,10 +689,10 @@ export default function CompleteRegistrationPage() {
                       className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30"
                     />
                     {formData.birthDate && !ageValid && (
-                      <p className="text-xs text-destructive flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Vous devez avoir au moins {MIN_AGE} ans pour rejoindre Eden.</p>
+                      <p className="text-xs text-destructive flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {t("completeRegistration.minAgeError", { age: MIN_AGE })}</p>
                     )}
                     {formData.birthDate && ageValid && (
-                      <p className="text-[11px] text-foreground/30 uppercase tracking-widest">{age} ans</p>
+                      <p className="text-[11px] text-foreground/30 uppercase tracking-widest">{t("completeRegistration.yearsOld", { age })}</p>
                     )}
                   </div>
                   <Button
@@ -705,11 +700,11 @@ export default function CompleteRegistrationPage() {
                     disabled={!ageValid}
                     className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                   >
-                    Continuer <ArrowRight className="w-5 h-5 ml-2" />
+                    {t("completeRegistration.continue")} <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 </div>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
                 </button>
               </div>
             )}
@@ -720,8 +715,8 @@ export default function CompleteRegistrationPage() {
             {step === 7 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Vos valeurs</h1>
-                  <p className="text-foreground/50 text-base">Choisissez ce qui définit le mieux votre vision du foyer (max 3).</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step7Title")}</h1>
+                  <p className="text-foreground/50 text-base">{t("completeRegistration.step7Subtitle")}</p>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {MARRIAGE_VALUES.map((item) => (
@@ -748,10 +743,10 @@ export default function CompleteRegistrationPage() {
                   disabled={formData.marriageVision.length === 0}
                   className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
-                  Continuer <ArrowRight className="w-5 h-5 ml-2" />
+                  {t("completeRegistration.continue")} <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
                 </button>
               </div>
             )}
@@ -762,25 +757,25 @@ export default function CompleteRegistrationPage() {
             {step === 8 && (
               <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-3xl font-headline font-bold text-foreground">Charte d&#39;Engagement</h1>
-                  <p className="text-foreground/50 text-sm">Lisez attentivement et acceptez chaque engagement pour accéder au Sanctuaire.</p>
+                  <h1 className="text-2xl sm:text-3xl font-headline font-bold text-foreground">{t("completeRegistration.step8Title")}</h1>
+                  <p className="text-foreground/50 text-sm">{t("completeRegistration.step8Subtitle")}</p>
                 </div>
 
                 {/* Charter content — scrollable */}
                 <div className="bg-card border border-foreground/10 rounded-2xl p-5 max-h-[340px] overflow-y-auto custom-scrollbar space-y-5 text-sm text-foreground/70 leading-relaxed">
                   <div className="space-y-3">
-                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">AXE I — Authenticité et Vérification</h3>
-                    <p><strong>Art. 1.</strong> L&#39;utilisateur s&#39;engage à fournir des informations rigoureusement exactes, à jour et conformes à sa situation réelle (identité, âge, statut matrimonial, situation professionnelle, engagement ecclésial). Tout mensonge volontaire entraînera l&#39;exclusion immédiate.</p>
-                    <p><strong>Art. 2.</strong> L&#39;utilisateur donne son accord formel aux administrateurs pour procéder à la vérification de l&#39;ensemble des informations fournies, y compris l&#39;exigence de pièces justificatives ou le contact des référents pastoraux.</p>
+                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">{t("completeRegistration.axe1")}</h3>
+                    <p>{t("completeRegistration.art1")}</p>
+                    <p>{t("completeRegistration.art2")}</p>
                   </div>
                   <div className="space-y-3">
-                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">AXE II — Alignement Spirituel</h3>
-                    <p><strong>Art. 3.</strong> L&#39;utilisateur reconnaît la Bible comme autorité suprême. Sa démarche et ses critères de recherche doivent être alignés sur les principes des Saintes Écritures concernant la pureté, le mariage et les relations humaines.</p>
-                    <p><strong>Art. 4.</strong> Toutes les interactions doivent être empreintes de dignité et de bienveillance chrétienne. Sont strictement interdits : propos grossiers, insinuations sexuelles, harcèlement, intimidation et chantage.</p>
+                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">{t("completeRegistration.axe2")}</h3>
+                    <p>{t("completeRegistration.art3")}</p>
+                    <p>{t("completeRegistration.art4")}</p>
                   </div>
                   <div className="space-y-3">
-                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">AXE III — Confidentialité</h3>
-                    <p><strong>Art. 5.</strong> Toutes les informations concernant d&#39;autres membres doivent rester strictement confidentielles. Il est interdit de capturer ou divulguer des éléments de profil sans accord écrit.</p>
+                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">{t("completeRegistration.axe3")}</h3>
+                    <p>{t("completeRegistration.art5")}</p>
                   </div>
                 </div>
 
@@ -794,7 +789,7 @@ export default function CompleteRegistrationPage() {
                       className="mt-1 w-5 h-5 rounded border-foreground/20 text-primary focus:ring-primary/30 shrink-0"
                     />
                     <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
-                      J&#39;autorise expressément les administrateurs à vérifier la véracité de mes informations personnelles et ecclésiales.
+                      {t("completeRegistration.checkbox1")}
                     </span>
                   </label>
                   <label className="flex items-start gap-3 cursor-pointer group">
@@ -805,7 +800,7 @@ export default function CompleteRegistrationPage() {
                       className="mt-1 w-5 h-5 rounded border-foreground/20 text-primary focus:ring-primary/30 shrink-0"
                     />
                     <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
-                      Je m&#39;engage à maintenir des conversations saines et respectueuses, soumises à la Parole de Dieu.
+                      {t("completeRegistration.checkbox2")}
                     </span>
                   </label>
                   <label className="flex items-start gap-3 cursor-pointer group">
@@ -816,7 +811,7 @@ export default function CompleteRegistrationPage() {
                       className="mt-1 w-5 h-5 rounded border-foreground/20 text-primary focus:ring-primary/30 shrink-0"
                     />
                     <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
-                      J&#39;ai lu, compris et j&#39;accepte l&#39;intégralité de la présente charte d&#39;engagement.
+                      {t("completeRegistration.checkbox3")}
                     </span>
                   </label>
                 </div>
@@ -826,10 +821,10 @@ export default function CompleteRegistrationPage() {
                   disabled={!formData.charterAuthorizeVerification || !formData.charterCommitRespectful || !formData.charterAcceptFull}
                   className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
-                  Accepter et continuer <ShieldCheck className="w-5 h-5 ml-2" />
+                  {t("completeRegistration.acceptAndContinue")} <ShieldCheck className="w-5 h-5 ml-2" />
                 </Button>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
                 </button>
               </div>
             )}
@@ -844,14 +839,14 @@ export default function CompleteRegistrationPage() {
                     <ShieldCheck className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <p className="font-bold text-primary text-sm uppercase tracking-wider">Vérification d'identité</p>
-                    <p className="text-xs text-foreground/40 mt-0.5">Confirmez que vous êtes bien la personne sur vos photos.</p>
+                    <p className="font-bold text-primary text-sm uppercase tracking-wider">{t("completeRegistration.step9Badge")}</p>
+                    <p className="text-xs text-foreground/40 mt-0.5">{t("completeRegistration.step9BadgeDesc")}</p>
                   </div>
                 </div>
 
                 <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Prenez un selfie</h1>
-                  <p className="text-foreground/50 text-sm">Pour garantir l'authenticité des profils, nous comparons votre selfie avec votre photo de profil Google.</p>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step9Title")}</h1>
+                  <p className="text-foreground/50 text-sm">{t("completeRegistration.step9Subtitle")}</p>
                 </div>
 
                 {/* Camera / Selfie Area */}
@@ -859,9 +854,9 @@ export default function CompleteRegistrationPage() {
                   {!cameraActive && !selfieDataUri && (
                     <div className="w-full h-full flex flex-col items-center justify-center gap-4">
                       <Camera className="w-16 h-16 text-foreground/15" />
-                      <p className="text-foreground/30 text-sm">Activez votre caméra pour prendre un selfie</p>
+                      <p className="text-foreground/30 text-sm">{t("completeRegistration.activateCameraPrompt")}</p>
                       <Button onClick={startCamera} className="bg-primary text-primary-foreground font-bold rounded-xl px-8">
-                        <Camera className="w-4 h-4 mr-2" /> Activer la caméra
+                        <Camera className="w-4 h-4 mr-2" /> {t("completeRegistration.activateCamera")}
                       </Button>
                     </div>
                   )}
@@ -883,7 +878,7 @@ export default function CompleteRegistrationPage() {
                       <img src={selfieDataUri} alt="Selfie" className="w-full h-full object-cover" />
                       <div className="absolute top-4 right-4">
                         <Button onClick={retakeSelfie} variant="outline" size="sm" className="bg-black/40 border-white/20 text-white hover:bg-black/60 backdrop-blur-md">
-                          <RotateCcw className="w-4 h-4 mr-1" /> Reprendre
+                          <RotateCcw className="w-4 h-4 mr-1" /> {t("completeRegistration.retake")}
                         </Button>
                       </div>
                     </>
@@ -909,10 +904,10 @@ export default function CompleteRegistrationPage() {
                     )}
                     <div>
                       <p className={`text-sm font-bold ${selfieResult.verified ? 'text-primary' : 'text-destructive/90'}`}>
-                        {selfieResult.verified ? 'Vérification réussie' : 'Vérification échouée'}
+                        {selfieResult.verified ? t("completeRegistration.verifySuccess") : t("completeRegistration.verifyFailed")}
                       </p>
                       <p className={`text-xs mt-1 ${selfieResult.verified ? 'text-foreground/50' : 'text-destructive/70'}`}>
-                        {selfieResult.reason} (Score : {selfieResult.score}%)
+                        {selfieResult.reason} {t("completeRegistration.scoreLabel", { score: selfieResult.score })}
                       </p>
                     </div>
                   </div>
@@ -928,16 +923,16 @@ export default function CompleteRegistrationPage() {
                     {selfieVerifying ? (
                       <span className="flex items-center gap-3">
                         <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        Vérification en cours…
+                        {t("completeRegistration.verifying")}
                       </span>
                     ) : (
-                      <>Vérifier mon identité <ShieldCheck className="w-5 h-5 ml-2" /></>
+                      <>{t("completeRegistration.verifyIdentity")} <ShieldCheck className="w-5 h-5 ml-2" /></>
                     )}
                   </Button>
                 )}
 
                 <button onClick={() => { stopCamera(); prevStep(); }} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> Retour
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
                 </button>
               </div>
             )}
@@ -953,35 +948,35 @@ export default function CompleteRegistrationPage() {
                     <CheckCircle2 className="w-6 h-6 text-primary" />
                   </div>
                   <div>
-                    <p className="font-bold text-primary text-sm uppercase tracking-wider">Profil complété avec succès</p>
-                    <p className="text-xs text-foreground/40 mt-0.5">Votre chemin vers l'alliance est ouvert — {formData.city}, {formData.country}.</p>
+                    <p className="font-bold text-primary text-sm uppercase tracking-wider">{t("completeRegistration.step10SuccessBanner")}</p>
+                    <p className="text-xs text-foreground/40 mt-0.5">{t("completeRegistration.step10SuccessBannerDesc", { city: formData.city, country: formData.country })}</p>
                   </div>
                 </div>
 
                 <div className="space-y-3 text-center">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">Bienvenue dans Eden !</h1>
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step10WelcomeTitle")}</h1>
                   <p className="text-foreground/50 text-base">
-                    Votre profil est maintenant complet. Il sera examiné par notre équipe. Vous recevrez un email de confirmation dès que votre compte sera approuvé.
+                    {t("completeRegistration.step10WelcomeDesc")}
                   </p>
                 </div>
 
                 {/* Summary */}
                 <div className="bg-card border border-foreground/10 rounded-2xl p-5 space-y-3 text-sm">
                   <div className="flex justify-between">
-                    <span className="text-foreground/40">Genre</span>
-                    <span className="font-bold text-foreground capitalize">{formData.gender === "homme" ? "Homme" : "Femme"}</span>
+                    <span className="text-foreground/40">{t("completeRegistration.summaryGender")}</span>
+                    <span className="font-bold text-foreground capitalize">{genderDisplay(formData.gender)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-foreground/40">Résidence</span>
+                    <span className="text-foreground/40">{t("completeRegistration.summaryResidence")}</span>
                     <span className="font-bold text-foreground">{formData.city}, {formData.country}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-foreground/40">Situation</span>
+                    <span className="text-foreground/40">{t("completeRegistration.summarySituation")}</span>
                     <span className="font-bold text-foreground">{formData.civilStatus}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-foreground/40">Âge</span>
-                    <span className="font-bold text-foreground">{age} ans</span>
+                    <span className="text-foreground/40">{t("completeRegistration.summaryAge")}</span>
+                    <span className="font-bold text-foreground">{t("completeRegistration.yearsOld", { age: age ?? 0 })}</span>
                   </div>
                 </div>
 
@@ -1000,10 +995,10 @@ export default function CompleteRegistrationPage() {
                   {saving ? (
                     <span className="flex items-center gap-3">
                       <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      Enregistrement…
+                      {t("completeRegistration.saving")}
                     </span>
                   ) : (
-                    <>Envoyer mon profil pour approbation <Heart className="w-6 h-6 fill-primary-foreground" /></>
+                    <>{t("completeRegistration.submitProfile")} <Heart className="w-6 h-6 fill-primary-foreground" /></>
                   )}
                 </Button>
               </div>
@@ -1013,9 +1008,9 @@ export default function CompleteRegistrationPage() {
             {step <= 9 && (
               <div className="text-center pt-2">
                 <p className="text-foreground/30 text-sm">
-                  Besoin d'aide ?{" "}
+                  {t("completeRegistration.needHelp")}{" "}
                   <Link href="/contact" className="text-primary font-bold hover:text-primary/80 transition-colors">
-                    Contactez-nous
+                    {t("completeRegistration.contactUs")}
                   </Link>
                 </p>
               </div>
@@ -1027,10 +1022,10 @@ export default function CompleteRegistrationPage() {
         {step <= 9 && (
           <div className="px-6 py-4 border-t border-foreground/5">
             <p className="text-center text-foreground/15 text-[10px] font-medium uppercase tracking-widest">
-              En complétant votre profil, vous acceptez notre{" "}
-              <Link href="/charte" className="text-foreground/25 hover:text-primary/60 transition-colors">Charte Éthique</Link>
-              {" "}et nos{" "}
-              <Link href="/cgu" className="text-foreground/25 hover:text-primary/60 transition-colors">CGU</Link>.
+              {t("completeRegistration.footerTermsPrefix")}{" "}
+              <Link href="/charte" className="text-foreground/25 hover:text-primary/60 transition-colors">{t("completeRegistration.footerTermsCharter")}</Link>
+              {" "}{t("completeRegistration.footerTermsAnd")}{" "}
+              <Link href="/cgu" className="text-foreground/25 hover:text-primary/60 transition-colors">{t("completeRegistration.footerTermsCgu")}</Link>.
             </p>
           </div>
         )}
@@ -1044,23 +1039,23 @@ export default function CompleteRegistrationPage() {
               {pendingGender === "homme" ? "👦" : "👧"}
             </div>
             <div className="space-y-2">
-              <DialogTitle className="text-2xl font-bold text-foreground">Est-ce bien cela ?</DialogTitle>
+              <DialogTitle className="text-2xl font-bold text-foreground">{t("completeRegistration.confirmDialogTitle")}</DialogTitle>
               <DialogDescription className="text-foreground/50">
-                Vous avez sélectionné <span className="font-bold text-primary uppercase">{pendingGender === "homme" ? "Homme" : "Femme"}</span>.
+                {t("completeRegistration.confirmDialogDesc")} <span className="font-bold text-primary uppercase">{pendingGender ? genderDisplay(pendingGender) : ""}</span>.
               </DialogDescription>
             </div>
             <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl flex gap-3 text-left">
               <AlertTriangle className="w-5 h-5 text-primary shrink-0" />
               <p className="text-xs text-foreground/40 italic">
-                Ce choix est <span className="text-foreground font-bold">définitif</span> pour garantir l'intégrité de notre communauté.
+                {t("completeRegistration.confirmDialogNotice")}
               </p>
             </div>
             <div className="flex flex-col w-full gap-3">
               <Button onClick={confirmGender} className="w-full h-14 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors">
-                Je confirme
+                {t("completeRegistration.confirmDialogConfirm")}
               </Button>
               <Button variant="ghost" onClick={() => setShowConfirmDialog(false)} className="w-full text-foreground/40 hover:text-primary transition-colors">
-                Annuler
+                {t("completeRegistration.confirmDialogCancel")}
               </Button>
             </div>
           </div>

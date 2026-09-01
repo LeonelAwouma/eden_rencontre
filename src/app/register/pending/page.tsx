@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Clock, Mail, ArrowLeft } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
+import { useI18n } from "@/lib/i18n";
 
 function PendingContent() {
   const searchParams = useSearchParams();
+  const { t } = useI18n();
   const email = searchParams.get("email") || "";
 
   return (
@@ -29,11 +31,10 @@ function PendingContent() {
         {/* Content */}
         <div className="space-y-4">
           <h1 className="font-headline text-3xl sm:text-4xl font-bold text-foreground">
-            Inscription en cours de vérification
+            {t("registerPending.title")}
           </h1>
           <p className="text-foreground/50 text-base leading-relaxed">
-            Merci pour votre inscription sur Eden Connexion. Votre compte est actuellement
-            en cours de validation par notre équipe.
+            {t("registerPending.subtitle")}
           </p>
         </div>
 
@@ -41,36 +42,34 @@ function PendingContent() {
         <div className="bg-primary/5 border border-primary/10 rounded-2xl p-6 text-left">
           <div className="flex items-center gap-3 mb-3">
             <Mail className="w-5 h-5 text-primary" />
-            <p className="font-bold text-sm text-foreground">Confirmation envoyée</p>
+            <p className="font-bold text-sm text-foreground">{t("registerPending.confirmationSent")}</p>
           </div>
           <p className="text-sm text-foreground/50 leading-relaxed">
-            Un email de confirmation a été envoyé à{" "}
-            <span className="text-primary font-medium">{email || "votre adresse email"}</span>.
-            Vous recevrez un second email dès que votre compte sera approuvé.
+            {t("registerPending.confirmationBody", { email: email || t("registerPending.yourEmail") })}
           </p>
         </div>
 
         {/* What happens next */}
         <div className="space-y-3 text-left">
-          <p className="text-xs font-bold uppercase tracking-widest text-foreground/30">Prochaines étapes</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-foreground/30">{t("registerPending.nextSteps")}</p>
           <div className="space-y-3">
             <div className="flex items-start gap-3">
               <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                 <span className="text-xs font-bold text-primary">1</span>
               </div>
-              <p className="text-sm text-foreground/60">Notre équipe examine votre profil</p>
+              <p className="text-sm text-foreground/60">{t("registerPending.step1")}</p>
             </div>
             <div className="flex items-start gap-3">
               <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                 <span className="text-xs font-bold text-primary">2</span>
               </div>
-              <p className="text-sm text-foreground/60">Vous recevez un email de confirmation</p>
+              <p className="text-sm text-foreground/60">{t("registerPending.step2")}</p>
             </div>
             <div className="flex items-start gap-3">
               <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0 mt-0.5">
                 <span className="text-xs font-bold text-primary">3</span>
               </div>
-              <p className="text-sm text-foreground/60">Vous pouvez vous connecter et accéder au Sanctuaire</p>
+              <p className="text-sm text-foreground/60">{t("registerPending.step3")}</p>
             </div>
           </div>
         </div>
@@ -81,11 +80,11 @@ function PendingContent() {
           className="inline-flex items-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors"
         >
           <ArrowLeft className="w-4 h-4" />
-          Retour à l'accueil
+          {t("registerPending.backHome")}
         </Link>
 
         <p className="text-foreground/15 text-[10px] font-medium uppercase tracking-widest">
-          Eden Connexion — Alliance Bénie
+          {t("registerPending.tagline")}
         </p>
       </div>
     </div>

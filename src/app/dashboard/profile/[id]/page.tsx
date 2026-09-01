@@ -39,6 +39,7 @@ import { ageFromBirthDate } from "@/lib/auth";
 import { PROFILES } from "@/lib/profiles";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
+import { useI18n } from "@/lib/i18n";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -46,6 +47,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
   const { id } = use(params);
   const { toast } = useToast();
   const router = useRouter();
+  const { t } = useI18n();
 
   const [member, setMember] = useState<MemberProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -104,8 +106,8 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     return () => { active = false; };
   }, [id]);
 
-  const pronoun = member?.gender === "femme" ? "elle" : "il";
-  const genderLabel = member?.gender === "homme" ? "Homme" : member?.gender === "femme" ? "Femme" : null;
+  const pronoun = member?.gender === "femme" ? t("profileDetail.pronounShe") : member?.gender === "homme" ? t("profileDetail.pronounHe") : t("profileDetail.pronounThey");
+  const genderLabel = member?.gender === "homme" ? t("profilePage.genderMale") : member?.gender === "femme" ? t("profilePage.genderFemale") : null;
   const location = member ? [member.city, member.country].filter(Boolean).join(", ") : "";
   const initial = member?.name?.charAt(0)?.toUpperCase() || "?";
   const memberAge = ageFromBirthDate(member?.birthDate);
@@ -125,8 +127,8 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
       setShowIdeasDialog(true);
     } catch (error) {
       toast({
-        title: "Error",
-        description: "Unable to generate ideas at the moment.",
+        title: t("dashboard.toastError"),
+        description: t("profileDetail.errorGeneratingIdeas"),
         variant: "destructive",
       });
     } finally {
@@ -137,7 +139,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
   async function handleToggleFavorite() {
     if (!member) return;
     if (!UUID_RE.test(member.id)) {
-      toast({ title: "Demo profile", description: "Favorites are only possible between real members." });
+      toast({ title: t("profileDetail.demoProfileTitle"), description: t("profileDetail.demoProfileFavDesc") });
       return;
     }
     const next = !favorite;
@@ -145,14 +147,14 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     const res = await setFavorite(member.id, next);
     if (!res.ok) {
       setFavoriteState(!next);
-      toast({ title: "Failed", description: res.error || "Please retry.", variant: "destructive" });
+      toast({ title: t("dashboard.toastFailed"), description: res.error || t("dashboard.toastPleaseRetry"), variant: "destructive" });
     }
   }
 
   async function handleSendMessage() {
     if (!member) return;
     if (relation !== "friends") {
-      toast({ title: "Friends only 🙏", description: `You will be able to write to ${member.name} once your alliance request is accepted.` });
+      toast({ title: t("dashboard.toastFriendsOnlyTitle"), description: t("profileDetail.toastFriendsOnlyDesc", { name: member.name }) });
       return;
     }
     setStartingChat(true);
@@ -165,24 +167,24 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     if (!member) return;
     // Demo profile (non-uuid id): no real request possible
     if (!UUID_RE.test(member.id)) {
-      toast({ title: "Demo profile", description: "Friend requests are only possible between real members." });
+      toast({ title: t("profileDetail.demoProfileTitle"), description: t("profileDetail.demoProfileFriendDesc") });
       return;
     }
     setSendingFriend(true);
     const res = await sendFriendRequest(member.id);
     setSendingFriend(false);
     if (!res.ok) {
-      toast({ title: "Failed", description: res.error || "Please retry.", variant: "destructive" });
+      toast({ title: t("dashboard.toastFailed"), description: res.error || t("dashboard.toastPleaseRetry"), variant: "destructive" });
       return;
     }
     setFriendSent(true);
-    toast({ title: "Invitation sent 🙏", description: `${member.name} will receive your alliance request. If ${pronoun} accepts, you will be able to chat.` });
+    toast({ title: t("dashboard.toastInvitationSent"), description: t("profileDetail.toastInvitationSentDesc", { name: member.name, pronoun }) });
   }
 
   function copyToClipboard(text: string, index: number) {
     navigator.clipboard.writeText(text);
     setCopiedIndex(index);
-    toast({ title: "Copied!", description: "The message is ready to be sent." });
+    toast({ title: t("profileDetail.toastCopied"), description: t("profileDetail.toastCopiedDesc") });
     setTimeout(() => setCopiedIndex(null), 2000);
   }
 
@@ -191,7 +193,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
-        <p className="text-foreground/50 text-sm">Loading profile…</p>
+        <p className="text-foreground/50 text-sm">{t("profileDetail.loadingProfile")}</p>
       </div>
     );
   }
@@ -201,13 +203,13 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-5 px-6 text-center">
         <div className="w-16 h-16 rounded-2xl bg-foreground/5 flex items-center justify-center"><UserPlus className="w-8 h-8 text-foreground/30" /></div>
         <div className="space-y-1">
-          <h1 className="font-headline text-2xl font-bold text-foreground">Profile not found</h1>
+          <h1 className="font-headline text-2xl font-bold text-foreground">{t("profileDetail.profileNotFoundTitle")}</h1>
           <p className="text-foreground/50 text-sm max-w-sm">
-            {loadError ? `Error: ${loadError}` : "This member does not exist or is no longer available."}
+            {loadError ? `${t("profileDetail.errorPrefix")} ${loadError}` : t("profileDetail.profileNotFoundDesc")}
           </p>
         </div>
         <Button asChild className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-12 px-6 rounded-xl gap-2">
-          <Link href="/dashboard"><ArrowLeft className="w-4 h-4" /> Back to dashboard</Link>
+          <Link href="/dashboard"><ArrowLeft className="w-4 h-4" /> {t("profilePage.backToDashboard")}</Link>
         </Button>
       </div>
     );
@@ -220,7 +222,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
         <Button variant="ghost" asChild className="text-foreground/40 hover:text-primary hover:bg-transparent group pl-0">
           <Link href="/dashboard">
             <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
-            Back to profiles
+            {t("profileDetail.backToProfiles")}
           </Link>
         </Button>
 
@@ -259,7 +261,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
 
                 <div className="flex flex-wrap gap-3 pt-2">
                   {memberAge && (
-                    <Badge className="bg-primary/15 text-primary border-none rounded-xl px-4 py-2 font-bold text-sm">{memberAge} years old</Badge>
+                    <Badge className="bg-primary/15 text-primary border-none rounded-xl px-4 py-2 font-bold text-sm">{t("profileDetail.yearsOld", { age: memberAge })}</Badge>
                   )}
                   {member.civilStatus && (
                     <Badge className="bg-primary/15 text-primary border-none rounded-xl px-4 py-2 flex items-center gap-2 font-bold text-sm">
@@ -282,7 +284,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
               </div>
               <button
                 onClick={handleToggleFavorite}
-                aria-label={favorite ? "Remove from favorites" : "Add to favorites"}
+                aria-label={favorite ? t("memberCard.removeFavorite") : t("memberCard.addFavorite")}
                 className={cn(
                   "shrink-0 w-12 h-12 rounded-2xl flex items-center justify-center border transition-all",
                   favorite ? "bg-primary text-primary-foreground border-primary" : "bg-foreground/5 text-foreground/40 border-foreground/10 hover:text-primary hover:border-primary/40"
@@ -299,12 +301,12 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
               </div>
               <p className="text-primary text-sm font-bold leading-relaxed">
                 {areFriends
-                  ? <>You are friends with {member.name}. <span className="font-medium text-primary/70">You can exchange messages.</span></>
+                  ? <>{t("profileDetail.friendsWithBanner", { name: member.name })} <span className="font-medium text-primary/70">{t("profileDetail.canExchangeMessages")}</span></>
                   : effStatus === "pending_out"
-                  ? <>Request sent to {member.name}. <span className="font-medium text-primary/70">Messaging will open once {pronoun} accepts.</span></>
+                  ? <>{t("profileDetail.requestSentBanner", { name: member.name })} <span className="font-medium text-primary/70">{t("profileDetail.messagingOpensOnceAccepts", { pronoun })}</span></>
                   : effStatus === "pending_in"
-                  ? <>{member.name} wishes to get to know you. <span className="font-medium text-primary/70">Accept their request to start chatting.</span></>
-                  : <>Add {member.name} for free. <span className="font-medium text-primary/70">If {pronoun} accepts, you will be able to exchange messages.</span></>}
+                  ? <>{t("profileDetail.pendingInBanner", { name: member.name })} <span className="font-medium text-primary/70">{t("profileDetail.acceptToChat")}</span></>
+                  : <>{t("profileDetail.addFreeBanner", { name: member.name })} <span className="font-medium text-primary/70">{t("profileDetail.ifAcceptsCanExchange", { pronoun })}</span></>}
               </p>
             </div>
 
@@ -312,18 +314,18 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {areFriends ? (
                 <Button disabled className="bg-secondary/10 text-secondary border border-secondary/25 font-bold h-16 rounded-2xl gap-3 text-lg disabled:opacity-100">
-                  <Check className="w-6 h-6" /> Friends
+                  <Check className="w-6 h-6" /> {t("profileDetail.friends")}
                 </Button>
               ) : effStatus === "pending_out" ? (
                 <Button disabled className="bg-primary/80 text-primary-foreground font-bold h-16 rounded-2xl gap-3 text-lg disabled:opacity-70">
-                  <Check className="w-6 h-6" /> Request sent
+                  <Check className="w-6 h-6" /> {t("profileDetail.requestSent")}
                 </Button>
               ) : effStatus === "pending_in" ? (
                 <Button
                   onClick={() => router.push("/dashboard?tab=Requests")}
                   className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-16 rounded-2xl gap-3 shadow-xl shadow-primary/15 text-lg"
                 >
-                  <Star className="w-6 h-6" /> Respond to request
+                  <Star className="w-6 h-6" /> {t("profileDetail.respondToRequest")}
                 </Button>
               ) : (
                 <Button
@@ -332,7 +334,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                   className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold h-16 rounded-2xl gap-3 shadow-xl shadow-primary/15 text-lg disabled:opacity-70"
                 >
                   {sendingFriend ? <Loader2 className="w-6 h-6 animate-spin" /> : <UserPlus className="w-6 h-6" />}
-                  Add as friend
+                  {t("profileDetail.addAsFriend")}
                 </Button>
               )}
               <Button
@@ -346,7 +348,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                     : "border-foreground/10 bg-transparent text-foreground/40 hover:text-foreground/60 hover:bg-foreground/5"
                 )}
               >
-                {startingChat ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />} Send a message
+                {startingChat ? <Loader2 className="w-5 h-5 animate-spin" /> : <MessageCircle className="w-5 h-5" />} {t("profileDetail.sendAMessage")}
               </Button>
             </div>
 
@@ -358,7 +360,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
               className="w-full bg-foreground/5 text-foreground/80 hover:bg-foreground/10 hover:text-foreground h-14 rounded-2xl gap-2 text-xs font-bold uppercase tracking-widest"
             >
               {isGenerating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Lightbulb className="w-4 h-4 text-primary" />}
-              Message ideas
+              {t("profileDetail.messageIdeas")}
             </Button>
           </CardContent>
         </Card>
@@ -370,7 +372,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
               <div className="w-12 h-12 bg-secondary/10 border border-secondary/25 rounded-2xl flex items-center justify-center">
                 <Church className="w-6 h-6 text-secondary" />
               </div>
-              <CardTitle className="text-secondary font-bold text-xl">Values &amp; Beliefs</CardTitle>
+              <CardTitle className="text-secondary font-bold text-xl">{t("profileDetail.valuesBeliefs")}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-8 pt-6">
@@ -386,7 +388,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                 })}
               </div>
             ) : (
-              <p className="text-muted-foreground italic">This member has not yet specified their values.</p>
+              <p className="text-muted-foreground italic">{t("profileDetail.noValuesSpecified")}</p>
             )}
           </CardContent>
         </Card>
@@ -399,7 +401,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
                   <Heart className="w-6 h-6 text-primary fill-primary" />
                 </div>
-                <CardTitle className="text-primary font-bold text-xl">Vision for the Home</CardTitle>
+                <CardTitle className="text-primary font-bold text-xl">{t("profileDetail.visionForHome")}</CardTitle>
               </div>
             </CardHeader>
             <CardContent className="p-8 pt-6">
@@ -416,9 +418,9 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
             <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto">
               <Lightbulb className="w-6 h-6 text-primary" />
             </div>
-            <DialogTitle className="text-2xl font-bold text-center">Eden Suggestions</DialogTitle>
+            <DialogTitle className="text-2xl font-bold text-center">{t("profileDetail.edenSuggestions")}</DialogTitle>
             <DialogDescription className="text-muted-foreground text-center">
-              Here are 3 personalized messages to approach {member.name} with respect and sincerity.
+              {t("profileDetail.suggestionsDesc", { name: member.name })}
             </DialogDescription>
           </DialogHeader>
 
@@ -433,9 +435,9 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                     className="w-full bg-primary/10 text-primary hover:bg-primary/20 hover:text-primary font-bold gap-2 h-10 rounded-xl text-xs uppercase tracking-widest"
                   >
                     {copiedIndex === index ? (
-                      <><Check className="w-4 h-4" /> Copied</>
+                      <><Check className="w-4 h-4" /> {t("profileDetail.copied")}</>
                     ) : (
-                      <><Copy className="w-4 h-4" /> Copy message</>
+                      <><Copy className="w-4 h-4" /> {t("profileDetail.copyMessage")}</>
                     )}
                   </Button>
                 </CardContent>
@@ -448,7 +450,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
             onClick={() => setShowIdeasDialog(false)}
             className="w-full mt-6 text-foreground/40 hover:text-primary hover:bg-transparent"
           >
-            Close
+            {t("dashboard.close")}
           </Button>
         </DialogContent>
       </Dialog>

@@ -19,9 +19,13 @@ import {
 } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 import { ImposingFloralCorners } from "@/components/garden";
+import { useI18n } from "@/lib/i18n";
 
 // ── Password Strength Calculator ────────────────────────────
-function getPasswordStrength(password: string): {
+function getPasswordStrength(
+  password: string,
+  t: (key: string) => string
+): {
   score: number;
   label: string;
   color: string;
@@ -38,11 +42,11 @@ function getPasswordStrength(password: string): {
   const normalizedScore = Math.min(4, Math.max(1, score));
 
   const levels = [
-    { label: "Très faible", color: "#dc3545" },
-    { label: "Faible", color: "#fd7e14" },
-    { label: "Moyen", color: "#ffc107" },
-    { label: "Fort", color: "#28a745" },
-    { label: "Très fort", color: "#2D5016" },
+    { label: t("resetPassword.strengthVeryWeak"), color: "#dc3545" },
+    { label: t("resetPassword.strengthWeak"), color: "#fd7e14" },
+    { label: t("resetPassword.strengthMedium"), color: "#ffc107" },
+    { label: t("resetPassword.strengthStrong"), color: "#28a745" },
+    { label: t("resetPassword.strengthVeryStrong"), color: "#2D5016" },
   ];
 
   return {
@@ -53,13 +57,13 @@ function getPasswordStrength(password: string): {
 }
 
 // ── Password Requirements Check ─────────────────────────────
-function getPasswordChecks(password: string) {
+function getPasswordChecks(password: string, t: (key: string) => string) {
   return [
-    { label: "Au moins 8 caractères", met: password.length >= 8 },
-    { label: "Une lettre majuscule", met: /[A-Z]/.test(password) },
-    { label: "Une lettre minuscule", met: /[a-z]/.test(password) },
-    { label: "Un chiffre", met: /[0-9]/.test(password) },
-    { label: "Un caractère spécial", met: /[^A-Za-z0-9]/.test(password) },
+    { label: t("resetPassword.checkMinLength"), met: password.length >= 8 },
+    { label: t("resetPassword.checkUppercase"), met: /[A-Z]/.test(password) },
+    { label: t("resetPassword.checkLowercase"), met: /[a-z]/.test(password) },
+    { label: t("resetPassword.checkDigit"), met: /[0-9]/.test(password) },
+    { label: t("resetPassword.checkSpecial"), met: /[^A-Za-z0-9]/.test(password) },
   ];
 }
 
@@ -67,6 +71,7 @@ function getPasswordChecks(password: string) {
 function ResetPasswordContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { t } = useI18n();
   const token = searchParams.get("token") || "";
 
   const [password, setPassword] = useState("");
@@ -79,8 +84,8 @@ function ResetPasswordContent() {
   const [passwordErrors, setPasswordErrors] = useState<string[]>([]);
   const [confirmPasswordError, setConfirmPasswordError] = useState<string | null>(null);
 
-  const strength = getPasswordStrength(password);
-  const checks = getPasswordChecks(password);
+  const strength = getPasswordStrength(password, t);
+  const checks = getPasswordChecks(password, t);
 
   // ── Validate password on change ──────────────────────────
   useEffect(() => {
@@ -90,13 +95,13 @@ function ResetPasswordContent() {
     }
 
     const errors: string[] = [];
-    if (password.length < 8) errors.push("Au moins 8 caractères requis.");
-    if (!/[A-Z]/.test(password)) errors.push("Au moins une lettre majuscule requise.");
-    if (!/[a-z]/.test(password)) errors.push("Au moins une lettre minuscule requise.");
-    if (!/[0-9]/.test(password)) errors.push("Au moins un chiffre requis.");
-    if (!/[^A-Za-z0-9]/.test(password)) errors.push("Au moins un caractère spécial requis.");
+    if (password.length < 8) errors.push(t("resetPassword.errorMinLength"));
+    if (!/[A-Z]/.test(password)) errors.push(t("resetPassword.errorUppercase"));
+    if (!/[a-z]/.test(password)) errors.push(t("resetPassword.errorLowercase"));
+    if (!/[0-9]/.test(password)) errors.push(t("resetPassword.errorDigit"));
+    if (!/[^A-Za-z0-9]/.test(password)) errors.push(t("resetPassword.errorSpecial"));
     setPasswordErrors(errors);
-  }, [password]);
+  }, [password, t]);
 
   // ── Validate confirm password ────────────────────────────
   useEffect(() => {
@@ -105,11 +110,11 @@ function ResetPasswordContent() {
       return;
     }
     if (password !== confirmPassword) {
-      setConfirmPasswordError("Les mots de passe ne correspondent pas.");
+      setConfirmPasswordError(t("resetPassword.errorMismatch"));
     } else {
       setConfirmPasswordError(null);
     }
-  }, [password, confirmPassword]);
+  }, [password, confirmPassword, t]);
 
   // ── Handle submit ────────────────────────────────────────
   const handleSubmit = async (e: React.FormEvent) => {
@@ -117,17 +122,17 @@ function ResetPasswordContent() {
     setError(null);
 
     if (!token) {
-      setError("Token de réinitialisation manquant. Veuillez recommencer le processus.");
+      setError(t("resetPassword.errorMissingToken"));
       return;
     }
 
     if (passwordErrors.length > 0) {
-      setError("Veuillez corriger les erreurs du mot de passe.");
+      setError(t("resetPassword.errorFixPassword"));
       return;
     }
 
     if (password !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
+      setError(t("resetPassword.errorMismatch"));
       return;
     }
 
@@ -147,7 +152,7 @@ function ResetPasswordContent() {
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        setError(data.message || "Une erreur est survenue.");
+        setError(data.message || t("resetPassword.errorGeneric"));
         setIsLoading(false);
         return;
       }
@@ -159,7 +164,7 @@ function ResetPasswordContent() {
         router.push("/login");
       }, 3000);
     } catch {
-      setError("Erreur de connexion au serveur.");
+      setError(t("resetPassword.errorServer"));
       setIsLoading(false);
     }
   };
@@ -171,14 +176,14 @@ function ResetPasswordContent() {
         <div className="text-center space-y-4 max-w-md px-4">
           <AlertCircle className="w-12 h-12 text-destructive mx-auto" />
           <h2 className="font-headline text-2xl font-bold text-foreground">
-            Lien invalide
+            {t("resetPassword.invalidLinkTitle")}
           </h2>
           <p className="text-foreground/50">
-            Ce lien de réinitialisation est invalide ou a expiré. Veuillez recommencer le processus.
+            {t("resetPassword.invalidLinkBody")}
           </p>
           <Link href="/forgot-password">
             <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-bold rounded-xl">
-              Demander un nouveau code
+              {t("resetPassword.requestNewCode")}
             </Button>
           </Link>
         </div>
@@ -212,22 +217,22 @@ function ResetPasswordContent() {
           <div className="space-y-8">
             <div className="space-y-4">
               <h2 className="font-headline text-4xl xl:text-5xl font-bold text-foreground leading-tight">
-                Nouveau <br />
-                <span className="text-primary italic font-normal">départ.</span>
+                {t("resetPassword.leftTitle")} <br />
+                <span className="text-primary italic font-normal">{t("resetPassword.leftTitleHighlight")}</span>
               </h2>
               <p className="text-foreground/60 text-lg max-w-md leading-relaxed">
-                Choisissez un mot de passe sécurisé pour protéger votre compte.
+                {t("resetPassword.leftSubtitle")}
               </p>
             </div>
 
             <div className="flex flex-wrap gap-6">
               <div className="flex items-center gap-2 text-foreground/40">
                 <ShieldCheck className="w-4 h-4 text-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest">Chiffrement sécurisé</span>
+                <span className="text-xs font-bold uppercase tracking-widest">{t("resetPassword.secureEncryption")}</span>
               </div>
               <div className="flex items-center gap-2 text-foreground/40">
                 <Heart className="w-4 h-4 text-primary fill-primary" />
-                <span className="text-xs font-bold uppercase tracking-widest">Données protégées</span>
+                <span className="text-xs font-bold uppercase tracking-widest">{t("resetPassword.protectedData")}</span>
               </div>
             </div>
           </div>
@@ -255,13 +260,13 @@ function ResetPasswordContent() {
               <div className="space-y-3">
                 <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-2">
                   <Lock className="w-3.5 h-3.5" />
-                  Sécurité
+                  {t("resetPassword.badge")}
                 </div>
                 <h1 className="font-headline text-3xl sm:text-5xl font-bold text-foreground">
-                  Nouveau mot de passe
+                  {t("resetPassword.title")}
                 </h1>
                 <p className="text-foreground/50 text-base">
-                  Choisissez un mot de passe fort pour sécuriser votre compte.
+                  {t("resetPassword.subtitle")}
                 </p>
               </div>
 
@@ -270,7 +275,7 @@ function ResetPasswordContent() {
                 {/* New Password */}
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">
-                    Nouveau mot de passe
+                    {t("resetPassword.newPasswordLabel")}
                   </Label>
                   <div className="relative">
                     <Input
@@ -353,7 +358,7 @@ function ResetPasswordContent() {
                 {/* Confirm Password */}
                 <div className="space-y-2">
                   <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">
-                    Confirmer le mot de passe
+                    {t("resetPassword.confirmPasswordLabel")}
                   </Label>
                   <div className="relative">
                     <Input
@@ -409,11 +414,11 @@ function ResetPasswordContent() {
                   {isLoading ? (
                     <span className="flex items-center gap-3">
                       <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      Mise à jour...
+                      {t("resetPassword.updating")}
                     </span>
                   ) : (
                     <span className="flex items-center gap-2">
-                      Réinitialiser le mot de passe
+                      {t("resetPassword.submit")}
                       <ArrowRight className="w-5 h-5" />
                     </span>
                   )}
@@ -432,11 +437,10 @@ function ResetPasswordContent() {
                   <div className="absolute inset-0 w-24 h-24 border-4 border-primary/30 rounded-full animate-ping opacity-20" />
                 </div>
                 <h2 className="font-headline text-2xl sm:text-3xl font-bold text-foreground animate-in fade-in slide-in-from-bottom-2 duration-500 delay-300">
-                  Mot de passe mis à jour !
+                  {t("resetPassword.successTitle")}
                 </h2>
                 <p className="text-foreground/50 text-base max-w-sm animate-in fade-in slide-in-from-bottom-2 duration-500 delay-500">
-                  Votre mot de passe a été réinitialisé avec succès.
-                  Toutes vos sessions actives ont été invalidées pour votre sécurité.
+                  {t("resetPassword.successBody")}
                 </p>
               </div>
 
@@ -444,15 +448,14 @@ function ResetPasswordContent() {
                 <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-xl p-4">
                   <ShieldCheck className="w-5 h-5 text-primary shrink-0 mt-0.5" />
                   <p className="text-sm text-foreground/70 leading-relaxed">
-                    Veuillez vous reconnecter avec votre nouveau mot de passe.
-                    Redirection automatique dans quelques secondes...
+                    {t("resetPassword.successNotice")}
                   </p>
                 </div>
 
                 <Link href="/login">
                   <Button className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:shadow-primary/25 transition-all hover:scale-[1.02]">
                     <span className="flex items-center gap-2">
-                      Se reconnecter
+                      {t("resetPassword.reconnect")}
                       <ArrowRight className="w-5 h-5" />
                     </span>
                   </Button>
@@ -468,6 +471,7 @@ function ResetPasswordContent() {
 
 // ── Page component with Suspense boundary ───────────────────
 export default function ResetPasswordPage() {
+  const { t } = useI18n();
   return (
     <Suspense
       fallback={
@@ -476,7 +480,7 @@ export default function ResetPasswordPage() {
             className="w-14 h-14 text-primary animate-pulse"
             style={{ animationDuration: "2s" }}
           />
-          <p className="text-foreground/50 text-sm tracking-wide">Un instant…</p>
+          <p className="text-foreground/50 text-sm tracking-wide">{t("resetPassword.loading")}</p>
         </div>
       }
     >

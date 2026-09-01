@@ -1,4 +1,5 @@
-// Contenu des modules de l'Académie du Mariage (vie de couple).
+// Contenu des modules de l'Académie du Mariage (vie de couple) — bilingue FR/EN.
+import type { Locale } from "@/lib/i18n";
 
 export interface AcademySection {
   title: string;
@@ -17,7 +18,7 @@ export interface AcademyModule {
   prayer: string;
 }
 
-export const ACADEMY_MODULES: AcademyModule[] = [
+const ACADEMY_MODULES_FR: AcademyModule[] = [
   {
     slug: "vision-biblique",
     icon: "church",
@@ -386,6 +387,387 @@ export const ACADEMY_MODULES: AcademyModule[] = [
   },
 ];
 
-export function getModule(slug: string): AcademyModule | undefined {
-  return ACADEMY_MODULES.find((m) => m.slug === slug);
+const ACADEMY_MODULES_EN: AcademyModule[] = [
+  {
+    slug: "vision-biblique",
+    icon: "church",
+    title: "The Biblical Vision of Marriage",
+    subtitle: "A sacred covenant, a reflection of Christ's love",
+    verse: {
+      text: "Therefore a man shall leave his father and his mother and hold fast to his wife, and they shall become one flesh.",
+      ref: "Genesis 2:24",
+    },
+    intro:
+      "Marriage is neither a simple social union nor a revocable contract: it is a covenant instituted by God, an image of Christ's faithful love for His Church. Understanding this vision radically changes the way we love and endure.",
+    sections: [
+      {
+        title: "A covenant, not a contract",
+        body: "A contract protects rights; a covenant binds people. Where the world says \"as long as I receive,\" the covenant says \"whatever happens.\" It is an unconditional commitment made before God.",
+        tip: "Ask yourself: do I love in order to receive, or in order to give?",
+      },
+      {
+        title: "\"One flesh\"",
+        body: "The unity of the couple touches body, soul, and spirit. It is built over time, through thousands of small choices to prefer the other and the \"we\" over the \"I.\"",
+      },
+      {
+        title: "A reflection of Christ and the Church",
+        body: "Ephesians 5 presents marriage as a mystery that proclaims the Gospel: a love that gives itself, forgives, and remains faithful. Your home becomes a testimony.",
+      },
+    ],
+    prayer:
+      "Lord, help us see our union as a sacred covenant. Teach us to love as You love: faithfully, patiently, to the very end. Amen.",
+  },
+  {
+    slug: "communication",
+    icon: "message",
+    title: "Communication & Conflict",
+    subtitle: "Listening, speaking truthfully, reconciling",
+    verse: {
+      text: "Let every person be quick to hear, slow to speak, slow to anger.",
+      ref: "James 1:19",
+    },
+    intro:
+      "Most tensions come not from differences, but from how they are handled. Healthy communication and conflict addressed with love strengthen the couple instead of dividing it.",
+    sections: [
+      {
+        title: "Listen to understand",
+        body: "Listen to understand, not to respond. Rephrase what the other says before reacting: \"If I understand correctly, you feel…\". Validation defuses half of all conflicts.",
+        tip: "Put the phone away and look the other person in the eyes while they speak.",
+      },
+      {
+        title: "Speak with truth and gentleness",
+        body: "Use \"I\" statements rather than an accusatory \"you\": \"I feel hurt when…\" instead of \"you always…\". Truth spoken in love (Ephesians 4:15) builds up; truth without love destroys.",
+      },
+      {
+        title: "Don't let the sun go down",
+        body: "\"Do not let the sun go down on your anger\" (Eph 4:26). You can pause a discussion, but never the relationship. Reconcile before nightfall, even imperfectly.",
+      },
+    ],
+    prayer:
+      "Father, set a guard over our lips and give patience to our hearts. May our words build up, and may our conflicts draw us closer to You and to one another. Amen.",
+  },
+  {
+    slug: "finances",
+    icon: "wallet",
+    title: "Managing Finances",
+    subtitle: "The faithful stewardship of a united home",
+    verse: {
+      text: "For where your treasure is, there your heart will be also.",
+      ref: "Matthew 6:21",
+    },
+    intro:
+      "Money is one of the leading causes of marital conflict — not from lack, but from lack of alignment. Managing finances as a team, under God's watch, protects unity.",
+    sections: [
+      {
+        title: "Total transparency",
+        body: "Before marriage, honestly share income, debts, and habits. Afterward, no more hidden \"my money / your money\": one home, one project, one shared vision.",
+        tip: "Set an amount beyond which any expense is decided together.",
+      },
+      {
+        title: "A budget built together",
+        body: "\"Which of you, desiring to build a tower, does not first sit down and count the cost?\" (Luke 14:28). A simple budget — give, save, live — prevents anxiety and blame.",
+      },
+      {
+        title: "Generosity and contentment",
+        body: "\"The love of money is a root of all kinds of evils\" (1 Tim 6:10). Give first, live with contentment, avoid the comparison race. Peace is worth more than the superfluous.",
+      },
+    ],
+    prayer:
+      "Lord, make us faithful stewards of what You entrust to us. Free us from greed and worry, and make us generous and united. Amen.",
+  },
+  {
+    slug: "belle-famille",
+    icon: "users",
+    title: "In-Laws & Boundaries",
+    subtitle: "Leaving to cling to one another, honoring without being overrun",
+    verse: {
+      text: "A man shall leave his father and his mother and hold fast to his wife.",
+      ref: "Genesis 2:24",
+    },
+    intro:
+      "Honoring one's parents (and in-laws) is a commandment; but founding a home also means \"leaving\" to make one's spouse the priority. Setting healthy boundaries protects the couple without being disrespectful.",
+    sections: [
+      {
+        title: "\"Leaving\" emotionally",
+        body: "Leaving does not mean abandoning your parents, but transferring your primary loyalty to your spouse. Household decisions are made as a couple, not under the guardianship of families.",
+        tip: "Always present a united front: decide as a couple before talking to your families.",
+      },
+      {
+        title: "Honoring with wisdom",
+        body: "Honor your elders, seek their advice, but filter it with discernment. Respect does not require blind obedience once you are an adult and married.",
+      },
+      {
+        title: "Clear and loving boundaries",
+        body: "Boundaries stated gently prevent bitterness: visiting hours, interference, the couple's private matters. Protecting marital intimacy is not rejection — it is wisdom.",
+      },
+    ],
+    prayer:
+      "Father, help us honor our families while protecting our home. Give us the courage to set boundaries with love, and the grace to remain united. Amen.",
+  },
+  {
+    slug: "intimite",
+    icon: "flame",
+    title: "Marital Intimacy",
+    subtitle: "A gift from God for the couple's unity",
+    verse: {
+      text: "Let marriage be held in honor among all, and let the marriage bed be undefiled.",
+      ref: "Hebrews 13:4",
+    },
+    intro:
+      "Far from being a taboo subject, intimacy is a gift from the Creator, reserved for and celebrated within marriage. Lived with respect, tenderness, and attentiveness, it seals the couple's unity.",
+    sections: [
+      {
+        title: "A gift, not a shame",
+        body: "The Song of Songs celebrates marital love without embarrassment. God designed intimacy for pleasure, comfort, and unity — to be honored, not trivialized or vilified.",
+      },
+      {
+        title: "Giving yourselves to one another",
+        body: "\"The husband should give to his wife her conjugal rights, and likewise the wife to her husband\" (1 Cor 7:3). Intimacy is a mutual service: each seeks the other's good and pleasure before their own.",
+        tip: "True intimacy begins outside the bedroom: through everyday tenderness and attentiveness.",
+      },
+      {
+        title: "Purity before, faithfulness after",
+        body: "Waiting for marriage is not a delay but a preparation: you learn to love differently. Afterward, faithfulness of heart and eyes keeps the fire burning.",
+      },
+    ],
+    prayer:
+      "Lord, sanctify our love. Teach us respect, tenderness, and self-giving, and keep our hearts faithful to one another. Amen.",
+  },
+  {
+    slug: "roles",
+    icon: "briefcase",
+    title: "Roles & Responsibilities",
+    subtitle: "Servant leadership and mutual submission",
+    verse: {
+      text: "Submit to one another out of reverence for Christ.",
+      ref: "Ephesians 5:21",
+    },
+    intro:
+      "The Christian home is neither a dictatorship nor a rivalry, but a team where each one serves the other. Understanding roles through love liberates instead of oppressing.",
+    sections: [
+      {
+        title: "Serving before leading",
+        body: "Christ's model is servant leadership: \"The greatest among you shall be your servant.\" To lead is to carry, protect, and sacrifice for the other — never to dominate.",
+      },
+      {
+        title: "Considering the other as more important",
+        body: "\"In humility count others more significant than yourselves\" (Phil 2:3). Each looks out for the other's interests. Submission is mutual, out of love.",
+        tip: "Divide tasks according to each person's gifts, not according to stereotypes.",
+      },
+      {
+        title: "Balancing ambitions and home",
+        body: "Work is a calling, but the home is not a variable to sacrifice. Decide on priorities together so that professional success is not paid for in absence.",
+      },
+    ],
+    prayer:
+      "Father, teach us to serve one another with humility. May no one seek to dominate, but may each prefer the other, in the image of Christ. Amen.",
+  },
+  {
+    slug: "vie-spirituelle",
+    icon: "heart",
+    title: "The Couple's Spiritual Life",
+    subtitle: "Building the family altar",
+    verse: {
+      text: "As for me and my house, we will serve the LORD.",
+      ref: "Joshua 24:15",
+    },
+    intro:
+      "A couple who pray together stand before God side by side. A shared spiritual life is the cement that withstands storms — it is the \"third strand\" of the cord that does not break.",
+    sections: [
+      {
+        title: "Praying together",
+        body: "\"Where two agree in asking, it will be granted to them\" (Mt 18:19-20). A few minutes of shared prayer each day bond a couple more than a long speech.",
+        tip: "Start small: a thank-you and a request, together, every evening.",
+      },
+      {
+        title: "Meditating on the Word",
+        body: "Read a short passage together and share what it says to you. The Word becomes a shared compass for your decisions and disagreements.",
+      },
+      {
+        title: "Serving as a team",
+        body: "Getting involved together in church or with others turns the focus away from oneself and strengthens unity. The couple who serve, grow.",
+      },
+    ],
+    prayer:
+      "Lord, be the center of our home. Give us the faithfulness to seek You together every day and to serve Your Kingdom as a team. Amen.",
+  },
+  {
+    slug: "enfants",
+    icon: "baby",
+    title: "Raising Children",
+    subtitle: "Passing on the faith to the next generations",
+    verse: {
+      text: "Train up a child in the way he should go; even when he is old he will not depart from it.",
+      ref: "Proverbs 22:6",
+    },
+    intro:
+      "Raising children is a mission entrusted by God. Even before they are born, it is wise to agree on values, discipline, and passing on the faith.",
+    sections: [
+      {
+        title: "Agreeing beforehand",
+        body: "Discuss your vision early: discipline, school, screens, faith. Parental disagreement in front of the child weakens authority; parental unity secures it.",
+        tip: "Agree in private, then present a united decision to the child.",
+      },
+      {
+        title: "Passing it on by example",
+        body: "\"These commandments… you shall teach diligently to your children\" (Deut 6:6-7). We mostly pass on what we live. Faith is seen before it is taught.",
+      },
+      {
+        title: "Discipline and tenderness",
+        body: "Biblical discipline aims to shape the heart, not break the child: firm boundaries within unconditional love. Correct without provoking (Eph 6:4).",
+      },
+    ],
+    prayer:
+      "Father, prepare our hearts to raise children for You. Give us wisdom, patience, and unity, so we may pass on the faith by example. Amen.",
+  },
+  {
+    slug: "temps-loisirs",
+    icon: "clock",
+    title: "Time & Leisure",
+    subtitle: "Cultivating unity and preserving balance",
+    verse: {
+      text: "For everything there is a season, and a time for every matter under heaven.",
+      ref: "Ecclesiastes 3:1",
+    },
+    intro:
+      "Love is nourished by shared time. Between work, family, and friends, protecting moments together and healthy rest is not a luxury: it is an investment in the couple.",
+    sections: [
+      {
+        title: "Protected time together",
+        body: "Plan regular moments just for the two of you, like a sacred appointment. What isn't planned eventually disappears under the urgent.",
+        tip: "Block off one \"couple\" evening a week and keep it like a commitment.",
+      },
+      {
+        title: "Rest and sabbath",
+        body: "\"Teach us to number our days\" (Ps 90:12). A rhythm with rest protects against the exhaustion that erodes relationships. God Himself rested.",
+      },
+      {
+        title: "Friendships and a secret garden",
+        body: "Cultivating healthy friendships and keeping some personal space nourishes the couple instead of stifling it. Unity is not fusion: two whole people love each other better.",
+      },
+    ],
+    prayer:
+      "Lord, help us manage our time well: to set aside time for each other, to rest in You, and to keep balance. Amen.",
+  },
+  {
+    slug: "cinq-piliers",
+    icon: "mountain",
+    title: "The 5 pillars of a home built on the rock",
+    subtitle: "Building on the rock, never on the sand",
+    verse: {
+      text: "Everyone then who hears these words of mine and does them will be like a wise man who built his house on the rock.",
+      ref: "Matthew 7:24-25",
+    },
+    intro:
+      "Two houses, two foundations. The storm comes for both, but only the one built on the rock stands. A solid home does not rest on feelings or luck, but on five pillars we choose to build, day after day.",
+    sections: [
+      {
+        title: "1. Christ, the cornerstone",
+        body: "\"Unless the LORD builds the house, the builders labor in vain\" (Ps 127:1). A couple united by the same faith places God at the center of their decisions: He becomes the anchor that does not give way when everything shakes.",
+        tip: "Ask yourself regularly: who is really at the center of our home today?",
+      },
+      {
+        title: "2. Prayer and the Word",
+        body: "The family altar is the second pillar. Praying and meditating together creates a spiritual intimacy that goes beyond emotion. The Word becomes the shared compass for the home's choices.",
+      },
+      {
+        title: "3. True communication",
+        body: "\"Quick to hear, slow to speak\" (James 1:19). A solid home speaks with truth and gentleness, without contempt or punitive silence. Name issues before they fester.",
+      },
+      {
+        title: "4. Faithful commitment",
+        body: "The covenant is lived over the long term: a loyalty that does not depend on mood. Faithfulness of heart, eyes, and actions protects the couple from storms and temptations.",
+      },
+      {
+        title: "5. Forgiveness and grace",
+        body: "\"Bear with each other and forgive one another\" (Col 3:13). No home stands without forgiveness: it is the mortar that repairs cracks and keeps resentment from fracturing the foundations.",
+        tip: "Don't let any offense settle in: decide to forgive before it hardens.",
+      },
+    ],
+    prayer:
+      "Lord, be the cornerstone of our home. Help us build on the rock of Your Word: in prayer, truth, faithfulness, and forgiveness, so that our house may stand in the storm. Amen.",
+  },
+  {
+    slug: "celibat-foi",
+    icon: "sprout",
+    title: "Singleness & Faith: a season of preparation",
+    subtitle: "Living the wait as a fruitful time",
+    verse: {
+      text: "Delight yourself in the LORD, and He will give you the desires of your heart.",
+      ref: "Psalm 37:4",
+    },
+    intro:
+      "Singleness is not a void to be urgently filled, nor a waiting room before \"real life.\" It is a precious season in which God prepares the heart, shapes character, and roots identity — so that one day you may love with maturity rather than out of lack.",
+    sections: [
+      {
+        title: "A season, not a punishment",
+        body: "Every season has its grace (Ecc 3:1). Singleness offers a rare freedom: devoting yourself to God with an undivided heart (1 Cor 7:32-34), getting to know yourself, and healing. Living it fully means refusing to put your life on pause.",
+        tip: "Ask yourself: what does this season allow me to experience that I won't be able to afterward?",
+      },
+      {
+        title: "Preparing rather than rushing",
+        body: "Rather than frantically searching for \"the right person,\" become the right person. Work on your character, your finances, your wounds: you don't attract what you desire, but what you are.",
+      },
+      {
+        title: "Guarding your heart and your purity",
+        body: "\"Keep your heart with all vigilance, for from it flow the springs of life\" (Prov 4:23). Purity is not a deprivation but a protection: it preserves the gift of intimacy for the covenant to come.",
+      },
+      {
+        title: "Waiting while serving",
+        body: "\"It is good that one should wait quietly for the salvation of the LORD\" (Lam 3:26). Waiting does not mean staying inactive: serve, build healthy friendships, grow in the Church. Fruitful waiting bears fruit.",
+      },
+    ],
+    prayer:
+      "Lord, teach me to live this season without bitterness or haste. Shape my character, keep my heart pure, and make You my delight, as I await the covenant You are preparing. Amen.",
+  },
+  {
+    slug: "conflits-bibliques",
+    icon: "handshake",
+    title: "Handling Conflict God's Way",
+    subtitle: "From disagreement to reconciliation",
+    verse: {
+      text: "A soft answer turns away wrath, but a harsh word stirs up anger.",
+      ref: "Proverbs 15:1",
+    },
+    intro:
+      "Conflict is not the sign of a failed couple: it is the sign of two different people who love each other. What destroys is not the disagreement, but the way it is handled. The Bible offers a clear path to turn dispute into reconciliation.",
+    sections: [
+      {
+        title: "Choosing the gentle answer",
+        body: "\"A soft answer turns away wrath\" (Prov 15:1). Tone matters as much as words. Lowering your voice, slowing down, refusing sarcasm and contempt: that alone defuses half the conflict.",
+        tip: "Before responding in the heat of emotion, breathe and ask yourself: do I want to win, or to reconcile?",
+      },
+      {
+        title: "Resolving privately and directly",
+        body: "\"Go and tell him his fault, between you and him alone\" (Mt 18:15). Speak to your spouse, not about your spouse: not to social media, not to families, not to friends. The couple's laundry is washed together, with respect.",
+      },
+      {
+        title: "Removing your own plank first",
+        body: "\"First take the log out of your own eye\" (Mt 7:3-5). Before accusing, acknowledge your part. The humility to say \"I was wrong on this point\" opens the other's heart more than a long defense.",
+      },
+      {
+        title: "Forgiving as Christ forgave",
+        body: "\"Forgiving each other, as Christ forgave you\" (Col 3:13). The goal is not to be right, but to restore the bond. Forgiveness closes the conflict and keeps resentment from coming back to feed it.",
+        tip: "End every reconciliation with a concrete gesture: an embrace, a short prayer together.",
+      },
+    ],
+    prayer:
+      "Father, in our disagreements, keep our words gentle and our hearts humble. Teach us to correct one another in love, to acknowledge our faults, and to forgive as You forgive us. Amen.",
+  },
+];
+
+const MODULES_BY_LOCALE: Record<Locale, AcademyModule[]> = {
+  fr: ACADEMY_MODULES_FR,
+  en: ACADEMY_MODULES_EN,
+};
+
+export function getAcademyModules(locale: Locale): AcademyModule[] {
+  return MODULES_BY_LOCALE[locale] || ACADEMY_MODULES_FR;
 }
+
+export function getModule(locale: Locale, slug: string): AcademyModule | undefined {
+  return getAcademyModules(locale).find((m) => m.slug === slug);
+}
+
+// Rétrocompatibilité : liste française par défaut.
+export const ACADEMY_MODULES = ACADEMY_MODULES_FR;

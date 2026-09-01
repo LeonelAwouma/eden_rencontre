@@ -19,7 +19,20 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
+import { useI18n } from "@/lib/i18n";
 import type { Tab } from "./dashboard-types";
+
+const TAB_LABEL_KEY: Record<string, string> = {
+  Home: "dashboardTabs.home", Accueil: "dashboardTabs.home",
+  Discover: "dashboardTabs.discover", Découvrir: "dashboardTabs.discover",
+  Visitors: "dashboardTabs.visitors", Visiteurs: "dashboardTabs.visitors",
+  Favorites: "dashboardTabs.favorites", Favoris: "dashboardTabs.favorites",
+  Requests: "dashboardTabs.requests", Demandes: "dashboardTabs.requests",
+  Premium: "dashboardTabs.premium",
+  Messages: "dashboardTabs.messages",
+  Notifications: "dashboardTabs.notifications",
+  Profile: "dashboardTabs.profile", Profil: "dashboardTabs.profile",
+};
 
 interface SidebarProps {
   activeTab: Tab;
@@ -59,6 +72,7 @@ export function DashboardSidebar({
   onLogout,
 }: SidebarProps) {
   const router = useRouter();
+  const { t } = useI18n();
 
   const handleNavClick = (name: Tab) => {
     if (name === "Profile") {
@@ -117,7 +131,7 @@ export function DashboardSidebar({
                   item.highlight && !active && "text-[#C6A15B]"
                 )}
               />
-              <span className="flex-1 text-left">{item.name}</span>
+              <span className="flex-1 text-left">{t(TAB_LABEL_KEY[item.name] || item.name)}</span>
               {badgeCount > 0 && (
                 <span
                   className="w-5 h-5 text-[10px] font-black rounded-full flex items-center justify-center"
@@ -152,17 +166,17 @@ export function DashboardSidebar({
         >
           <Crown className="w-6 h-6 mx-auto mb-2" style={{ color: "#C6A15B" }} />
           <p className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>
-            Eden Or
+            {t("dashboardSidebar.premiumCardTitle")}
           </p>
           <p className="text-xs mt-1 mb-3 leading-relaxed" style={{ color: "#777777" }}>
-            Unlimited visibility and messages
+            {t("dashboardSidebar.premiumCardText")}
           </p>
           <Button
             onClick={() => setActiveTab("Premium")}
             className="w-full h-9 font-bold rounded-xl text-xs"
             style={{ background: "#486B46", color: "#FFFFFF" }}
           >
-            Upgrade
+            {t("dashboardSidebar.upgrade")}
           </Button>
         </div>
 
@@ -190,10 +204,10 @@ export function DashboardSidebar({
           </button>
           <button
             onClick={onLogout}
-            title="Log out"
+            title={t("dashboardSidebar.logout")}
             className="transition-colors p-1 hover:opacity-70"
             style={{ color: "#777777" }}
-            aria-label="Log out"
+            aria-label={t("dashboardSidebar.logout")}
           >
             <LogOut className="w-5 h-5" />
           </button>

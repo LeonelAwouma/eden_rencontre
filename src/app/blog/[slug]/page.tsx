@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, User, Clock, ArrowLeft, BookOpen, Tag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { useI18n } from "@/lib/i18n";
 
 interface BlogPostData {
   id: string; title: string; slug: string; excerpt: string | null; content: string | null;
@@ -21,6 +22,7 @@ interface BlogPostData {
 
 export default function BlogPostPage() {
   const params = useParams();
+  const { t, locale } = useI18n();
   const slug = params.slug as string;
   const [post, setPost] = useState<BlogPostData | null>(null);
   const [related, setRelated] = useState<any[]>([]);
@@ -52,15 +54,15 @@ export default function BlogPostPage() {
       <Navigation /><main className="flex-1 flex items-center justify-center">
         <div className="text-center space-y-4">
           <BookOpen className="w-16 h-16 mx-auto text-foreground/20" />
-          <h1 className="font-headline text-3xl font-bold">Article introuvable</h1>
-          <Link href="/blog"><Button>Retour au blog</Button></Link>
+          <h1 className="font-headline text-3xl font-bold">{t("blogPost.notFoundTitle")}</h1>
+          <Link href="/blog"><Button>{t("blogPost.backToBlog")}</Button></Link>
         </div>
       </main><Footer />
     </div>
   );
 
   const formattedDate = post.published_at
-    ? new Date(post.published_at).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric" })
+    ? new Date(post.published_at).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR", { day: "numeric", month: "long", year: "numeric" })
     : "";
 
   return (
@@ -70,7 +72,7 @@ export default function BlogPostPage() {
         <section className="relative py-16 sm:py-24 bg-card">
           <div className="container mx-auto px-4"><div className="max-w-3xl mx-auto">
             <Link href="/blog" className="inline-flex items-center gap-2 text-sm text-foreground/50 hover:text-accent mb-6 transition-colors">
-              <ArrowLeft className="w-4 h-4" /> Retour au blog
+              <ArrowLeft className="w-4 h-4" /> {t("blogPost.backToBlog")}
             </Link>
             {post.category && <Badge className="mb-4 bg-accent/10 text-accent border-none">{post.category.name}</Badge>}
             <h1 className="font-headline text-3xl sm:text-4xl lg:text-5xl font-bold mb-6 leading-tight">{post.title}</h1>
@@ -111,7 +113,7 @@ export default function BlogPostPage() {
         {related.length > 0 && (
           <section className="py-16 bg-card border-t border-foreground/5">
             <div className="container mx-auto px-4">
-              <h2 className="font-headline text-2xl font-bold text-center mb-10">Articles similaires</h2>
+              <h2 className="font-headline text-2xl font-bold text-center mb-10">{t("blogPost.similarArticles")}</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
                 {related.map((r: any) => (
                   <Link key={r.id} href={`/blog/${r.slug}`}>

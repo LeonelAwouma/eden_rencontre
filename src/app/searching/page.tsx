@@ -4,28 +4,28 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { Monogram } from "@/components/ornaments";
-
-const PHASES = [
-  "Préparation de votre sanctuaire…",
-  "Analyse de vos affinités spirituelles…",
-  "Recherche des profils alignés sur vos valeurs…",
-  "Chercher son alliance…",
-];
-
-// Phrases d'accueil pour un membre qui revient (reconnexion automatique).
-const RETURNING_PHASES = [
-  "Votre place vous attendait…",
-  "Nous avons veillé sur votre sanctuaire…",
-  "Les retrouvailles sont une grâce…",
-  "Heureux de vous revoir parmi nous…",
-];
+import { useI18n } from "@/lib/i18n";
 
 export default function SearchingPage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [phase, setPhase] = useState(0);
   const [progress, setProgress] = useState(0);
   const [name, setName] = useState<string | null>(null);
   const [returning, setReturning] = useState(false);
+
+  const PHASES = [
+    t("searching.phase1"),
+    t("searching.phase2"),
+    t("searching.phase3"),
+    t("searching.phase4"),
+  ];
+  const RETURNING_PHASES = [
+    t("searching.returningPhase1"),
+    t("searching.returningPhase2"),
+    t("searching.returningPhase3"),
+    t("searching.returningPhase4"),
+  ];
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -85,7 +85,7 @@ export default function SearchingPage() {
 
         {name && (
           <p className="text-foreground/40 text-sm mb-10">
-            {returning ? "Heureux de vous retrouver, " : "Bienvenue, "}<span className="text-primary font-bold">{name}</span>
+            {returning ? t("searching.welcomeBack") : t("searching.welcome")}<span className="text-primary font-bold">{name}</span>
           </p>
         )}
 
@@ -106,7 +106,7 @@ export default function SearchingPage() {
             />
           </div>
           <p className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/30 mt-4">
-            {progress}% • Que la paix vous accompagne
+            {progress}{t("searching.progressFooter")}
           </p>
         </div>
       </div>

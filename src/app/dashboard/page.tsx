@@ -27,7 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PROFILES } from "@/lib/profiles";
 import { MARRIAGE_VALUES, getValue } from "@/lib/values";
 import { computeMatchScore, rankByMatch } from "@/lib/matching";
-import { getMyOnboarding, QUESTIONNAIRES, saveOnboarding, type Questionnaire, type Field } from "@/lib/onboarding";
+import { getMyOnboarding, getQuestionnaires, saveOnboarding, type Questionnaire, type Field } from "@/lib/onboarding";
 import { supabase } from "@/lib/supabase";
 import {
   upsertMyProfile, searchUsers, listConversations, getMessages,
@@ -48,6 +48,19 @@ import { ChatGuide } from "@/components/dashboard/chat-guide";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { Tab, TABS, ComposerType, FeedPost, EDIT_WINDOW_MS, DAILY_VERSES, VERSE_OF_DAY, getDailyVerses } from "@/components/dashboard/dashboard-types";
+import { useI18n } from "@/lib/i18n";
+
+const TAB_LABEL_KEY: Record<string, string> = {
+  Home: "dashboardTabs.home", Accueil: "dashboardTabs.home",
+  Discover: "dashboardTabs.discover", Découvrir: "dashboardTabs.discover",
+  Visitors: "dashboardTabs.visitors", Visiteurs: "dashboardTabs.visitors",
+  Favorites: "dashboardTabs.favorites", Favoris: "dashboardTabs.favorites",
+  Requests: "dashboardTabs.requests", Demandes: "dashboardTabs.requests",
+  Premium: "dashboardTabs.premium",
+  Messages: "dashboardTabs.messages",
+  Notifications: "dashboardTabs.notifications",
+  Profile: "dashboardTabs.profile", Profil: "dashboardTabs.profile",
+};
 
 // ── Helper ──
 function formatTime(iso: string) {
@@ -66,6 +79,7 @@ function FluentEmoji({ char, url, className }: { char: string; url: string; clas
 function PostActions({ likes, comments, onLike, onComment, onPray, onShare }: {
   likes: number; comments: number; onLike?: () => void; onComment?: () => void; onPray?: () => void; onShare?: () => void;
 }) {
+  const { t } = useI18n();
   const btn = "flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-medium transition-all duration-200 hover:scale-[1.02]";
   return (
     <div className="flex items-center gap-1 px-1 py-2" style={{ borderTop: "1px solid #F0EDE8" }}>
@@ -82,12 +96,12 @@ function PostActions({ likes, comments, onLike, onComment, onPray, onShare }: {
       <button onClick={onPray} className={cn(btn)} style={{ color: "#777777" }}
         onMouseEnter={e => { e.currentTarget.style.background = "#EEF5EC"; e.currentTarget.style.color = "#486B46"; }}
         onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#777777"; }}>
-        🙏 Pray
+        🙏 {t("dashboard.pray")}
       </button>
       <button onClick={onShare} className={cn(btn)} style={{ color: "#777777" }}
         onMouseEnter={e => { e.currentTarget.style.background = "#EEF5EC"; e.currentTarget.style.color = "#486B46"; }}
         onMouseLeave={e => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#777777"; }}>
-        <Share2 className="w-4 h-4" /> Share
+        <Share2 className="w-4 h-4" /> {t("dashboard.share")}
       </button>
     </div>
   );
@@ -137,6 +151,7 @@ function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match }: {
   m: MemberProfile; isFavorite: boolean; onToggleFav: () => void; onOpen: () => void;
   action?: React.ReactNode; match?: number | null;
 }) {
+  const { t } = useI18n();
   const loc = [m.city, m.country].filter(Boolean).join(", ");
   return (
     <div className="group overflow-hidden rounded-2xl flex flex-col transition-all duration-200 cursor-pointer"
@@ -170,7 +185,7 @@ function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match }: {
             </div>}
           </div>
         </button>
-        <button onClick={onToggleFav} aria-label={isFavorite ? "Retirer des favoris" : "Ajouter aux favoris"}
+        <button onClick={onToggleFav} aria-label={isFavorite ? t("memberCard.removeFavorite") : t("memberCard.addFavorite")}
           className={cn("absolute top-2.5 right-2.5 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-xl transition-all",
             isFavorite ? "text-white" : "bg-black/30 text-white hover:text-white")}
           style={isFavorite ? { background: "#C6A15B" } : {}}>
@@ -196,11 +211,13 @@ function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match }: {
 export default function DashboardPage() {
   const { toast } = useToast();
   const router = useRouter();
+  const { t, locale } = useI18n();
+  const tabLabel = (tab: Tab) => t(TAB_LABEL_KEY[tab] || tab);
   const [activeTab, setActiveTab] = useState<Tab>("Accueil");
   const [showPremiumBanner, setShowPremiumBanner] = useState(true);
   const [dailyQuote, setDailyQuote] = useState<{ text: string; ref: string } | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [discoverFilter, setDiscoverFilter] = useState("Tous");
+  const [discoverFilter, setDiscoverFilter] = useState("all");
   const [discoverSearch, setDiscoverSearch] = useState("");
   const [discoverCount, setDiscoverCount] = useState(24);
   const [user, setUser] = useState<EdenUser | null>(null);
@@ -379,7 +396,7 @@ export default function DashboardPage() {
   const handleStartConversation = async (other: DirectoryUser) => {
     const convId = await startConversation(other.id);
     if (!convId) {
-      toast({ title: "Friends only 🙏", description: `You must first be friends with ${other.name}.`, variant: "destructive" });
+      toast({ title: t("dashboard.toastFriendsOnlyTitle"), description: t("dashboard.toastFriendsOnlyDesc", { name: other.name }), variant: "destructive" });
       return;
     }
     setShowNewChat(false); setUserQuery(""); setUserResults([]);
@@ -412,7 +429,7 @@ export default function DashboardPage() {
       const res = await uploadChatImage(pendingImage, activeConvId);
       setUploading(false);
       if (res.error || !res.url) {
-        toast({ title: "Upload failed", description: res.error || "Please retry.", variant: "destructive" });
+        toast({ title: t("dashboard.toastUploadFailed"), description: res.error || t("dashboard.toastPleaseRetry"), variant: "destructive" });
         return;
       }
     const sentImg = await sendChatMessage(activeConvId, text, res.url, meId, activeConv?.otherId);
@@ -434,17 +451,17 @@ export default function DashboardPage() {
 
   const notifySendError = (error: string) => {
     if (/row-level|policy|not_friends|permission/i.test(error)) {
-      const name = activeConv?.name || "ce membre";
-      toast({ title: "Become friends to chat 🤝", description: `Send an alliance request to ${name}.` });
+      const name = activeConv?.name || t("dashboard.thisMember");
+      toast({ title: t("dashboard.toastBecomeFriendsTitle"), description: t("dashboard.toastBecomeFriendsDesc", { name }) });
       return;
     }
-    toast({ title: "Message not sent", description: error, variant: "destructive" });
+    toast({ title: t("dashboard.toastMessageNotSent"), description: error, variant: "destructive" });
   };
 
   const handlePickImage = (file: File | undefined) => {
     if (!file) return;
-    if (!file.type.startsWith("image/")) { toast({ title: "Unsupported format", variant: "destructive" }); return; }
-    if (file.size > 5 * 1024 * 1024) { toast({ title: "Image too large", variant: "destructive" }); return; }
+    if (!file.type.startsWith("image/")) { toast({ title: t("dashboard.toastUnsupportedFormat"), variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: t("dashboard.toastImageTooLarge"), variant: "destructive" }); return; }
     if (pendingPreview) URL.revokeObjectURL(pendingPreview);
     setPendingImage(file);
     setPendingPreview(URL.createObjectURL(file));
@@ -459,13 +476,13 @@ export default function DashboardPage() {
     setProfileForm((prev) => {
       const current = prev.marriageVision;
       if (current.includes(id)) return { ...prev, marriageVision: current.filter((v) => v !== id) };
-      if (current.length >= 3) { toast({ title: "3 values maximum" }); return prev; }
+      if (current.length >= 3) { toast({ title: t("dashboard.toastMax3Values") }); return prev; }
       return { ...prev, marriageVision: [...current, id] };
     });
   };
 
   const handleSaveProfile = async () => {
-    if (!profileForm.name.trim()) { toast({ title: "Name required", variant: "destructive" }); return; }
+    if (!profileForm.name.trim()) { toast({ title: t("dashboard.toastNameRequired"), variant: "destructive" }); return; }
     setSavingProfile(true);
     const res = await updateProfile({
       name: profileForm.name.trim(), city: profileForm.city.trim(), country: profileForm.country.trim(),
@@ -473,23 +490,23 @@ export default function DashboardPage() {
       bio: profileForm.bio.trim(), marriageVision: profileForm.marriageVision,
     });
     setSavingProfile(false);
-    if (!res.ok) { toast({ title: "Failed", description: res.error, variant: "destructive" }); return; }
+    if (!res.ok) { toast({ title: t("dashboard.toastFailed"), description: res.error, variant: "destructive" }); return; }
     setUser(res.user); setEditingProfile(false);
-    toast({ title: "Profile updated 🙏" });
+    toast({ title: t("dashboard.toastProfileUpdated") });
   };
 
   const handlePickAvatar = async (file: File | undefined) => {
     if (!file || !user) return;
-    if (!file.type.startsWith("image/")) { toast({ title: "Unsupported format", variant: "destructive" }); return; }
-    if (file.size > 5 * 1024 * 1024) { toast({ title: "Image too large", variant: "destructive" }); return; }
+    if (!file.type.startsWith("image/")) { toast({ title: t("dashboard.toastUnsupportedFormat"), variant: "destructive" }); return; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: t("dashboard.toastImageTooLarge"), variant: "destructive" }); return; }
     setUploadingAvatar(true);
     const up = await uploadAvatar(file, user.id || "anon");
     setUploadingAvatar(false);
-    if (up.error || !up.url) { toast({ title: "Failed", description: up.error || "Please retry.", variant: "destructive" }); return; }
+    if (up.error || !up.url) { toast({ title: t("dashboard.toastFailed"), description: up.error || t("dashboard.toastPleaseRetry"), variant: "destructive" }); return; }
     const res = await updateProfile({ avatar_url: up.url });
-    if (!res.ok) { toast({ title: "Failed", description: res.error, variant: "destructive" }); return; }
+    if (!res.ok) { toast({ title: t("dashboard.toastFailed"), description: res.error, variant: "destructive" }); return; }
     setUser(res.user);
-    toast({ title: "Photo updated 🙏" });
+    toast({ title: t("dashboard.toastPhotoUpdated") });
   };
 
   // ── Social ──
@@ -518,7 +535,7 @@ export default function DashboardPage() {
     if (!res.ok) {
       setFavoriteIds((prev) => { const n = new Set(prev); isFav ? n.add(member.id) : n.delete(member.id); return n; });
       setFavoriteMembers((prev) => (isFav ? [member, ...prev] : prev.filter((m) => m.id !== member.id)));
-      toast({ title: "Failed", description: res.error || "Please retry.", variant: "destructive" });
+      toast({ title: t("dashboard.toastFailed"), description: res.error || t("dashboard.toastPleaseRetry"), variant: "destructive" });
     }
   };
 
@@ -527,17 +544,17 @@ export default function DashboardPage() {
     const res = await sendFriendRequest(member.id);
     if (!res.ok) {
       setRelations((prev) => { const n = { ...prev }; delete n[member.id]; return n; });
-      toast({ title: "Failed", description: res.error || "Please retry.", variant: "destructive" }); return;
+      toast({ title: t("dashboard.toastFailed"), description: res.error || t("dashboard.toastPleaseRetry"), variant: "destructive" }); return;
     }
-    toast({ title: "Invitation sent 🙏" });
+    toast({ title: t("dashboard.toastInvitationSent") });
   };
 
   const handleRespondRequest = async (req: FriendRequest, accept: boolean) => {
     const res = await respondToRequest(req.id, accept);
-    if (!res.ok) { toast({ title: "Failed", description: res.error, variant: "destructive" }); return; }
+    if (!res.ok) { toast({ title: t("dashboard.toastFailed"), description: res.error, variant: "destructive" }); return; }
     setIncomingRequests((prev) => prev.filter((r) => r.id !== req.id));
     setRelations((prev) => ({ ...prev, [req.requester.id]: { status: accept ? "friends" : "declined", requestId: req.id } }));
-    toast({ title: accept ? "Alliance acceptée 🙏" : "Demande déclinée" });
+    toast({ title: accept ? t("dashboard.toastAllianceAccepted") : t("dashboard.toastRequestDeclined") });
   };
 
   const openComposer = (type: ComposerType) => { setComposerType(type); setComposerOpen(true); };
@@ -545,8 +562,8 @@ export default function DashboardPage() {
   const handleComposerImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]; e.target.value = "";
     if (!file) return;
-    if (!file.type.startsWith("image/")) { toast({ title: "Unsupported format", variant: "destructive" }); return; }
-    if (file.size > 10 * 1024 * 1024) { toast({ title: "Image too large (max 10 Mo)", variant: "destructive" }); return; }
+    if (!file.type.startsWith("image/")) { toast({ title: t("dashboard.toastUnsupportedFormat"), variant: "destructive" }); return; }
+    if (file.size > 10 * 1024 * 1024) { toast({ title: t("dashboard.toastImageTooLarge10"), variant: "destructive" }); return; }
     setComposerImageFile(file);
     const reader = new FileReader();
     reader.onload = () => { setComposerImage(reader.result as string); setComposerOpen(true); };
@@ -564,7 +581,7 @@ export default function DashboardPage() {
   };
 
   const publishPost = async () => {
-    if (!composerText.trim() && !composerImage) { toast({ title: "Rien à publier", variant: "destructive" }); return; }
+    if (!composerText.trim() && !composerImage) { toast({ title: t("dashboard.toastNothingToPublish"), variant: "destructive" }); return; }
 
     // For "Témoignage" type: submit to the API with pending_review status
     if (composerType === "Témoignage" && user?.id) {
@@ -582,17 +599,17 @@ export default function DashboardPage() {
         const res = await fetch("/api/testimonials", { method: "POST", body });
         if (!res.ok) {
           const data = await res.json();
-          throw new Error(data.error || "Error lors de la soumission");
+          throw new Error(data.error || t("dashboard.toastSubmissionError"));
         }
 
         setTestimonialSubmitted(true);
         setTestimonialSubmitting(false);
-        toast({ title: "Testimony submitted 🙏", description: "It will be visible after approval by an administrator." });
+        toast({ title: t("dashboard.toastTestimonySubmitted"), description: t("dashboard.toastTestimonySubmittedDesc") });
         return;
       } catch (err) {
         setTestimonialSubmitting(false);
-        const message = err instanceof Error ? err.message : "Unknown error";
-        toast({ title: "Failed de la soumission", description: message, variant: "destructive" });
+        const message = err instanceof Error ? err.message : t("dashboard.toastUnknownError");
+        toast({ title: t("dashboard.toastSubmissionFailed"), description: message, variant: "destructive" });
         return;
       }
     }
@@ -604,30 +621,30 @@ export default function DashboardPage() {
     };
     setFeed((prev) => [newPost, ...prev]);
     resetComposer();
-    toast({ title: "Publication partagée 🙏" });
+    toast({ title: t("dashboard.toastPostShared") });
   };
 
   const myPosts = feed.filter((p) => p.mine);
   const canEditPost = (p: FeedPost) => !!p.createdAt && Date.now() - p.createdAt < EDIT_WINDOW_MS;
   const deletePost = (id: string) => {
-    if (!window.confirm("Supprimer cette publication ?")) return;
+    if (!window.confirm(t("dashboard.confirmDeletePost"))) return;
     setFeed((prev) => prev.filter((p) => p.id !== id));
     if (editingPostId === id) cancelEditPost();
-    toast({ title: "Publication supprimée" });
+    toast({ title: t("dashboard.toastPostDeleted") });
   };
   const startEditPost = (p: FeedPost) => {
-    if (!canEditPost(p)) { toast({ title: "Modification expirée", variant: "destructive" }); return; }
+    if (!canEditPost(p)) { toast({ title: t("dashboard.toastEditExpired"), variant: "destructive" }); return; }
     setEditingPostId(p.id); setEditPostText(p.text); setEditPostImage(p.image ?? null);
   };
   const cancelEditPost = () => { setEditingPostId(null); setEditPostText(""); setEditPostImage(null); };
   const saveEditPost = () => {
     if (!editingPostId) return;
     const target = feed.find((p) => p.id === editingPostId);
-    if (target && !canEditPost(target)) { toast({ title: "Modification expirée", variant: "destructive" }); cancelEditPost(); return; }
-    if (!editPostText.trim() && !editPostImage) { toast({ title: "Publication vide", variant: "destructive" }); return; }
+    if (target && !canEditPost(target)) { toast({ title: t("dashboard.toastEditExpired"), variant: "destructive" }); cancelEditPost(); return; }
+    if (!editPostText.trim() && !editPostImage) { toast({ title: t("dashboard.toastEmptyPost"), variant: "destructive" }); return; }
     setFeed((prev) => prev.map((p) => (p.id === editingPostId ? { ...p, text: editPostText.trim(), image: editPostImage, when: "Modifié à l'instant" } : p)));
     cancelEditPost();
-    toast({ title: "Publication modifiée ✍️" });
+    toast({ title: t("dashboard.toastPostEdited") });
   };
 
   // ── Effects ──
@@ -640,8 +657,8 @@ export default function DashboardPage() {
     setDailyQuote(defaultVerses[dayOfYear % defaultVerses.length]);
     getSession().then(setUser);
     const params = new URLSearchParams(window.location.search);
-    const t = params.get("tab");
-    if (t && (TABS as string[]).includes(t)) setActiveTab(t as Tab);
+    const tabParam = params.get("tab");
+    if (tabParam && (TABS as string[]).includes(tabParam)) setActiveTab(tabParam as Tab);
     const conv = params.get("conv");
     if (conv) setPendingConv(conv);
   }, []);
@@ -667,7 +684,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!user?.id) return;
     upsertMyProfile(user).then((r) => {
-      if (r.error) toast({ title: "Directory unavailable", description: r.error, variant: "destructive" });
+      if (r.error) toast({ title: t("dashboard.toastDirectoryUnavailable"), description: r.error, variant: "destructive" });
       else loadSocial();
     });
     loadConversations();
@@ -709,11 +726,11 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!showNewChat) return;
     let active = true;
-    const t = setTimeout(async () => {
+    const timer = setTimeout(async () => {
       const res = await searchUsers(userQuery, meId);
       if (active) { setUserResults(res.users); setSearchError(res.error || null); }
     }, 250);
-    return () => { active = false; clearTimeout(t); };
+    return () => { active = false; clearTimeout(timer); };
   }, [userQuery, showNewChat]);
 
   useEffect(() => {
@@ -752,7 +769,7 @@ export default function DashboardPage() {
         loadConversations();
         if (activeConvId !== m.conversation_id) {
           const conv = conversations.find((c) => c.id === m.conversation_id);
-          toast({ title: conv ? `New message from ${conv.name}` : "New message", description: m.image_url ? "📷 Photo" : m.content });
+          toast({ title: conv ? t("dashboard.toastNewMessageFrom", { name: conv.name }) : t("dashboard.toastNewMessage"), description: m.image_url ? t("dashboard.toastNewMessagePhoto") : m.content });
         }
       });
     }
@@ -766,7 +783,7 @@ export default function DashboardPage() {
     const channel = supabase
       .channel(`friendships-${meId}`)
       .on("postgres_changes", { event: "*", schema: "public", table: "friendships", filter: `addressee_id=eq.${meId}` }, (payload) => {
-        if (payload.eventType === "INSERT") toast({ title: "Nouvelle demande d'alliance 💌" });
+        if (payload.eventType === "INSERT") toast({ title: t("dashboard.toastNewAllianceRequest") });
         loadSocial();
       })
       .on("postgres_changes", { event: "*", schema: "public", table: "friendships", filter: `requester_id=eq.${meId}` }, () => loadSocial())
@@ -798,9 +815,9 @@ export default function DashboardPage() {
       if (!result.ok) throw new Error(result.error);
       setQuestionnaireAnswers(localQAnswers);
       setEditingQuestionnaire(null);
-      toast({ title: "Faith journey updated 🙏" });
+      toast({ title: t("dashboard.toastFaithJourneyUpdated") });
     } catch (e: any) {
-      toast({ title: "Error", description: e.message, variant: "destructive" });
+      toast({ title: t("dashboard.toastError"), description: e.message, variant: "destructive" });
     } finally {
       setSavingQuestionnaire(false);
     }
@@ -836,13 +853,13 @@ export default function DashboardPage() {
             <span className="font-headline text-lg font-bold text-foreground">Eden <span>Connexion</span></span>
           </Link>
           {/* Desktop page title */}
-          <h1 className="hidden lg:block font-headline text-xl font-bold" style={{ color: "#2F2F2F" }}>{activeTab}</h1>
+          <h1 className="hidden lg:block font-headline text-xl font-bold" style={{ color: "#2F2F2F" }}>{tabLabel(activeTab)}</h1>
           <div className="flex items-center gap-2">
             <button className="hidden sm:flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold transition-colors"
               style={{ background: "#EEF5EC", color: "#486B46", border: "1px solid #C6D4C0" }}>
-              <Zap className="w-3.5 h-3.5" style={{ fill: "#C6A15B", color: "#C6A15B" }} /> Boost
+              <Zap className="w-3.5 h-3.5" style={{ fill: "#C6A15B", color: "#C6A15B" }} /> {t("dashboard.boost")}
             </button>
-            <button onClick={() => setActiveTab("Notifications")} title="Notifications"
+            <button onClick={() => setActiveTab("Notifications")} title={t("dashboardTabs.notifications")}
               className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
               style={{ color: "#777777" }}>
               <MessageCircle className="w-5 h-5" />
@@ -870,7 +887,7 @@ export default function DashboardPage() {
                 className={cn("flex items-center gap-6 text-2xl font-headline font-bold transition-colors",
                   activeTab === name ? "text-foreground" : "text-foreground/60")}
                 style={activeTab === name ? { color: "#486B46" } : {}}>
-                {name}
+                {tabLabel(name)}
               </button>
             ))}
           </div>
@@ -895,7 +912,7 @@ export default function DashboardPage() {
                   <div className="relative z-10 flex flex-col items-center">
                     <Monogram className="w-10 h-8 mb-4" style={{ color: "#6E8B63" }} />
                     <span className="text-[10px] font-bold uppercase tracking-[0.4em] mb-4" style={{ color: "#6E8B63" }}>
-                      Word of the Day
+                      {t("dashboard.wordOfDay")}
                     </span>
                     <p key={(dailyQuote ?? VERSE_OF_DAY).ref} className="font-headline text-xl sm:text-2xl lg:text-[1.75rem] italic leading-relaxed max-w-xl animate-in fade-in duration-700"
                       style={{ color: "#2F2F2F" }}>
@@ -906,7 +923,7 @@ export default function DashboardPage() {
                     </p>
                     <span style={{ color: "#C6D4C0" }}><Flourish className="w-36 h-3 mt-4" /></span>
                     <p className="text-sm mt-3" style={{ color: "#777777" }}>
-                      Peace be with you, <span className="font-semibold" style={{ color: "#2F2F2F" }}>{displayName}</span>.
+                      {t("dashboard.peaceBeWith")} <span className="font-semibold" style={{ color: "#2F2F2F" }}>{displayName}</span>.
                     </p>
                   </div>
                 </motion.section>
@@ -929,30 +946,31 @@ export default function DashboardPage() {
                               <CheckCircle2 className="w-7 h-7" style={{ color: "#486B46" }} />
                             </div>
                             <div className="space-y-1">
-                              <p className="font-headline text-lg font-bold" style={{ color: "#2F2F2F" }}>Thank you for your testimony!</p>
+                              <p className="font-headline text-lg font-bold" style={{ color: "#2F2F2F" }}>{t("dashboard.thankYouTestimony")}</p>
                               <p className="text-sm" style={{ color: "#777777" }}>
-                                Your testimony is <strong style={{ color: "#C6A15B" }}>pending validation</strong> by our committee. It will be published once approved.
+                                {t("dashboard.testimonyPendingPrefix")}{" "}
+                                <strong style={{ color: "#C6A15B" }}>{t("dashboard.testimonyPending")}</strong> {t("dashboard.testimonyPendingRest")}
                               </p>
                             </div>
                             <button onClick={resetComposer} className="h-10 px-6 rounded-xl text-sm font-bold transition-colors" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                              Close
+                              {t("dashboard.close")}
                             </button>
                           </div>
                         ) : (
                           <>
                             <div className="flex items-center gap-2 flex-wrap">
-                              {(["Post", "Testimony", "Prayer"] as ComposerType[]).map((t) => (
-                                <button key={t} onClick={() => setComposerType(t)}
+                              {(["Post", "Testimony", "Prayer"] as ComposerType[]).map((ct) => (
+                                <button key={ct} onClick={() => setComposerType(ct)}
                                   className="px-3 h-7 rounded-full text-[11px] font-bold transition-colors"
-                                  style={composerType === t
+                                  style={composerType === ct
                                     ? { background: "#486B46", color: "#FFFFFF" }
                                     : { border: "1px solid #C6D4C0", color: "#486B46" }}>
-                                  {t}
+                                  {ct === "Post" ? t("dashboard.typePost") : ct === "Testimony" ? t("dashboard.typeTestimony") : t("dashboard.typePrayer")}
                                 </button>
                               ))}
                             </div>
                             <Textarea autoFocus value={composerText} onChange={(e) => setComposerText(e.target.value)}
-                              placeholder={composerType === "Testimony" ? "Share how you met and the blessings that followed…" : "Share a word, a testimony, a prayer request…"}
+                              placeholder={composerType === "Testimony" ? t("dashboard.testimonyPlaceholder") : t("dashboard.sharePostPlaceholder")}
                               className="min-h-[88px] rounded-xl text-sm resize-none"
                               style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
                             {composerImage && (
@@ -968,26 +986,26 @@ export default function DashboardPage() {
                               <button onClick={() => composerImageRef.current?.click()}
                                 className="flex items-center gap-2 h-9 px-3 rounded-lg text-xs font-bold transition-colors"
                                 style={{ color: "#777777" }}>
-                                <ImagePlus className="w-4 h-4" style={{ color: "#486B46" }} /> {composerImage ? "Changer" : "Photo"}
+                                <ImagePlus className="w-4 h-4" style={{ color: "#486B46" }} /> {composerImage ? t("dashboard.changePhoto") : t("dashboard.photo")}
                               </button>
                               <div className="flex items-center gap-2">
-                                <button onClick={resetComposer} className="h-9 px-4 rounded-lg text-sm font-bold transition-colors" style={{ color: "#777777" }}>Annuler</button>
+                                <button onClick={resetComposer} className="h-9 px-4 rounded-lg text-sm font-bold transition-colors" style={{ color: "#777777" }}>{t("dashboard.cancel")}</button>
                                 <Button onClick={publishPost} disabled={(!composerText.trim() && !composerImage) || testimonialSubmitting}
                                   className="h-9 px-5 font-bold rounded-lg gap-2 text-sm disabled:opacity-50"
                                   style={{ background: "#486B46", color: "#FFFFFF" }}>
                                   {testimonialSubmitting ? (
-                                    <><Loader2 className="w-4 h-4 animate-spin" /> Sending…</>
+                                    <><Loader2 className="w-4 h-4 animate-spin" /> {t("dashboard.sending")}</>
                                   ) : composerType === "Testimony" ? (
-                                    <>Submit <Send className="w-4 h-4" /></>
+                                    <>{t("dashboard.submit")} <Send className="w-4 h-4" /></>
                                   ) : (
-                                    <>Post <Send className="w-4 h-4" /></>
+                                    <>{t("dashboard.post")} <Send className="w-4 h-4" /></>
                                   )}
                                 </Button>
                               </div>
                             </div>
                             {composerType === "Testimony" && (
                               <p className="text-[11px]" style={{ color: "#9CA3AF" }}>
-                                Your testimony will be reviewed by our committee before publication.
+                                {t("dashboard.testimonyReviewNotice")}
                               </p>
                             )}
                           </>
@@ -997,16 +1015,16 @@ export default function DashboardPage() {
                       <button onClick={() => openComposer("Post")}
                         className="flex-1 text-left h-11 px-4 rounded-full text-sm transition-colors truncate"
                         style={{ background: "#FAF9F6", color: "#777777" }}>
-                        Share a testimony, a prayer…
+                        {t("dashboard.sharePlaceholder")}
                       </button>
                     )}
                   </div>
                   {!composerOpen && (
                     <div className="grid grid-cols-3 gap-2 mt-3 pt-3" style={{ borderTop: "1px solid #F0EDE8" }}>
                       {[
-                        { label: "Testimony", icon: Quote, type: "Testimony" as ComposerType, photo: false },
-                        { label: "Prayer", icon: HeartHandshake, type: "Prayer" as ComposerType, photo: false },
-                        { label: "Photo", icon: Camera, type: "Post" as ComposerType, photo: true },
+                        { label: t("dashboard.typeTestimony"), icon: Quote, type: "Testimony" as ComposerType, photo: false },
+                        { label: t("dashboard.typePrayer"), icon: HeartHandshake, type: "Prayer" as ComposerType, photo: false },
+                        { label: t("dashboard.photo"), icon: Camera, type: "Post" as ComposerType, photo: true },
                       ].map((b) => (
                         <button key={b.label} onClick={() => { openComposer(b.type); if (b.photo) composerImageRef.current?.click(); }}
                           className="flex items-center justify-center gap-2 h-10 rounded-xl text-xs font-bold transition-colors"
@@ -1051,7 +1069,7 @@ export default function DashboardPage() {
                 {feed.length === 0 && (
                   <div className="text-center py-8 rounded-2xl" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                     <MessageCircle className="w-10 h-10 mx-auto mb-3" style={{ color: "#C6D4C0" }} />
-                    <p className="text-sm" style={{ color: "#777777" }}>Your news feed will appear here.</p>
+                    <p className="text-sm" style={{ color: "#777777" }}>{t("dashboard.emptyFeed")}</p>
                   </div>
                 )}
 
@@ -1060,12 +1078,12 @@ export default function DashboardPage() {
                   <section className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-headline text-lg font-bold" style={{ color: "#2F2F2F" }}>Recommended Profiles</h3>
-                        <p className="text-xs" style={{ color: "#777777" }}>Profiles aligned with your faith</p>
+                        <h3 className="font-headline text-lg font-bold" style={{ color: "#2F2F2F" }}>{t("dashboard.recommendedProfiles")}</h3>
+                        <p className="text-xs" style={{ color: "#777777" }}>{t("dashboard.recommendedProfilesDesc")}</p>
                       </div>
                       <button onClick={() => setActiveTab("Discover")} className="text-xs font-bold flex items-center gap-1 transition-colors"
                         style={{ color: "#486B46" }}>
-                        See all <ChevronRight className="w-3.5 h-3.5" />
+                        {t("dashboard.seeAll")} <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
@@ -1088,17 +1106,17 @@ export default function DashboardPage() {
                 <div className="rounded-2xl p-5"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
                   <div className="flex justify-between items-end mb-3">
-                    <span className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>Profil complété</span>
+                    <span className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>{t("dashboard.profileCompleted")}</span>
                     <span className="font-black text-xl" style={{ color: "#486B46" }}>{profileCompletionPct}%</span>
                   </div>
                   <Progress value={profileCompletionPct} className="h-2" style={{ background: "#F0EDE8" }} />
                   <p className="text-xs mt-3 leading-relaxed" style={{ color: "#777777" }}>
-                    Complétez les {100 - profileCompletionPct}% restants pour apparaître dans toutes les recherches.
+                    {t("dashboard.profileCompletedDesc", { pct: 100 - profileCompletionPct })}
                   </p>
                   <Button onClick={() => setActiveTab("Profil")} variant="outline"
                     className="w-full mt-3 h-9 rounded-xl font-bold text-xs"
                     style={{ borderColor: "#C6D4C0", color: "#486B46", background: "transparent" }}>
-                    Compléter mon profil
+                    {t("dashboard.completeMyProfile")}
                   </Button>
                 </div>
                 )}
@@ -1106,7 +1124,7 @@ export default function DashboardPage() {
                 {/* Card 2: Profile Visibility */}
                 <div className="rounded-2xl p-5"
                   style={{ background: "linear-gradient(135deg, #FFFFFF 0%, #EEF5EC 100%)", border: "1px solid #C6D4C0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
-                  <p className="font-headline font-bold text-sm mb-3" style={{ color: "#2F2F2F" }}>Visibilité du profil</p>
+                  <p className="font-headline font-bold text-sm mb-3" style={{ color: "#2F2F2F" }}>{t("dashboard.profileVisibility")}</p>
                   <div className="flex items-center gap-4">
                     <div className="relative w-16 h-16">
                       <svg viewBox="0 0 100 100" className="w-full h-full -rotate-90">
@@ -1118,14 +1136,14 @@ export default function DashboardPage() {
                       <span className="absolute inset-0 flex items-center justify-center font-black text-lg" style={{ color: "#486B46" }}>72%</span>
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-xs font-medium" style={{ color: "#777777" }}>Cette semaine</p>
-                      <p className="text-sm font-bold" style={{ color: "#2F2F2F" }}>+12% de visibilité</p>
+                      <p className="text-xs font-medium" style={{ color: "#777777" }}>{t("dashboard.thisWeek")}</p>
+                      <p className="text-sm font-bold" style={{ color: "#2F2F2F" }}>{t("dashboard.visibilityIncrease")}</p>
                     </div>
                   </div>
                   <Button onClick={() => setActiveTab("Profil")} variant="outline"
                     className="w-full mt-3 h-9 rounded-xl font-bold text-xs"
                     style={{ borderColor: "#C6D4C0", color: "#486B46", background: "transparent" }}>
-                    Améliorer ma visibilité
+                    {t("dashboard.improveVisibility")}
                   </Button>
                 </div>
 
@@ -1146,23 +1164,23 @@ export default function DashboardPage() {
                           style={{ color: verificationStatus === "verified" ? "#38C172" : verificationStatus === "rejected" ? "#EF4444" : "#D97706" }} />
                       </div>
                       <p className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>
-                        {verificationStatus === "verified" && "Verified Profile ✅"}
-                        {verificationStatus === "under_review" && "Verification in progress"}
-                        {verificationStatus === "rejected" && "Verification not approved"}
+                        {verificationStatus === "verified" && t("dashboard.verifiedProfileBadge")}
+                        {verificationStatus === "under_review" && t("dashboard.verificationInProgress")}
+                        {verificationStatus === "rejected" && t("dashboard.verificationNotApproved")}
                       </p>
                     </div>
                     <p className="text-xs leading-relaxed" style={{ color: "#777777" }}>
-                      {verificationStatus === "verified" && "Your profile displays the 'Verified Profile' badge. Other members can see that your identity has been confirmed."}
-                      {verificationStatus === "under_review" && "Your profile is being reviewed by our team. You will be notified once a decision is made."}
+                      {verificationStatus === "verified" && t("dashboard.verifiedDesc")}
+                      {verificationStatus === "under_review" && t("dashboard.underReviewDesc")}
                       {verificationStatus === "rejected" && (verificationRejectionReason
-                        ? `Reason: ${verificationRejectionReason}`
-                        : "Your request was not approved. You can update your profile and submit again.")}
+                        ? `${t("dashboard.rejectedReasonPrefix")} ${verificationRejectionReason}`
+                        : t("dashboard.rejectedDescDefault"))}
                     </p>
                     {verificationStatus === "rejected" && (
                       <Button onClick={() => router.push("/dashboard/profile")} variant="outline"
                         className="w-full mt-3 h-9 rounded-xl font-bold text-xs"
                         style={{ borderColor: "#C6D4C0", color: "#486B46", background: "transparent" }}>
-                        Update my profile
+                        {t("dashboard.updateMyProfile")}
                       </Button>
                     )}
                   </div>
@@ -1172,7 +1190,7 @@ export default function DashboardPage() {
                 <div className="rounded-2xl p-5"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
                   <p className="font-headline font-bold text-sm flex items-center gap-2 mb-3" style={{ color: "#2F2F2F" }}>
-                    <CalendarDays className="w-4 h-4" style={{ color: "#486B46" }} /> Upcoming Events
+                    <CalendarDays className="w-4 h-4" style={{ color: "#486B46" }} /> {t("dashboard.upcomingEvents")}
                   </p>
                   <div className="space-y-3">
                     {upcomingEvents.length > 0 ? upcomingEvents.map((e) => {
@@ -1195,7 +1213,7 @@ export default function DashboardPage() {
                         </div>
                       );
                     }) : (
-                      <p className="text-xs text-center py-2" style={{ color: "#9CA3AF" }}>No events scheduled</p>
+                      <p className="text-xs text-center py-2" style={{ color: "#9CA3AF" }}>{t("dashboard.noEventsScheduled")}</p>
                     )}
                   </div>
                 </div>
@@ -1203,7 +1221,7 @@ export default function DashboardPage() {
                 {/* Card 4: Recent Activity */}
                 <div className="rounded-2xl p-5"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
-                  <p className="font-headline font-bold text-sm mb-3" style={{ color: "#2F2F2F" }}>Recent Activity</p>
+                  <p className="font-headline font-bold text-sm mb-3" style={{ color: "#2F2F2F" }}>{t("dashboard.recentActivity")}</p>
                   <div className="space-y-3">
                     {visitors.length > 0 && (
                       <div className="flex items-center gap-3">
@@ -1211,7 +1229,7 @@ export default function DashboardPage() {
                           <Eye className="w-4 h-4" style={{ color: "#486B46" }} />
                         </div>
                         <p className="text-xs flex-1" style={{ color: "#2F2F2F" }}>
-                          <span className="font-bold">{visitors.length}</span> recent visitor{visitors.length > 1 ? "s" : ""}
+                          <span className="font-bold">{visitors.length}</span> {t("dashboard.recentVisitors")}
                         </p>
                       </div>
                     )}
@@ -1221,7 +1239,7 @@ export default function DashboardPage() {
                           <Heart className="w-4 h-4" style={{ color: "#C6A15B" }} />
                         </div>
                         <p className="text-xs flex-1" style={{ color: "#2F2F2F" }}>
-                          <span className="font-bold">{favoriteMembers.length}</span> favorite{favoriteMembers.length > 1 ? "s" : ""}
+                          <span className="font-bold">{favoriteMembers.length}</span> {t("dashboard.favoritesCount")}
                         </p>
                       </div>
                     )}
@@ -1231,7 +1249,7 @@ export default function DashboardPage() {
                           <Star className="w-4 h-4" style={{ color: "#C6A15B" }} />
                         </div>
                         <p className="text-xs flex-1" style={{ color: "#2F2F2F" }}>
-                          <span className="font-bold">{incomingRequests.length}</span> alliance request{incomingRequests.length > 1 ? "s" : ""}
+                          <span className="font-bold">{incomingRequests.length}</span> {t("dashboard.allianceRequests")}
                         </p>
                       </div>
                     )}
@@ -1241,7 +1259,7 @@ export default function DashboardPage() {
                           <MessageCircle className="w-4 h-4" style={{ color: "#486B46" }} />
                         </div>
                         <p className="text-xs flex-1" style={{ color: "#2F2F2F" }}>
-                          <span className="font-bold">{totalUnread}</span> unread message{totalUnread > 1 ? "s" : ""}
+                          <span className="font-bold">{totalUnread}</span> {t("dashboard.unreadMessages")}
                         </p>
                       </div>
                     )}
@@ -1251,12 +1269,12 @@ export default function DashboardPage() {
                           <BookOpen className="w-4 h-4" style={{ color: "#486B46" }} />
                         </div>
                         <p className="text-xs flex-1 text-left" style={{ color: "#2F2F2F" }}>
-                          <span className="font-bold">{unreadBlogNotifs.length}</span> new blog article{unreadBlogNotifs.length > 1 ? "s" : ""}
+                          <span className="font-bold">{unreadBlogNotifs.length}</span> {t("dashboard.newBlogArticles")}
                         </p>
                       </button>
                     )}
                     {visitors.length === 0 && favoriteMembers.length === 0 && incomingRequests.length === 0 && totalUnread === 0 && unreadBlogNotifs.length === 0 && (
-                      <p className="text-xs" style={{ color: "#777777" }}>No recent activity.</p>
+                      <p className="text-xs" style={{ color: "#777777" }}>{t("dashboard.noRecentActivity")}</p>
                     )}
                   </div>
                 </div>
@@ -1264,13 +1282,13 @@ export default function DashboardPage() {
                 {/* Card 5: Dashboard Statistics */}
                 <div className="rounded-2xl p-5"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
-                  <p className="font-headline font-bold text-sm mb-4" style={{ color: "#2F2F2F" }}>Statistics</p>
+                  <p className="font-headline font-bold text-sm mb-4" style={{ color: "#2F2F2F" }}>{t("dashboard.statistics")}</p>
                   <div className="grid grid-cols-2 gap-3">
                     {[
-                      { label: "Messages", value: totalUnread, icon: MessageCircle },
-                      { label: "Visitors", value: visitors.length, icon: Eye },
-                      { label: "Favorites", value: favoriteMembers.length, icon: Heart },
-                      { label: "Requests", value: incomingRequests.length, icon: Star },
+                      { label: t("dashboard.statMessages"), value: totalUnread, icon: MessageCircle },
+                      { label: t("dashboard.statVisitors"), value: visitors.length, icon: Eye },
+                      { label: t("dashboard.statFavorites"), value: favoriteMembers.length, icon: Heart },
+                      { label: t("dashboard.statRequests"), value: incomingRequests.length, icon: Star },
                     ].map((s) => (
                       <div key={s.label} className="rounded-xl p-3 text-center" style={{ background: "#FAF9F6" }}>
                         <s.icon className="w-4 h-4 mx-auto mb-1.5" style={{ color: "#486B46" }} />
@@ -1309,7 +1327,7 @@ export default function DashboardPage() {
               {name === "Découvrir" && <Search className="w-5 h-5" />}
               {name === "Messages" && <MessageCircle className="w-5 h-5" />}
               {name === "Favoris" && <Heart className="w-5 h-5" />}
-              <span className="text-[9px] font-bold uppercase tracking-wider">{name}</span>
+              <span className="text-[9px] font-bold uppercase tracking-wider">{tabLabel(name)}</span>
             </button>
           );
         })}
@@ -1317,7 +1335,7 @@ export default function DashboardPage() {
           className="flex flex-col items-center justify-center gap-1 w-full h-full transition-colors"
           style={{ color: "#777777" }}>
           <Menu className="w-5 h-5" />
-          <span className="text-[9px] font-bold uppercase tracking-wider">Menu</span>
+          <span className="text-[9px] font-bold uppercase tracking-wider">{t("dashboard.menu")}</span>
         </button>
       </nav>
     </div>
@@ -1334,41 +1352,48 @@ export default function DashboardPage() {
         const scoreOf = (m: MemberProfile) => (user ? computeMatchScore(user, m).score : 0);
         const discoverResults = discoverMembers.filter((m) => {
           if (q && !((m.name || "").toLowerCase().includes(q) || (m.city || "").toLowerCase().includes(q) || (m.country || "").toLowerCase().includes(q) || (m.profession || "").toLowerCase().includes(q))) return false;
-          if (discoverFilter === "Proches de moi" && !(user?.country && m.country && user.country.toLowerCase() === m.country.toLowerCase())) return false;
-          if (discoverFilter === "Affinité élevée" && scoreOf(m) < 75) return false;
-          if (discoverFilter === "Vérifiés" && !m.avatar_url) return false;
+          if (discoverFilter === "nearMe" && !(user?.country && m.country && user.country.toLowerCase() === m.country.toLowerCase())) return false;
+          if (discoverFilter === "highAffinity" && scoreOf(m) < 75) return false;
+          if (discoverFilter === "verified" && !m.avatar_url) return false;
           return true;
         });
         const shown = discoverResults.slice(0, discoverCount);
+        const discoverFilters = [
+          { key: "all", label: t("dashboard.filterAll") },
+          { key: "nearMe", label: t("dashboard.filterNearMe") },
+          { key: "new", label: t("dashboard.filterNew") },
+          { key: "highAffinity", label: t("dashboard.filterHighAffinity") },
+          { key: "verified", label: t("dashboard.filterVerified") },
+        ];
         return (
           <div className="space-y-6">
-            <TabHeader icon={Search} title="Discover" subtitle="Explore the profiles that grace places on your path" />
+            <TabHeader icon={Search} title={t("dashboard.discoverTitle")} subtitle={t("dashboard.discoverSubtitle")} />
             <div className="relative max-w-xl">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: "#486B46" }} />
               <Input value={discoverSearch} onChange={(e) => { setDiscoverSearch(e.target.value); setDiscoverCount(24); }}
-                placeholder="Search by name, city, profession…"
+                placeholder={t("dashboard.discoverSearchPlaceholder")}
                 className="h-12 pl-12 pr-12 rounded-2xl text-sm"
                 style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }} />
               {discoverSearch && <button onClick={() => setDiscoverSearch("")} className="absolute right-4 top-1/2 -translate-y-1/2" style={{ color: "#777777" }}><X className="w-4 h-4" /></button>}
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2 custom-scrollbar">
-              {["All", "Near me", "New profiles", "High affinity", "Verified"].map((filter) => (
-                <button key={filter} onClick={() => setDiscoverFilter(filter)}
+              {discoverFilters.map((filter) => (
+                <button key={filter.key} onClick={() => setDiscoverFilter(filter.key)}
                   className="shrink-0 px-5 h-10 rounded-full text-xs font-bold transition-all flex items-center gap-2"
-                  style={discoverFilter === filter
+                  style={discoverFilter === filter.key
                     ? { background: "#486B46", color: "#FFFFFF" }
                     : { background: "#FFFFFF", color: "#777777", border: "1px solid #E8E5E0" }}>
-                  {filter}
+                  {filter.label}
                 </button>
               ))}
             </div>
             {socialLoading && discoverMembers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#486B46" }} />
-                <p className="text-sm" style={{ color: "#777777" }}>Loading members…</p>
+                <p className="text-sm" style={{ color: "#777777" }}>{t("dashboard.loadingMembers")}</p>
               </div>
             ) : shown.length === 0 ? (
-              <EmptyState icon={Search} title="No profiles found" text="Invite your loved ones to join Eden!" cta="Explore" />
+              <EmptyState icon={Search} title={t("dashboard.noProfilesFound")} text={t("dashboard.inviteLovedOnes")} cta={t("dashboard.explore")} />
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {shown.map((m) => {
@@ -1381,15 +1406,15 @@ export default function DashboardPage() {
                         status === "friends" ? (
                           <Button onClick={() => router.push(`/dashboard/profile/${m.id}`)} variant="outline"
                             className="h-9 rounded-xl font-bold gap-1.5 text-xs" style={{ borderColor: "#C6D4C0", color: "#486B46" }}>
-                            <Check className="w-3.5 h-3.5" /> Friends
+                            <Check className="w-3.5 h-3.5" /> {t("dashboard.friends")}
                           </Button>
                         ) : status === "pending_out" ? (
                           <Button disabled variant="outline" className="h-9 rounded-xl font-bold gap-1.5 text-xs" style={{ borderColor: "#E8E5E0", color: "#777777" }}>
-                            <Check className="w-3.5 h-3.5" /> Sent
+                            <Check className="w-3.5 h-3.5" /> {t("dashboard.sent")}
                           </Button>
                         ) : (
                           <Button onClick={() => handleAddFriend(m)} className="h-9 rounded-xl font-bold gap-1.5 text-xs" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                            <UserPlus className="w-3.5 h-3.5" /> Add
+                            <UserPlus className="w-3.5 h-3.5" /> {t("dashboard.add")}
                           </Button>
                         )
                       } />
@@ -1405,14 +1430,14 @@ export default function DashboardPage() {
       case "Visiteurs":
         return (
           <div className="space-y-6">
-            <TabHeader icon={Eye} title="Visitors" subtitle="Discover who viewed your profile" />
+            <TabHeader icon={Eye} title={t("dashboard.visitorsTitle")} subtitle={t("dashboard.visitorsSubtitle")} />
             {socialLoading && visitors.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#486B46" }} />
-                <p className="text-sm" style={{ color: "#777777" }}>Loading…</p>
+                <p className="text-sm" style={{ color: "#777777" }}>{t("dashboard.loading")}</p>
               </div>
             ) : visitors.length === 0 ? (
-              <EmptyState icon={Eye} title="No visitors" text="When a member views your profile, they will appear here." cta="Discover profiles" onClick={() => setActiveTab("Discover")} />
+              <EmptyState icon={Eye} title={t("dashboard.noVisitors")} text={t("dashboard.noVisitorsDesc")} cta={t("dashboard.discoverProfiles")} onClick={() => setActiveTab("Discover")} />
             ) : (
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                 {visitors.map((v) => (
@@ -1448,14 +1473,14 @@ export default function DashboardPage() {
       case "Favoris":
         return (
           <div className="space-y-6">
-            <TabHeader icon={Heart} title="My Favorites" subtitle="Profiles your heart has set aside" />
+            <TabHeader icon={Heart} title={t("dashboard.favoritesTitle")} subtitle={t("dashboard.favoritesSubtitle")} />
             {socialLoading && favoriteMembers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#486B46" }} />
-                <p className="text-sm" style={{ color: "#777777" }}>Loading…</p>
+                <p className="text-sm" style={{ color: "#777777" }}>{t("dashboard.loading")}</p>
               </div>
             ) : favoriteMembers.length === 0 ? (
-              <EmptyState icon={Heart} title="No favorites" text="Browse profiles and tap the star to save those that resonate with your values." cta="Discover profiles" onClick={() => setActiveTab("Discover")} />
+              <EmptyState icon={Heart} title={t("dashboard.noFavorites")} text={t("dashboard.noFavoritesDesc")} cta={t("dashboard.discoverProfiles")} onClick={() => setActiveTab("Discover")} />
             ) : (
               <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
                 {favoriteMembers.map((m) => (
@@ -1465,7 +1490,7 @@ export default function DashboardPage() {
                     action={
                       <Button onClick={() => router.push(`/dashboard/profile/${m.id}`)} variant="outline"
                         className="h-9 rounded-xl font-bold gap-1.5 text-xs" style={{ borderColor: "#C6D4C0", color: "#486B46" }}>
-                        <Eye className="w-3.5 h-3.5" /> Voir le profil
+                        <Eye className="w-3.5 h-3.5" /> {t("dashboard.viewProfile")}
                       </Button>
                     } />
                 ))}
@@ -1478,14 +1503,14 @@ export default function DashboardPage() {
       case "Demandes":
         return (
           <div className="space-y-6">
-            <TabHeader icon={Star} title="Alliance Requests" subtitle="These people wish to walk with you" />
+            <TabHeader icon={Star} title={t("dashboard.requestsTitle")} subtitle={t("dashboard.requestsSubtitle")} />
             {socialLoading && incomingRequests.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#486B46" }} />
-                <p className="text-sm" style={{ color: "#777777" }}>Loading…</p>
+                <p className="text-sm" style={{ color: "#777777" }}>{t("dashboard.loading")}</p>
               </div>
             ) : incomingRequests.length === 0 ? (
-              <EmptyState icon={Star} title="No pending requests" text="When someone wishes to get to know you, their request will appear here." cta="Discover profiles" onClick={() => setActiveTab("Discover")} />
+              <EmptyState icon={Star} title={t("dashboard.noPendingRequests")} text={t("dashboard.noPendingRequestsDesc")} cta={t("dashboard.discoverProfiles")} onClick={() => setActiveTab("Discover")} />
             ) : (
               <div className="space-y-4">
                 {incomingRequests.map((r) => {
@@ -1515,15 +1540,15 @@ export default function DashboardPage() {
                           <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
                             <Button onClick={() => router.push(`/dashboard/profile/${m.id}`)} variant="outline"
                               className="h-10 px-5 rounded-xl font-bold gap-1.5" style={{ borderColor: "#C6D4C0", color: "#486B46" }}>
-                              <Eye className="w-4 h-4" /> Profile
+                              <Eye className="w-4 h-4" /> {t("dashboard.profile")}
                             </Button>
                             <Button onClick={() => handleRespondRequest(r, true)}
                               className="h-10 px-5 rounded-xl font-bold gap-1.5" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                              <Check className="w-4 h-4" /> Accept
+                              <Check className="w-4 h-4" /> {t("dashboard.accept")}
                             </Button>
                             <Button onClick={() => handleRespondRequest(r, false)} variant="outline"
                               className="h-10 px-5 rounded-xl font-bold gap-1.5" style={{ borderColor: "#E8E5E0", color: "#777777" }}>
-                              <X className="w-4 h-4" /> Decline
+                              <X className="w-4 h-4" /> {t("dashboard.decline")}
                             </Button>
                           </div>
                         </div>
@@ -1551,12 +1576,12 @@ export default function DashboardPage() {
                     </button>
                     <div className="relative flex-1">
                       <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: "#777777" }} />
-                      <Input autoFocus value={userQuery} onChange={(e) => setUserQuery(e.target.value)} placeholder="Name or email…" className="pl-9 h-10 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "none" }} />
+                      <Input autoFocus value={userQuery} onChange={(e) => setUserQuery(e.target.value)} placeholder={t("dashboard.nameOrEmail")} className="pl-9 h-10 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "none" }} />
                     </div>
                   </div>
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {userResults.length === 0 ? (
-                      <p className="p-4 text-sm" style={{ color: "#777777" }}>{userQuery.trim().length < 2 ? "Enter at least 2 characters." : "No members found."}</p>
+                      <p className="p-4 text-sm" style={{ color: "#777777" }}>{userQuery.trim().length < 2 ? t("dashboard.enterAtLeast2Chars") : t("dashboard.noMembersFound")}</p>
                     ) : userResults.map((u) => (
                       <button key={u.id} onClick={() => handleStartConversation(u)} className="w-full flex items-center gap-3 p-3 text-left transition-colors"
                         onMouseEnter={e => e.currentTarget.style.background = "#FAF9F6"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
@@ -1576,14 +1601,14 @@ export default function DashboardPage() {
                 <>
                   <div className="p-3" style={{ borderBottom: "1px solid #E8E5E0" }}>
                     <Button onClick={() => setShowNewChat(true)} className="w-full h-10 font-bold rounded-xl gap-2 text-sm" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                      + New conversation
+                      {t("dashboard.newConversation")}
                     </Button>
                   </div>
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {conversations.length === 0 ? (
                       <div className="p-6 text-center">
                         <MessageCircle className="w-10 h-10 mx-auto mb-3" style={{ color: "#C6D4C0" }} />
-                        <p className="text-sm" style={{ color: "#777777" }}>No conversations yet.</p>
+                        <p className="text-sm" style={{ color: "#777777" }}>{t("dashboard.noConversationsYet")}</p>
                       </div>
                     ) : conversations.map((c) => {
                       const sel = activeConvId === c.id;
@@ -1630,7 +1655,7 @@ export default function DashboardPage() {
                       <div className="text-left min-w-0">
                         <h4 className="font-bold text-sm truncate" style={{ color: "#2F2F2F" }}>{activeConv.name}</h4>
                         <p className="text-[11px]" style={{ color: partnerTyping ? "#486B46" : "#777777" }}>
-                          {partnerTyping ? "en train d'écrire…" : "Voir le profil"}
+                          {partnerTyping ? t("dashboard.typing") : t("dashboard.viewProfile")}
                         </p>
                       </div>
                     </button>
@@ -1639,7 +1664,7 @@ export default function DashboardPage() {
                     <VitrailPattern className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.03]" />
                     <div className="relative h-full overflow-y-auto p-4 space-y-2 custom-scrollbar">
                       {messages.length === 0 && !guideDismissed && <ChatGuide onDismiss={() => setGuideDismissed(true)} />}
-                      {messages.length === 0 && guideDismissed && <p className="text-center text-xs py-8" style={{ color: "#777777" }}>Dites bonjour avec bienveillance 🙏</p>}
+                      {messages.length === 0 && guideDismissed && <p className="text-center text-xs py-8" style={{ color: "#777777" }}>{t("dashboard.sayHelloKindly")}</p>}
                       {messages.map((m) => (
                         <div key={m.id} className={cn("flex", m.from === "me" ? "justify-end" : "justify-start")}>
                           <div className={cn("max-w-[80%] rounded-2xl text-sm leading-relaxed overflow-hidden", m.imageUrl ? "p-1.5" : "px-4 py-2.5")}
@@ -1686,7 +1711,7 @@ export default function DashboardPage() {
                         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
                       </button>
                       <Input value={chatInput} onChange={(e) => handleChatInput(e.target.value)}
-                        placeholder={pendingImage ? "Caption…" : "Type a message…"}
+                        placeholder={pendingImage ? t("dashboard.captionPlaceholder") : t("dashboard.typeMessagePlaceholder")}
                         className="flex-1 h-10 rounded-full px-4 text-sm"
                         style={{ background: "#FAF9F6", border: "none" }} />
                       <Button type="submit" disabled={(!chatInput.trim() && !pendingImage) || uploading}
@@ -1702,8 +1727,8 @@ export default function DashboardPage() {
                   <div className="w-16 h-16 rounded-3xl flex items-center justify-center mb-4" style={{ background: "#EEF5EC" }}>
                     <MessageCircle className="w-8 h-8" style={{ color: "#486B46" }} />
                   </div>
-                  <h3 className="font-headline text-xl font-bold mb-1" style={{ color: "#2F2F2F" }}>Your conversations</h3>
-                  <p className="text-sm max-w-xs" style={{ color: "#777777" }}>Select a conversation or start a new one.</p>
+                  <h3 className="font-headline text-xl font-bold mb-1" style={{ color: "#2F2F2F" }}>{t("dashboard.yourConversations")}</h3>
+                  <p className="text-sm max-w-xs" style={{ color: "#777777" }}>{t("dashboard.selectOrStartConversation")}</p>
                 </div>
               )}
             </div>
@@ -1718,12 +1743,12 @@ export default function DashboardPage() {
 
         return (
           <div className="space-y-6">
-            <TabHeader icon={Bell} title="Notifications" subtitle="Everything happening in your sanctuary" />
+            <TabHeader icon={Bell} title={t("dashboard.notificationsTitle")} subtitle={t("dashboard.notificationsSubtitle")} />
 
             {/* Verification status notifications */}
             {verificationNotifs.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>Profile Verification</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>{t("dashboard.profileVerificationLabel")}</p>
                 <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                   {verificationNotifs.map((n) => {
                     const notifDate = new Date(n.created_at);
@@ -1753,7 +1778,7 @@ export default function DashboardPage() {
             {/* Meeting invitation notifications */}
             {meetingNotifs.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>Video Meeting Invitations</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>{t("dashboard.videoMeetingInvitationsLabel")}</p>
                 <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                   {meetingNotifs.map((n) => {
                     const notifDate = new Date(n.created_at);
@@ -1801,7 +1826,7 @@ export default function DashboardPage() {
             {/* Message notifications */}
             {messageNotifs.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>Nouveaux messages</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>{t("dashboard.newMessagesLabel")}</p>
                 <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                   {messageNotifs.map((c) => (
                     <button key={c.id} onClick={() => { setActiveTab("Messages"); openConversation(c.id); }}
@@ -1812,7 +1837,7 @@ export default function DashboardPage() {
                         <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{c.name?.[0]?.toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm" style={{ color: "#2F2F2F" }}><span className="font-bold">{c.name}</span> vous a envoyé {c.unread > 1 ? `${c.unread} messages` : "un message"}.</p>
+                        <p className="text-sm" style={{ color: "#2F2F2F" }}><span className="font-bold">{c.name}</span> {c.unread > 1 ? t("dashboard.sentYouMessages", { count: c.unread }) : t("dashboard.sentYouAMessage")}</p>
                         <p className="text-xs truncate mt-0.5" style={{ color: "#777777" }}>{c.last}</p>
                       </div>
                       <span className="text-[11px] shrink-0" style={{ color: "#777777" }}>{c.when}</span>
@@ -1825,7 +1850,7 @@ export default function DashboardPage() {
             {/* Blog article notifications */}
             {blogNotifs.length > 0 && (
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>Articles du blog</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>{t("dashboard.blogArticlesLabel")}</p>
                 <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                   {blogNotifs.map((n) => {
                     const notifDate = new Date(n.created_at);
@@ -1854,7 +1879,7 @@ export default function DashboardPage() {
             {meetingNotifs.length === 0 && messageNotifs.length === 0 && blogNotifs.length === 0 && verificationNotifs.length === 0 && (
               <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                 {[
-                  { icon: Heart, text: "View your activity notifications here.", when: "" },
+                  { icon: Heart, text: t("dashboard.viewActivityNotifsHere"), when: "" },
                 ].map((n, i) => (
                   <div key={i} className="flex items-center gap-4 p-4">
                     <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#EEF5EC" }}>
@@ -1874,16 +1899,16 @@ export default function DashboardPage() {
             <div className="text-center space-y-3 max-w-xl mx-auto">
               <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest"
                 style={{ background: "#EEF5EC", color: "#486B46", border: "1px solid #C6D4C0" }}>
-                <Crown className="w-3.5 h-3.5" style={{ color: "#C6A15B" }} /> Our Plans
+                <Crown className="w-3.5 h-3.5" style={{ color: "#C6A15B" }} /> {t("dashboard.ourPlans")}
               </div>
-              <h2 className="font-headline text-3xl sm:text-4xl font-bold" style={{ color: "#2F2F2F" }}>Elevate your path</h2>
-              <p className="text-base" style={{ color: "#777777" }}>Access the full measure of Eden to build your alliance.</p>
+              <h2 className="font-headline text-3xl sm:text-4xl font-bold" style={{ color: "#2F2F2F" }}>{t("dashboard.elevateYourPath")}</h2>
+              <p className="text-base" style={{ color: "#777777" }}>{t("dashboard.accessFullMeasure")}</p>
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
               {[
-                { name: "Discovery", price: "Free", period: "", accent: false, features: ["Basic profile creation", "5 matches per day", "Limited messages", "Access to public events"], cta: "Your current plan", current: true },
-                { name: "Growth", price: "5,000", period: "FCFA/month", accent: true, features: ["Unlimited matches", "Unlimited messages", "Verified profile", "Advanced filters", "Priority support"], cta: "Choose Growth", current: false },
-                { name: "Blessing", price: "40,000", period: "FCFA/year", accent: false, badge: "Best", features: ["All Premium benefits", "Free marriage counseling", "VIP events", "Priority matching", "Spiritual resources"], cta: "Choose Blessing", current: false },
+                { name: t("dashboard.planDiscoveryName"), price: t("dashboard.planFree"), period: "", accent: false, features: [t("dashboard.planFeatureBasicProfile"), t("dashboard.planFeature5Matches"), t("dashboard.planFeatureLimitedMessages"), t("dashboard.planFeaturePublicEvents")], cta: t("dashboard.planCurrentPlan"), current: true },
+                { name: t("dashboard.planGrowthName"), price: "5,000", period: "FCFA/month", accent: true, features: [t("dashboard.planFeatureUnlimitedMatches"), t("dashboard.planFeatureUnlimitedMessages"), t("dashboard.planFeatureVerifiedProfile"), t("dashboard.planFeatureAdvancedFilters"), t("dashboard.planFeaturePrioritySupport")], cta: t("dashboard.planChooseGrowth"), current: false },
+                { name: t("dashboard.planBlessingName"), price: "40,000", period: "FCFA/year", accent: false, badge: t("dashboard.planBadgeBest"), features: [t("dashboard.planFeatureAllPremium"), t("dashboard.planFeatureFreeCounseling"), t("dashboard.planFeatureVipEvents"), t("dashboard.planFeaturePriorityMatching"), t("dashboard.planFeatureSpiritualResources")], cta: t("dashboard.planChooseBlessing"), current: false },
               ].map((plan) => (
                 <div key={plan.name} className="rounded-2xl p-6 sm:p-8 overflow-hidden relative"
                   style={{ background: plan.accent ? "linear-gradient(135deg, #FFFFFF 0%, #EEF5EC 100%)" : "#FFFFFF", border: `1px solid ${plan.accent ? "#C6D4C0" : "#E8E5E0"}`, boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
@@ -1910,7 +1935,7 @@ export default function DashboardPage() {
                       ))}
                     </ul>
                     <Button disabled={plan.current}
-                      onClick={() => toast({ title: "Secure payment coming soon." })}
+                      onClick={() => toast({ title: t("dashboard.toastSecurePaymentSoon") })}
                       className="w-full h-12 rounded-xl font-bold text-sm gap-2"
                       style={plan.accent ? { background: "#486B46", color: "#FFFFFF" } : { background: "#FAF9F6", color: "#777777" }}>
                       {plan.accent && <Crown className="w-4 h-4" />}
@@ -1921,7 +1946,7 @@ export default function DashboardPage() {
               ))}
             </div>
             <div className="flex items-center justify-center gap-2 text-xs" style={{ color: "#777777" }}>
-              <ShieldCheck className="w-4 h-4" style={{ color: "#486B46" }} /> Secure payment • Cancel anytime
+              <ShieldCheck className="w-4 h-4" style={{ color: "#486B46" }} /> {t("dashboard.securePaymentCancel")}
             </div>
           </div>
         );
@@ -1930,7 +1955,7 @@ export default function DashboardPage() {
       case "Profil":
         return (
           <div className="space-y-6">
-            <TabHeader icon={Settings} title="My Profile" subtitle="Manage your presence in the sanctuary" />
+            <TabHeader icon={Settings} title={t("dashboard.myProfileTitle")} subtitle={t("dashboard.myProfileSubtitle")} />
             <div className="rounded-2xl p-6 sm:p-8"
               style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
               {!editingProfile ? (
@@ -1954,12 +1979,12 @@ export default function DashboardPage() {
                         <h3 className="font-headline text-2xl font-bold" style={{ color: "#2F2F2F" }}>{displayName}</h3>
                         {verificationStatus === "verified" && profileCompletionPct === 100 && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1" style={{ background: "#EEF5EC", color: "#486B46" }}>
-                            <CheckCircle2 className="w-3 h-3" /> Verified Profile
+                            <CheckCircle2 className="w-3 h-3" /> {t("dashboard.verifiedProfileBadge")}
                           </span>
                         )}
                         {verificationStatus === "under_review" && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1" style={{ background: "#FFFBEB", color: "#D97706" }}>
-                            <Clock className="w-3 h-3" /> Verification in progress
+                            <Clock className="w-3 h-3" /> {t("dashboard.verificationInProgress")}
                           </span>
                         )}
                       </div>
@@ -1969,7 +1994,7 @@ export default function DashboardPage() {
                       {user?.email && <p className="text-xs" style={{ color: "#777777" }}>{user.email}</p>}
                     </div>
                     <Button onClick={startEditProfile} className="h-10 px-5 rounded-xl font-bold gap-1.5" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                      <Pencil className="w-3.5 h-3.5" /> Edit
+                      <Pencil className="w-3.5 h-3.5" /> {t("dashboard.edit")}
                     </Button>
                   </div>
                 </>
@@ -1978,7 +2003,7 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-between">
                     <h3 className="font-headline text-lg font-bold" style={{ color: "#2F2F2F" }}>
                       <Pencil className="w-4 h-4 inline mr-2" style={{ color: "#486B46" }} />
-                      Edit my profile
+                      {t("dashboard.editMyProfile")}
                     </h3>
                     <button onClick={() => setEditingProfile(false)} className="w-8 h-8 rounded-lg flex items-center justify-center transition-colors"
                       style={{ color: "#777777" }}>
@@ -1989,27 +2014,32 @@ export default function DashboardPage() {
                   {/* Identity section */}
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
-                      Identity
+                      {t("dashboard.sectionIdentity")}
                     </h4>
                     <div className="space-y-4">
                       <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Full Name *</label>
+                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>{t("dashboard.fullName")}</label>
                         <Input value={profileForm.name} onChange={(e) => setProfileForm((f) => ({ ...f, name: e.target.value }))}
-                          placeholder="Your full name" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                          placeholder={t("dashboard.fullNamePlaceholder")} className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Civil Status</label>
+                          <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>{t("dashboard.civilStatus")}</label>
                           <select value={profileForm.civilStatus} onChange={(e) => setProfileForm((f) => ({ ...f, civilStatus: e.target.value }))}
                             className="w-full h-11 rounded-xl px-4 text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0", color: "#2F2F2F" }}>
-                            <option value="">Select…</option>
-                            {["Single", "Divorced", "Widowed", "Separated"].map((o) => <option key={o} value={o}>{o}</option>)}
+                            <option value="">{t("dashboard.select")}</option>
+                            {[
+                              { value: "Single", key: "civilStatusSingle" },
+                              { value: "Divorced", key: "civilStatusDivorced" },
+                              { value: "Widowed", key: "civilStatusWidowed" },
+                              { value: "Separated", key: "civilStatusSeparated" },
+                            ].map((o) => <option key={o.value} value={o.value}>{t(`dashboard.${o.key}`)}</option>)}
                           </select>
                         </div>
                         <div>
-                          <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Profession</label>
+                          <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>{t("dashboard.professionLabel")}</label>
                           <Input value={profileForm.profession} onChange={(e) => setProfileForm((f) => ({ ...f, profession: e.target.value }))}
-                            placeholder="Your profession" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                            placeholder={t("dashboard.professionPlaceholder")} className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
                         </div>
                       </div>
                     </div>
@@ -2018,18 +2048,18 @@ export default function DashboardPage() {
                   {/* Location section */}
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
-                      Location
+                      {t("dashboard.sectionLocation")}
                     </h4>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>City</label>
+                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>{t("dashboard.city")}</label>
                         <Input value={profileForm.city} onChange={(e) => setProfileForm((f) => ({ ...f, city: e.target.value }))}
-                          placeholder="Your city" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                          placeholder={t("dashboard.cityPlaceholder")} className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
                       </div>
                       <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>Country</label>
+                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>{t("dashboard.country")}</label>
                         <Input value={profileForm.country} onChange={(e) => setProfileForm((f) => ({ ...f, country: e.target.value }))}
-                          placeholder="Your country" className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
+                          placeholder={t("dashboard.countryPlaceholder")} className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
                       </div>
                     </div>
                   </div>
@@ -2037,17 +2067,17 @@ export default function DashboardPage() {
                   {/* Bio section */}
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
-                      About Me
+                      {t("dashboard.sectionAboutMe")}
                     </h4>
                     <Textarea value={profileForm.bio} onChange={(e) => setProfileForm((f) => ({ ...f, bio: e.target.value }))}
-                      rows={4} placeholder="Describe yourself in a few words…"
+                      rows={4} placeholder={t("dashboard.bioPlaceholder")}
                       className="rounded-xl text-sm resize-none" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
                   </div>
 
                   {/* Marriage vision */}
                   <div>
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2 flex items-center gap-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
-                      <Heart className="w-3.5 h-3.5" /> Marriage Vision (max 3)
+                      <Heart className="w-3.5 h-3.5" /> {t("dashboard.marriageVisionLabel")}
                     </h4>
                     <div className="flex flex-wrap gap-2">
                       {MARRIAGE_VALUES.map((v) => (
@@ -2066,20 +2096,20 @@ export default function DashboardPage() {
                   <div className="flex items-center justify-end gap-3 pt-4" style={{ borderTop: "1px solid #F0EDE8" }}>
                     <Button onClick={() => setEditingProfile(false)} variant="outline" className="h-10 px-5 rounded-xl font-bold text-sm"
                       style={{ borderColor: "#E8E5E0", color: "#777777" }}>
-                      <X className="w-4 h-4 mr-1.5" /> Cancel
+                      <X className="w-4 h-4 mr-1.5" /> {t("dashboard.cancel")}
                     </Button>
                     <Button onClick={handleSaveProfile} disabled={savingProfile}
                       className="h-10 px-6 rounded-xl font-bold text-sm gap-2"
                       style={{ background: "#486B46", color: "#FFFFFF" }}>
                       {savingProfile ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                      Save
+                      {t("dashboard.save")}
                     </Button>
                   </div>
                 </div>
               )}
             </div>
             {/* Questionnaire / Parcours de Foi */}
-            {!editingProfile && QUESTIONNAIRES.map((q) => {
+            {!editingProfile && getQuestionnaires(locale).map((q) => {
               const isExpanded = expandedQuestionnaire === q.key;
               const isEditing = editingQuestionnaire === q.key;
               const answers = isEditing ? localQAnswers : questionnaireAnswers;
@@ -2120,17 +2150,17 @@ export default function DashboardPage() {
                         {!isEditing ? (
                           <button onClick={() => startEditQuestionnaire(q.key)} className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-colors"
                             style={{ background: "#486B46", color: "#FFFFFF" }}>
-                            <Pencil className="w-3.5 h-3.5" /> Edit
+                            <Pencil className="w-3.5 h-3.5" /> {t("dashboard.edit")}
                           </button>
                         ) : (
                           <>
                             <button onClick={() => { setEditingQuestionnaire(null); setLocalQAnswers({}); }}
                               className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold" style={{ border: "1px solid #E8E5E0", color: "#777777" }}>
-                              <X className="w-3.5 h-3.5" /> Cancel
+                              <X className="w-3.5 h-3.5" /> {t("dashboard.cancel")}
                             </button>
                             <button onClick={handleSaveQuestionnaire} disabled={savingQuestionnaire}
                               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                              {savingQuestionnaire ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} Save
+                              {savingQuestionnaire ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} {t("dashboard.save")}
                             </button>
                           </>
                         )}
@@ -2198,7 +2228,7 @@ export default function DashboardPage() {
                                   {displayVal && displayVal !== "" ? (
                                     <p className="text-sm" style={{ color: "#2F2F2F" }}>{displayVal}</p>
                                   ) : (
-                                    <p className="text-sm italic" style={{ color: "#BBBBBB" }}>Not specified</p>
+                                    <p className="text-sm italic" style={{ color: "#BBBBBB" }}>{t("dashboard.notSpecified")}</p>
                                   )}
                                 </div>
                               );
@@ -2217,14 +2247,14 @@ export default function DashboardPage() {
               <Button onClick={handleLogout} variant="outline"
                 className="w-full h-12 rounded-xl font-bold"
                 style={{ borderColor: "#E8E5E0", color: "#777777" }}>
-                Log out
+                {t("dashboard.logOut")}
               </Button>
             )}
           </div>
         );
 
       default:
-        return <div className="py-20 text-center" style={{ color: "#777777" }}>Content under development…</div>;
+        return <div className="py-20 text-center" style={{ color: "#777777" }}>{t("dashboard.contentUnderDevelopment")}</div>;
     }
   }
 }

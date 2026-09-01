@@ -3,6 +3,7 @@
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
+import { useI18n } from "@/lib/i18n";
 import {
   Check,
   Heart,
@@ -17,59 +18,61 @@ import {
 } from "lucide-react";
 
 export default function PricingPage() {
+  const { t } = useI18n();
+
   const plans = [
     {
-      name: "Bronze",
+      name: t("tarifs.bronze.name"),
       icon: "🥉",
       price: "2 500",
       currency: "F",
-      description: "L'essentiel pour faire de nouvelles rencontres.",
-      badge: "Idéale pour commencer",
+      description: t("tarifs.bronze.description"),
+      badge: t("tarifs.bronze.badge"),
       badgeColor: { bg: "#F5E6D3", text: "#8B6914" },
       features: [
-        { text: "5 matchings par jour", icon: Heart },
-        { text: "5 demandes d'invitation", icon: MessageCircle },
-        { text: "Matching aléatoire", icon: Sparkles },
+        { text: t("tarifs.bronze.feature1"), icon: Heart },
+        { text: t("tarifs.bronze.feature2"), icon: MessageCircle },
+        { text: t("tarifs.bronze.feature3"), icon: Sparkles },
       ],
-      tagline: "Idéale pour découvrir la plateforme à petit prix.",
-      cta: "Choisir Bronze",
+      tagline: t("tarifs.bronze.tagline"),
+      cta: t("tarifs.bronze.cta"),
       popular: false,
       gold: false,
     },
     {
-      name: "Argent",
+      name: t("tarifs.argent.name"),
       icon: "🥈",
       price: "5 000",
       currency: "F",
-      description: "Plus de possibilités, plus de connexions.",
-      badge: "Le plus populaire",
+      description: t("tarifs.argent.description"),
+      badge: t("tarifs.argent.badge"),
       badgeColor: { bg: "#EEF5EC", text: "#486B46" },
       features: [
-        { text: "10 matchings aléatoires par jour", icon: Sparkles },
-        { text: "15 demandes d'invitation", icon: MessageCircle },
-        { text: "Jusqu'à 25 messages par jour", icon: Zap },
+        { text: t("tarifs.argent.feature1"), icon: Sparkles },
+        { text: t("tarifs.argent.feature2"), icon: MessageCircle },
+        { text: t("tarifs.argent.feature3"), icon: Zap },
       ],
-      tagline: "Le meilleur équilibre entre liberté et fonctionnalités.",
-      cta: "Choisir Argent",
+      tagline: t("tarifs.argent.tagline"),
+      cta: t("tarifs.argent.cta"),
       popular: true,
       gold: false,
     },
     {
-      name: "Or",
+      name: t("tarifs.or.name"),
       icon: "🥇",
       price: "10 000",
       currency: "F",
-      description: "L'expérience premium sans limites.",
-      badge: "Premium",
+      description: t("tarifs.or.description"),
+      badge: t("tarifs.or.badge"),
       badgeColor: { bg: "#FDF6E3", text: "#9B7C15" },
       features: [
-        { text: "Matching illimité", icon: Zap },
-        { text: "Ciblage géographique", icon: MapPin },
-        { text: "Messages illimités", icon: MessageCircle },
-        { text: "Demandes d'invitation", icon: Users },
+        { text: t("tarifs.or.feature1"), icon: Zap },
+        { text: t("tarifs.or.feature2"), icon: MapPin },
+        { text: t("tarifs.or.feature3"), icon: MessageCircle },
+        { text: t("tarifs.or.feature4"), icon: Users },
       ],
-      tagline: "Pour profiter pleinement de la plateforme et multiplier vos opportunités de connexion.",
-      cta: "Passer à Or",
+      tagline: t("tarifs.or.tagline"),
+      cta: t("tarifs.or.cta"),
       popular: false,
       gold: true,
     },
@@ -95,15 +98,15 @@ export default function PricingPage() {
               style={{ background: "rgba(198,161,91,0.1)", border: "1px solid rgba(198,161,91,0.25)" }}>
               <Sparkles className="w-4 h-4" style={{ color: "#C6A15B" }} />
               <span className="text-xs font-bold uppercase tracking-widest" style={{ color: "#9B7C15" }}>
-                Holy Match — Tarifs
+                {t("tarifs.badge")}
               </span>
             </div>
             <h1 className="font-headline text-4xl sm:text-5xl lg:text-6xl font-bold mb-6" style={{ color: "#2F2F2F" }}>
-              🌟 Choisissez la formule{" "}
-              <span className="italic" style={{ color: "#486B46" }}>qui vous correspond</span>
+              {t("tarifs.heroTitle")}{" "}
+              <span className="italic" style={{ color: "#486B46" }}>{t("tarifs.heroTitleHighlight")}</span>
             </h1>
             <p className="text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto" style={{ color: "#777777" }}>
-              Des formules adaptées à chaque parcours, pour des rencontres authentiques au sein de la communauté chrétienne.
+              {t("tarifs.heroSubtitle")}
             </p>
             <div className="mt-8 flex items-center justify-center gap-3">
               <div className="h-px w-16" style={{ background: "linear-gradient(to right, transparent, #C6D4C0)" }} />
@@ -281,7 +284,7 @@ export default function PricingPage() {
                     <div className="flex items-center justify-center gap-1.5 mt-4">
                       <Lock className="w-3 h-3" style={{ color: "#9CA3AF" }} />
                       <span className="text-[11px]" style={{ color: "#9CA3AF" }}>
-                        Paiement 100% sécurisé
+                        {t("tarifs.securePayment")}
                       </span>
                     </div>
                   </div>
@@ -325,15 +328,13 @@ export default function PricingPage() {
                 </div>
 
                 <h2 className="font-headline text-2xl sm:text-3xl font-bold mb-4" style={{ color: "#2F2F2F" }}>
-                  💖 Trouvez la bonne personne plus rapidement
+                  {t("tarifs.bottomTitle")}
                 </h2>
                 <p
                   className="text-base sm:text-lg leading-relaxed max-w-xl mx-auto mb-2"
                   style={{ color: "#555555" }}
                 >
-                  Choisissez la formule qui vous correspond et profitez d&apos;une expérience
-                  de mise en relation de qualité, conçue pour vous aider à construire des
-                  relations chrétiennes significatives.
+                  {t("tarifs.bottomText")}
                 </p>
               </div>
             </div>
@@ -345,9 +346,9 @@ export default function PricingPage() {
           <div className="container mx-auto px-4">
             <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 max-w-2xl mx-auto">
               {[
-                { icon: ShieldCheck, label: "Paiement sécurisé" },
-                { icon: Lock, label: "Données chiffrées" },
-                { icon: Heart, label: "Résiliable à tout moment" },
+                { icon: ShieldCheck, label: t("tarifs.trustSecurePayment") },
+                { icon: Lock, label: t("tarifs.trustEncrypted") },
+                { icon: Heart, label: t("tarifs.trustCancel") },
               ].map((badge) => (
                 <div key={badge.label} className="flex items-center gap-2">
                   <badge.icon className="w-4 h-4" style={{ color: "#486B46" }} />

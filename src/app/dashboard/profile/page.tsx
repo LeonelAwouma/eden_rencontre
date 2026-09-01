@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getSession, updateProfile, logout, EdenUser } from "@/lib/auth";
-import { saveOnboarding, QUESTIONNAIRES, Questionnaire, Section, Field } from "@/lib/onboarding";
+import { saveOnboarding, getQuestionnaires, Questionnaire, Section, Field } from "@/lib/onboarding";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import type { Tab } from "@/components/dashboard/dashboard-types";
 import {
@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
+import { useI18n } from "@/lib/i18n";
 
 
 /* ─────────────────────────── Types ─────────────────────────── */
@@ -40,21 +41,14 @@ interface ProfileData {
 
 /* ─────────────────────── Helpers ─────────────────────────── */
 
-const CIVIL_STATUS_OPTIONS = ["Single", "Divorced", "Widowed", "Separated"];
-const GENDER_OPTIONS = ["Male", "Female"];
-const MARRIAGE_VISION_OPTIONS = [
-  "Biblical marriage", "Prayer-based", "Ministry as a couple",
-  "Christian education of children", "Absolute fidelity", "Open communication"
-];
-
 function getAvatarLetter(name?: string | null) {
   return name?.charAt(0)?.toUpperCase() || "E";
 }
 
-function formatDate(iso?: string | null) {
+function formatDate(iso?: string | null, locale: string = "en") {
   if (!iso) return "—";
   try {
-    return new Date(iso).toLocaleDateString("en-US", { day: "numeric", month: "long", year: "numeric" });
+    return new Date(iso).toLocaleDateString(locale === "fr" ? "fr-FR" : "en-US", { day: "numeric", month: "long", year: "numeric" });
   } catch {
     return iso;
   }
@@ -75,7 +69,7 @@ function ProfileAvatar({ name, avatarUrl, size = "lg" }: { name?: string | null;
 /* ───────────────────── Toast ──────────────────────────── */
 
 function Toast({ message, type, onClose }: { message: string; type: "success" | "error"; onClose: () => void }) {
-  useEffect(() => { const t = setTimeout(onClose, 4000); return () => clearTimeout(t); }, [onClose]);
+  useEffect(() => { const timer = setTimeout(onClose, 4000); return () => clearTimeout(timer); }, [onClose]);
   const bg = type === "success" ? "bg-[#486B46]" : "bg-red-500";
   const Icon = type === "success" ? CheckCircle : AlertCircle;
   return (
@@ -89,6 +83,22 @@ function Toast({ message, type, onClose }: { message: string; type: "success" | 
 /* ────────────────── Basic Info Section ─────────────────────── */
 
 function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: ProfileData; onRefresh: () => void; onSwitchToFaith: () => void }) {
+  const { t, locale } = useI18n();
+  const CIVIL_STATUS_OPTIONS = [
+    { value: "Single", key: "civilStatusSingle" },
+    { value: "Divorced", key: "civilStatusDivorced" },
+    { value: "Widowed", key: "civilStatusWidowed" },
+    { value: "Separated", key: "civilStatusSeparated" },
+  ];
+  const GENDER_OPTIONS = [
+    { value: "Male", label: t("profilePage.genderMale") },
+    { value: "Female", label: t("profilePage.genderFemale") },
+  ];
+  const MARRIAGE_VISION_OPTIONS = [
+    t("profilePage.visionBiblicalMarriage"), t("profilePage.visionPrayerBased"), t("profilePage.visionMinistryCouple"),
+    t("profilePage.visionChristianEducation"), t("profilePage.visionAbsoluteFidelity"), t("profilePage.visionOpenCommunication"),
+  ];
+
   const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
@@ -114,7 +124,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
   }, [profile]);
 
   const handleSave = async () => {
-    if (!form.name.trim()) { alert("Name is required."); return; }
+    if (!form.name.trim()) { alert(t("profilePage.nameRequired")); return; }
     setSaving(true);
     try {
       if (!supabase) return;
@@ -129,7 +139,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
       setEditing(false);
       onRefresh();
     } catch (e: any) {
-      alert("Error: " + e.message);
+      alert(`${t("profilePage.errorPrefix")} ${e.message}`);
     } finally { setSaving(false); }
   };
 
@@ -144,17 +154,17 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
     <div className="eden-card p-6">
       <div className="flex items-center justify-between mb-6">
         <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#2F2F2F] flex items-center gap-2">
-          <User size={20} className="text-[#486B46]" /> Personal Information
+          <User size={20} className="text-[#486B46]" /> {t("profilePage.personalInformation")}
         </h3>
         {!editing ? (
           <button onClick={() => setEditing(true)} className="eden-btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5">
-            <Edit3 size={14} /> Edit
+            <Edit3 size={14} /> {t("dashboard.edit")}
           </button>
         ) : (
           <div className="flex gap-2">
             <button onClick={() => setEditing(false)} className="eden-btn-outline text-xs px-3 py-1.5"><X size={14} /></button>
             <button onClick={handleSave} disabled={saving} className="eden-btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5">
-              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save
+              {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {t("dashboard.save")}
             </button>
           </div>
         )}
@@ -178,43 +188,43 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
           {/* Personal Info Section */}
           <div>
             <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
-              <User size={14} /> Personal Information
+              <User size={14} /> {t("profilePage.personalInformation")}
             </h4>
             <div className="space-y-0">
-              <InfoRow label="Full Name" value={profile.name} />
-              <InfoRow label="Email" value={profile.email} />
-              <InfoRow label="Gender" value={profile.gender} />
-              <InfoRow label="Date of Birth" value={formatDate(profile.birth_date)} />
-              <InfoRow label="Civil Status" value={profile.civil_status} />
+              <InfoRow label={t("profilePage.fullName")} value={profile.name} />
+              <InfoRow label={t("profilePage.email")} value={profile.email} />
+              <InfoRow label={t("profilePage.gender")} value={profile.gender} />
+              <InfoRow label={t("profilePage.dateOfBirth")} value={formatDate(profile.birth_date, locale)} />
+              <InfoRow label={t("profilePage.civilStatus")} value={profile.civil_status} />
             </div>
           </div>
 
           {/* Location Section */}
           <div>
             <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
-              <MapPin size={14} /> Location
+              <MapPin size={14} /> {t("profilePage.location")}
             </h4>
             <div className="space-y-0">
-              <InfoRow label="City" value={profile.city} />
-              <InfoRow label="Country" value={profile.country} />
-              <InfoRow label="Region" value={profile.region} />
+              <InfoRow label={t("profilePage.city")} value={profile.city} />
+              <InfoRow label={t("profilePage.country")} value={profile.country} />
+              <InfoRow label={t("profilePage.region")} value={profile.region} />
             </div>
           </div>
 
           {/* Professional Info */}
           <div>
             <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
-              <Briefcase size={14} /> Professional Background
+              <Briefcase size={14} /> {t("profilePage.professionalBackground")}
             </h4>
             <div className="space-y-0">
-              <InfoRow label="Profession" value={profile.profession} />
+              <InfoRow label={t("profilePage.profession")} value={profile.profession} />
             </div>
           </div>
 
           {/* Bio */}
           {profile.bio && (
             <div>
-              <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3">About Me</h4>
+              <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3">{t("profilePage.aboutMe")}</h4>
               <p className="text-sm text-[#2F2F2F] leading-relaxed whitespace-pre-wrap bg-[#FAFAF7] rounded-xl p-4 border border-[#F0EDE8]">{profile.bio}</p>
             </div>
           )}
@@ -223,7 +233,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
           {profile.marriage_vision && profile.marriage_vision.length > 0 && (
             <div>
               <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Heart size={14} /> Marriage Vision
+                <Heart size={14} /> {t("profilePage.marriageVision")}
               </h4>
               <div className="flex flex-wrap gap-2">
                 {profile.marriage_vision.map(v => (
@@ -237,11 +247,11 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
           {profile.questionnaire && Object.keys(profile.questionnaire).length > 0 && (
             <div>
               <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
-                <BookOpen size={14} /> Faith Journey Data
+                <BookOpen size={14} /> {t("profilePage.faithJourneyData")}
               </h4>
-              <p className="text-xs text-[#777777] mb-3">Answers saved during onboarding. Editable in the "Faith Journey" tab.</p>
+              <p className="text-xs text-[#777777] mb-3">{t("profilePage.faithJourneyDataDesc")}</p>
               <div className="space-y-0">
-                {QUESTIONNAIRES.flatMap(q => q.sections.flatMap(s => s.fields))
+                {getQuestionnaires(locale).flatMap(q => q.sections.flatMap(s => s.fields))
                   .filter(f => {
                     const v = profile.questionnaire[f.id];
                     return v && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "");
@@ -258,7 +268,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
                 return v && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "");
               }).length > 15 && (
                 <button onClick={onSwitchToFaith} className="text-xs text-[#486B46] font-semibold mt-3 hover:underline">
-                  View all answers in Faith Journey →
+                  {t("profilePage.viewAllAnswers")}
                 </button>
               )}
             </div>
@@ -269,15 +279,15 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
           {/* Section: Identité */}
           <div>
             <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 flex items-center gap-2 pb-2 border-b border-[#F0EDE8]">
-              <User size={14} /> Identity
+              <User size={14} /> {t("profilePage.identity")}
             </h4>
             <div className="space-y-4">
-              <EditField label="Full Name" value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} required />
+              <EditField label={t("profilePage.fullName")} value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} required />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <EditField label="Gender" value={form.gender} onChange={v => setForm(f => ({ ...f, gender: v }))} type="select" options={GENDER_OPTIONS} />
-                <EditField label="Date of Birth" value={form.birth_date} onChange={v => setForm(f => ({ ...f, birth_date: v }))} type="date" />
-                <EditField label="Civil Status" value={form.civil_status} onChange={v => setForm(f => ({ ...f, civil_status: v }))} type="select" options={CIVIL_STATUS_OPTIONS} />
-                <EditField label="Profession" value={form.profession} onChange={v => setForm(f => ({ ...f, profession: v }))} />
+                <EditField label={t("profilePage.gender")} value={form.gender} onChange={v => setForm(f => ({ ...f, gender: v }))} type="select" options={GENDER_OPTIONS.map(o => o.value)} optionLabels={Object.fromEntries(GENDER_OPTIONS.map(o => [o.value, o.label]))} />
+                <EditField label={t("profilePage.dateOfBirth")} value={form.birth_date} onChange={v => setForm(f => ({ ...f, birth_date: v }))} type="date" />
+                <EditField label={t("profilePage.civilStatus")} value={form.civil_status} onChange={v => setForm(f => ({ ...f, civil_status: v }))} type="select" options={CIVIL_STATUS_OPTIONS.map(o => o.value)} optionLabels={Object.fromEntries(CIVIL_STATUS_OPTIONS.map(o => [o.value, t(`dashboard.${o.key}`)]))} />
+                <EditField label={t("profilePage.profession")} value={form.profession} onChange={v => setForm(f => ({ ...f, profession: v }))} />
               </div>
             </div>
           </div>
@@ -285,27 +295,27 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
           {/* Section: Location */}
           <div>
             <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 flex items-center gap-2 pb-2 border-b border-[#F0EDE8]">
-              <MapPin size={14} /> Location
+              <MapPin size={14} /> {t("profilePage.location")}
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <EditField label="City" value={form.city} onChange={v => setForm(f => ({ ...f, city: v }))} />
-              <EditField label="Country" value={form.country} onChange={v => setForm(f => ({ ...f, country: v }))} />
-              <EditField label="Region" value={form.region} onChange={v => setForm(f => ({ ...f, region: v }))} />
+              <EditField label={t("profilePage.city")} value={form.city} onChange={v => setForm(f => ({ ...f, city: v }))} />
+              <EditField label={t("profilePage.country")} value={form.country} onChange={v => setForm(f => ({ ...f, country: v }))} />
+              <EditField label={t("profilePage.region")} value={form.region} onChange={v => setForm(f => ({ ...f, region: v }))} />
             </div>
           </div>
 
           {/* Section: Bio */}
           <div>
-            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 pb-2 border-b border-[#F0EDE8]">About Me</h4>
+            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 pb-2 border-b border-[#F0EDE8]">{t("profilePage.aboutMe")}</h4>
             <textarea value={form.bio} onChange={e => setForm(f => ({ ...f, bio: e.target.value }))} rows={4}
-              placeholder="Describe yourself in a few words…"
+              placeholder={t("profilePage.bioPlaceholder")}
               className="w-full border border-[#E0DDD8] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#486B46] focus:ring-2 focus:ring-[#486B46]/20 resize-none" />
           </div>
 
           {/* Section: Marriage Vision */}
           <div>
             <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 flex items-center gap-2 pb-2 border-b border-[#F0EDE8]">
-              <Heart size={14} /> Marriage Vision
+              <Heart size={14} /> {t("profilePage.marriageVision")}
             </h4>
             <div className="flex flex-wrap gap-2">
               {MARRIAGE_VISION_OPTIONS.map(v => (
@@ -320,10 +330,10 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
           {/* Save / Cancel buttons at bottom */}
           <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#F0EDE8]">
             <button onClick={() => setEditing(false)} className="eden-btn-outline text-sm px-5 py-2.5">
-              <X size={16} className="mr-1.5 inline" /> Annuler
+              <X size={16} className="mr-1.5 inline" /> {t("profilePage.cancel")}
             </button>
             <button onClick={handleSave} disabled={saving} className="eden-btn-primary text-sm px-6 py-2.5 flex items-center gap-2">
-              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} Save les modifications
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />} {t("profilePage.saveChanges")}
             </button>
           </div>
         </div>
@@ -341,18 +351,19 @@ function InfoRow({ label, value, icon }: { label: string; value?: string | null;
   );
 }
 
-function EditField({ label, value, onChange, type = "text", options, required, placeholder }: {
+function EditField({ label, value, onChange, type = "text", options, optionLabels, required, placeholder }: {
   label: string; value: string; onChange: (v: string) => void; type?: string;
-  options?: string[]; required?: boolean; placeholder?: string;
+  options?: string[]; optionLabels?: Record<string, string>; required?: boolean; placeholder?: string;
 }) {
+  const { t } = useI18n();
   if (type === "select" && options) {
     return (
       <div>
         <label className="text-xs font-semibold text-[#777777] uppercase tracking-wider mb-1 block">{label}</label>
         <select value={value} onChange={e => onChange(e.target.value)}
           className="w-full border border-[#E0DDD8] rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-[#486B46] focus:ring-2 focus:ring-[#486B46]/20 bg-white">
-          <option value="">Sélectionner…</option>
-          {options.map(o => <option key={o} value={o}>{o}</option>)}
+          <option value="">{t("profilePage.select")}</option>
+          {options.map(o => <option key={o} value={o}>{optionLabels?.[o] || o}</option>)}
         </select>
       </div>
     );
@@ -378,6 +389,7 @@ function EditField({ label, value, onChange, type = "text", options, required, p
 /* ────────────────── Faith Journey Section ─────────────────────── */
 
 function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string; answers: Record<string, any>; onRefresh: () => void }) {
+  const { t, locale } = useI18n();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editingQ, setEditingQ] = useState<string | null>(null);
   const [localAnswers, setLocalAnswers] = useState<Record<string, any>>(answers || {});
@@ -402,7 +414,7 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
       setEditingQ(null);
       onRefresh();
     } catch (e: any) {
-      alert("Error: " + e.message);
+      alert(`${t("profilePage.errorPrefix")} ${e.message}`);
     } finally { setSaving(false); }
   };
 
@@ -419,10 +431,10 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
   return (
     <div className="eden-card p-6">
       <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#2F2F2F] flex items-center gap-2 mb-6">
-        <BookOpen size={20} className="text-[#486B46]" /> Mon Faith Journey
+        <BookOpen size={20} className="text-[#486B46]" /> {t("profilePage.myFaithJourney")}
       </h3>
       <div className="space-y-4">
-        {QUESTIONNAIRES.map(q => {
+        {getQuestionnaires(locale).map(q => {
           const { filled, total, pct } = getCompletionCount(q);
           const isExpanded = expanded === q.key;
           const isEditing = editingQ === q.key;
@@ -440,7 +452,7 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
                     <div className="flex-1 max-w-[200px] bg-[#F0EDE8] rounded-full h-1.5">
                       <div className="h-1.5 rounded-full bg-[#486B46] transition-all" style={{ width: `${pct}%` }} />
                     </div>
-                    <span className="text-xs text-[#777777]">{filled}/{total} réponses</span>
+                    <span className="text-xs text-[#777777]">{t("profilePage.answersCount", { filled, total })}</span>
                   </div>
                 </div>
                 {isExpanded ? <ChevronDown size={18} className="text-[#777777]" /> : <ChevronRight size={18} className="text-[#777777]" />}
@@ -458,13 +470,13 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
                   <div className="flex justify-end gap-2 pt-4 mb-4">
                     {!isEditing ? (
                       <button onClick={() => setEditingQ(q.key)} className="eden-btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5">
-                        <Edit3 size={14} /> Edit
+                        <Edit3 size={14} /> {t("dashboard.edit")}
                       </button>
                     ) : (
                       <>
                         <button onClick={() => { setEditingQ(null); setLocalAnswers(answers || {}); }} className="eden-btn-outline text-xs px-3 py-1.5"><X size={14} /></button>
                         <button onClick={handleSaveQuestionnaire} disabled={saving} className="eden-btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5">
-                          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} Save
+                          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {t("dashboard.save")}
                         </button>
                       </>
                     )}
@@ -508,8 +520,9 @@ function FieldDisplay({ field, value, isEditing, onChange, onMultiToggle }: {
   field: Field; value: any; isEditing: boolean;
   onChange: (v: any) => void; onMultiToggle: (opt: string) => void;
 }) {
+  const { t } = useI18n();
   const displayValue = () => {
-    if (!value) return <span className="text-[#BBBBBB] italic text-sm">Not specified</span>;
+    if (!value) return <span className="text-[#BBBBBB] italic text-sm">{t("profilePage.notSpecified")}</span>;
     if (Array.isArray(value)) {
       return (
         <div className="flex flex-wrap gap-1.5">
@@ -576,7 +589,7 @@ function FieldDisplay({ field, value, isEditing, onChange, onMultiToggle }: {
         return (
           <div>
             <label className="text-xs text-[#777777] font-medium mb-1 block">{field.label}</label>
-            <input value={value || ""} onChange={e => onChange(e.target.value)} placeholder="Ex : 25-35"
+            <input value={value || ""} onChange={e => onChange(e.target.value)} placeholder={t("profilePage.ageRangePlaceholder")}
               className="w-full border border-[#E0DDD8] rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-[#486B46] focus:ring-2 focus:ring-[#486B46]/20" />
           </div>
         );
@@ -594,22 +607,23 @@ function FieldDisplay({ field, value, isEditing, onChange, onMultiToggle }: {
 /* ────────────────── Profile Completion ─────────────────────── */
 
 function ProfileCompletionCard({ profile }: { profile: ProfileData }) {
+  const { t } = useI18n();
   const checks = [
-    { label: "Profile Photo", done: !!profile.avatar_url },
-    { label: "Full Name", done: !!profile.name },
-    { label: "Bio", done: !!profile.bio },
-    { label: "City", done: !!profile.city },
-    { label: "Profession", done: !!profile.profession },
-    { label: "Civil Status", done: !!profile.civil_status },
-    { label: "Marriage Vision", done: !!(profile.marriage_vision && profile.marriage_vision.length > 0) },
-    { label: "Faith Journey", done: profile.onboarding_completed },
+    { label: t("profilePage.checkProfilePhoto"), done: !!profile.avatar_url },
+    { label: t("profilePage.checkFullName"), done: !!profile.name },
+    { label: t("profilePage.checkBio"), done: !!profile.bio },
+    { label: t("profilePage.checkCity"), done: !!profile.city },
+    { label: t("profilePage.checkProfession"), done: !!profile.profession },
+    { label: t("profilePage.checkCivilStatus"), done: !!profile.civil_status },
+    { label: t("profilePage.checkMarriageVision"), done: !!(profile.marriage_vision && profile.marriage_vision.length > 0) },
+    { label: t("profilePage.checkFaithJourney"), done: profile.onboarding_completed },
   ];
   const done = checks.filter(c => c.done).length;
   const pct = Math.round((done / checks.length) * 100);
 
   return (
     <div className="eden-card p-6">
-      <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#2F2F2F] mb-4">Profile Completion</h3>
+      <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#2F2F2F] mb-4">{t("profilePage.profileCompletion")}</h3>
       <div className="flex items-center gap-4 mb-4">
         <div className="relative w-16 h-16">
           <svg className="w-16 h-16 -rotate-90" viewBox="0 0 56 56">
@@ -620,8 +634,8 @@ function ProfileCompletionCard({ profile }: { profile: ProfileData }) {
           <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[#486B46]">{pct}%</span>
         </div>
         <div>
-          <p className="text-sm font-semibold text-[#2F2F2F]">{done}/{checks.length} completed</p>
-          <p className="text-xs text-[#777777]">Complete your profile for more visibility</p>
+          <p className="text-sm font-semibold text-[#2F2F2F]">{t("profilePage.completedCount", { done, total: checks.length })}</p>
+          <p className="text-xs text-[#777777]">{t("profilePage.completeForVisibility")}</p>
         </div>
       </div>
       <div className="space-y-2">
@@ -642,6 +656,7 @@ function ProfileCompletionCard({ profile }: { profile: ProfileData }) {
 
 export default function ProfilePage() {
   const router = useRouter();
+  const { t } = useI18n();
   const [tab, setTab] = useState<"profile" | "faith">("profile");
   const [mobileNav, setMobileNav] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
@@ -669,7 +684,7 @@ export default function ProfilePage() {
 
   const handleRefresh = () => {
     loadProfile();
-    setToast({ message: "Profile updated successfully", type: "success" });
+    setToast({ message: t("profilePage.profileUpdatedSuccess"), type: "success" });
   };
 
   const handleLogout = async () => {
@@ -677,8 +692,8 @@ export default function ProfilePage() {
     router.replace("/login");
   };
 
-  const handleSetActiveTab = (t: Tab) => {
-    if (t === "Profile") return;
+  const handleSetActiveTab = (tb: Tab) => {
+    if (tb === "Profile") return;
     router.push("/dashboard");
   };
 
@@ -687,7 +702,7 @@ export default function ProfilePage() {
       <div className="flex h-screen items-center justify-center bg-[#FAF9F6]">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-[#486B46] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-          <p className="text-sm text-[#777777]">Loading profile…</p>
+          <p className="text-sm text-[#777777]">{t("profilePage.loadingProfile")}</p>
         </div>
       </div>
     );
@@ -698,9 +713,9 @@ export default function ProfilePage() {
       <div className="flex h-screen items-center justify-center bg-[#FAF9F6]">
         <div className="text-center p-8 eden-card max-w-md mx-4">
           <AlertCircle size={40} className="text-[#C6A15B] mx-auto mb-4" />
-          <h2 className="font-['Playfair_Display'] text-xl font-bold text-[#2F2F2F] mb-2">Profile not found</h2>
-          <p className="text-sm text-[#777777] mb-4">Unable to load your profile. Please try again.</p>
-          <Link href="/dashboard" className="eden-btn-primary inline-flex items-center gap-2 text-sm px-5 py-2.5">Back to dashboard</Link>
+          <h2 className="font-['Playfair_Display'] text-xl font-bold text-[#2F2F2F] mb-2">{t("profilePage.profileNotFound")}</h2>
+          <p className="text-sm text-[#777777] mb-4">{t("profilePage.unableToLoad")}</p>
+          <Link href="/dashboard" className="eden-btn-primary inline-flex items-center gap-2 text-sm px-5 py-2.5">{t("profilePage.backToDashboard")}</Link>
         </div>
       </div>
     );
@@ -709,7 +724,7 @@ export default function ProfilePage() {
   const sidebarProps = {
     activeTab: "Profile" as Tab,
     setActiveTab: handleSetActiveTab,
-    displayName: profile.name || "Member",
+    displayName: profile.name || t("profilePage.member"),
     displayInitial: getAvatarLetter(profile.name),
     myAvatar: profile.avatar_url || undefined,
     displayLocation: profile.city || "",
@@ -750,14 +765,14 @@ export default function ProfilePage() {
             <ProfileAvatar name={profile.name} avatarUrl={profile.avatar_url} size="md" />
             <div className="flex-1 min-w-0">
               <h1 className="font-['Playfair_Display'] text-xl sm:text-2xl font-bold text-[#2F2F2F] truncate inline-flex items-center gap-2">
-                {profile.name || "My Profile"}
+                {profile.name || t("profilePage.myProfile")}
                 {profile.verification_status === "verified" && isProfileFullyComplete(profile) && <VerifiedBadge size={20} />}
               </h1>
               <p className="text-sm text-[#777777] truncate">{profile.email} {profile.city ? `· ${profile.city}` : ""}</p>
             </div>
             <div className="flex gap-2">
-              <button onClick={() => setTab("profile")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "profile" ? "bg-[#486B46] text-white" : "bg-white text-[#777777] hover:bg-[#EEF5EC]"}`}>Profile</button>
-              <button onClick={() => setTab("faith")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "faith" ? "bg-[#486B46] text-white" : "bg-white text-[#777777] hover:bg-[#EEF5EC]"}`}>Faith Journey</button>
+              <button onClick={() => setTab("profile")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "profile" ? "bg-[#486B46] text-white" : "bg-white text-[#777777] hover:bg-[#EEF5EC]"}`}>{t("profilePage.tabProfile")}</button>
+              <button onClick={() => setTab("faith")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "faith" ? "bg-[#486B46] text-white" : "bg-white text-[#777777] hover:bg-[#EEF5EC]"}`}>{t("profilePage.tabFaithJourney")}</button>
             </div>
           </div>
         </div>
