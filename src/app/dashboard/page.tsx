@@ -32,7 +32,7 @@ import { supabase } from "@/lib/supabase";
 import {
   upsertMyProfile, searchUsers, listConversations, getMessages,
   sendChatMessage, uploadChatImage, uploadAvatar, markConversationRead,
-  startConversation, CHAT_EMOJIS, type ChatConversation, type ChatMessage,
+  startConversation, contactAdmin, CHAT_EMOJIS, type ChatConversation, type ChatMessage,
   type DirectoryUser, type MemberProfile,
 } from "@/lib/chat";
 import {
@@ -242,6 +242,7 @@ export default function DashboardPage() {
   const [userResults, setUserResults] = useState<DirectoryUser[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [contactingAdmin, setContactingAdmin] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pendingImage, setPendingImage] = useState<File | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
@@ -415,6 +416,22 @@ export default function DashboardPage() {
     setShowNewChat(false); setUserQuery(""); setUserResults([]);
     await loadConversations();
     await openConversation(convId);
+  };
+
+  const handleContactAdmin = async () => {
+    if (contactingAdmin) return;
+    setContactingAdmin(true);
+    try {
+      const convId = await contactAdmin();
+      if (!convId) {
+        toast({ title: t("dashboard.toastFailed"), variant: "destructive" });
+        return;
+      }
+      await loadConversations();
+      await openConversation(convId);
+    } finally {
+      setContactingAdmin(false);
+    }
   };
 
   const handleChatInput = (v: string) => {
@@ -891,17 +908,17 @@ export default function DashboardPage() {
           {/* Desktop page title */}
           <h1 className="hidden lg:block font-headline text-xl font-bold" style={{ color: "#2F2F2F" }}>{tabLabel(activeTab)}</h1>
           <div className="flex items-center gap-2">
-            <button className="hidden sm:flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold transition-colors"
+            <button onClick={() => setActiveTab("Premium")} className="hidden sm:flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold transition-colors"
               style={{ background: "#EEF5EC", color: "#486B46", border: "1px solid #C6D4C0" }}>
               <Zap className="w-3.5 h-3.5" style={{ fill: "#C6A15B", color: "#C6A15B" }} /> {t("dashboard.boost")}
             </button>
             <button onClick={() => setActiveTab("Notifications")} title={t("dashboardTabs.notifications")}
               className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
               style={{ color: "#777777" }}>
-              <MessageCircle className="w-5 h-5" />
-              {totalUnread > 0 && (
+              <Bell className="w-5 h-5" />
+              {notifCount > 0 && (
                 <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 text-[9px] font-black rounded-full flex items-center justify-center"
-                  style={{ background: "#486B46", color: "#FFFFFF" }}>{totalUnread}</span>
+                  style={{ background: "#486B46", color: "#FFFFFF" }}>{notifCount}</span>
               )}
             </button>
             <button onClick={() => setActiveTab("Profil")} className="rounded-full">
@@ -1629,9 +1646,14 @@ export default function DashboardPage() {
                 </>
               ) : (
                 <>
-                  <div className="p-3" style={{ borderBottom: "1px solid #E8E5E0" }}>
+                  <div className="p-3 space-y-2" style={{ borderBottom: "1px solid #E8E5E0" }}>
                     <Button onClick={() => setShowNewChat(true)} className="w-full h-10 font-bold rounded-xl gap-2 text-sm" style={{ background: "#486B46", color: "#FFFFFF" }}>
                       {t("dashboard.newConversation")}
+                    </Button>
+                    <Button onClick={handleContactAdmin} disabled={contactingAdmin} variant="outline"
+                      className="w-full h-10 font-bold rounded-xl gap-2 text-sm" style={{ borderColor: "#C6D4C0", color: "#486B46" }}>
+                      {contactingAdmin ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                      {t("dashboard.contactAdmin")}
                     </Button>
                   </div>
                   <div className="flex-1 overflow-y-auto custom-scrollbar">

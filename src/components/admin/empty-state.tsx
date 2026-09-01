@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { LucideIcon } from "lucide-react";
 
 interface EmptyStateProps {
@@ -12,7 +13,7 @@ interface EmptyStateProps {
   };
 }
 
-export function EmptyState({ icon: Icon, title, description }: EmptyStateProps) {
+export function EmptyState({ icon: Icon, title, description, action }: EmptyStateProps) {
   return (
     <div className="flex flex-col items-center justify-center py-12 sm:py-16 px-4 sm:px-6">
       <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-[#F8F5F2] flex items-center justify-center mb-4">
@@ -22,6 +23,12 @@ export function EmptyState({ icon: Icon, title, description }: EmptyStateProps) 
       <p className="text-xs sm:text-sm text-[#9CA3AF] mt-1.5 font-medium text-center max-w-[280px]">
         {description}
       </p>
+      {action && (
+        <Link href={action.href}
+          className="mt-5 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-sm font-bold hover:bg-[#3A5A38] transition-all shadow-sm">
+          {action.label}
+        </Link>
+      )}
     </div>
   );
 }

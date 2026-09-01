@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   Library, Plus, Video, Headphones, BookOpen, FileText, File,
   Search, Eye, Trash2, Loader2, Edit3, Star, ExternalLink,
-  ChevronLeft, ChevronRight, Archive, Send,
+  ChevronLeft, ChevronRight, Archive, Send, AlertTriangle, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { DashboardHeader } from "@/components/admin/dashboard-header";
@@ -36,12 +36,22 @@ export default function AdminMediathequePage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [stats, setStats] = useState<Record<string, number>>({});
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Debounce the search box so typing doesn't fire a request per keystroke.
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => setDebouncedSearch(search), 350);
+    return () => { if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current); };
+  }, [search]);
 
   const fetchResources = useCallback(async () => {
     setLoading(true);
@@ -49,18 +59,21 @@ export default function AdminMediathequePage() {
       const params = new URLSearchParams();
       if (typeFilter !== "all") params.set("type", typeFilter);
       if (statusFilter !== "all") params.set("status", statusFilter);
-      if (search) params.set("search", search);
+      if (debouncedSearch) params.set("search", debouncedSearch);
       params.set("page", page.toString()); params.set("limit", "20");
       const res = await fetch(`/api/admin/mediatheque/resources?${params}`);
       const data = await res.json();
       if (res.ok) { setResources(data.resources || []); setTotal(data.total || 0); setTotalPages(data.totalPages || 1); if (data.stats) setStats(data.stats); }
     } catch (e) { console.error(e); } finally { setLoading(false); }
-  }, [typeFilter, statusFilter, search, page]);
+  }, [typeFilter, statusFilter, debouncedSearch, page]);
 
   useEffect(() => { fetchResources(); }, [fetchResources]);
 
+  const resourceToDelete = resources.find((r) => r.id === confirmDeleteId) || null;
+
   const handleDelete = async (id: string) => {
-    if (!confirm("Supprimer cette ressource ?")) return; setDeletingId(id);
+    setConfirmDeleteId(null);
+    setDeletingId(id);
     try { const res = await fetch(`/api/admin/mediatheque/resources/${id}`, { method: "DELETE" }); if (res.ok) fetchResources(); }
     catch (e) { console.error(e); } finally { setDeletingId(null); }
   };
@@ -122,7 +135,8 @@ export default function AdminMediathequePage() {
       {loading ? (
         <div className="flex items-center justify-center py-20"><div className="w-10 h-10 rounded-full border-[3px] border-[#E8E5E0] border-t-[#486B46] animate-spin" /></div>
       ) : resources.length === 0 ? (
-        <EmptyState icon={Library} title="Aucune ressource" description="Ajoutez votre première ressource." />
+        <EmptyState icon={Library} title="Aucune ressource" description="Ajoutez votre première ressource."
+          action={{ label: "Ajouter une ressource", href: "/admin/mediatheque/new" }} />
       ) : (
         <div className="bg-white rounded-2xl border border-[#E8E5E0] overflow-hidden"><div className="overflow-x-auto"><table className="w-full">
           <thead><tr className="border-b border-[#F3F4F6]">
@@ -149,7 +163,7 @@ export default function AdminMediathequePage() {
                   <Link href={`/admin/mediatheque/${r.id}/edit`} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#486B46] hover:bg-[#EEF5EC] transition-all"><Edit3 className="w-3.5 h-3.5" /></Link>
                   {r.status==="draft" && <button onClick={()=>handleStatusChange(r.id,"published")} disabled={actionLoading===r.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#38C172] hover:bg-[#38C172]/10 disabled:opacity-50"><Send className="w-3.5 h-3.5" /></button>}
                   {r.status==="published" && <button onClick={()=>handleStatusChange(r.id,"archived")} disabled={actionLoading===r.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#F59E0B] hover:bg-[#F59E0B]/10 disabled:opacity-50"><Archive className="w-3.5 h-3.5" /></button>}
-                  <button onClick={()=>handleDelete(r.id)} disabled={deletingId===r.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#F56565] hover:bg-[#F56565]/10 disabled:opacity-50">{deletingId===r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}</button>
+                  <button onClick={()=>setConfirmDeleteId(r.id)} disabled={deletingId===r.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#F56565] hover:bg-[#F56565]/10 disabled:opacity-50">{deletingId===r.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}</button>
                 </div></td>
               </motion.tr>);
           })}</tbody>
@@ -162,6 +176,42 @@ export default function AdminMediathequePage() {
           <button onClick={() => setPage(p => Math.min(totalPages, p+1))} disabled={page>=totalPages} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] border border-[#E5E7EB] disabled:opacity-30"><ChevronRight className="w-4 h-4" /></button>
         </div>
       </div>)}
+
+      <AnimatePresence>
+        {confirmDeleteId && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/30 backdrop-blur-[2px] z-50 flex items-center justify-center p-4"
+            onClick={() => setConfirmDeleteId(null)}>
+            <motion.div initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.97 }}
+              transition={{ duration: 0.15 }}
+              className="bg-white rounded-2xl border border-[#E8E5E0] shadow-xl w-full max-w-sm p-5"
+              onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-start gap-3 mb-4">
+                <div className="w-10 h-10 rounded-xl bg-[#F56565]/10 flex items-center justify-center flex-shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-[#F56565]" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-[#1a1a1a]">Supprimer cette ressource ?</h3>
+                  <p className="text-xs text-[#9CA3AF] mt-1 leading-relaxed">
+                    {resourceToDelete ? <>&ldquo;{resourceToDelete.title}&rdquo; sera définitivement supprimée. Cette action est irréversible.</> : "Cette action est irréversible."}
+                  </p>
+                </div>
+                <button onClick={() => setConfirmDeleteId(null)} className="w-6 h-6 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:bg-[#F3F4F6] flex-shrink-0"><X className="w-3.5 h-3.5" /></button>
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <button onClick={() => setConfirmDeleteId(null)}
+                  className="px-4 py-2 rounded-xl text-[13px] font-semibold text-[#374151] border border-[#E8E5E0] hover:bg-[#F9FAFB] transition-all">
+                  Annuler
+                </button>
+                <button onClick={() => confirmDeleteId && handleDelete(confirmDeleteId)}
+                  className="px-4 py-2 rounded-xl text-[13px] font-bold text-white bg-[#F56565] hover:bg-[#E53E3E] transition-all">
+                  Supprimer
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </>
   );
 }

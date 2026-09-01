@@ -445,3 +445,29 @@ export async function startConversation(otherId: string): Promise<string | null>
   if (error) return null;
   return data as string;
 }
+
+// ── CONTACTER L'ADMINISTRATION ────────────────────────────
+// Starting a conversation (and sending into it) requires being "friends" —
+// see are_friends()/messages_insert in supabase/schema.sql. A regular member
+// can't be friends with the Admin system account through the normal
+// request/accept flow, so we self-accept that one relationship here (RLS
+// allows inserting a friendships row as long as requester_id = auth.uid(),
+// regardless of status) before reusing the normal conversation/messaging path.
+export async function contactAdmin(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data: auth } = await supabase.auth.getUser();
+  const me = auth.user?.id;
+  if (!me) return null;
+
+  const res = await fetch("/api/support/admin-id");
+  if (!res.ok) return null;
+  const { id: adminId } = await res.json();
+  if (!adminId) return null;
+
+  await supabase.from("friendships").upsert(
+    { requester_id: me, addressee_id: adminId, status: "accepted", updated_at: new Date().toISOString() },
+    { onConflict: "requester_id,addressee_id" }
+  );
+
+  return startConversation(adminId);
+}

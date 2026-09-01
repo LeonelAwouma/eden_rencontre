@@ -109,7 +109,8 @@ export default function AdminBlogPage() {
       {loading ? (
         <div className="space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-20 bg-white rounded-xl animate-pulse" />)}</div>
       ) : posts.length === 0 ? (
-        <EmptyState icon={BookOpen} title="Aucun article" description="Créez votre premier article de blog." />
+        <EmptyState icon={BookOpen} title="Aucun article" description="Créez votre premier article de blog."
+          action={{ label: "Créer un article", href: "/admin/blog/new" }} />
       ) : (
         <div className="bg-white rounded-2xl border border-[#E8E5E0] overflow-hidden">
           <div className="overflow-x-auto">

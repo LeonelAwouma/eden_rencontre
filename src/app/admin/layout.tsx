@@ -17,11 +17,15 @@ const AdminContext = createContext<{
   setAdmin: (admin: AdminInfo | null) => void;
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (collapsed: boolean) => void;
+  sidebarOpen: boolean;
+  setSidebarOpen: (open: boolean) => void;
 }>({
   admin: null,
   setAdmin: () => {},
   sidebarCollapsed: false,
   setSidebarCollapsed: () => {},
+  sidebarOpen: false,
+  setSidebarOpen: () => {},
 });
 
 export function useAdmin() {
@@ -109,7 +113,7 @@ export default function AdminLayout({
 
   return (
     <AdminContext.Provider
-      value={{ admin, setAdmin, sidebarCollapsed, setSidebarCollapsed }}
+      value={{ admin, setAdmin, sidebarCollapsed, setSidebarCollapsed, sidebarOpen, setSidebarOpen }}
     >
       <div className="eden-admin-body min-h-screen flex bg-[#FAF9F6]">
         <Sidebar

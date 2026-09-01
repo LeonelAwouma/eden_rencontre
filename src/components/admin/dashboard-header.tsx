@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
+import { useAdmin } from "@/app/admin/layout";
 
 interface AdminNotification {
   id: string;
@@ -32,7 +33,9 @@ interface AdminNotification {
 
 interface DashboardHeaderProps {
   adminName: string;
-  onMenuClick: () => void;
+  /** Optional: most pages don't need this — the mobile menu button already
+   * opens the real sidebar via the shared AdminContext (setSidebarOpen). */
+  onMenuClick?: () => void;
 }
 
 function getNotificationIcon(type: string) {
@@ -94,6 +97,7 @@ export function DashboardHeader({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
+  const { setSidebarOpen } = useAdmin();
 
   const runSearch = useCallback(
     (query: string) => {
@@ -210,7 +214,7 @@ export function DashboardHeader({
         {/* Left: Menu + Greeting */}
         <div className="flex items-center gap-3 min-w-0">
           <button
-            onClick={onMenuClick}
+            onClick={() => { setSidebarOpen(true); onMenuClick?.(); }}
             className="lg:hidden w-9 h-9 rounded-lg bg-white border border-zinc-200 flex items-center justify-center text-zinc-500 hover:text-zinc-900 hover:border-zinc-300 transition-all active:scale-95 flex-shrink-0"
           >
             <Menu className="w-4.5 h-4.5" />
