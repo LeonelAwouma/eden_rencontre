@@ -26,7 +26,7 @@ import { getSession, logout, updateProfile, ageFromBirthDate, type EdenUser } fr
 import { Textarea } from "@/components/ui/textarea";
 import { PROFILES } from "@/lib/profiles";
 import { MARRIAGE_VALUES, getValue } from "@/lib/values";
-import { computeMatchScore, rankByMatch } from "@/lib/matching";
+import { computeDisplayMatch, filterAndRankByReciprocalMatch } from "@/lib/matching/adapter";
 import { getMyOnboarding, getQuestionnaires, saveOnboarding, type Questionnaire, type Field } from "@/lib/onboarding";
 import { supabase } from "@/lib/supabase";
 import {
@@ -518,7 +518,7 @@ export default function DashboardPage() {
     ]);
     const opposite = user?.gender === "homme" ? "femme" : user?.gender === "femme" ? "homme" : null;
     const filtered = opposite ? members.filter((m) => m.gender === opposite) : members;
-    setDiscoverMembers(user ? rankByMatch({ ...user, questionnaire: questionnaireAnswers }, filtered) : filtered);
+    setDiscoverMembers(user ? filterAndRankByReciprocalMatch({ ...user, questionnaire: questionnaireAnswers }, filtered) : filtered);
     setRelations(buildRelationMap(meId, friendships));
     setIncomingRequests(incoming);
     setFavoriteMembers(favs);
@@ -722,7 +722,7 @@ export default function DashboardPage() {
   // reclasse la liste déjà chargée dès que les réponses sont disponibles, sans tout recharger.
   useEffect(() => {
     if (!user || discoverMembers.length === 0) return;
-    setDiscoverMembers((prev) => rankByMatch({ ...user, questionnaire: questionnaireAnswers }, prev));
+    setDiscoverMembers((prev) => filterAndRankByReciprocalMatch({ ...user, questionnaire: questionnaireAnswers }, prev));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionnaireAnswers]);
 
@@ -1099,7 +1099,7 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                       {discoverMembers.slice(0, 3).map((m) => (
                         <MemberCard key={m.id} m={m}
-                          match={user ? computeMatchScore({ ...user, questionnaire: questionnaireAnswers }, m).score : null}
+                          match={user ? computeDisplayMatch({ ...user, questionnaire: questionnaireAnswers }, m).score : null}
                           isFavorite={favoriteIds.has(m.id)}
                           onToggleFav={() => handleToggleFavorite(m)}
                           onOpen={() => router.push(`/dashboard/profile/${m.id}`)} />
@@ -1359,7 +1359,7 @@ export default function DashboardPage() {
       case "Découvrir":
       case "Discover": {
         const q = discoverSearch.trim().toLowerCase();
-        const scoreOf = (m: MemberProfile) => (user ? computeMatchScore({ ...user, questionnaire: questionnaireAnswers }, m).score : 0);
+        const scoreOf = (m: MemberProfile) => (user ? computeDisplayMatch({ ...user, questionnaire: questionnaireAnswers }, m).score : 0);
         const discoverResults = discoverMembers.filter((m) => {
           if (q && !((m.name || "").toLowerCase().includes(q) || (m.city || "").toLowerCase().includes(q) || (m.country || "").toLowerCase().includes(q) || (m.profession || "").toLowerCase().includes(q))) return false;
           if (discoverFilter === "nearMe" && !(user?.country && m.country && user.country.toLowerCase() === m.country.toLowerCase())) return false;

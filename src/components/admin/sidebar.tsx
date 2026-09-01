@@ -5,11 +5,12 @@ import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
+import { Monogram } from "@/components/ornaments";
 import {
   LayoutDashboard, Users, CalendarDays, ShieldCheck, BarChart3,
   CreditCard, Settings, LogOut, X, Heart, MessageSquare,
   MessageCircle, PanelLeftClose, PanelLeftOpen, Video, Library,
-  BookOpen, Send, Sparkles, Keyboard,
+  BookOpen, Send, Keyboard,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -86,7 +87,7 @@ export function Sidebar({
                 exit={{ opacity: 0, width: 0 }} transition={{ duration: 0.2 }}
                 className="flex items-center gap-3 overflow-hidden">
                 <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#3D6B3B] to-[#5A7D54] flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Sparkles className="w-4 h-4 text-white" />
+                  <Monogram className="w-4 h-4 text-white" />
                 </div>
                 <div className="min-w-0">
                   <h1 className="text-[14px] font-bold text-zinc-900 tracking-tight truncate"
@@ -100,7 +101,7 @@ export function Sidebar({
           </AnimatePresence>
           {isCollapsed && (
             <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#3D6B3B] to-[#5A7D54] flex items-center justify-center shadow-sm">
-              <Sparkles className="w-4 h-4 text-white" />
+              <Monogram className="w-4 h-4 text-white" />
             </div>
           )}
           <button onClick={onClose} className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 transition-colors">

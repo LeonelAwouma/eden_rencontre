@@ -95,7 +95,7 @@ export function DashboardSidebar({
         style={{ borderBottom: "1px solid #E8E5E0" }}
       >
         <Link href="/" className="flex items-center gap-2.5 group">
-          <Monogram className="w-9 h-8 text-primary shrink-0 group-hover:text-secondary transition-colors" />
+          <Monogram className="w-9 h-8 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
           <span className="font-headline text-xl font-bold text-foreground">
             Eden{" "}
             <span className="italic font-normal" style={{ color: "#486B46" }}>

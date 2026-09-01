@@ -11,7 +11,7 @@ import type {
   HardFilterResult,
   HardFilterFailure,
 } from "./types";
-import { COMPATIBLE_DENOMINATIONS } from "./config";
+import { COMPATIBLE_DENOMINATIONS, MIN_MATCH_AGE } from "./config";
 
 // ── MAIN HARD FILTER FUNCTION ────────────────────────────────────────────────
 
@@ -156,23 +156,23 @@ export function applyHardFilters(
   failures.push(...nonNegFailures);
 
   // ── 7. AGE ELIGIBILITY ─────────────────────────────────────────────────────
-  // Both must be 21+
+  // Both must be at least MIN_MATCH_AGE
   const ageA = calculateAge(seeker.birth_date);
   const ageB = calculateAge(candidate.birth_date);
 
-  if (ageA < 21) {
+  if (ageA < MIN_MATCH_AGE) {
     failures.push({
       field: "age",
-      reason: "L'utilisateur A a moins de 21 ans",
+      reason: `L'utilisateur A a moins de ${MIN_MATCH_AGE} ans`,
       user_a_value: String(ageA),
       user_b_value: String(ageB),
       severity: "critical",
     });
   }
-  if (ageB < 21) {
+  if (ageB < MIN_MATCH_AGE) {
     failures.push({
       field: "age",
-      reason: "Le candidat a moins de 21 ans",
+      reason: `Le candidat a moins de ${MIN_MATCH_AGE} ans`,
       user_a_value: String(ageA),
       user_b_value: String(ageB),
       severity: "critical",
@@ -492,9 +492,9 @@ export function quickEligibilityCheck(
   // Must be opposite gender
   if (seeker.gender === candidate.gender) return false;
 
-  // Both must be 21+
-  if (calculateAge(seeker.birth_date) < 21) return false;
-  if (calculateAge(candidate.birth_date) < 21) return false;
+  // Both must be at least MIN_MATCH_AGE
+  if (calculateAge(seeker.birth_date) < MIN_MATCH_AGE) return false;
+  if (calculateAge(candidate.birth_date) < MIN_MATCH_AGE) return false;
 
   // Both must have completed onboarding
   if (!seeker.onboarding_completed) return false;
