@@ -12,9 +12,8 @@ import {
   Star,
   Eye,
   Heart,
-  Bell,
   Crown,
-  Settings,
+  UserCircle,
   LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -43,7 +42,6 @@ interface SidebarProps {
   displayLocation: string;
   totalUnread: number;
   incomingRequestCount: number;
-  notifCount: number;
   onLogout: () => void;
 }
 
@@ -54,9 +52,8 @@ const sidebarNav: { name: Tab; icon: any; badge?: number; dot?: boolean; highlig
   { name: "Requests", icon: Star },
   { name: "Visitors", icon: Eye },
   { name: "Favorites", icon: Heart },
-  { name: "Notifications", icon: Bell },
   { name: "Premium", icon: Crown, highlight: true },
-  { name: "Profile", icon: Settings },
+  { name: "Profile", icon: UserCircle },
 ];
 
 export function DashboardSidebar({
@@ -68,7 +65,6 @@ export function DashboardSidebar({
   displayLocation,
   totalUnread,
   incomingRequestCount,
-  notifCount,
   onLogout,
 }: SidebarProps) {
   const router = useRouter();
@@ -114,8 +110,6 @@ export function DashboardSidebar({
               ? totalUnread
               : item.name === "Requests"
               ? incomingRequestCount
-              : item.name === "Notifications"
-              ? notifCount
               : 0;
           return (
             <button
@@ -142,12 +136,6 @@ export function DashboardSidebar({
                 >
                   {badgeCount > 9 ? "9+" : badgeCount}
                 </span>
-              )}
-              {item.name === "Notifications" && totalUnread > 0 && !badgeCount && (
-                <span
-                  className="w-2 h-2 rounded-full"
-                  style={{ background: "#486B46" }}
-                />
               )}
             </button>
           );

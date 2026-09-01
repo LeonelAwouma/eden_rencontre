@@ -926,7 +926,6 @@ export default function DashboardPage() {
         displayLocation={displayLocation}
         totalUnread={totalUnread}
         incomingRequestCount={incomingRequests.length}
-        notifCount={notifCount}
         onLogout={handleLogout}
       />
 
