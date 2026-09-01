@@ -1,7 +1,8 @@
 // Algorithme de compatibilité (matching) entre deux membres — 100 % local et déterministe.
 // Combine : valeurs/croyances communes, proximité géographique, situation et complétude du profil,
-// ainsi que les réponses au questionnaire d'onboarding (âge souhaité, langues, convictions, style de vie)
-// quand elles sont disponibles pour les deux personnes.
+// ainsi que les réponses au questionnaire d'onboarding (âge souhaité, langues, convictions, style de
+// vie, niveau d'études, non négociables de fin de questionnaire) quand elles sont disponibles pour
+// les deux personnes.
 
 // Type souple acceptant aussi bien EdenUser (string | undefined) que MemberProfile (string | null).
 type MatchInput = {
@@ -51,6 +52,35 @@ function inAgeRange(age: number | null, range: any): boolean {
 const QCM_KEYS = ["qcmDecision", "qcmPeche", "qcmMature", "qcmTentations"];
 // Choix simples liés au style de vie / attentes du couple.
 const LIFESTYLE_KEYS = ["rythme", "organisation", "financesCouple", "enfants"];
+
+// Questions "non négociables" de fin de questionnaire (texte libre, cf. src/lib/onboarding.ts,
+// section "limites" + les deux champs qui reprennent explicitement ce terme). Comme ce sont des
+// réponses en texte libre, on ne peut pas détecter un "refus" de façon fiable (négation, ironie…) :
+// on se limite donc à un signal positif — les mots-clés significatifs qui reviennent des DEUX côtés
+// dans ce que chacun décrit comme non négociable. Jamais de pénalité sur la base de ce texte libre.
+const NON_NEGOTIABLE_KEYS = ["criteresSpirituels", "limitesSpirituelles", "limitesComportementales", "limitesRelationnelles", "criteresMatching"];
+
+const STOPWORDS = new Set([
+  "avec", "sans", "pour", "dans", "sur", "sous", "chez", "vers", "entre", "avant", "après", "apres",
+  "être", "etre", "avoir", "fait", "faire", "cela", "ceci", "comme", "tout", "tous", "toute", "toutes",
+  "ainsi", "donc", "mais", "plus", "moins", "très", "tres", "plutot", "plutôt", "beaucoup", "peu",
+  "mon", "mes", "notre", "nos", "votre", "vos", "leur", "leurs", "cette", "ces", "quelque", "quelques",
+  "qui", "que", "quoi", "dont", "leurs", "elle", "elles", "nous", "vous", "ils", "être", "sont", "était",
+  "etait", "seront", "sera", "peut", "peux", "pouvoir", "veux", "veut", "vouloir", "doit", "dois", "devoir",
+  "important", "importante", "importants", "importantes", "surtout", "aussi", "encore", "toujours", "jamais",
+]);
+
+const DIACRITICS_RE = new RegExp("[\\u0300-\\u036f]", "g");
+
+function extractKeywords(text: string): Set<string> {
+  const normalized = text
+    .normalize("NFD")
+    .replace(DIACRITICS_RE, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, " ");
+  const words = normalized.split(/\s+/).filter((w) => w.length >= 4 && !STOPWORDS.has(w));
+  return new Set(words);
+}
 
 export function computeMatchScore(me: MatchInput, other: MatchInput): MatchResult {
   let score = 50;
@@ -120,6 +150,25 @@ export function computeMatchScore(me: MatchInput, other: MatchInput): MatchResul
   if (sharedLifestyle > 0) {
     score += Math.min(sharedLifestyle * 4, 16);
     reasons.push("Style de vie compatible");
+  }
+
+  // 9) Même niveau d'études
+  if (myQ.niveauEtudes && otherQ.niveauEtudes && eq(String(myQ.niveauEtudes), String(otherQ.niveauEtudes))) {
+    score += 4;
+  }
+
+  // 10) Non négociables (fin du questionnaire) — écho de vocabulaire entre ce que chacun décrit
+  // comme non négociable (valeurs spirituelles, comportements inacceptables, limites relationnelles,
+  // critères de matching). Signal uniquement positif : on ne pénalise jamais sur du texte libre.
+  const myNonNeg = extractKeywords(NON_NEGOTIABLE_KEYS.map((k) => (typeof myQ[k] === "string" ? myQ[k] : "")).join(" "));
+  const otherNonNeg = extractKeywords(NON_NEGOTIABLE_KEYS.map((k) => (typeof otherQ[k] === "string" ? otherQ[k] : "")).join(" "));
+  if (myNonNeg.size > 0 && otherNonNeg.size > 0) {
+    let sharedNonNeg = 0;
+    myNonNeg.forEach((w) => { if (otherNonNeg.has(w)) sharedNonNeg++; });
+    if (sharedNonNeg > 0) {
+      score += Math.min(sharedNonNeg * 3, 15);
+      reasons.push("Valeurs non négociables en écho");
+    }
   }
 
   score = Math.max(40, Math.min(99, Math.round(score)));

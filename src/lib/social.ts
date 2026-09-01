@@ -25,9 +25,11 @@ const PROFILE_COLS =
 
 // Champs du questionnaire utilisés par l'algorithme de matching (src/lib/matching.ts).
 // On ne sélectionne jamais les sections privées (santé, appréhensions) d'un AUTRE membre :
-// seuls ces champs précis sont extraits du JSONB `questionnaire`.
+// seuls ces champs précis sont extraits du JSONB `questionnaire`. Les 5 derniers sont les questions
+// "non négociables" de fin de questionnaire (texte libre) — non marquées privées dans onboarding.ts,
+// donc destinées à être visibles par un partenaire potentiel.
 const MATCH_QUESTIONNAIRE_COLS =
-  "trancheAge:questionnaire->trancheAge, langues:questionnaire->langues, qcmDecision:questionnaire->>qcmDecision, qcmPeche:questionnaire->>qcmPeche, qcmMature:questionnaire->>qcmMature, qcmTentations:questionnaire->>qcmTentations, rythme:questionnaire->>rythme, organisation:questionnaire->>organisation, financesCouple:questionnaire->>financesCouple, enfants:questionnaire->>enfants";
+  "trancheAge:questionnaire->trancheAge, langues:questionnaire->langues, qcmDecision:questionnaire->>qcmDecision, qcmPeche:questionnaire->>qcmPeche, qcmMature:questionnaire->>qcmMature, qcmTentations:questionnaire->>qcmTentations, rythme:questionnaire->>rythme, organisation:questionnaire->>organisation, financesCouple:questionnaire->>financesCouple, enfants:questionnaire->>enfants, niveauEtudes:questionnaire->>niveauEtudes, criteresSpirituels:questionnaire->>criteresSpirituels, limitesSpirituelles:questionnaire->>limitesSpirituelles, limitesComportementales:questionnaire->>limitesComportementales, limitesRelationnelles:questionnaire->>limitesRelationnelles, criteresMatching:questionnaire->>criteresMatching";
 
 const FULL_PROFILE_COLS = `${PROFILE_COLS}, ${MATCH_QUESTIONNAIRE_COLS}`;
 
@@ -58,6 +60,12 @@ function mapRow(d: any): MemberProfile {
       organisation: d.organisation,
       financesCouple: d.financesCouple,
       enfants: d.enfants,
+      niveauEtudes: d.niveauEtudes,
+      criteresSpirituels: d.criteresSpirituels,
+      limitesSpirituelles: d.limitesSpirituelles,
+      limitesComportementales: d.limitesComportementales,
+      limitesRelationnelles: d.limitesRelationnelles,
+      criteresMatching: d.criteresMatching,
     },
   };
 }
