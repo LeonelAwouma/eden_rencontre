@@ -1103,6 +1103,8 @@
     "noMembersFound": "No members found.",
     "newConversation": "+ New conversation",
     "contactAdmin": "Contact administration",
+    "contactAdminHint": "A question, an issue? Write to us anytime.",
+    "contactAdminWelcome": "👋 Hello! The Eden Connexion team is here if you need help — write to us below.",
     "noConversationsYet": "No conversations yet.",
     "sayHelloKindly": "Say hello with kindness 🙏",
     "captionPlaceholder": "Caption…",

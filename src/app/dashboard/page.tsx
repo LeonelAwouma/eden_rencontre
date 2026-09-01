@@ -62,6 +62,10 @@ const TAB_LABEL_KEY: Record<string, string> = {
   Profile: "dashboardTabs.profile", Profil: "dashboardTabs.profile",
 };
 
+// Sentinel activeConvId used before any real conversation with Admin exists yet —
+// lets the pinned Admin entry open a chat view without a conversation row in the DB.
+const ADMIN_VIRTUAL_ID = "__admin_virtual__";
+
 // ── Helper ──
 function formatTime(iso: string) {
   try { return new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }); }
@@ -234,6 +238,7 @@ export default function DashboardPage() {
   const [user, setUser] = useState<EdenUser | null>(null);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [adminUser, setAdminUser] = useState<{ id: string; name: string } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
   const [partnerTyping, setPartnerTyping] = useState(false);
@@ -242,7 +247,6 @@ export default function DashboardPage() {
   const [userResults, setUserResults] = useState<DirectoryUser[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
-  const [contactingAdmin, setContactingAdmin] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [pendingImage, setPendingImage] = useState<File | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
@@ -294,6 +298,12 @@ export default function DashboardPage() {
   const totalUnread = conversations.reduce((s, c) => s + c.unread, 0);
   const visitsThisWeek = visitors.filter((v) => Date.now() - new Date(v.viewedAt).getTime() < 7 * 24 * 60 * 60 * 1000).length;
   const activeConv = conversations.find((c) => c.id === activeConvId) || null;
+  // Synthetic conversation for the chat header/thread while the pinned Admin
+  // entry hasn't produced a real conversation row yet (see openAdminConversation).
+  const displayConv: ChatConversation | null =
+    activeConv || (activeConvId === ADMIN_VIRTUAL_ID && adminUser
+      ? { id: ADMIN_VIRTUAL_ID, otherId: adminUser.id, name: adminUser.name, avatar: null, last: "", when: "", unread: 0 }
+      : null);
   const messageNotifs = conversations.filter((c) => c.unread > 0);
   const displayName = user?.name || "Membre";
 
@@ -418,20 +428,26 @@ export default function DashboardPage() {
     await openConversation(convId);
   };
 
-  const handleContactAdmin = async () => {
-    if (contactingAdmin) return;
-    setContactingAdmin(true);
-    try {
-      const convId = await contactAdmin();
-      if (!convId) {
-        toast({ title: t("dashboard.toastFailed"), variant: "destructive" });
-        return;
-      }
-      await loadConversations();
-      await openConversation(convId);
-    } finally {
-      setContactingAdmin(false);
-    }
+  // Admin is always pinned at the top of Messages so a brand-new user (with no
+  // matches yet) always has someone to write to. No real conversation/message
+  // is created until they actually send something — see sendMessage() below.
+  useEffect(() => {
+    fetch("/api/support/admin-id")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => { if (data?.id) setAdminUser({ id: data.id, name: data.name || "Admin" }); })
+      .catch(() => {});
+  }, []);
+
+  const adminConv = conversations.find((c) => adminUser && c.otherId === adminUser.id) || null;
+
+  const openAdminConversation = () => {
+    if (adminConv) { openConversation(adminConv.id); return; }
+    if (!adminUser) return;
+    setActiveConvId(ADMIN_VIRTUAL_ID);
+    setPartnerTyping(false);
+    setChatInput("");
+    clearPendingImage();
+    setMessages([]);
   };
 
   const handleChatInput = (v: string) => {
@@ -467,22 +483,41 @@ export default function DashboardPage() {
     const text = chatInput.trim();
     if ((!text && !pendingImage) || !activeConvId || uploading) return;
     setShowEmoji(false);
+
+    let convId = activeConvId;
+    let receiverId = activeConv?.otherId;
+
+    // First message to Admin: the pinned entry has no real conversation yet —
+    // create it now (and only now) via contactAdmin(), then send into it.
+    if (convId === ADMIN_VIRTUAL_ID) {
+      if (!adminUser) return;
+      const realId = await contactAdmin();
+      if (!realId) {
+        toast({ title: t("dashboard.toastFailed"), variant: "destructive" });
+        return;
+      }
+      convId = realId;
+      receiverId = adminUser.id;
+      setActiveConvId(realId);
+      loadConversations();
+    }
+
     if (pendingImage) {
       setUploading(true);
-      const res = await uploadChatImage(pendingImage, activeConvId);
+      const res = await uploadChatImage(pendingImage, convId);
       setUploading(false);
       if (res.error || !res.url) {
         toast({ title: t("dashboard.toastUploadFailed"), description: res.error || t("dashboard.toastPleaseRetry"), variant: "destructive" });
         return;
       }
-    const sentImg = await sendChatMessage(activeConvId, text, res.url, meId, activeConv?.otherId);
+      const sentImg = await sendChatMessage(convId, text, res.url, meId, receiverId);
       if (sentImg.error) { notifySendError(sentImg.error); return; }
       if (sentImg.message) appendMessage(sentImg.message);
       clearPendingImage(); setChatInput(""); loadConversations();
       return;
     }
     setChatInput("");
-    const sent = await sendChatMessage(activeConvId, text, null, meId, activeConv?.otherId);
+    const sent = await sendChatMessage(convId, text, null, meId, receiverId);
     if (sent.error) { setChatInput(text); notifySendError(sent.error); return; }
     if (sent.message) appendMessage(sent.message);
     loadConversations();
@@ -786,7 +821,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     setPartnerTyping(false);
-    if (!supabase || !activeConvId || !meId) return;
+    if (!supabase || !activeConvId || activeConvId === ADMIN_VIRTUAL_ID || !meId) return;
     const convId = activeConvId;
     const channel = supabase
       .channel(`conv-${convId}`, { config: { broadcast: { self: false } } })
@@ -1646,23 +1681,44 @@ export default function DashboardPage() {
                 </>
               ) : (
                 <>
-                  <div className="p-3 space-y-2" style={{ borderBottom: "1px solid #E8E5E0" }}>
+                  <div className="p-3" style={{ borderBottom: "1px solid #E8E5E0" }}>
                     <Button onClick={() => setShowNewChat(true)} className="w-full h-10 font-bold rounded-xl gap-2 text-sm" style={{ background: "#486B46", color: "#FFFFFF" }}>
                       {t("dashboard.newConversation")}
                     </Button>
-                    <Button onClick={handleContactAdmin} disabled={contactingAdmin} variant="outline"
-                      className="w-full h-10 font-bold rounded-xl gap-2 text-sm" style={{ borderColor: "#C6D4C0", color: "#486B46" }}>
-                      {contactingAdmin ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
-                      {t("dashboard.contactAdmin")}
-                    </Button>
                   </div>
                   <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    {conversations.length === 0 ? (
+                    {/* Admin is always pinned first — a new member with no matches yet always has someone to write to */}
+                    {adminUser && (() => {
+                      const sel = activeConvId === (adminConv?.id ?? ADMIN_VIRTUAL_ID);
+                      return (
+                        <button onClick={openAdminConversation}
+                          className="w-full flex items-center gap-3 p-3 text-left transition-colors"
+                          style={{ background: sel ? "#EEF5EC" : "transparent", borderLeft: sel ? "3px solid #486B46" : "3px solid transparent" }}>
+                          <Avatar className="w-11 h-11 shrink-0" style={{ border: "1px solid #E8E5E0" }}>
+                            <AvatarFallback style={{ background: "#486B46", color: "#FFFFFF" }}><ShieldCheck className="w-5 h-5" /></AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center justify-between gap-2">
+                              <h4 className="font-bold text-sm truncate" style={{ color: sel ? "#486B46" : "#2F2F2F" }}>{t("dashboard.contactAdmin")}</h4>
+                              {adminConv?.when && <span className="text-[10px] shrink-0" style={{ color: "#777777" }}>{adminConv.when}</span>}
+                            </div>
+                            <p className="text-xs truncate mt-0.5" style={{ color: (sel ? 0 : adminConv?.unread || 0) > 0 ? "#2F2F2F" : "#777777" }}>
+                              {adminConv?.last || t("dashboard.contactAdminHint")}
+                            </p>
+                          </div>
+                          {adminConv && adminConv.unread > 0 && !sel && (
+                            <span className="shrink-0 w-5 h-5 text-[10px] font-black rounded-full flex items-center justify-center"
+                              style={{ background: "#486B46", color: "#FFFFFF" }}>{adminConv.unread}</span>
+                          )}
+                        </button>
+                      );
+                    })()}
+                    {conversations.filter((c) => !adminConv || c.id !== adminConv.id).length === 0 ? (
                       <div className="p-6 text-center">
                         <MessageCircle className="w-10 h-10 mx-auto mb-3" style={{ color: "#C6D4C0" }} />
                         <p className="text-sm" style={{ color: "#777777" }}>{t("dashboard.noConversationsYet")}</p>
                       </div>
-                    ) : conversations.map((c) => {
+                    ) : conversations.filter((c) => !adminConv || c.id !== adminConv.id).map((c) => {
                       const sel = activeConvId === c.id;
                       return (
                         <button key={c.id} onClick={() => openConversation(c.id)}
@@ -1693,21 +1749,30 @@ export default function DashboardPage() {
 
             {/* Chat thread */}
             <div className={cn("flex-1 flex-col min-w-0", activeConvId === null ? "hidden md:flex" : "flex")}>
-              {activeConv ? (
+              {displayConv ? (() => {
+                const isAdminThread = !!adminUser && displayConv.otherId === adminUser.id;
+                return (
                 <>
                   <div className="flex items-center gap-3 p-3" style={{ borderBottom: "1px solid #E8E5E0" }}>
                     <button onClick={() => setActiveConvId(null)} className="md:hidden w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ color: "#777777" }}>
                       <ArrowLeft className="w-5 h-5" />
                     </button>
-                    <button onClick={() => activeConv.otherId && router.push(`/dashboard/profile/${activeConv.otherId}`)} className="flex items-center gap-3 min-w-0 hover:opacity-80 transition-opacity">
+                    <button onClick={() => !isAdminThread && displayConv.otherId && router.push(`/dashboard/profile/${displayConv.otherId}`)}
+                      className={cn("flex items-center gap-3 min-w-0 transition-opacity", !isAdminThread && "hover:opacity-80")}>
                       <Avatar className="w-9 h-9 shrink-0" style={{ border: "1px solid #E8E5E0" }}>
-                        <AvatarImage src={activeConv.avatar || undefined} />
-                        <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{activeConv.name?.[0]?.toUpperCase()}</AvatarFallback>
+                        {isAdminThread ? (
+                          <AvatarFallback style={{ background: "#486B46", color: "#FFFFFF" }}><ShieldCheck className="w-4 h-4" /></AvatarFallback>
+                        ) : (
+                          <>
+                            <AvatarImage src={displayConv.avatar || undefined} />
+                            <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{displayConv.name?.[0]?.toUpperCase()}</AvatarFallback>
+                          </>
+                        )}
                       </Avatar>
                       <div className="text-left min-w-0">
-                        <h4 className="font-bold text-sm truncate" style={{ color: "#2F2F2F" }}>{activeConv.name}</h4>
+                        <h4 className="font-bold text-sm truncate" style={{ color: "#2F2F2F" }}>{displayConv.name}</h4>
                         <p className="text-[11px]" style={{ color: partnerTyping ? "#486B46" : "#777777" }}>
-                          {partnerTyping ? t("dashboard.typing") : t("dashboard.viewProfile")}
+                          {isAdminThread ? t("dashboard.contactAdminHint") : partnerTyping ? t("dashboard.typing") : t("dashboard.viewProfile")}
                         </p>
                       </div>
                     </button>
@@ -1715,8 +1780,11 @@ export default function DashboardPage() {
                   <div className="relative flex-1 min-h-0" style={{ background: "#FAF9F6" }}>
                     <VitrailPattern className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.03]" />
                     <div className="relative h-full overflow-y-auto p-4 space-y-2 custom-scrollbar">
-                      {messages.length === 0 && !guideDismissed && <ChatGuide onDismiss={() => setGuideDismissed(true)} />}
-                      {messages.length === 0 && guideDismissed && <p className="text-center text-xs py-8" style={{ color: "#777777" }}>{t("dashboard.sayHelloKindly")}</p>}
+                      {messages.length === 0 && isAdminThread && (
+                        <p className="text-center text-xs py-8" style={{ color: "#777777" }}>{t("dashboard.contactAdminWelcome")}</p>
+                      )}
+                      {messages.length === 0 && !isAdminThread && !guideDismissed && <ChatGuide onDismiss={() => setGuideDismissed(true)} />}
+                      {messages.length === 0 && !isAdminThread && guideDismissed && <p className="text-center text-xs py-8" style={{ color: "#777777" }}>{t("dashboard.sayHelloKindly")}</p>}
                       {messages.map((m) => (
                         <div key={m.id} className={cn("flex", m.from === "me" ? "justify-end" : "justify-start")}>
                           <div className={cn("max-w-[80%] rounded-2xl text-sm leading-relaxed overflow-hidden", m.imageUrl ? "p-1.5" : "px-4 py-2.5")}
@@ -1808,7 +1876,8 @@ export default function DashboardPage() {
                     </form>
                   </div>
                 </>
-              ) : (
+                );
+              })() : (
                 <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
                   <div className="w-16 h-16 rounded-3xl flex items-center justify-center mb-4" style={{ background: "#EEF5EC" }}>
                     <MessageCircle className="w-8 h-8" style={{ color: "#486B46" }} />
