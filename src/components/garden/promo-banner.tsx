@@ -30,7 +30,7 @@ export function PromoBanner() {
             <div className="absolute -inset-3 sm:-inset-4 bg-gradient-to-br from-sage/10 via-transparent to-deep-eden/5 rounded-3xl -rotate-1" aria-hidden="true" />
             <div className="relative aspect-[16/10] rounded-2xl overflow-hidden shadow-xl shadow-deep-eden/10 bg-white">
               <Image
-                src="/image_pub.png"
+                src="/image_pub.webp"
                 alt={t("promo.imageAlt")}
                 fill
                 className="object-contain"

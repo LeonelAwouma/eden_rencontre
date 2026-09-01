@@ -499,7 +499,8 @@
   .animate-sunrise-glow,
   .animate-bloom,
   .animate-breathe,
-  .animate-sway-slow {
+  .animate-sway-slow,
+  .animate-dove-flight {
     animation: none !important;
   }
   .growing-underline::after,

@@ -370,15 +370,20 @@ export default function RegisterPage() {
     <div className="min-h-screen bg-background flex">
       {/* Left Panel — Image & Branding (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-[42%] xl:w-[45%] relative overflow-hidden">
-        <Image
-          src="/mariage.png"
-          alt="Eden Connexion — Alliance Bénie"
-          fill
-          className="object-cover object-center"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30 z-10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background z-10" />
+        {/* Photo — léger mouvement pour une image "vivante" */}
+        <div className="absolute inset-0 animate-breathe">
+          <Image
+            src="/mariage.webp"
+            alt="Eden Connexion — Alliance Bénie"
+            fill
+            className="object-cover object-center"
+            priority
+          />
+        </div>
+        {/* Voile concentré au pied du visuel — le reste de la photo respire */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent z-10" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background/45 to-transparent z-10" />
+        <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-background to-transparent z-10" />
 
         <div className="relative z-20 flex flex-col justify-between p-12 w-full">
           <Link href="/" className="flex items-center gap-3 group">
@@ -436,6 +441,19 @@ export default function RegisterPage() {
           <Link href="/login" className="text-sm text-primary font-bold hover:text-primary/80 transition-colors">
             {t("register.mobileSignIn")}
           </Link>
+        </div>
+
+        {/* Mobile Image Banner — le visuel est mis en avant sur mobile aussi */}
+        <div className="lg:hidden relative w-full h-40 sm:h-52 shrink-0 overflow-hidden">
+          <div className="absolute inset-0 animate-breathe">
+            <Image
+              src="/mariage.webp"
+              alt="Eden Connexion — Alliance Bénie"
+              fill
+              className="object-cover object-[50%_22%]"
+            />
+          </div>
+          <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-background to-transparent" />
         </div>
 
         <div className="flex-1 flex flex-col justify-center items-center px-5 sm:px-12 lg:px-16 xl:px-20 py-8 sm:py-10">

@@ -200,7 +200,7 @@ export default function AcademyIndexPage() {
                 </div>
               </div>
               <div className="w-52 h-52 relative rounded-t-[3rem] rounded-b-2xl overflow-hidden shadow-2xl border border-secondary/30 shrink-0">
-                <Image src="/couple-1030744_640.jpg" alt="Couple mentor épanoui" fill className="object-cover" />
+                <Image src="/couple-1030744_640.webp" alt="Couple mentor épanoui" fill className="object-cover" />
               </div>
             </div>
           </div>

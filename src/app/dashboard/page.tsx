@@ -517,8 +517,8 @@ export default function DashboardPage() {
       listMembers(meId), listMyFriendships(meId), listIncomingRequests(meId), listFavorites(meId), listVisitors(meId),
     ]);
     const opposite = user?.gender === "homme" ? "femme" : user?.gender === "femme" ? "homme" : null;
-    const filtered = opposite ? members.filter((m) => !m.gender || m.gender === opposite) : members;
-    setDiscoverMembers(user ? rankByMatch(user, filtered) : filtered);
+    const filtered = opposite ? members.filter((m) => m.gender === opposite) : members;
+    setDiscoverMembers(user ? rankByMatch({ ...user, questionnaire: questionnaireAnswers }, filtered) : filtered);
     setRelations(buildRelationMap(meId, friendships));
     setIncomingRequests(incoming);
     setFavoriteMembers(favs);
@@ -717,6 +717,14 @@ export default function DashboardPage() {
         });
     }
   }, [user]);
+
+  // Le questionnaire ("me") arrive après le premier classement des profils (loadSocial) : on
+  // reclasse la liste déjà chargée dès que les réponses sont disponibles, sans tout recharger.
+  useEffect(() => {
+    if (!user || discoverMembers.length === 0) return;
+    setDiscoverMembers((prev) => rankByMatch({ ...user, questionnaire: questionnaireAnswers }, prev));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [questionnaireAnswers]);
 
   useEffect(() => {
     if (activeTab === "Messages" || activeTab === "Notifications" || activeTab === "Accueil" || activeTab === "Home") loadConversations();
@@ -1089,7 +1097,7 @@ export default function DashboardPage() {
                     <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
                       {discoverMembers.slice(0, 3).map((m) => (
                         <MemberCard key={m.id} m={m}
-                          match={user ? computeMatchScore(user, m).score : null}
+                          match={user ? computeMatchScore({ ...user, questionnaire: questionnaireAnswers }, m).score : null}
                           isFavorite={favoriteIds.has(m.id)}
                           onToggleFav={() => handleToggleFavorite(m)}
                           onOpen={() => router.push(`/dashboard/profile/${m.id}`)} />
@@ -1349,7 +1357,7 @@ export default function DashboardPage() {
       case "Découvrir":
       case "Discover": {
         const q = discoverSearch.trim().toLowerCase();
-        const scoreOf = (m: MemberProfile) => (user ? computeMatchScore(user, m).score : 0);
+        const scoreOf = (m: MemberProfile) => (user ? computeMatchScore({ ...user, questionnaire: questionnaireAnswers }, m).score : 0);
         const discoverResults = discoverMembers.filter((m) => {
           if (q && !((m.name || "").toLowerCase().includes(q) || (m.city || "").toLowerCase().includes(q) || (m.country || "").toLowerCase().includes(q) || (m.profession || "").toLowerCase().includes(q))) return false;
           if (discoverFilter === "nearMe" && !(user?.country && m.country && user.country.toLowerCase() === m.country.toLowerCase())) return false;

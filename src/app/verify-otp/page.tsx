@@ -254,15 +254,18 @@ function VerifyOTPContent() {
       {/* Left Panel — Image & Branding */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] relative overflow-hidden">
         <ImposingFloralCorners size="xl" corners={["bl", "tl"]} opacity={0.8} />
-        <Image
-          src="/mariage_one.png"
-          alt="Eden Connexion — Union Bénie"
-          fill
-          className="object-cover"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30 z-10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background z-10" />
+        <div className="absolute inset-0 animate-breathe">
+          <Image
+            src="/mariage.webp"
+            alt="Eden Connexion — Union Bénie"
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent z-10" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background/45 to-transparent z-10" />
+        <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-background to-transparent z-10" />
 
         <div className="relative z-20 flex flex-col justify-between p-12 w-full">
           <Link href="/" className="flex items-center gap-3 group">

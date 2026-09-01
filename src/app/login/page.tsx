@@ -123,17 +123,20 @@ export default function LoginPage() {
       {/* Left Panel — Image & Branding */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] relative overflow-hidden">
         <ImposingFloralCorners size="xl" corners={["bl", "tl"]} opacity={0.8} />
-        {/* Background Image */}
-        <Image
-          src="/mariage_one.png"
-          alt="Eden Connexion — Union Bénie"
-          fill
-          className="object-cover"
-          priority
-        />
-        {/* Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30 z-10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background z-10" />
+        {/* Background Image — léger mouvement pour une photo "vivante" */}
+        <div className="absolute inset-0 animate-breathe">
+          <Image
+            src="/mariage.webp"
+            alt="Eden Connexion — Union Bénie"
+            fill
+            className="object-cover"
+            priority
+          />
+        </div>
+        {/* Overlays — concentrés au pied du visuel, le reste de la photo respire */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent z-10" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background/45 to-transparent z-10" />
+        <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-background to-transparent z-10" />
 
         {/* Content over image */}
         <div className="relative z-20 flex flex-col justify-between p-12 w-full">
@@ -173,10 +176,20 @@ export default function LoginPage() {
       </div>
 
       {/* Right Panel — Login Form */}
-      <div className="flex-1 flex flex-col justify-center items-center px-5 sm:px-12 lg:px-16 xl:px-24 pt-24 pb-12 sm:py-12 relative">
-        {/* Mobile Logo */}
-        <div className="lg:hidden absolute top-7 left-5">
-          <Link href="/" className="flex items-center gap-3 group">
+      <div className="flex-1 flex flex-col justify-center items-center pb-12 sm:py-12 relative">
+        {/* Mobile Image Banner — le visuel est mis en avant sur mobile aussi */}
+        <div className="lg:hidden relative w-full h-52 sm:h-64 shrink-0 overflow-hidden">
+          <div className="absolute inset-0 animate-breathe">
+            <Image
+              src="/mariage.webp"
+              alt="Eden Connexion — Union Bénie"
+              fill
+              className="object-cover object-[50%_25%]"
+            />
+          </div>
+          <div className="absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-background/55 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-background to-transparent" />
+          <Link href="/" className="absolute top-5 left-5 flex items-center gap-2.5 group">
             <Monogram className="w-8 h-8 text-primary shrink-0" />
             <span className="font-headline text-xl font-bold text-foreground">
               Eden <span>Connexion</span>
@@ -184,7 +197,7 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <div className="w-full max-w-md space-y-8 sm:space-y-10 animate-in fade-in slide-in-from-right-4 duration-700 relative">
+        <div className="w-full max-w-md space-y-8 sm:space-y-10 px-5 sm:px-12 lg:px-16 xl:px-24 pt-8 lg:pt-0 animate-in fade-in slide-in-from-right-4 duration-700 relative">
           <ImposingFloralCorners size="md" corners={["tr"]} opacity={0.45} className="hidden sm:block" />
           {/* Header */}
           <div className="space-y-3">

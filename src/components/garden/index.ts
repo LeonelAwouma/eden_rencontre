@@ -1,5 +1,6 @@
-export { RoseBloom, LavenderSprig, SageLeaf, DelicateFlower, VineCurve, FloralCorner, OrganicDivider, GardenFoliageCluster, LianeVertical } from "./botanical-svgs";
+export { RoseBloom, LavenderSprig, SageLeaf, DelicateFlower, VineCurve, FloralCorner, OrganicDivider, GardenFoliageCluster, LianeVertical, DoveInFlight } from "./botanical-svgs";
 export { FloatingBotanical } from "./floating-botanical";
+export { FlyingDove } from "./flying-dove";
 export { FloralCorners } from "./floral-corners";
 export { OrganicSeparator } from "./organic-separator";
 export { GardenCard } from "./garden-card";

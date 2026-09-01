@@ -46,6 +46,7 @@ export interface MemberProfile {
   marriageVision?: string[] | null;
   avatar_url?: string | null;
   verification_status?: string | null;
+  questionnaire?: Record<string, any> | null;
 }
 
 // ── Fluent Emoji (Microsoft, MIT) — rendu 3D via CDN jsDelivr ──

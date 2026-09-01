@@ -132,6 +132,26 @@ export function GardenFoliageCluster({ className }: { className?: string }) {
   );
 }
 
+/** Colombe stylisée, ailes déployées — clin d'œil discret au Jardin d'Éden. */
+export function DoveInFlight({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 100 56" fill="none" className={className} aria-hidden="true">
+      <path
+        d="M50 30
+           C 42 12, 22 6, 2 12
+           C 20 18, 34 26, 46 34
+           C 34 30, 20 32, 6 38
+           C 22 38, 36 40, 48 46
+           C 60 40, 74 38, 90 38
+           C 76 32, 62 30, 50 34
+           C 62 26, 76 18, 94 12
+           C 74 6, 54 12, 50 30 Z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
 export function LianeVertical({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 40 200" fill="none" className={className} aria-hidden="true">

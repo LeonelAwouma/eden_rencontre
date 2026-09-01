@@ -23,6 +23,14 @@ export interface Friendship {
 const PROFILE_COLS =
   "id, name, email, city, country, region, gender, birth_date, civil_status, profession, bio, marriage_vision, avatar_url, verification_status";
 
+// Champs du questionnaire utilisés par l'algorithme de matching (src/lib/matching.ts).
+// On ne sélectionne jamais les sections privées (santé, appréhensions) d'un AUTRE membre :
+// seuls ces champs précis sont extraits du JSONB `questionnaire`.
+const MATCH_QUESTIONNAIRE_COLS =
+  "trancheAge:questionnaire->trancheAge, langues:questionnaire->langues, qcmDecision:questionnaire->>qcmDecision, qcmPeche:questionnaire->>qcmPeche, qcmMature:questionnaire->>qcmMature, qcmTentations:questionnaire->>qcmTentations, rythme:questionnaire->>rythme, organisation:questionnaire->>organisation, financesCouple:questionnaire->>financesCouple, enfants:questionnaire->>enfants";
+
+const FULL_PROFILE_COLS = `${PROFILE_COLS}, ${MATCH_QUESTIONNAIRE_COLS}`;
+
 function mapRow(d: any): MemberProfile {
   return {
     id: d.id,
@@ -39,6 +47,18 @@ function mapRow(d: any): MemberProfile {
     marriageVision: d.marriage_vision,
     avatar_url: d.avatar_url,
     verification_status: d.verification_status,
+    questionnaire: {
+      trancheAge: d.trancheAge,
+      langues: d.langues,
+      qcmDecision: d.qcmDecision,
+      qcmPeche: d.qcmPeche,
+      qcmMature: d.qcmMature,
+      qcmTentations: d.qcmTentations,
+      rythme: d.rythme,
+      organisation: d.organisation,
+      financesCouple: d.financesCouple,
+      enfants: d.enfants,
+    },
   };
 }
 
@@ -55,7 +75,7 @@ export async function listMembers(myId: string): Promise<MemberProfile[]> {
   if (!supabase || !myId) return [];
   const { data, error } = await supabase
     .from("profiles")
-    .select(PROFILE_COLS)
+    .select(FULL_PROFILE_COLS)
     .neq("id", myId)
     .order("updated_at", { ascending: false })
     .limit(200);
@@ -95,7 +115,7 @@ export async function listIncomingRequests(myId: string): Promise<FriendRequest[
   }
   if (!rows || rows.length === 0) return [];
   const ids = rows.map((r: any) => r.requester_id);
-  const { data: profs } = await supabase.from("profiles").select(PROFILE_COLS).in("id", ids);
+  const { data: profs } = await supabase.from("profiles").select(FULL_PROFILE_COLS).in("id", ids);
   const byId: Record<string, MemberProfile> = {};
   (profs || []).forEach((p: any) => (byId[p.id] = mapRow(p)));
   // On n'écarte jamais une demande : si le profil de l'expéditeur manque, on met un repli minimal.
@@ -152,7 +172,7 @@ export async function listFavorites(myId: string): Promise<MemberProfile[]> {
   if (!supabase || !myId) return [];
   const ids = await listFavoriteIds(myId);
   if (!ids.length) return [];
-  const { data } = await supabase.from("profiles").select(PROFILE_COLS).in("id", ids);
+  const { data } = await supabase.from("profiles").select(FULL_PROFILE_COLS).in("id", ids);
   return (data || []).map(mapRow);
 }
 
@@ -206,7 +226,7 @@ export async function listVisitors(myId: string): Promise<Visitor[]> {
     .limit(50);
   if (!rows || rows.length === 0) return [];
   const ids = rows.map((r: any) => r.viewer_id);
-  const { data: profs } = await supabase.from("profiles").select(PROFILE_COLS).in("id", ids);
+  const { data: profs } = await supabase.from("profiles").select(FULL_PROFILE_COLS).in("id", ids);
   const byId: Record<string, MemberProfile> = {};
   (profs || []).forEach((p: any) => (byId[p.id] = mapRow(p)));
   return rows

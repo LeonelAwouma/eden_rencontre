@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
+import { FlyingDove } from "./flying-dove";
 
 /** Floating pollen particles */
 function PollenParticles() {
@@ -57,6 +58,11 @@ export function GardenHero() {
       {/* Pollen particles — only on desktop where image is separate */}
       <div className="hidden lg:block">
         {!reduced && <PollenParticles />}
+      </div>
+
+      {/* Colombe — clin d'œil discret au Jardin d'Éden, un seul passage très lent */}
+      <div className="hidden lg:block">
+        <FlyingDove className="top-[12%]" />
       </div>
 
       {/* ── Main Layout: CSS Grid on desktop (avoids sub-pixel rounding gap), stacked on mobile ── */}
@@ -165,7 +171,7 @@ export function GardenHero() {
           {/* Image fills this column naturally */}
           <div className="absolute inset-0">
             <Image
-              src="/hero.png"
+              src="/hero.webp"
               alt="Couple chrétien — Eden Connexion"
               fill
               className="object-cover object-center"

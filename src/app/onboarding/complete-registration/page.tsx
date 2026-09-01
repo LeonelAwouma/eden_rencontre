@@ -358,7 +358,7 @@ export default function CompleteRegistrationPage() {
       {/* Left Panel — Image & Branding (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-[42%] xl:w-[45%] relative overflow-hidden">
         <Image
-          src="/mariage.png"
+          src="/mariage.webp"
           alt="Eden Connexion — Alliance Bénie"
           fill
           className="object-cover object-center"

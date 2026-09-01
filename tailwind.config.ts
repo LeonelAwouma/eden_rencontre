@@ -146,6 +146,14 @@ export default {
           '0%': { width: '0%' },
           '100%': { width: '100%' },
         },
+        'dove-flight': {
+          '0%':   { transform: 'translate(-10vw, 8vh) scale(0.9)', opacity: '0' },
+          '8%':   { opacity: '0.16' },
+          '45%':  { transform: 'translate(45vw, -3vh) scale(1)', opacity: '0.16' },
+          '55%':  { transform: 'translate(56vw, -6vh) scale(1)', opacity: '0.14' },
+          '92%':  { opacity: '0.08' },
+          '100%': { transform: 'translate(115vw, -16vh) scale(0.85)', opacity: '0' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -161,6 +169,7 @@ export default {
         'sunrise-glow': 'sunrise-glow 6s ease-in-out infinite',
         'bloom': 'bloom 0.6s ease-out forwards',
         'undergrow': 'undergrow 0.4s ease-out forwards',
+        'dove-flight': 'dove-flight 38s ease-in-out infinite',
       },
       boxShadow: {
         'botanical': '0 2px 20px -4px hsl(152 22% 42% / 0.08)',
