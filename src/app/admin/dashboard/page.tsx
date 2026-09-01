@@ -41,8 +41,16 @@ interface AuditEntry {
   created_at: string;
 }
 
+interface Growth {
+  totalUsers: number | null;
+  approvedUsers: number | null;
+  suspendedUsers: number | null;
+}
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const [growth, setGrowth] = useState<Growth>({ totalUsers: null, approvedUsers: null, suspendedUsers: null });
+  const [dailyRegistrations, setDailyRegistrations] = useState<{ date: string; count: number }[]>([]);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -52,8 +60,10 @@ export default function DashboardPage() {
       .then((r) => r.json())
       .then((data) => {
         setStats(data.stats);
+        setGrowth(data.growth || { totalUsers: null, approvedUsers: null, suspendedUsers: null });
+        setDailyRegistrations(data.dailyRegistrations || []);
         setRecentUsers(data.recentUsers || []);
-        setAuditLog(data.auditLog || []);
+        setAuditLog(data.recentAudit || []);
       })
       .catch(() => {});
   }, []);
@@ -76,21 +86,25 @@ export default function DashboardPage() {
     );
   }
 
+  // Real 30-day growth from the API — undefined when there's no 30-day-old
+  // baseline to compare against (e.g. a brand-new platform), in which case
+  // the badge is simply omitted rather than showing a fabricated number.
+  const trendFrom = (pct: number | null) =>
+    pct === null ? undefined : { value: `${pct > 0 ? "+" : pct < 0 ? "−" : ""}${Math.abs(pct)}%`, positive: pct >= 0 };
+
   const KPI_CARDS = [
     {
       title: "Utilisateurs",
       value: stats.totalUsers,
       icon: Users,
       accentColor: "blue" as const,
-      iconBg: "bg-[#4F7DF3]/8",
-      trend: { value: "+12%", positive: true },
+      trend: trendFrom(growth.totalUsers),
     },
     {
       title: "En attente de vérification",
       value: stats.pendingUsers,
       icon: Clock,
       accentColor: "orange" as const,
-      iconBg: "bg-[#38C172]/8",
       status: "À réviser",
     },
     {
@@ -98,16 +112,14 @@ export default function DashboardPage() {
       value: stats.approvedUsers,
       icon: ShieldCheck,
       accentColor: "green" as const,
-      iconBg: "bg-[#38C172]/8",
-      trend: { value: "+8%", positive: true },
+      trend: trendFrom(growth.approvedUsers),
     },
     {
       title: "Comptes suspendus",
       value: stats.suspendedUsers,
       icon: ShieldOff,
       accentColor: "red" as const,
-      iconBg: "bg-[#F56565]/8",
-      trend: { value: "−2%", positive: false },
+      trend: trendFrom(growth.suspendedUsers),
     },
   ];
 
@@ -127,7 +139,7 @@ export default function DashboardPage() {
 
       {/* Chart + Quick Actions */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <UsersChart />
+        <UsersChart data={dailyRegistrations} />
         <QuickActions />
       </div>
 

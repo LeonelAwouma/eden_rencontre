@@ -97,12 +97,12 @@ export default function AdminMediathequePage() {
       </motion.div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        <KPICard title="Total" value={total} icon={Library} accentColor="green" iconBg="bg-[#486B46]/8" index={0} />
-        <KPICard title="Vidéos" value={stats.video || 0} icon={Video} accentColor="blue" iconBg="bg-[#4F7DF3]/8" index={1} />
-        <KPICard title="Audio" value={stats.audio || 0} icon={Headphones} accentColor="green" iconBg="bg-[#8B5CF6]/8" index={2} />
-        <KPICard title="Livres" value={stats.book || 0} icon={BookOpen} accentColor="orange" iconBg="bg-[#F59E0B]/8" index={3} />
-        <KPICard title="PDFs" value={stats.pdf || 0} icon={File} accentColor="red" iconBg="bg-[#EF4444]/8" index={4} />
-        <KPICard title="Articles" value={stats.article || 0} icon={FileText} accentColor="green" iconBg="bg-[#10B981]/8" index={5} />
+        <KPICard title="Total" value={total} icon={Library} accentColor="green" index={0} />
+        <KPICard title="Vidéos" value={stats.video || 0} icon={Video} accentColor="blue" index={1} />
+        <KPICard title="Audio" value={stats.audio || 0} icon={Headphones} accentColor="green" index={2} />
+        <KPICard title="Livres" value={stats.book || 0} icon={BookOpen} accentColor="orange" index={3} />
+        <KPICard title="PDFs" value={stats.pdf || 0} icon={File} accentColor="red" index={4} />
+        <KPICard title="Articles" value={stats.article || 0} icon={FileText} accentColor="green" index={5} />
       </div>
 
       <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-4">

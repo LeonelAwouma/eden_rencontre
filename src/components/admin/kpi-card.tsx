@@ -9,7 +9,6 @@ interface KPICardProps {
   value: number;
   icon: LucideIcon;
   accentColor: string;
-  iconBg: string;
   trend?: { value: string; positive?: boolean };
   status?: string;
   index?: number;
@@ -54,7 +53,6 @@ export function KPICard({
   value,
   icon: Icon,
   accentColor,
-  iconBg,
   trend,
   status,
   index = 0,

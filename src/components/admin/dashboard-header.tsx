@@ -92,9 +92,32 @@ export function DashboardHeader({
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
 
-  const fetchNotifications = useCallback(async () => {
+  const runSearch = useCallback(
+    (query: string) => {
+      const q = query.trim();
+      if (!q) return;
+      router.push(`/admin/users?search=${encodeURIComponent(q)}`);
+    },
+    [router]
+  );
+
+  // ⌘K / Ctrl+K focuses the search box — matches the hint shown next to it.
+  useEffect(() => {
+    function handleShortcut(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+        e.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    }
+    document.addEventListener("keydown", handleShortcut);
+    return () => document.removeEventListener("keydown", handleShortcut);
+  }, []);
+
+  const fetchNotifications = useCallback(async (opts?: { showLoading?: boolean }) => {
+    if (opts?.showLoading) setLoading(true);
     try {
       const res = await fetch("/api/admin/notifications?limit=10");
       if (!res.ok) return;
@@ -103,6 +126,8 @@ export function DashboardHeader({
       setUnreadCount(data.unread_count || 0);
     } catch (err) {
       console.error("Failed to fetch notifications:", err);
+    } finally {
+      if (opts?.showLoading) setLoading(false);
     }
   }, []);
 
@@ -216,10 +241,12 @@ export function DashboardHeader({
           <div className="hidden md:flex items-center gap-2 bg-white border border-zinc-200 rounded-lg px-3 py-2 w-52 lg:w-64 hover:border-zinc-300 focus-within:border-[#3D6B3B] focus-within:ring-2 focus-within:ring-[#3D6B3B]/10 transition-all">
             <Search className="w-4 h-4 text-zinc-300 flex-shrink-0" />
             <input
+              ref={searchInputRef}
               type="text"
-              placeholder="Rechercher…"
+              placeholder="Rechercher un utilisateur…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && runSearch(searchQuery)}
               className="bg-transparent text-sm text-zinc-900 placeholder:text-zinc-300 outline-none w-full font-medium"
             />
             <kbd className="hidden lg:inline-flex items-center gap-0.5 rounded border border-zinc-200 bg-zinc-50 px-1.5 py-0.5 text-[10px] font-mono text-zinc-400">
@@ -230,7 +257,11 @@ export function DashboardHeader({
           {/* Notifications */}
           <div className="relative" ref={dropdownRef}>
             <button
-              onClick={() => setIsOpen(!isOpen)}
+              onClick={() => {
+                const next = !isOpen;
+                setIsOpen(next);
+                if (next) fetchNotifications({ showLoading: true });
+              }}
               className={cn(
                 "relative w-9 h-9 rounded-lg bg-white border flex items-center justify-center transition-all active:scale-95",
                 isOpen
@@ -348,21 +379,6 @@ export function DashboardHeader({
                       ))
                     )}
                   </div>
-
-                  {/* Footer */}
-                  {notifications.length > 0 && (
-                    <div className="border-t border-zinc-100 px-4 py-2.5">
-                      <button
-                        onClick={() => {
-                          setIsOpen(false);
-                          router.push("/admin/dashboard");
-                        }}
-                        className="w-full text-center text-xs text-[#3D6B3B] hover:text-[#2D5029] font-semibold transition-colors py-1"
-                      >
-                        Voir toutes les notifications
-                      </button>
-                    </div>
-                  )}
                 </motion.div>
               )}
             </AnimatePresence>
@@ -389,7 +405,10 @@ export function DashboardHeader({
               <Search className="w-4 h-4 text-[#9CA3AF] flex-shrink-0" />
               <input
                 type="text"
-                placeholder="Rechercher un utilisateur, événement…"
+                placeholder="Rechercher un utilisateur…"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && runSearch(searchQuery)}
                 className="bg-transparent text-sm text-[#2F2F2F] placeholder:text-[#D1D5DB] outline-none w-full font-medium"
                 autoFocus
               />

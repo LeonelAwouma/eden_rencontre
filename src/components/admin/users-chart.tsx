@@ -11,26 +11,9 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-// Generate demo data for last 30 days
-const generateChartData = () => {
-  const data = [];
-  const now = new Date();
-  for (let i = 29; i >= 0; i--) {
-    const date = new Date(now);
-    date.setDate(date.getDate() - i);
-    data.push({
-      date: date.toLocaleDateString("fr-FR", {
-        day: "2-digit",
-        month: "short",
-      }),
-      inscriptions:
-        Math.floor(Math.random() * 20) + 5 + Math.floor(i / 5) * 3,
-    });
-  }
-  return data;
-};
-
-const chartData = generateChartData();
+interface UsersChartProps {
+  data: { date: string; count: number }[];
+}
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
@@ -49,7 +32,9 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   return null;
 };
 
-export function UsersChart() {
+export function UsersChart({ data }: UsersChartProps) {
+  const total = data.reduce((sum, d) => sum + d.count, 0);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 16 }}
@@ -74,15 +59,22 @@ export function UsersChart() {
         <div className="flex items-center gap-2">
           <span className="w-2.5 h-2.5 rounded-full bg-[#486B46]" />
           <span className="text-[12px] font-medium text-[#777777]">
-            Inscriptions
+            {total} inscription{total > 1 ? "s" : ""}
           </span>
         </div>
       </div>
 
+      {total === 0 ? (
+        <div className="h-[200px] sm:h-[240px] md:h-[260px] flex items-center justify-center">
+          <p className="text-[13px] text-[#9CA3AF] font-medium">
+            Aucune inscription sur les 30 derniers jours
+          </p>
+        </div>
+      ) : (
       <div className="h-[200px] sm:h-[240px] md:h-[260px] -ml-2">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart
-            data={chartData}
+            data={data}
             margin={{ top: 4, right: 4, left: 0, bottom: 0 }}
           >
             <defs>
@@ -112,7 +104,7 @@ export function UsersChart() {
             <Tooltip content={<CustomTooltip />} />
             <Area
               type="monotone"
-              dataKey="inscriptions"
+              dataKey="count"
               stroke="#486B46"
               strokeWidth={2.5}
               fill="url(#edenGradient)"
@@ -127,6 +119,7 @@ export function UsersChart() {
           </AreaChart>
         </ResponsiveContainer>
       </div>
+      )}
     </motion.div>
   );
 }

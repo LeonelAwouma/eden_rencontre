@@ -83,10 +83,10 @@ export default function AdminBlogPage() {
       </motion.div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        <KPICard title="Total articles" value={stats.total || 0} icon={BookOpen} accentColor="green" iconBg="bg-[#486B46]/8" index={0} />
-        <KPICard title="Publiés" value={stats.published || 0} icon={Globe} accentColor="green" iconBg="bg-[#38C172]/8" index={1} />
-        <KPICard title="Brouillons" value={stats.draft || 0} icon={FileText} accentColor="orange" iconBg="bg-[#F59E0B]/8" index={2} />
-        <KPICard title="Archivés" value={stats.archived || 0} icon={Archive} accentColor="red" iconBg="bg-[#F56565]/8" index={3} />
+        <KPICard title="Total articles" value={stats.total || 0} icon={BookOpen} accentColor="green" index={0} />
+        <KPICard title="Publiés" value={stats.published || 0} icon={Globe} accentColor="green" index={1} />
+        <KPICard title="Brouillons" value={stats.draft || 0} icon={FileText} accentColor="orange" index={2} />
+        <KPICard title="Archivés" value={stats.archived || 0} icon={Archive} accentColor="red" index={3} />
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3 mb-6">
