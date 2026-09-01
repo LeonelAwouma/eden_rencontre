@@ -3,6 +3,35 @@
 // ainsi que les réponses au questionnaire d'onboarding (âge souhaité, langues, convictions, style de
 // vie, non négociables de fin de questionnaire) quand elles sont disponibles pour les deux personnes.
 
+import {
+  SPIRITUAL_VALUES_OPTIONS,
+  BEHAVIORAL_DEALBREAKERS_OPTIONS,
+  PHYSICAL_BOUNDARIES_OPTIONS,
+} from "./onboarding";
+import {
+  SPIRITUAL_VALUES_OPTIONS_EN,
+  BEHAVIORAL_DEALBREAKERS_OPTIONS_EN,
+  PHYSICAL_BOUNDARIES_OPTIONS_EN,
+} from "./onboarding.en";
+
+// Les questions "non négociables" étaient auparavant en texte libre ; certains profils ont donc
+// encore d'anciennes réponses en texte plutôt que des choix parmi les options fixes ci-dessous. On
+// ne compare jamais ces anciennes réponses — seules les valeurs qui correspondent à un choix connu
+// (FR ou EN) entrent dans le calcul de compatibilité.
+const VALID_SPIRITUAL_VALUES = new Set([...SPIRITUAL_VALUES_OPTIONS, ...SPIRITUAL_VALUES_OPTIONS_EN]);
+const VALID_DEALBREAKERS = new Set([...BEHAVIORAL_DEALBREAKERS_OPTIONS, ...BEHAVIORAL_DEALBREAKERS_OPTIONS_EN]);
+const VALID_PHYSICAL_BOUNDARIES = new Set([...PHYSICAL_BOUNDARIES_OPTIONS, ...PHYSICAL_BOUNDARIES_OPTIONS_EN]);
+
+// Ne garde que les entrées d'un tableau qui correspondent à un choix structuré connu.
+function onlyKnownChoices(value: unknown, allowed: Set<string>): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.filter((v): v is string => typeof v === "string" && allowed.has(v));
+}
+// Valide une réponse à choix unique — rejette silencieusement une ancienne réponse en texte libre.
+function knownChoice(value: unknown, allowed: Set<string>): string | null {
+  return typeof value === "string" && allowed.has(value) ? value : null;
+}
+
 // Type souple acceptant aussi bien EdenUser (string | undefined) que MemberProfile (string | null).
 type MatchInput = {
   marriageVision?: string[] | null;
@@ -55,9 +84,9 @@ function inAgeRange(age: number | null, range: any): boolean {
 }
 
 // Réponses QCM (convictions spirituelles) — champ à champ, comparées telles quelles.
-const QCM_KEYS = ["qcmDecision", "qcmPeche", "qcmMature", "qcmTentations"];
+const QCM_KEYS = ["relationDieu", "roleDieu"];
 // Choix simples liés au style de vie / attentes du couple.
-const LIFESTYLE_KEYS = ["rythme", "organisation", "financesCouple", "enfants"];
+const LIFESTYLE_KEYS = ["rythme", "organisation", "budget", "enfants"];
 
 export function computeMatchScore(me: MatchInput, other: MatchInput): MatchResult {
   let score = 50;
@@ -117,7 +146,7 @@ export function computeMatchScore(me: MatchInput, other: MatchInput): MatchResul
   // 7) Convictions spirituelles alignées (mêmes réponses aux QCM)
   const sharedQcm = QCM_KEYS.filter((k) => myQ[k] && otherQ[k] && myQ[k] === otherQ[k]).length;
   if (sharedQcm > 0) {
-    score += Math.min(sharedQcm * 3, 12);
+    score += Math.min(sharedQcm * 4, 8);
     reasons.push("Convictions spirituelles alignées");
   }
 
@@ -128,35 +157,33 @@ export function computeMatchScore(me: MatchInput, other: MatchInput): MatchResul
     reasons.push("Style de vie compatible");
   }
 
-  // 9) Non négociables (fin du questionnaire) — désormais des choix structurés (cf. src/lib/onboarding.ts,
-  // section "limites" + "criteresSpirituels"), donc comparables de façon fiable plutôt que par mots-clés.
+  // 9) Non négociables (fin du questionnaire) — choix structurés (cf. src/lib/onboarding.ts, section
+  // "limitesNonNegociables"). Les anciennes réponses en texte libre (avant cette conversion) sont
+  // filtrées par onlyKnownChoices/knownChoice et n'entrent jamais dans le score.
+  const myLimitesSpirituelles = onlyKnownChoices(myQ.limitesSpirituelles, VALID_SPIRITUAL_VALUES);
+  const otherLimitesSpirituelles = onlyKnownChoices(otherQ.limitesSpirituelles, VALID_SPIRITUAL_VALUES);
+  const myDealbreakers = onlyKnownChoices(myQ.limitesComportementales, VALID_DEALBREAKERS);
+  const otherDealbreakers = onlyKnownChoices(otherQ.limitesComportementales, VALID_DEALBREAKERS);
+  const myBoundary = knownChoice(myQ.limitesRelationnelles, VALID_PHYSICAL_BOUNDARIES);
+  const otherBoundary = knownChoice(otherQ.limitesRelationnelles, VALID_PHYSICAL_BOUNDARIES);
 
   // 9a) Valeurs spirituelles non négociables partagées par les deux
-  const sharedSpiritualValues = overlapCount(myQ.limitesSpirituelles, otherQ.limitesSpirituelles);
+  const sharedSpiritualValues = overlapCount(myLimitesSpirituelles, otherLimitesSpirituelles);
   if (sharedSpiritualValues > 0) {
     score += Math.min(sharedSpiritualValues * 4, 16);
     reasons.push("Valeurs non négociables communes");
   }
 
-  // 9b) Ce que je recherche chez un(e) partenaire correspond à ce que l'autre tient pour non négociable
-  // chez lui/elle-même (et réciproquement) — signal de compatibilité, jamais de pénalité en l'absence.
-  const meetsMyCriteria = overlapCount(myQ.criteresSpirituels, otherQ.limitesSpirituelles);
-  const meetsOtherCriteria = overlapCount(otherQ.criteresSpirituels, myQ.limitesSpirituelles);
-  if (meetsMyCriteria > 0 || meetsOtherCriteria > 0) {
-    score += Math.min((meetsMyCriteria + meetsOtherCriteria) * 3, 14);
-    reasons.push("Répond aux critères spirituels recherchés");
-  }
-
-  // 9c) Mêmes limites comportementales (ce que chacun juge inacceptable) — un vrai signal d'alignement
+  // 9b) Mêmes limites comportementales (ce que chacun juge inacceptable) — un vrai signal d'alignement
   // de valeurs, même si l'algorithme ne peut pas vérifier le comportement réel de l'autre.
-  const sharedDealbreakers = overlapCount(myQ.limitesComportementales, otherQ.limitesComportementales);
+  const sharedDealbreakers = overlapCount(myDealbreakers, otherDealbreakers);
   if (sharedDealbreakers > 0) {
     score += Math.min(sharedDealbreakers * 3, 12);
     reasons.push("Mêmes comportements jugés inacceptables");
   }
 
-  // 9d) Mêmes limites relationnelles avant le mariage (choix unique)
-  if (myQ.limitesRelationnelles && otherQ.limitesRelationnelles && eq(String(myQ.limitesRelationnelles), String(otherQ.limitesRelationnelles))) {
+  // 9c) Mêmes limites relationnelles avant le mariage (choix unique)
+  if (myBoundary && otherBoundary && myBoundary === otherBoundary) {
     score += 6;
     reasons.push("Mêmes limites avant le mariage");
   }

@@ -39,7 +39,7 @@ export interface Questionnaire {
 // ── Options structurées pour les questions "non négociables" ──
 // Choix fixes (plutôt que texte libre) pour que l'algorithme de matching (src/lib/matching.ts)
 // puisse comparer ces réponses de façon fiable entre deux profils.
-const SPIRITUAL_VALUES_OPTIONS = [
+export const SPIRITUAL_VALUES_OPTIONS = [
   "Vie de prière quotidienne",
   "Lecture régulière de la Bible",
   "Fidélité à l'église locale",
@@ -51,7 +51,7 @@ const SPIRITUAL_VALUES_OPTIONS = [
   "Respect des rôles bibliques dans le couple",
   "Éducation chrétienne des enfants",
 ];
-const BEHAVIORAL_DEALBREAKERS_OPTIONS = [
+export const BEHAVIORAL_DEALBREAKERS_OPTIONS = [
   "Consommation d'alcool",
   "Tabac ou cigarette",
   "Infidélité",
@@ -63,7 +63,7 @@ const BEHAVIORAL_DEALBREAKERS_OPTIONS = [
   "Absence d'implication dans l'église",
   "Manque de communication",
 ];
-const PHYSICAL_BOUNDARIES_OPTIONS = [
+export const PHYSICAL_BOUNDARIES_OPTIONS = [
   "Aucun contact physique avant le mariage",
   "Tenue de la main uniquement",
   "Étreintes et marques d'affection, sans baisers",
@@ -71,6 +71,9 @@ const PHYSICAL_BOUNDARIES_OPTIONS = [
   "À définir ensemble avec le/la partenaire",
 ];
 
+// Structure alignée sur onboarding.en.ts (mêmes clés de section, mêmes id de champs, mêmes types)
+// afin que le questionnaire — et donc l'algorithme de matching (src/lib/matching.ts) — soit
+// cohérent quelle que soit la langue choisie à l'inscription.
 export const QUESTIONNAIRES: Questionnaire[] = [
   {
     key: "q1",
@@ -109,182 +112,161 @@ export const QUESTIONNAIRES: Questionnaire[] = [
           { id: "hobbies", label: "Vos trois principaux centres d'intérêt", type: "text" },
           { id: "tempsLibre", label: "Comment aimez-vous passer votre temps libre ?", type: "textarea" },
           { id: "realisation", label: "Votre plus grande réalisation personnelle", type: "textarea" },
-          { id: "voyageReve", label: "Si vous pouviez voyager n'importe où, où iriez-vous et pourquoi ?", type: "textarea" },
-        ],
-      },
-      {
-        key: "physique",
-        title: "Présentation physique",
-        intro: "Pour exprimer votre identité physique — aucune réponse n'est « meilleure » qu'une autre.",
-        fields: [
-          { id: "teint", label: "Tonalité de peau", type: "single", options: ["Ébène très foncé", "Brun foncé", "Brun moyen", "Brun clair", "Caramel ou beige"] },
-          { id: "morphologie", label: "Morphologie corporelle", type: "single", options: ["Athlétique et musclée", "Mince et élancée", "Moyenne et proportionnée", "Ronde et voluptueuse", "Corpulente et forte"] },
-          { id: "taille", label: "Taille", type: "single", options: ["Très grande (+1,80 m)", "Grande (1,70–1,80 m)", "Moyenne (1,60–1,70 m)", "Petite (1,50–1,60 m)", "Très petite (–1,50 m)"] },
+          { id: "voyageReve", label: "Votre voyage de rêve", type: "text", placeholder: "Ex : Terre Sainte, Japon…" },
+          { id: "lectureActuelle", label: "Quel livre ou message vous a marqué récemment ?", type: "text" },
         ],
       },
       {
         key: "sante",
         title: "Santé & bien-être",
+        intro: "Cette section aide à assurer une compatibilité transparente. Toutes les réponses restent confidentielles.",
         private: true,
-        intro: "Ces informations restent privées (visibles par vous seul). Elles aident à des connexions saines.",
         fields: [
-          { id: "groupeSanguin", label: "Groupe sanguin", type: "single", options: ["A", "B", "AB", "O", "Je ne sais pas"] },
-          { id: "rhesus", label: "Rhésus", type: "single", options: ["Positif (+)", "Négatif (−)", "Je ne sais pas"] },
-          { id: "hematies", label: "Forme des hématies (électrophorèse)", type: "single", options: ["AA", "AS", "SS", "Je ne sais pas"], help: "Important pour la compatibilité (drépanocytose)" },
-          { id: "etatSante", label: "État de santé général", type: "textarea" },
-          { id: "maladies", label: "Conditions médicales chroniques à connaître", type: "textarea" },
-          { id: "alimentation", label: "Habitudes alimentaires particulières", type: "text", placeholder: "Végétarien, allergies…" },
+          { id: "etatSante", label: "Comment décririez-vous votre état de santé général ?", type: "single", options: ["Excellent", "Bon", "Quelques soucis de santé", "Je préfère ne pas répondre"] },
+          { id: "handicap", label: "Avez-vous un handicap ou une condition chronique à mentionner ?", type: "single", options: ["Non", "Oui"] },
+          { id: "handicapDetail", label: "Si oui, merci de préciser brièvement", type: "textarea" },
+          { id: "activitePhysique", label: "Pratiquez-vous une activité physique régulière ?", type: "single", options: ["Oui, régulièrement", "Occasionnellement", "Rarement", "Non"] },
+          { id: "sport", label: "Si oui, quelle activité ?", type: "text", placeholder: "Ex : course, natation, yoga…" },
+          { id: "alimentation", label: "Avez-vous des préférences ou restrictions alimentaires ?", type: "multi", options: ["Aucune restriction", "Végétarien(ne)", "Végan(e)", "Halal", "Sans gluten", "Autre"], help: "Plusieurs choix possibles" },
+          { id: "tabacAlcool", label: "Votre rapport au tabac et à l'alcool", type: "single", options: ["Ni l'un ni l'autre", "Alcool occasionnel", "Fumeur(se) social(e)", "Les deux occasionnellement", "Je préfère ne pas répondre"] },
         ],
       },
     ],
   },
   {
     key: "q2",
-    title: "Mon cheminement de foi",
-    subtitle: "Maturité spirituelle — le cœur de votre profil",
-    note: "Veuillez compléter ce questionnaire avec honnêteté et authenticité. Vos réponses permettront de garantir une correspondance significative et efficace en reflétant fidèlement vos intérêts, compétences, attentes et besoins.",
+    title: "Votre vie spirituelle",
+    subtitle: "Foi & pratique",
+    note: "Cette section explore votre relation avec Dieu, vos pratiques spirituelles et votre parcours de foi. Prenez le temps d'y réfléchir sincèrement.",
     sections: [
       {
-        key: "parcoursFoi",
-        title: "Votre parcours de foi",
+        key: "foi",
+        title: "Foi & croyances",
         fields: [
-          { id: "conversion", label: "Racontez votre expérience de conversion", type: "textarea", help: "Contexte, âge, ce qui vous a conduit à cette décision." },
-          { id: "egliseEngagement", label: "Votre église actuelle et votre niveau d'engagement", type: "textarea", help: "Participation, services, responsabilités…" },
-          { id: "contactMentor", label: "Contact d'un leader / mentor / père dans la foi", type: "text", help: "Restera privé — pour la vérification de profil." },
-          { id: "priere", label: "Votre routine de prière et de méditation biblique", type: "textarea" },
-          { id: "baptemes", label: "Baptême d'eau et baptême du Saint-Esprit", type: "textarea", help: "Quand, dans quel contexte." },
+          { id: "estChretien", label: "Êtes-vous chrétien(ne) pratiquant(e) ?", type: "single", options: ["Oui", "Non, mais en recherche", "Autre"] },
+          { id: "denomination", label: "Votre dénomination ou tradition ecclésiale", type: "single", options: ["Catholique", "Protestant(e) (Réformé)", "Évangélique", "Pentecôtiste", "Baptiste", "Méthodiste", "Orthodoxe", "Sans dénomination", "Autre"] },
+          { id: "denominationAutre", label: "Si autre, merci de préciser", type: "text", placeholder: "Ex : Adventiste…" },
+          { id: "bapteme", label: "Avez-vous été baptisé(e) ?", type: "single", options: ["Oui, à l'âge adulte", "Oui, enfant", "Pas encore, mais je le désire", "Non"] },
+          { id: "converionDate", label: "Quand avez-vous donné votre vie à Christ ?", type: "text", placeholder: "Date ou année approximative" },
+          { id: "temoignage", label: "Partagez brièvement votre témoignage ou votre parcours de foi", type: "textarea", placeholder: "Comment Dieu a-t-il agi dans votre vie ?" },
         ],
       },
       {
-        key: "qcm",
-        title: "Convictions (choix multiple)",
-        intro: "Choisissez la réponse qui correspond le mieux à votre conviction actuelle.",
+        key: "dieu",
+        title: "Votre relation avec Dieu",
         fields: [
           {
-            id: "qcmDecision",
-            label: "Face à une décision importante, votre première démarche ?",
+            id: "relationDieu",
+            label: "Comment décririez-vous votre relation actuelle avec Dieu ?",
             type: "qcm",
             options: [
-              "Je consulte mes amis et ma famille pour avoir leurs avis",
-              "Je prends du temps dans la prière et la méditation biblique pour chercher la volonté de Dieu",
-              "J'analyse rationnellement les options et je choisis ce qui me semble logique",
-              "Je demande conseil à mon pasteur puis je prie",
+              "Intime et grandissante chaque jour",
+              "Sincère mais avec des axes de progrès",
+              "Dans une période de recherche ou de sécheresse spirituelle",
+              "Nouvelle ou récemment ravivée",
+              "Je préfère ne pas répondre",
             ],
           },
-          {
-            id: "qcmPeche",
-            label: "Quand un frère/une sœur en Christ tombe dans le péché ?",
-            type: "qcm",
-            options: [
-              "Je m'éloigne pour ne pas être influencé(e) négativement",
-              "Je prie pour la personne en secret sans intervenir",
-              "Je l'approche avec amour pour la restaurer (Galates 6:1), tout en m'examinant",
-              "Je rapporte la situation aux responsables de l'église",
-            ],
-          },
-          {
-            id: "qcmMature",
-            label: "Que signifie « être un(e) chrétien(ne) mature » ?",
-            type: "qcm",
-            options: [
-              "Connaître la Bible par cœur et citer de nombreux versets",
-              "Assister à tous les programmes de l'église sans exception",
-              "Manifester le fruit de l'Esprit dans les situations difficiles et aimer comme Christ",
-              "Avoir des responsabilités importantes dans l'église",
-            ],
-          },
-          {
-            id: "qcmTentations",
-            label: "Comment gérez-vous les tentations et les épreuves ?",
-            type: "qcm",
-            options: [
-              "Par ma propre force de volonté",
-              "Je reconnais ma faiblesse, je fuis la tentation et je m'appuie sur la grâce de Dieu et sa Parole",
-              "Je jeûne systématiquement jusqu'à ce que la tentation disparaisse",
-              "Je demande à d'autres chrétiens de prier pour moi uniquement",
-            ],
-          },
+          { id: "epreuve", label: "Quelle a été la plus grande épreuve de votre vie spirituelle, et qu'en avez-vous retenu ?", type: "textarea" },
+          { id: "verset", label: "Un verset biblique qui guide votre vie", type: "text", placeholder: "Ex : Jérémie 29:11" },
+          { id: "livreBible", label: "Votre livre préféré de la Bible et pourquoi", type: "text" },
+          { id: "priereSpeciale", label: "Y a-t-il un sujet de prière qui vous tient particulièrement à cœur ?", type: "textarea" },
         ],
       },
       {
-        key: "visionRelations",
-        title: "Vision biblique des relations",
+        key: "pratiques",
+        title: "Disciplines spirituelles quotidiennes",
         fields: [
-          { id: "purete", label: "Votre compréhension de la pureté avant le mariage", type: "textarea", help: "Position basée sur les Écritures et limites que vous vous fixez." },
-          { id: "rolesEph5", label: "Selon Éphésiens 5:21-33, les rôles dans le mariage", type: "textarea" },
-          { id: "placeDeDieu", label: "La place de Dieu dans votre future relation", type: "textarea" },
-          { id: "jougEtranger", label: "Votre position sur les fréquentations avec un non-croyant (2 Cor 6:14)", type: "textarea" },
+          { id: "priere", label: "À quelle fréquence priez-vous personnellement ?", type: "single", options: ["Plusieurs fois par jour", "Une fois par jour", "Quelques fois par semaine", "Occasionnellement", "Rarement"] },
+          { id: "jeune", label: "Pratiquez-vous le jeûne ?", type: "single", options: ["Oui, régulièrement", "Occasionnellement", "Rarement", "Non"] },
+          { id: "louange", label: "Écoutez-vous de la musique de louange ?", type: "single", options: ["Quotidiennement", "Plusieurs fois par semaine", "Occasionnellement", "Rarement"] },
+          { id: "discipline", label: "Quelle discipline spirituelle aimeriez-vous développer ?", type: "textarea" },
+          { id: "methodeBible", label: "Comment abordez-vous l'étude de la Bible ?", type: "single", options: ["Étude inductive", "Étude thématique", "Par des méditations quotidiennes", "En groupe", "Je suis encore en apprentissage"] },
         ],
       },
       {
-        key: "service",
-        title: "Service & dons spirituels",
+        key: "engagement",
+        title: "Engagement en église & communauté",
         fields: [
-          { id: "dons", label: "Vos dons spirituels et comment vous les exercez", type: "textarea" },
-          { id: "ministere", label: "Ministère ou département où vous êtes impliqué(e)", type: "text" },
-          { id: "evangelisation", label: "Comment participez-vous à l'évangélisation ?", type: "textarea" },
-          { id: "dime", label: "Votre conviction sur la dîme et les offrandes", type: "textarea" },
+          { id: "eglise", label: "Votre parcours en église", type: "single", options: ["Dans la même église depuis l'enfance", "J'ai changé d'église une ou deux fois", "Je suis actuellement en recherche d'église", "Autre"] },
+          { id: "membreActif", label: "Êtes-vous membre actif(ve) d'une église ?", type: "single", options: ["Oui", "Non, mais j'y assiste régulièrement", "Non"] },
+          { id: "implication", label: "Votre niveau d'implication dans votre église", type: "single", options: ["Pasteur ou responsable", "Diacre ou ancien", "Responsable de ministère", "Membre actif", "Participant(e) occasionnel(le)"] },
+          { id: "role", label: "Occupez-vous une position de leadership ?", type: "single", options: ["Oui", "Pas actuellement, mais j'y aspire", "Non, et cela ne m'intéresse pas", "Je sers d'une autre manière"] },
+          { id: "communaute", label: "Comment cultivez-vous des liens spirituels en dehors de l'église ?", type: "textarea" },
         ],
       },
       {
         key: "croissance",
-        title: "Défis & croissance",
+        title: "Croissance & place de Dieu dans votre future relation",
         fields: [
-          { id: "defi", label: "Votre plus grand défi spirituel actuel", type: "textarea" },
-          { id: "foiEprouvee", label: "Une période où votre foi a été éprouvée", type: "textarea" },
-          { id: "modeles", label: "Vos modèles spirituels (vivants ou bibliques)", type: "text" },
-          { id: "saintEsprit", label: "Comment cultivez-vous votre relation avec le Saint-Esprit ?", type: "textarea" },
+          { id: "croissance", label: "Comment avez-vous grandi spirituellement ces 3 dernières années ?", type: "textarea" },
+          {
+            id: "roleDieu",
+            label: "Quelle place Dieu doit-il occuper dans votre future relation ?",
+            type: "qcm",
+            options: [
+              "Il doit être le fondement absolu",
+              "Il est important mais pas l'unique critère",
+              "Je suis encore en train de définir sa place",
+              "Je préfère ne pas répondre",
+            ],
+          },
         ],
       },
     ],
   },
   {
     key: "q3",
-    title: "Ce que je recherche",
-    subtitle: "Préférences et attentes",
-    note: "Veuillez compléter ce questionnaire avec honnêteté et authenticité. Vos réponses permettront de garantir une correspondance significative et efficace en reflétant fidèlement vos intérêts, compétences, attentes et besoins.",
+    title: "Attentes & vision",
+    subtitle: "Mariage et avenir",
+    note: "Cette dernière section explore votre vision du couple, du mariage et de la vie commune. Ces réponses sont essentielles pour construire une relation solide et durable.",
     sections: [
       {
-        key: "partenaireIdeal",
-        title: "Le partenaire idéal",
+        key: "attentes",
+        title: "Vos attentes pour la relation",
         fields: [
-          { id: "criteresSpirituels", label: "Maturité spirituelle non négociable recherchée chez le/la partenaire", type: "multi", options: SPIRITUAL_VALUES_OPTIONS, help: "Sélectionnez ce qui est indispensable pour vous", max: 6 },
-          { id: "caractere", label: "Qualités de caractère essentielles", type: "textarea" },
-          { id: "aspectsPratiques", label: "Préférences pratiques (études, profession, localisation)", type: "textarea" },
-        ],
-      },
-      {
-        key: "projets",
-        title: "Projets d'avenir",
-        fields: [
-          { id: "mariageDelai", label: "Dans combien de temps envisagez-vous le mariage ?", type: "textarea", help: "Êtes-vous prêt(e) émotionnellement, spirituellement, financièrement ?" },
-          { id: "enfantsDesir", label: "Désir d'enfants et vision de leur éducation chrétienne", type: "textarea" },
-          { id: "longTerme", label: "Où vous voyez-vous vivre ? Projets de ministère en couple ?", type: "textarea" },
-        ],
-      },
-      {
-        key: "preferences",
-        title: "Préférences précises",
-        fields: [
+          { id: "attentes", label: "Vos attentes pour cette relation", type: "multi", options: ["Sécurité affective", "Croissance spirituelle", "Fonder une famille", "Une amitié sincère", "Un partenaire de ministère", "Un soutien mutuel dans les projets"], help: "Choisissez jusqu'à 3 réponses", max: 3 },
           { id: "trancheAge", label: "Tranche d'âge souhaitée pour votre partenaire", type: "agerange" },
-          { id: "origineEthnique", label: "Préférence d'origine ethnique/régionale", type: "text", placeholder: "Ouvert(e) à toutes, ou préférences…" },
-          { id: "languesPartenaire", label: "Langues souhaitées chez votre partenaire", type: "text" },
-          { id: "financesCouple", label: "Gestion des finances dans le couple", type: "single", options: ["Compte joint", "Comptes séparés", "Budget commun", "À discuter"] },
+          { id: "qualites", label: "3 qualités essentielles que vous recherchez chez un(e) partenaire", type: "text" },
+          { id: "defauts", label: "3 défauts que vous ne pourriez pas tolérer", type: "text" },
+          { id: "rythmeRelation", label: "Votre rythme idéal pour la relation", type: "single", options: ["Moins de 6 mois", "6 mois à 1 an", "1 à 2 ans", "Plus de 2 ans", "Sans précipitation"] },
         ],
       },
       {
-        key: "apprehensions",
-        title: "Vos appréhensions",
-        private: true,
-        intro: "Ces réponses restent privées. Les reconnaître aide à mieux les surmonter.",
+        key: "visionCouple",
+        title: "Rôles & responsabilités dans le couple",
+        intro: "Partagez votre vision du fonctionnement quotidien d'un couple chrétien.",
         fields: [
-          { id: "crainte", label: "Votre plus grande crainte dans une relation sérieuse", type: "textarea" },
-          { id: "rupturePassee", label: "Une relation difficile passée vous influence-t-elle aujourd'hui ?", type: "textarea" },
-          { id: "sujetsMalaise", label: "Sujets ou comportements qui vous mettent mal à l'aise", type: "textarea" },
+          { id: "visionCouple", label: "Votre vision des rôles au sein du couple", type: "textarea" },
+          { id: "repartition", label: "Comment les responsabilités du foyer et les finances doivent-elles être réparties ?", type: "single", options: ["Traditionnelle (l'homme pourvoit, la femme gère le foyer)", "Égalitaire (partagée équitablement)", "Flexible (selon les capacités de chacun)", "Nous déciderons ensemble"] },
+          { id: "femmeTravail", label: "Pensez-vous qu'une femme doit poursuivre sa carrière après le mariage ?", type: "single", options: ["Oui, absolument", "Cela dépend de la situation", "Non, je préfère qu'elle se consacre à la famille", "Nous déciderons ensemble"] },
+          { id: "decision", label: "Comment les décisions importantes doivent-elles être prises dans le couple ?", type: "single", options: ["Le mari a le dernier mot après discussion", "Décisions conjointes et égalitaires", "La personne la plus compétente décide", "Nous établirons notre propre méthode"] },
         ],
       },
       {
-        key: "limites",
+        key: "finances",
+        title: "Gestion financière",
+        intro: "La compatibilité financière est un pilier essentiel d'un foyer stable.",
+        fields: [
+          { id: "budget", label: "Votre approche préférée pour gérer les finances en couple", type: "single", options: ["Compte joint", "Comptes séparés avec un compte commun", "Chacun gère le sien", "Nous déciderons ensemble"] },
+          { id: "epargne", label: "Votre philosophie d'épargne et d'investissement", type: "textarea" },
+          { id: "dettes", label: "Avez-vous des engagements financiers ou des dettes ?", type: "single", options: ["Non", "Oui (prêt étudiant)", "Oui (prêt immobilier)", "Oui (autre)", "Je préfère ne pas répondre"] },
+          { id: "dime", label: "Pratiquez-vous la dîme ?", type: "single", options: ["Oui, fidèlement", "Occasionnellement", "Pas encore, mais j'ai l'intention de commencer", "Non"] },
+        ],
+      },
+      {
+        key: "enfants",
+        title: "Enfants & éducation",
+        fields: [
+          { id: "nbEnfants", label: "Votre nombre d'enfants idéal", type: "single", options: ["Aucun", "1–2", "3–4", "5 ou plus", "Selon la volonté de Dieu"] },
+          { id: "delaiEnfants", label: "Combien de temps après le mariage souhaitez-vous attendre avant d'avoir des enfants ?", type: "single", options: ["Tout de suite", "Après 1 an", "Après 2 à 3 ans", "Pas de préférence particulière"] },
+          { id: "education", label: "Quelle approche éducative souhaitez-vous adopter ?", type: "single", options: ["Instruction en famille", "École chrétienne privée", "École publique", "Nous déciderons ensemble", "Je ne sais pas encore"] },
+          { id: "positionAvortement", label: "Votre position sur l'avortement", type: "single", options: ["Absolument contre, en toutes circonstances", "Sauf en cas de danger pour la mère", "Je suis pour le libre choix", "Je préfère ne pas répondre"] },
+          { id: "educationEnfants", label: "Quelles valeurs éducatives souhaitez-vous transmettre à vos enfants ?", type: "textarea" },
+        ],
+      },
+      {
+        key: "limitesNonNegociables",
         title: "Limites non négociables",
         fields: [
           { id: "limitesSpirituelles", label: "3 à 5 valeurs spirituelles absolument non négociables", type: "multi", options: SPIRITUAL_VALUES_OPTIONS, help: "Choisissez 3 à 5 valeurs", max: 5 },

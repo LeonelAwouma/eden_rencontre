@@ -18,6 +18,8 @@ import {
   Loader2,
   Church,
   Star,
+  ZoomIn,
+  X,
 } from "lucide-react";
 import {
   Dialog,
@@ -62,6 +64,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
   const [sendingFriend, setSendingFriend] = useState(false);
   const [relation, setRelation] = useState<RelationStatus>("none");
   const [favorite, setFavoriteState] = useState(false);
+  const [showImagePreview, setShowImagePreview] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -230,8 +233,19 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
         <div className="relative aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border border-secondary/15">
           {member.avatar_url ? (
             <>
-              <Image src={member.avatar_url} alt={member.name} fill className="object-cover" priority unoptimized />
-              <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
+              <button
+                onClick={() => setShowImagePreview(true)}
+                className="group/preview absolute inset-0 w-full h-full cursor-zoom-in"
+                aria-label={t("profileDetail.previewPhoto")}
+              >
+                <Image src={member.avatar_url} alt={member.name} fill className="object-cover" priority unoptimized />
+                <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-black/0 group-hover/preview:bg-black/20 transition-colors flex items-center justify-center">
+                  <div className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity">
+                    <ZoomIn className="w-6 h-6 text-white" />
+                  </div>
+                </div>
+              </button>
             </>
           ) : (
             <div className="absolute inset-0 bg-gradient-to-br from-secondary/15 to-card flex items-center justify-center">
@@ -410,6 +424,28 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
           </Card>
         )}
       </div>
+
+      {/* Dialog for full-size photo preview */}
+      {member.avatar_url && (
+        <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
+          <DialogContent className="max-w-3xl bg-transparent border-none shadow-none p-0 [&>button]:hidden">
+            <DialogTitle className="sr-only">{member.name}</DialogTitle>
+            <DialogDescription className="sr-only">{t("profileDetail.previewPhoto")}</DialogDescription>
+            <div className="relative w-full aspect-[4/5] sm:aspect-[4/3] rounded-[2rem] overflow-hidden shadow-2xl">
+              <Image src={member.avatar_url} alt={member.name} fill className="object-contain bg-card" unoptimized />
+            </div>
+            <div>
+              <button
+                onClick={() => setShowImagePreview(false)}
+                aria-label={t("dashboard.close")}
+                className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-card border border-secondary/15 shadow-xl flex items-center justify-center text-foreground/60 hover:text-foreground transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* Dialog for AI Message Ideas */}
       <Dialog open={showIdeasDialog} onOpenChange={setShowIdeasDialog}>

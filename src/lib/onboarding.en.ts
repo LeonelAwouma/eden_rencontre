@@ -7,7 +7,7 @@ import type { Questionnaire } from "./onboarding";
 
 // Structured options for the "non-negotiable" boundary questions — mirrors the French options in
 // onboarding.ts so the matching algorithm (src/lib/matching.ts) can compare answers reliably.
-const SPIRITUAL_VALUES_OPTIONS_EN = [
+export const SPIRITUAL_VALUES_OPTIONS_EN = [
   "Daily prayer life",
   "Regular Bible reading",
   "Faithful to a local church",
@@ -19,7 +19,7 @@ const SPIRITUAL_VALUES_OPTIONS_EN = [
   "Respect for biblical roles in marriage",
   "Christian upbringing of children",
 ];
-const BEHAVIORAL_DEALBREAKERS_OPTIONS_EN = [
+export const BEHAVIORAL_DEALBREAKERS_OPTIONS_EN = [
   "Alcohol consumption",
   "Tobacco or smoking",
   "Infidelity",
@@ -31,7 +31,7 @@ const BEHAVIORAL_DEALBREAKERS_OPTIONS_EN = [
   "No involvement in church",
   "Lack of communication",
 ];
-const PHYSICAL_BOUNDARIES_OPTIONS_EN = [
+export const PHYSICAL_BOUNDARIES_OPTIONS_EN = [
   "No physical contact before marriage",
   "Hand-holding only",
   "Hugs and affection, no kissing",
@@ -170,6 +170,7 @@ export const QUESTIONNAIRES_EN: Questionnaire[] = [
         title: "Your Expectations for the Relationship",
         fields: [
           { id: "attentes", label: "Your expectations for this relationship", type: "multi", options: ["Emotional security", "Spiritual growth", "Building a family", "True friendship", "A ministry partner", "Mutual support in projects"], help: "Select up to 3", max: 3 },
+          { id: "trancheAge", label: "Desired age range for your partner", type: "agerange" },
           { id: "qualites", label: "3 essential qualities you seek in a partner", type: "text" },
           { id: "defauts", label: "3 deal-breakers you cannot tolerate", type: "text" },
           { id: "rythmeRelation", label: "Your ideal relationship timeline", type: "single", options: ["Less than 6 months", "6 months to 1 year", "1 to 2 years", "More than 2 years", "No rush"] },

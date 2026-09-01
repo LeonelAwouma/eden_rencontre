@@ -25,11 +25,11 @@ const PROFILE_COLS =
 
 // Champs du questionnaire utilisés par l'algorithme de matching (src/lib/matching.ts).
 // On ne sélectionne jamais les sections privées (santé, appréhensions) d'un AUTRE membre :
-// seuls ces champs précis sont extraits du JSONB `questionnaire`. Les 4 derniers sont les questions
+// seuls ces champs précis sont extraits du JSONB `questionnaire`. Les 3 derniers sont les questions
 // "non négociables" de fin de questionnaire (choix structurés) — non marquées privées dans
 // onboarding.ts, donc destinées à être visibles par un partenaire potentiel.
 const MATCH_QUESTIONNAIRE_COLS =
-  "trancheAge:questionnaire->trancheAge, langues:questionnaire->langues, qcmDecision:questionnaire->>qcmDecision, qcmPeche:questionnaire->>qcmPeche, qcmMature:questionnaire->>qcmMature, qcmTentations:questionnaire->>qcmTentations, rythme:questionnaire->>rythme, organisation:questionnaire->>organisation, financesCouple:questionnaire->>financesCouple, enfants:questionnaire->>enfants, criteresSpirituels:questionnaire->criteresSpirituels, limitesSpirituelles:questionnaire->limitesSpirituelles, limitesComportementales:questionnaire->limitesComportementales, limitesRelationnelles:questionnaire->>limitesRelationnelles";
+  "trancheAge:questionnaire->trancheAge, langues:questionnaire->langues, relationDieu:questionnaire->>relationDieu, roleDieu:questionnaire->>roleDieu, rythme:questionnaire->>rythme, organisation:questionnaire->>organisation, budget:questionnaire->>budget, enfants:questionnaire->>enfants, limitesSpirituelles:questionnaire->limitesSpirituelles, limitesComportementales:questionnaire->limitesComportementales, limitesRelationnelles:questionnaire->>limitesRelationnelles";
 
 const FULL_PROFILE_COLS = `${PROFILE_COLS}, ${MATCH_QUESTIONNAIRE_COLS}`;
 
@@ -52,15 +52,12 @@ function mapRow(d: any): MemberProfile {
     questionnaire: {
       trancheAge: d.trancheAge,
       langues: d.langues,
-      qcmDecision: d.qcmDecision,
-      qcmPeche: d.qcmPeche,
-      qcmMature: d.qcmMature,
-      qcmTentations: d.qcmTentations,
+      relationDieu: d.relationDieu,
+      roleDieu: d.roleDieu,
       rythme: d.rythme,
       organisation: d.organisation,
-      financesCouple: d.financesCouple,
+      budget: d.budget,
       enfants: d.enfants,
-      criteresSpirituels: d.criteresSpirituels,
       limitesSpirituelles: d.limitesSpirituelles,
       limitesComportementales: d.limitesComportementales,
       limitesRelationnelles: d.limitesRelationnelles,
