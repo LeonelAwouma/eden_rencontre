@@ -6,13 +6,11 @@ import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { BookOpen, Calendar, User, ArrowRight, Search, Clock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { generateBlogIdeas, type GenerateBlogIdeasOutput } from "@/ai/flows/generate-blog-ideas-flow";
-import { useToast } from "@/hooks/use-toast";
 import { useI18n } from "@/lib/i18n";
 
 interface BlogPostItem {
@@ -23,11 +21,7 @@ interface BlogPostItem {
 }
 
 export default function BlogPage() {
-  const { toast } = useToast();
   const { t, locale } = useI18n();
-  const [topic, setTopic] = useState("");
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [aiIdeas, setAiIdeas] = useState<GenerateBlogIdeasOutput | null>(null);
   const [posts, setPosts] = useState<BlogPostItem[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("all");
@@ -45,35 +39,6 @@ export default function BlogPage() {
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [selectedCategory, searchQuery]);
-
-  async function handleGenerateIdeas() {
-    if (!topic.trim()) {
-      toast({
-        title: t("blog.toastRequired"),
-        description: t("blog.toastRequiredDesc"),
-        variant: "destructive"
-      });
-      return;
-    }
-
-    setIsGenerating(true);
-    try {
-      const result = await generateBlogIdeas({ topic });
-      setAiIdeas(result);
-      toast({
-        title: t("blog.toastGenerated"),
-        description: t("blog.toastGeneratedDesc"),
-      });
-    } catch (error) {
-      toast({
-        title: t("blog.toastError"),
-        description: t("blog.toastErrorDesc"),
-        variant: "destructive"
-      });
-    } finally {
-      setIsGenerating(false);
-    }
-  }
 
   return (
     <div className="flex flex-col min-h-screen bg-background">
@@ -97,61 +62,6 @@ export default function BlogPage() {
             <p className="text-xl text-foreground/60 max-w-2xl mx-auto leading-relaxed">
               {t("blog.pageSubtitle")}
             </p>
-          </div>
-        </section>
-
-        {/* AI Ideas Section */}
-        <section className="py-16 bg-accent/5">
-          <div className="container mx-auto px-4">
-            <Card className="max-w-4xl mx-auto border-accent/20 bg-background/50 backdrop-blur-sm">
-              <CardHeader className="text-center">
-                <div className="mx-auto w-12 h-12 bg-accent/20 rounded-full flex items-center justify-center mb-4">
-                  <BookOpen className="text-accent" />
-                </div>
-                <CardTitle className="font-headline text-2xl">{t("blog.aiSectionTitle")}</CardTitle>
-                <p className="text-foreground/60 text-sm">{t("blog.aiSectionDesc")}</p>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="flex gap-4">
-                  <Input 
-                    placeholder={t("blog.aiTopicPlaceholder")}
-                    value={topic}
-                    onChange={(e) => setTopic(e.target.value)}
-                    className="bg-background border-foreground/10"
-                  />
-                  <Button 
-                    onClick={handleGenerateIdeas} 
-                    disabled={isGenerating}
-                    className="bg-accent text-background font-bold px-8"
-                  >
-                    {isGenerating ? t("blog.aiGenerating") : t("blog.aiButton")}
-                  </Button>
-                </div>
-
-                {aiIdeas && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8 animate-in fade-in slide-in-from-bottom-4">
-                    {aiIdeas.ideas.map((idea, index) => (
-                      <Card key={index} className="bg-card/50 border-foreground/5">
-                        <CardHeader>
-                          <CardTitle className="text-lg text-accent">{idea.title}</CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                          <p className="text-sm text-foreground/70">{idea.description}</p>
-                          <div className="space-y-2">
-                            <p className="text-xs font-bold uppercase text-foreground/40">Points clés :</p>
-                            <ul className="text-xs text-foreground/60 list-disc pl-4 space-y-1">
-                              {idea.outline.map((point, pIdx) => (
-                                <li key={pIdx}>{point}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
         </section>
 
