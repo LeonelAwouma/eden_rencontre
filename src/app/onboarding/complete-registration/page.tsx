@@ -22,6 +22,7 @@ import { MARRIAGE_VALUES } from "@/lib/values";
 import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
+import { useMobileContinueGate, MobileContinueGate } from "@/components/mobile-continue-gate";
 import {
   AlertTriangle,
   ArrowRight,
@@ -82,6 +83,7 @@ const DIASPORA_COUNTRIES = [
 export default function CompleteRegistrationPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const { ready: deviceReady, showGate, continueOnDesktop } = useMobileContinueGate();
   const [step, setStep] = useState(0);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingGender, setPendingGender] = useState<string | null>(null);
@@ -149,6 +151,7 @@ export default function CompleteRegistrationPage() {
   const [selfieResult, setSelfieResult] = useState<{ score: number; verified: boolean; reason: string } | null>(null);
   const [selfieError, setSelfieError] = useState<string | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
+  const [videoPlaying, setVideoPlaying] = useState(false);
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
@@ -218,6 +221,7 @@ export default function CompleteRegistrationPage() {
   // ── Camera & Selfie Verification ─────────────────────────────
   const startCamera = async () => {
     setSelfieError(null);
+    setVideoPlaying(false);
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
@@ -231,11 +235,19 @@ export default function CompleteRegistrationPage() {
     }
   };
 
+  // Manually (re)start playback — used both by the auto-attach effect below and
+  // by a visible fallback button, since some browsers silently refuse to
+  // autoplay a video whose stream was attached from a useEffect (outside the
+  // click handler's "user gesture" window) even when it's muted.
+  const playVideoPreview = () => {
+    videoRef.current?.play().catch(() => {});
+  };
+
   // Attach the camera stream once the <video> element has actually mounted.
   useEffect(() => {
     if (cameraActive && videoRef.current && streamRef.current) {
       videoRef.current.srcObject = streamRef.current;
-      videoRef.current.play().catch(() => {});
+      playVideoPreview();
     }
   }, [cameraActive]);
 
@@ -391,13 +403,17 @@ export default function CompleteRegistrationPage() {
   const regionLabel = (r: string) => (r === "Afrique" ? t("completeRegistration.regionAfrica") : t("completeRegistration.regionDiaspora"));
   const genderDisplay = (g: string) => (g === "homme" ? t("completeRegistration.genderMale") : t("completeRegistration.genderFemale"));
 
-  if (loading) {
+  if (loading || !deviceReady) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
         <Monogram className="w-14 h-14 text-primary animate-pulse" style={{ animationDuration: "2s" }} />
-        <p className="text-foreground/50 text-sm tracking-wide">{t("completeRegistration.loadingProfile")}</p>
+        {loading && <p className="text-foreground/50 text-sm tracking-wide">{t("completeRegistration.loadingProfile")}</p>}
       </div>
     );
+  }
+
+  if (showGate) {
+    return <MobileContinueGate onContinueDesktop={continueOnDesktop} />;
   }
 
   return (
@@ -988,7 +1004,15 @@ export default function CompleteRegistrationPage() {
                   )}
                   {cameraActive && (
                     <>
-                      <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" style={{ transform: "scaleX(-1)" }} />
+                      <video ref={videoRef} autoPlay playsInline muted onPlaying={() => setVideoPlaying(true)}
+                        className="w-full h-full object-cover" style={{ transform: "scaleX(-1)" }} />
+                      {!videoPlaying && (
+                        <button onClick={playVideoPreview}
+                          className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 text-white">
+                          <Camera className="w-10 h-10" />
+                          <span className="text-sm font-bold px-6 text-center">{t("register.selfieTapToShow")}</span>
+                        </button>
+                      )}
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="w-48 h-48 border-2 border-primary/50 rounded-full" />
                       </div>

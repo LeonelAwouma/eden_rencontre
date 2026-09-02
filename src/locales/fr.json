@@ -106,6 +106,14 @@
     "justRegistered": "Votre profil a été créé avec succès. {bold} pour accéder à votre sanctuaire.",
     "justRegisteredBold": "Connectez-vous"
   },
+  "mobileGate": {
+    "title": "Poursuivez sur votre téléphone",
+    "description": "L'inscription nécessite une vérification par selfie, qui demande une caméra. Scannez ce code avec votre téléphone pour continuer facilement — ou restez sur cet ordinateur si sa caméra fonctionne.",
+    "qrAlt": "Code QR pour continuer l'inscription sur votre téléphone",
+    "qrLoading": "Génération du code…",
+    "scanHint": "Ouvrez l'appareil photo de votre téléphone et pointez-le vers ce code.",
+    "continueDesktop": "Continuer sur cet ordinateur"
+  },
   "register": {
     "createProfile": "Créez votre",
     "sacredProfile": "profil sacré",
@@ -207,6 +215,7 @@
     "selfieDesc": "Pour garantir l'authenticité des profils, nous comparons votre selfie avec vos photos de profil.",
     "selfieActivatePrompt": "Activez votre caméra pour prendre un selfie",
     "selfieActivateBtn": "Activer la caméra",
+    "selfieTapToShow": "Cliquez ici si l'image ne s'affiche pas",
     "selfieRetake": "Reprendre",
     "selfieVerifying": "Vérification en cours...",
     "selfieVerifyBtn": "Vérifier mon selfie",

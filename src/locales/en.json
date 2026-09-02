@@ -106,6 +106,14 @@
     "justRegistered": "Your profile has been created successfully. {bold} to access your sanctuary.",
     "justRegisteredBold": "Sign in"
   },
+  "mobileGate": {
+    "title": "Continue on your phone",
+    "description": "Registration requires a selfie verification, which needs a camera. Scan this code with your phone to continue easily — or stay on this computer if its camera works.",
+    "qrAlt": "QR code to continue registration on your phone",
+    "qrLoading": "Generating code…",
+    "scanHint": "Open your phone's camera and point it at this code.",
+    "continueDesktop": "Continue on this computer"
+  },
   "register": {
     "createProfile": "Create your",
     "sacredProfile": "sacred profile",
@@ -207,6 +215,7 @@
     "selfieDesc": "To ensure profile authenticity, we compare your selfie with your profile photos.",
     "selfieActivatePrompt": "Activate your camera to take a selfie",
     "selfieActivateBtn": "Activate camera",
+    "selfieTapToShow": "Tap here if the preview doesn't show",
     "selfieRetake": "Retake",
     "selfieVerifying": "Verifying...",
     "selfieVerifyBtn": "Verify my selfie",
