@@ -292,15 +292,21 @@ export default function RegisterPage() {
         video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
       });
       streamRef.current = stream;
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        videoRef.current.play();
-      }
+      // The <video> element only mounts once cameraActive is true, so the stream
+      // can't be attached here yet — a useEffect below does it once the ref exists.
       setCameraActive(true);
     } catch {
       setSelfieError("Unable to access camera. Please allow access.");
     }
   };
+
+  // Attach the camera stream once the <video> element has actually mounted.
+  useEffect(() => {
+    if (cameraActive && videoRef.current && streamRef.current) {
+      videoRef.current.srcObject = streamRef.current;
+      videoRef.current.play().catch(() => {});
+    }
+  }, [cameraActive]);
 
   const stopCamera = () => {
     if (streamRef.current) {
