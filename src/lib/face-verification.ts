@@ -1,22 +1,43 @@
 /**
- * Local Face Verification — Canvas-based image comparison
+ * Client-side Face Verification — real face detection & recognition.
  *
- * Compares a selfie image against profile photos using:
- * 1. Color histogram comparison (RGB distribution)
- * 2. Structural similarity via perceptual hashing (dHash)
- * 3. Skin-tone region analysis
+ * Runs entirely in the browser via face-api.js (TinyFaceDetector for
+ * detection, a 68-point landmark net for alignment, and a 128-d face
+ * descriptor net — the same dlib-derived recognition model used by most
+ * open-source face-recognition tooling). Two photos are considered the same
+ * person when the Euclidean distance between their descriptors is below the
+ * standard threshold (~0.6).
  *
- * All processing happens locally in the browser using the Canvas API.
+ * This replaces an earlier color-histogram/perceptual-hash heuristic, which
+ * only compared lighting and composition — not faces — and could accept two
+ * different people photographed in similar conditions.
+ *
+ * face-api.js is loaded via a dynamic import (not a static top-level import):
+ * its bundled tfjs runtime touches browser-only globals that break Next.js's
+ * server-side render pass if evaluated eagerly, and deferring the load also
+ * keeps its ~1.3MB bundle out of the initial page load.
  */
+type FaceApi = typeof import("@vladmandic/face-api/dist/face-api.esm.js");
 
-export interface VerificationResult {
-  score: number;
-  verified: boolean;
-  photoScores: number[];
-  reason: string;
+const MODEL_URL = "/models";
+const MATCH_THRESHOLD = 0.6; // face-api.js / dlib convention: distance < 0.6 ⇒ same person
+
+let loadPromise: Promise<FaceApi> | null = null;
+
+function ensureLoaded(): Promise<FaceApi> {
+  if (!loadPromise) {
+    loadPromise = (async () => {
+      const faceapi = await import("@vladmandic/face-api/dist/face-api.esm.js");
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromUri(MODEL_URL),
+        faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL),
+        faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL),
+      ]);
+      return faceapi;
+    })();
+  }
+  return loadPromise;
 }
-
-const VERIFICATION_THRESHOLD = 35;
 
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -28,160 +49,85 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-function getImagePixelData(img: HTMLImageElement, size: number = 64) {
-  const canvas = document.createElement("canvas");
-  canvas.width = size;
-  canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  if (!ctx) throw new Error("Could not get 2D context");
-  ctx.drawImage(img, 0, 0, size, size);
-  const imageData = ctx.getImageData(0, 0, size, size);
-  return { data: imageData.data, width: size, height: size };
+async function detectFace(faceapi: FaceApi, src: string) {
+  const img = await loadImage(src);
+  return faceapi
+    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+    .withFaceLandmarks()
+    .withFaceDescriptor();
 }
 
-// ── Color Histogram ──────────────────────────────────────────
-
-function computeColorHistogram(data: Uint8ClampedArray, width: number, height: number): number[] {
-  const bins = 8;
-  const binSize = 256 / bins;
-  const histogram = new Array(bins * 3).fill(0);
-  const totalPixels = width * height;
-  for (let i = 0; i < data.length; i += 4) {
-    const rBin = Math.min(Math.floor(data[i] / binSize), bins - 1);
-    const gBin = Math.min(Math.floor(data[i + 1] / binSize), bins - 1);
-    const bBin = Math.min(Math.floor(data[i + 2] / binSize), bins - 1);
-    histogram[rBin]++;
-    histogram[bins + gBin]++;
-    histogram[bins * 2 + bBin]++;
-  }
-  return histogram.map((v) => v / totalPixels);
+function distanceToScore(distance: number): number {
+  return Math.max(0, Math.min(100, Math.round((1 - distance / 1.2) * 100)));
 }
 
-function compareHistograms(h1: number[], h2: number[]): number {
-  let intersection = 0;
-  for (let i = 0; i < h1.length; i++) {
-    intersection += Math.min(h1[i], h2[i]);
-  }
-  return intersection;
+export interface VerificationResult {
+  score: number;
+  verified: boolean;
+  photoScores: number[];
+  reason: string;
 }
 
-// ── Perceptual Hashing (dHash) ───────────────────────────────
-
-function computeDHash(data: Uint8ClampedArray, width: number, height: number): bigint {
-  const hashWidth = 9;
-  const hashHeight = 8;
-  const grayscale: number[] = [];
-  for (let y = 0; y < hashHeight; y++) {
-    for (let x = 0; x < hashWidth; x++) {
-      const srcX = Math.floor((x / hashWidth) * width);
-      const srcY = Math.floor((y / hashHeight) * height);
-      const idx = (srcY * width + srcX) * 4;
-      const gray = data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114;
-      grayscale.push(gray);
+export async function validateSelfieQuality(dataUri: string): Promise<{ valid: boolean; reason: string }> {
+  try {
+    const faceapi = await ensureLoaded();
+    const detection = await detectFace(faceapi, dataUri);
+    if (!detection) {
+      return { valid: false, reason: "Aucun visage détecté. Veuillez prendre un selfie clair, visage bien visible et centré." };
     }
+    return { valid: true, reason: "Selfie valide." };
+  } catch {
+    return { valid: false, reason: "Impossible d'analyser l'image. Veuillez réessayer." };
   }
-  let hash = BigInt(0);
-  for (let y = 0; y < hashHeight; y++) {
-    for (let x = 0; x < hashWidth - 1; x++) {
-      const idx = y * hashWidth + x;
-      if (grayscale[idx] < grayscale[idx + 1]) {
-        hash |= BigInt(1) << BigInt(y * (hashWidth - 1) + x);
-      }
-    }
-  }
-  return hash;
 }
-
-function hammingDistance(hash1: bigint, hash2: bigint): number {
-  let xor = hash1 ^ hash2;
-  let count = 0;
-  while (xor > BigInt(0)) {
-    count += Number(xor & BigInt(1));
-    xor >>= BigInt(1);
-  }
-  return count;
-}
-
-function compareDHash(hash1: bigint, hash2: bigint): number {
-  const distance = hammingDistance(hash1, hash2);
-  return 1 - distance / 64;
-}
-
-// ── Skin Tone Analysis ───────────────────────────────────────
-
-function estimateSkinRatio(data: Uint8ClampedArray): number {
-  let skinPixels = 0;
-  const totalPixels = data.length / 4;
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i], g = data[i + 1], b = data[i + 2];
-    const y = 0.299 * r + 0.587 * g + 0.114 * b;
-    const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
-    const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
-    if (y > 40 && cb > 75 && cb < 135 && cr > 130 && cr < 180 &&
-        r > 60 && g > 40 && b > 20 && r > g && r > b && Math.abs(r - g) > 10) {
-      skinPixels++;
-    }
-  }
-  return skinPixels / totalPixels;
-}
-
-function compareSkinTone(data1: Uint8ClampedArray, data2: Uint8ClampedArray): number {
-  const ratio1 = estimateSkinRatio(data1);
-  const ratio2 = estimateSkinRatio(data2);
-  return Math.max(0, 1 - Math.abs(ratio1 - ratio2) * 3);
-}
-
-// ── Main Verification ────────────────────────────────────────
 
 export async function verifySelfie(
   selfieDataUri: string,
   profilePhotoUrls: string[]
 ): Promise<VerificationResult> {
   try {
-    const selfieImg = await loadImage(selfieDataUri);
-    const selfiePx = getImagePixelData(selfieImg);
-    const selfieHist = computeColorHistogram(selfiePx.data, selfiePx.width, selfiePx.height);
-    const selfieHash = computeDHash(selfiePx.data, selfiePx.width, selfiePx.height);
+    const faceapi = await ensureLoaded();
+
+    const selfieDetection = await detectFace(faceapi, selfieDataUri);
+    if (!selfieDetection) {
+      return { score: 0, verified: false, photoScores: [], reason: "Aucun visage détecté sur le selfie." };
+    }
 
     const photoScores: number[] = [];
+    let bestDistance = Infinity;
+    let anyFaceFound = false;
 
     for (const photoUrl of profilePhotoUrls) {
       if (!photoUrl) continue;
       try {
-        const profileImg = await loadImage(photoUrl);
-        const profilePx = getImagePixelData(profileImg);
-        const profileHist = computeColorHistogram(profilePx.data, profilePx.width, profilePx.height);
-        const profileHash = computeDHash(profilePx.data, profilePx.width, profilePx.height);
-
-        const histScore = compareHistograms(selfieHist, profileHist);
-        const hashScore = compareDHash(selfieHash, profileHash);
-        const skinScore = compareSkinTone(selfiePx.data, profilePx.data);
-
-        // Weights: histogram 35%, hash 40%, skin 25%
-        const combined = histScore * 0.35 + hashScore * 0.40 + skinScore * 0.25;
-        photoScores.push(Math.round(combined * 100));
+        const photoDetection = await detectFace(faceapi, photoUrl);
+        if (!photoDetection) {
+          photoScores.push(0);
+          continue;
+        }
+        anyFaceFound = true;
+        const distance = faceapi.euclideanDistance(selfieDetection.descriptor, photoDetection.descriptor);
+        bestDistance = Math.min(bestDistance, distance);
+        photoScores.push(distanceToScore(distance));
       } catch {
         photoScores.push(0);
       }
     }
 
-    const bestScore = photoScores.length > 0 ? Math.max(...photoScores) : 0;
-    const avgScore = photoScores.length > 0
-      ? Math.round(photoScores.reduce((a, b) => a + b, 0) / photoScores.length)
-      : 0;
-    const finalScore = Math.round(bestScore * 0.6 + avgScore * 0.4);
-    const verified = finalScore >= VERIFICATION_THRESHOLD;
-
-    let reason: string;
     if (photoScores.length === 0) {
-      reason = "Aucune photo de profil disponible pour la comparaison.";
-    } else if (verified) {
-      reason = "Vérification réussie.";
-    } else {
-      reason = "Les photos ne semblent pas correspondre. Veuillez utiliser des photos récentes et un selfie clair.";
+      return { score: 0, verified: false, photoScores: [], reason: "Aucune photo de profil disponible pour la comparaison." };
+    }
+    if (!anyFaceFound) {
+      return { score: 0, verified: false, photoScores, reason: "Aucun visage détecté sur les photos de profil." };
     }
 
-    return { score: finalScore, verified, photoScores, reason };
+    const verified = bestDistance <= MATCH_THRESHOLD;
+    const score = distanceToScore(bestDistance);
+    const reason = verified
+      ? "Vérification réussie."
+      : "Le visage du selfie ne correspond à aucune des photos de profil.";
+
+    return { score, verified, photoScores, reason };
   } catch (error) {
     return {
       score: 0, verified: false, photoScores: [],
@@ -189,35 +135,3 @@ export async function verifySelfie(
     };
   }
 }
-
-export async function validateSelfieQuality(dataUri: string): Promise<{ valid: boolean; reason: string }> {
-  try {
-    const img = await loadImage(dataUri);
-    const pixels = getImagePixelData(img, 128);
-    const skinRatio = estimateSkinRatio(pixels.data);
-
-    if (skinRatio < 0.05) {
-      return { valid: false, reason: "Aucun visage détecté. Veuillez prendre un selfie clair." };
-    }
-
-    let totalBrightness = 0;
-    const totalPixels = pixels.data.length / 4;
-    for (let i = 0; i < pixels.data.length; i += 4) {
-      totalBrightness += (pixels.data[i] + pixels.data[i + 1] + pixels.data[i + 2]) / 3;
-    }
-    const avgBrightness = totalBrightness / totalPixels;
-
-    if (avgBrightness < 30) {
-      return { valid: false, reason: "L'image est trop sombre. Veuillez prendre le selfie dans un endroit bien éclairé." };
-    }
-    if (avgBrightness > 240) {
-      return { valid: false, reason: "L'image est surexposée. Veuillez ajuster l'éclairage." };
-    }
-
-    return { valid: true, reason: "Selfie valide." };
-  } catch {
-    return { valid: false, reason: "Impossible de lire l'image. Veuillez réessayer." };
-  }
-}
-
-

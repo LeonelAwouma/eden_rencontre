@@ -1,14 +1,28 @@
 /**
- * Server-side Face Verification — Sharp-based image comparison.
+ * Server-side Face Verification — real face detection & recognition.
  *
- * Mirrors the heuristic in `face-verification.ts` (color histogram + perceptual
- * hash + skin-tone ratio) but runs on the server via `sharp`, so the stored
- * `selfie_verified` / `selfie_verification_score` values are computed from the
- * actual image bytes instead of trusting whatever a client sends. The client-side
- * version stays in place for instant UX feedback during capture — this is the
- * authoritative check that gets persisted.
+ * Authoritative counterpart to `face-verification.ts`: runs the same
+ * face-api.js models (TinyFaceDetector + 68-point landmarks + a 128-d face
+ * descriptor) but in Node, via the WASM TensorFlow.js backend — no native
+ * addon (`@tensorflow/tfjs-node`) or `node-canvas` dependency, so it stays
+ * portable across hosting environments. Images are decoded with `sharp` into
+ * raw pixel tensors instead of relying on DOM APIs.
+ *
+ * The client-side check exists for instant UX feedback during capture; this
+ * is the version whose result actually gets persisted, so the stored
+ * `selfie_verified` / `selfie_verification_score` can't be forged by editing
+ * the request payload.
  */
+import path from "path";
 import sharp from "sharp";
+import * as tf from "@tensorflow/tfjs";
+import "@tensorflow/tfjs-backend-wasm";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore — no bundled types for the node-wasm build; the public API matches face-api.esm.js.
+import * as faceapi from "@vladmandic/face-api/dist/face-api.node-wasm.js";
+
+const MODEL_PATH = path.join(process.cwd(), "public", "models");
+const MATCH_THRESHOLD = 0.6; // face-api.js / dlib convention: distance < 0.6 ⇒ same person
 
 export interface ServerVerificationResult {
   score: number;
@@ -17,7 +31,21 @@ export interface ServerVerificationResult {
   reason: string;
 }
 
-const VERIFICATION_THRESHOLD = 35;
+let readyPromise: Promise<void> | null = null;
+function ensureReady(): Promise<void> {
+  if (!readyPromise) {
+    readyPromise = (async () => {
+      await tf.setBackend("wasm");
+      await tf.ready();
+      await Promise.all([
+        faceapi.nets.tinyFaceDetector.loadFromDisk(MODEL_PATH),
+        faceapi.nets.faceLandmark68Net.loadFromDisk(MODEL_PATH),
+        faceapi.nets.faceRecognitionNet.loadFromDisk(MODEL_PATH),
+      ]);
+    })();
+  }
+  return readyPromise;
+}
 
 async function loadImageBuffer(src: string): Promise<Buffer> {
   if (src.startsWith("data:")) {
@@ -29,161 +57,84 @@ async function loadImageBuffer(src: string): Promise<Buffer> {
   return Buffer.from(await res.arrayBuffer());
 }
 
-async function getImagePixelData(src: string, size = 64): Promise<{ data: Buffer; width: number; height: number }> {
+/** Decodes to a tf.Tensor3D, capped at 640px on the long side (preserves aspect ratio — squishing would distort the face). */
+async function loadImageTensor(src: string) {
   const buf = await loadImageBuffer(src);
   const { data, info } = await sharp(buf)
-    .resize(size, size, { fit: "fill" })
-    .ensureAlpha()
+    .rotate() // apply EXIF orientation
+    .resize(640, 640, { fit: "inside", withoutEnlargement: true })
+    .removeAlpha()
     .raw()
     .toBuffer({ resolveWithObject: true });
-  return { data, width: info.width, height: info.height };
+  return tf.tensor3d(new Uint8Array(data), [info.height, info.width, 3], "int32");
 }
 
-// ── Color Histogram ──────────────────────────────────────────
-
-function computeColorHistogram(data: Buffer, width: number, height: number): number[] {
-  const bins = 8;
-  const binSize = 256 / bins;
-  const histogram = new Array(bins * 3).fill(0);
-  const totalPixels = width * height;
-  for (let i = 0; i < data.length; i += 4) {
-    const rBin = Math.min(Math.floor(data[i] / binSize), bins - 1);
-    const gBin = Math.min(Math.floor(data[i + 1] / binSize), bins - 1);
-    const bBin = Math.min(Math.floor(data[i + 2] / binSize), bins - 1);
-    histogram[rBin]++;
-    histogram[bins + gBin]++;
-    histogram[bins * 2 + bBin]++;
+async function detectFace(src: string) {
+  const tensor = await loadImageTensor(src);
+  try {
+    // `tensor` is a valid tf.Tensor3D at runtime (verified against the bundled
+    // tfjs backend), but face-api's types reference its own internal copy of
+    // the tfjs type declarations, so TS sees it as a structurally distinct type.
+    return await faceapi
+      .detectSingleFace(tensor as any, new faceapi.TinyFaceDetectorOptions())
+      .withFaceLandmarks()
+      .withFaceDescriptor();
+  } finally {
+    tensor.dispose();
   }
-  return histogram.map((v) => v / totalPixels);
 }
 
-function compareHistograms(h1: number[], h2: number[]): number {
-  let intersection = 0;
-  for (let i = 0; i < h1.length; i++) {
-    intersection += Math.min(h1[i], h2[i]);
-  }
-  return intersection;
+function distanceToScore(distance: number): number {
+  return Math.max(0, Math.min(100, Math.round((1 - distance / 1.2) * 100)));
 }
 
-// ── Perceptual Hashing (dHash) ───────────────────────────────
-
-function computeDHash(data: Buffer, width: number, height: number): bigint {
-  const hashWidth = 9;
-  const hashHeight = 8;
-  const grayscale: number[] = [];
-  for (let y = 0; y < hashHeight; y++) {
-    for (let x = 0; x < hashWidth; x++) {
-      const srcX = Math.floor((x / hashWidth) * width);
-      const srcY = Math.floor((y / hashHeight) * height);
-      const idx = (srcY * width + srcX) * 4;
-      const gray = data[idx] * 0.299 + data[idx + 1] * 0.587 + data[idx + 2] * 0.114;
-      grayscale.push(gray);
-    }
-  }
-  let hash = BigInt(0);
-  for (let y = 0; y < hashHeight; y++) {
-    for (let x = 0; x < hashWidth - 1; x++) {
-      const idx = y * hashWidth + x;
-      if (grayscale[idx] < grayscale[idx + 1]) {
-        hash |= BigInt(1) << BigInt(y * (hashWidth - 1) + x);
-      }
-    }
-  }
-  return hash;
-}
-
-function hammingDistance(hash1: bigint, hash2: bigint): number {
-  let xor = hash1 ^ hash2;
-  let count = 0;
-  while (xor > BigInt(0)) {
-    count += Number(xor & BigInt(1));
-    xor >>= BigInt(1);
-  }
-  return count;
-}
-
-function compareDHash(hash1: bigint, hash2: bigint): number {
-  const distance = hammingDistance(hash1, hash2);
-  return 1 - distance / 64;
-}
-
-// ── Skin Tone Analysis ───────────────────────────────────────
-
-function estimateSkinRatio(data: Buffer): number {
-  let skinPixels = 0;
-  const totalPixels = data.length / 4;
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i], g = data[i + 1], b = data[i + 2];
-    const y = 0.299 * r + 0.587 * g + 0.114 * b;
-    const cb = 128 - 0.168736 * r - 0.331264 * g + 0.5 * b;
-    const cr = 128 + 0.5 * r - 0.418688 * g - 0.081312 * b;
-    if (y > 40 && cb > 75 && cb < 135 && cr > 130 && cr < 180 &&
-        r > 60 && g > 40 && b > 20 && r > g && r > b && Math.abs(r - g) > 10) {
-      skinPixels++;
-    }
-  }
-  return skinPixels / totalPixels;
-}
-
-function compareSkinTone(data1: Buffer, data2: Buffer): number {
-  const ratio1 = estimateSkinRatio(data1);
-  const ratio2 = estimateSkinRatio(data2);
-  return Math.max(0, 1 - Math.abs(ratio1 - ratio2) * 3);
-}
-
-// ── Main Verification ────────────────────────────────────────
-
-/**
- * Authoritative, server-side recomputation of the selfie-vs-profile-photos match
- * score. `selfieSrc`/`profilePhotoSrcs` accept either data URIs or http(s) URLs.
- */
 export async function verifySelfieServer(
   selfieSrc: string,
   profilePhotoSrcs: string[]
 ): Promise<ServerVerificationResult> {
   try {
-    const selfiePx = await getImagePixelData(selfieSrc);
-    const selfieHist = computeColorHistogram(selfiePx.data, selfiePx.width, selfiePx.height);
-    const selfieHash = computeDHash(selfiePx.data, selfiePx.width, selfiePx.height);
+    await ensureReady();
+
+    const selfieDetection = await detectFace(selfieSrc);
+    if (!selfieDetection) {
+      return { score: 0, verified: false, photoScores: [], reason: "Aucun visage détecté sur le selfie." };
+    }
 
     const photoScores: number[] = [];
+    let bestDistance = Infinity;
+    let anyFaceFound = false;
 
     for (const photoSrc of profilePhotoSrcs) {
       if (!photoSrc) continue;
       try {
-        const profilePx = await getImagePixelData(photoSrc);
-        const profileHist = computeColorHistogram(profilePx.data, profilePx.width, profilePx.height);
-        const profileHash = computeDHash(profilePx.data, profilePx.width, profilePx.height);
-
-        const histScore = compareHistograms(selfieHist, profileHist);
-        const hashScore = compareDHash(selfieHash, profileHash);
-        const skinScore = compareSkinTone(selfiePx.data, profilePx.data);
-
-        // Weights: histogram 35%, hash 40%, skin 25% — matches the client-side heuristic.
-        const combined = histScore * 0.35 + hashScore * 0.40 + skinScore * 0.25;
-        photoScores.push(Math.round(combined * 100));
+        const photoDetection = await detectFace(photoSrc);
+        if (!photoDetection) {
+          photoScores.push(0);
+          continue;
+        }
+        anyFaceFound = true;
+        const distance = faceapi.euclideanDistance(selfieDetection.descriptor, photoDetection.descriptor);
+        bestDistance = Math.min(bestDistance, distance);
+        photoScores.push(distanceToScore(distance));
       } catch {
         photoScores.push(0);
       }
     }
 
-    const bestScore = photoScores.length > 0 ? Math.max(...photoScores) : 0;
-    const avgScore = photoScores.length > 0
-      ? Math.round(photoScores.reduce((a, b) => a + b, 0) / photoScores.length)
-      : 0;
-    const finalScore = Math.round(bestScore * 0.6 + avgScore * 0.4);
-    const verified = finalScore >= VERIFICATION_THRESHOLD;
-
-    let reason: string;
     if (photoScores.length === 0) {
-      reason = "Aucune photo de profil disponible pour la comparaison.";
-    } else if (verified) {
-      reason = "Vérification réussie.";
-    } else {
-      reason = "Les photos ne semblent pas correspondre.";
+      return { score: 0, verified: false, photoScores: [], reason: "Aucune photo de profil disponible pour la comparaison." };
+    }
+    if (!anyFaceFound) {
+      return { score: 0, verified: false, photoScores, reason: "Aucun visage détecté sur les photos de profil." };
     }
 
-    return { score: finalScore, verified, photoScores, reason };
+    const verified = bestDistance <= MATCH_THRESHOLD;
+    const score = distanceToScore(bestDistance);
+    const reason = verified
+      ? "Vérification réussie."
+      : "Le visage du selfie ne correspond à aucune des photos de profil.";
+
+    return { score, verified, photoScores, reason };
   } catch (error) {
     return {
       score: 0, verified: false, photoScores: [],
