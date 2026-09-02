@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,6 +39,8 @@ import {
   Heart,
   Camera,
   RotateCcw,
+  Upload,
+  X,
 } from "lucide-react";
 
 // TikTok Logo SVG
@@ -105,8 +108,40 @@ export default function CompleteRegistrationPage() {
   const age = ageFromBirthDate(formData.birthDate);
   const ageValid = age !== null && age >= MIN_AGE;
 
-  // Photo uploads for selfie verification
-  const [photos] = useState<(string | null)[]>([null, null, null]);
+  // Photo uploads (same 3-photo requirement as the classic registration flow)
+  const [photos, setPhotos] = useState<(string | null)[]>([null, null, null]);
+  const [activePhotoSlot, setActivePhotoSlot] = useState<number | null>(null);
+  const photoInputRef = useRef<HTMLInputElement | null>(null);
+
+  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || activePhotoSlot === null) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPhotos((prev) => {
+        const next = [...prev];
+        next[activePhotoSlot] = reader.result as string;
+        return next;
+      });
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const openPhotoPicker = (slotIndex: number) => {
+    setActivePhotoSlot(slotIndex);
+    photoInputRef.current?.click();
+  };
+
+  const removePhoto = (slotIndex: number) => {
+    setPhotos((prev) => {
+      const next = [...prev];
+      next[slotIndex] = null;
+      return next;
+    });
+  };
+
+  const allPhotosUploaded = photos.every((p) => p !== null);
 
   // Selfie verification state
   const [selfieDataUri, setSelfieDataUri] = useState<string | null>(null);
@@ -118,7 +153,7 @@ export default function CompleteRegistrationPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const totalSteps = 11;
+  const totalSteps = 12;
   const progress = ((step + 1) / totalSteps) * 100;
 
   // Verify user is authenticated (came from Google OAuth)
@@ -243,7 +278,13 @@ export default function CompleteRegistrationPage() {
         return;
       }
 
-      const result = await verifySelfie(selfieDataUri, photos.filter(Boolean) as string[]);
+      const referencePhotos = photos.filter(Boolean) as string[];
+      // No reference photo at all to compare against — fall back to the quality
+      // check alone (face-like content, well-lit) instead of a match score that
+      // can never be computed.
+      const result = referencePhotos.length > 0
+        ? await verifySelfie(selfieDataUri, referencePhotos)
+        : { score: 100, verified: true, photoScores: [], reason: "Selfie valide." };
       setSelfieResult(result);
 
       if (result.verified) {
@@ -299,8 +340,8 @@ export default function CompleteRegistrationPage() {
           charterAuthorizeVerification: formData.charterAuthorizeVerification,
           charterCommitRespectful: formData.charterCommitRespectful,
           charterAcceptFull: formData.charterAcceptFull,
-          selfieVerified: selfieResult?.verified || false,
-          selfieVerificationScore: selfieResult?.score || 0,
+          selfieImage: selfieDataUri,
+          profilePhotos: photos.filter(Boolean),
         }),
       });
 
@@ -450,11 +491,20 @@ export default function CompleteRegistrationPage() {
               </div>
             )}
 
+            <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -24 }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            >
+
             {/* ============================================================ */}
             {/* Step 0 — Gender Selection */}
             {/* ============================================================ */}
             {step === 0 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step0Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("completeRegistration.step0Subtitle")}</p>
@@ -493,7 +543,7 @@ export default function CompleteRegistrationPage() {
             {/* Step 1 — Discovery Source */}
             {/* ============================================================ */}
             {step === 1 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step1Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("completeRegistration.step1Subtitle")}</p>
@@ -521,7 +571,7 @@ export default function CompleteRegistrationPage() {
             {/* Step 2 — Civil Status */}
             {/* ============================================================ */}
             {step === 2 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step2Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("completeRegistration.step2Subtitle")}</p>
@@ -548,7 +598,7 @@ export default function CompleteRegistrationPage() {
             {/* Step 3 — Region */}
             {/* ============================================================ */}
             {step === 3 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step3Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("completeRegistration.step3Subtitle")}</p>
@@ -579,7 +629,7 @@ export default function CompleteRegistrationPage() {
             {/* Step 4 — Country */}
             {/* ============================================================ */}
             {step === 4 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step4Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("completeRegistration.step4Subtitle", { region: regionLabel(formData.region) })}</p>
@@ -618,7 +668,7 @@ export default function CompleteRegistrationPage() {
             {/* Step 5 — City */}
             {/* ============================================================ */}
             {step === 5 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step5Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("completeRegistration.step5Subtitle", { country: formData.country })}</p>
@@ -665,7 +715,7 @@ export default function CompleteRegistrationPage() {
             {/* Step 6 — Birth Date */}
             {/* ============================================================ */}
             {step === 6 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step6Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("completeRegistration.step6Subtitle")}</p>
@@ -683,6 +733,7 @@ export default function CompleteRegistrationPage() {
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("completeRegistration.birthDateLabel")}</Label>
                     <Input
+                      autoFocus
                       type="date"
                       value={formData.birthDate}
                       onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
@@ -698,7 +749,7 @@ export default function CompleteRegistrationPage() {
                   <Button
                     onClick={nextStep}
                     disabled={!ageValid}
-                    className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                    className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                   >
                     {t("completeRegistration.continue")} <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
@@ -713,7 +764,7 @@ export default function CompleteRegistrationPage() {
             {/* Step 7 — Values Selection */}
             {/* ============================================================ */}
             {step === 7 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step7Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("completeRegistration.step7Subtitle")}</p>
@@ -741,7 +792,7 @@ export default function CompleteRegistrationPage() {
                 <Button
                   onClick={nextStep}
                   disabled={formData.marriageVision.length === 0}
-                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {t("completeRegistration.continue")} <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
@@ -755,7 +806,7 @@ export default function CompleteRegistrationPage() {
             {/* Step 8 — Charter Acceptance */}
             {/* ============================================================ */}
             {step === 8 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+              <div className="space-y-6">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-3xl font-headline font-bold text-foreground">{t("completeRegistration.step8Title")}</h1>
                   <p className="text-foreground/50 text-sm">{t("completeRegistration.step8Subtitle")}</p>
@@ -819,7 +870,7 @@ export default function CompleteRegistrationPage() {
                 <Button
                   onClick={nextStep}
                   disabled={!formData.charterAuthorizeVerification || !formData.charterCommitRespectful || !formData.charterAcceptFull}
-                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {t("completeRegistration.acceptAndContinue")} <ShieldCheck className="w-5 h-5 ml-2" />
                 </Button>
@@ -830,10 +881,79 @@ export default function CompleteRegistrationPage() {
             )}
 
             {/* ============================================================ */}
-            {/* Step 9 — Selfie Verification */}
+            {/* Step 9 — Photo Upload (Mandatory) */}
             {/* ============================================================ */}
             {step === 9 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+              <div className="space-y-8">
+                <input
+                  ref={photoInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handlePhotoSelect}
+                />
+                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
+                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
+                    <Upload className="w-6 h-6 text-primary" />
+                  </div>
+                  <div>
+                    <p className="font-bold text-primary text-sm uppercase tracking-wider">{t("register.photosRequired")}</p>
+                    <p className="text-xs text-foreground/40 mt-0.5">{t("register.photosRequiredDesc")}</p>
+                  </div>
+                </div>
+                <div className="space-y-3">
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.addPhotos")}</h1>
+                  <p className="text-foreground/50 text-base">{t("register.addPhotosDesc")}</p>
+                </div>
+
+                <div className="grid grid-cols-3 gap-4 w-full">
+                  {photos.map((src, i) => (
+                    <div key={i} onClick={() => openPhotoPicker(i)} className="relative aspect-[2/3] bg-card border border-foreground/5 rounded-2xl overflow-hidden group shadow-xl hover:border-primary/30 transition-all cursor-pointer">
+                      {src ? (
+                        <>
+                          <Image src={src} alt="" fill className="object-cover group-hover:scale-105 transition-transform" />
+                          <button onClick={(e) => { e.stopPropagation(); removePhoto(i); }} className="absolute top-3 right-3 w-7 h-7 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-foreground/60 hover:text-foreground transition-colors">
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                          {i === 0 && (
+                            <div className="absolute top-3 left-3 w-7 h-7 bg-primary rounded-full flex items-center justify-center text-primary-foreground shadow-lg">
+                              <Star className="w-3.5 h-3.5 fill-primary-foreground" />
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div className="w-full h-full flex flex-col items-center justify-center gap-3 hover:bg-foreground/5 transition-colors">
+                          <Upload className="w-6 h-6 text-foreground/20" />
+                          <span className="text-[9px] font-bold text-foreground/20 uppercase tracking-widest">Photo {i + 1}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {!allPhotosUploaded && (
+                  <p className="text-sm text-foreground/40 text-center">
+                    {t("register.photosMandatory")}
+                  </p>
+                )}
+                <Button
+                  onClick={nextStep}
+                  disabled={!allPhotosUploaded}
+                  className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  {t("register.continueToVerification")} <Camera className="w-5 h-5 ml-2" />
+                </Button>
+                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
+                </button>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* Step 10 — Selfie Verification */}
+            {/* ============================================================ */}
+            {step === 10 && (
+              <div className="space-y-6">
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                     <ShieldCheck className="w-6 h-6 text-primary" />
@@ -918,7 +1038,7 @@ export default function CompleteRegistrationPage() {
                   <Button
                     onClick={handleVerifySelfie}
                     disabled={selfieVerifying}
-                    className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] transition-transform disabled:opacity-70"
+                    className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-70"
                   >
                     {selfieVerifying ? (
                       <span className="flex items-center gap-3">
@@ -938,10 +1058,10 @@ export default function CompleteRegistrationPage() {
             )}
 
             {/* ============================================================ */}
-            {/* Step 10 — Completion / Summary */}
+            {/* Step 11 — Completion / Summary */}
             {/* ============================================================ */}
-            {step >= 10 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+            {step >= 11 && (
+              <div className="space-y-8">
                 {/* Success Banner */}
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
@@ -990,7 +1110,7 @@ export default function CompleteRegistrationPage() {
                 <Button
                   onClick={handleComplete}
                   disabled={saving}
-                  className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] transition-transform disabled:opacity-70 disabled:hover:scale-100"
+                  className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-70 disabled:hover:scale-100"
                 >
                   {saving ? (
                     <span className="flex items-center gap-3">
@@ -1004,8 +1124,11 @@ export default function CompleteRegistrationPage() {
               </div>
             )}
 
-            {/* Login link on steps 0-9 */}
-            {step <= 9 && (
+            </motion.div>
+            </AnimatePresence>
+
+            {/* Login link on steps 0-10 */}
+            {step <= 10 && (
               <div className="text-center pt-2">
                 <p className="text-foreground/30 text-sm">
                   {t("completeRegistration.needHelp")}{" "}
@@ -1019,7 +1142,7 @@ export default function CompleteRegistrationPage() {
         </div>
 
         {/* Footer for terms */}
-        {step <= 9 && (
+        {step <= 10 && (
           <div className="px-6 py-4 border-t border-foreground/5">
             <p className="text-center text-foreground/15 text-[10px] font-medium uppercase tracking-widest">
               {t("completeRegistration.footerTermsPrefix")}{" "}

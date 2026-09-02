@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,6 +80,28 @@ const DIASPORA_COUNTRIES = [
   "France", "Belgique", "Canada", "USA", "Suisse", "Royaume-Uni"
 ];
 
+// ── Password Strength Calculator ────────────────────────────
+function getPasswordStrength(password: string, t: (key: string) => string): { score: number; label: string; color: string } {
+  if (!password) return { score: 0, label: "", color: "" };
+  let score = 0;
+  if (password.length >= 8) score++;
+  if (password.length >= 12) score++;
+  if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+  if (/[0-9]/.test(password)) score++;
+  if (/[^A-Za-z0-9]/.test(password)) score++;
+  const normalizedScore = Math.min(4, Math.max(1, score));
+  const levels = [
+    { label: t("resetPassword.strengthVeryWeak"), color: "#dc3545" },
+    { label: t("resetPassword.strengthWeak"), color: "#fd7e14" },
+    { label: t("resetPassword.strengthMedium"), color: "#ffc107" },
+    { label: t("resetPassword.strengthStrong"), color: "#28a745" },
+    { label: t("resetPassword.strengthVeryStrong"), color: "#2D5016" },
+  ];
+  return { score: normalizedScore, label: levels[normalizedScore].label, color: levels[normalizedScore].color };
+}
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const STEP_TITLES = [
   "Votre identité",
   "Comment nous avez-vous trouvé ?",
@@ -122,6 +145,8 @@ export default function RegisterPage() {
 
   const age = ageFromBirthDate(formData.birthDate);
   const ageValid = age !== null && age >= MIN_AGE;
+  const emailValid = EMAIL_REGEX.test(formData.email);
+  const passwordStrength = getPasswordStrength(formData.password, t);
 
   const [photos, setPhotos] = useState<(string | null)[]>([
     null, null, null
@@ -238,8 +263,7 @@ export default function RegisterPage() {
           charterAuthorizeVerification: formData.charterAuthorizeVerification,
           charterCommitRespectful: formData.charterCommitRespectful,
           charterAcceptFull: formData.charterAcceptFull,
-          selfieVerified: selfieResult?.verified || false,
-          selfieVerificationScore: selfieResult?.score || 0,
+          selfieImage: selfieDataUri,
           profilePhotos: photos.filter(Boolean),
         }),
       });
@@ -474,11 +498,20 @@ export default function RegisterPage() {
               </div>
             )}
 
+            <AnimatePresence mode="wait">
+            <motion.div
+              key={step}
+              initial={{ opacity: 0, x: 24 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -24 }}
+              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
+            >
+
             {/* ============================================================ */}
             {/* Step 0 — Gender Selection */}
             {/* ============================================================ */}
             {step === 0 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step0Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("register.step0Subtitle")}</p>
@@ -517,7 +550,7 @@ export default function RegisterPage() {
             {/* Step 1 — Discovery Source */}
             {/* ============================================================ */}
             {step === 1 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step1Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("register.step1Subtitle")}</p>
@@ -545,7 +578,7 @@ export default function RegisterPage() {
             {/* Step 2 — Civil Status */}
             {/* ============================================================ */}
             {step === 2 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step2Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("register.step2Subtitle")}</p>
@@ -572,7 +605,7 @@ export default function RegisterPage() {
             {/* Step 3 — Region */}
             {/* ============================================================ */}
             {step === 3 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step3Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("register.step3Subtitle")}</p>
@@ -603,7 +636,7 @@ export default function RegisterPage() {
             {/* Step 4 — Country */}
             {/* ============================================================ */}
             {step === 4 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step4Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("register.step4Subtitle", { region: formData.region })}</p>
@@ -642,7 +675,7 @@ export default function RegisterPage() {
             {/* Step 5 — City */}
             {/* ============================================================ */}
             {step === 5 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step5Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("register.step5Subtitle", { country: formData.country })}</p>
@@ -689,7 +722,7 @@ export default function RegisterPage() {
             {/* Step 6 — Identity (Name, Email, Password) */}
             {/* ============================================================ */}
             {step === 6 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step6Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("register.step6Subtitle")}</p>
@@ -698,6 +731,7 @@ export default function RegisterPage() {
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.nameLabel")}</Label>
                     <Input
+                      autoFocus
                       placeholder={t("register.namePlaceholder")}
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
@@ -721,13 +755,18 @@ export default function RegisterPage() {
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.emailLabel")}</Label>
-                    <Input
-                      type="email"
-                      placeholder={t("register.emailPlaceholder")}
-                      value={formData.email}
-                      onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30"
-                    />
+                    <div className="relative">
+                      <Input
+                        type="email"
+                        placeholder={t("register.emailPlaceholder")}
+                        value={formData.email}
+                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30 pr-12"
+                      />
+                      {emailValid && (
+                        <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary animate-in zoom-in duration-200" />
+                      )}
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.passwordLabel")}</Label>
@@ -747,12 +786,27 @@ export default function RegisterPage() {
                         {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                       </button>
                     </div>
-                    <p className="text-[10px] text-foreground/20 uppercase tracking-widest mt-1">Minimum 8 characters</p>
+                    {formData.password ? (
+                      <div className="space-y-1.5 pt-1">
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4].map((level) => (
+                            <div
+                              key={level}
+                              className="h-1.5 flex-1 rounded-full transition-all duration-300"
+                              style={{ backgroundColor: level <= passwordStrength.score ? passwordStrength.color : "hsl(var(--foreground) / 0.1)" }}
+                            />
+                          ))}
+                        </div>
+                        <p className="text-[11px] font-bold" style={{ color: passwordStrength.color }}>{passwordStrength.label}</p>
+                      </div>
+                    ) : (
+                      <p className="text-[10px] text-foreground/20 uppercase tracking-widest mt-1">Minimum 8 characters</p>
+                    )}
                   </div>
                   <Button
                     onClick={nextStep}
                     disabled={!formData.name || !ageValid || !formData.email || formData.password.length < 8}
-                    className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                    className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                   >
                     {t("register.continue")} <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
@@ -767,7 +821,7 @@ export default function RegisterPage() {
             {/* Step 7 — Values Selection */}
             {/* ============================================================ */}
             {step === 7 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.step7Title")}</h1>
                   <p className="text-foreground/50 text-base">{t("register.step7Subtitle")}</p>
@@ -795,7 +849,7 @@ export default function RegisterPage() {
                 <Button
                   onClick={nextStep}
                   disabled={formData.marriageVision.length === 0}
-                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {t("register.continue")} <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
@@ -809,7 +863,7 @@ export default function RegisterPage() {
             {/* Step 8 — Charter Acceptance */}
             {/* ============================================================ */}
             {step === 8 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+              <div className="space-y-6">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-3xl font-headline font-bold text-foreground">{t("register.step8Title")}</h1>
                   <p className="text-foreground/50 text-sm">{t("register.step8Subtitle")}</p>
@@ -873,7 +927,7 @@ export default function RegisterPage() {
                 <Button
                   onClick={nextStep}
                   disabled={!formData.charterAuthorizeVerification || !formData.charterCommitRespectful || !formData.charterAcceptFull}
-                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {t("register.acceptAndContinue")} <ShieldCheck className="w-5 h-5 ml-2" />
                 </Button>
@@ -885,7 +939,7 @@ export default function RegisterPage() {
 
             {/* Step 9 — Photo Upload (Mandatory) */}
             {step === 9 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <input
                   ref={photoInputRef}
                   type="file"
@@ -940,7 +994,7 @@ export default function RegisterPage() {
                 <Button
                   onClick={nextStep}
                   disabled={!allPhotosUploaded}
-                  className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                  className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {t("register.continueToVerification")} <Camera className="w-5 h-5 ml-2" />
                 </Button>
@@ -952,7 +1006,7 @@ export default function RegisterPage() {
 
             {/* Step 10 — Selfie Verification */}
             {step === 10 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-6">
+              <div className="space-y-6">
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                     <ShieldCheck className="w-6 h-6 text-primary" />
@@ -1037,7 +1091,7 @@ export default function RegisterPage() {
                   <Button
                     onClick={handleVerifySelfie}
                     disabled={selfieVerifying}
-                    className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] transition-transform disabled:opacity-70"
+                    className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-70"
                   >
                     {selfieVerifying ? (
                       <span className="flex items-center gap-3">
@@ -1058,7 +1112,7 @@ export default function RegisterPage() {
 
             {/* Step 11 — Completion */}
             {step >= 11 && (
-              <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 space-y-8">
+              <div className="space-y-8">
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                     <CheckCircle2 className="w-6 h-6 text-primary" />
@@ -1081,7 +1135,7 @@ export default function RegisterPage() {
                 <Button
                   onClick={handleComplete}
                   disabled={creating}
-                  className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] transition-transform disabled:opacity-70 disabled:hover:scale-100"
+                  className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-70 disabled:hover:scale-100"
                 >
                   {creating ? (
                     <span className="flex items-center gap-3">
@@ -1094,6 +1148,9 @@ export default function RegisterPage() {
                 </Button>
               </div>
             )}
+
+            </motion.div>
+            </AnimatePresence>
 
             {/* Login link on steps 0-8 */}
             {step <= 8 && (

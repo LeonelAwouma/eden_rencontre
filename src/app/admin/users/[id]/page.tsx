@@ -48,6 +48,7 @@ interface UserProfile {
   onboarding_completed: boolean;
   selfie_verified: boolean;
   selfie_verification_score: number;
+  selfie_url: string | null;
   verification_status: string;
   verification_rejection_reason: string | null;
 }
@@ -80,6 +81,7 @@ export default function AdminUserDetailPage() {
   const [suspendReason, setSuspendReason] = useState("");
   const [showVerifyRejectModal, setShowVerifyRejectModal] = useState(false);
   const [verifyRejectReason, setVerifyRejectReason] = useState("");
+  const [showSelfieModal, setShowSelfieModal] = useState(false);
 
   // Compute questionnaire completion status
   const questionnaireCompletion = useMemo(() => {
@@ -416,8 +418,19 @@ export default function AdminUserDetailPage() {
                 <p className="text-sm text-gray-700 mt-0.5">
                   {user.selfie_verified
                     ? `✅ Vérifié (Score : ${user.selfie_verification_score || 0}%)`
-                    : "⏳ Non vérifié"}
+                    : `⏳ Non vérifié${user.selfie_url ? ` (Score : ${user.selfie_verification_score || 0}%)` : ""}`}
                 </p>
+                {user.selfie_url ? (
+                  <button
+                    onClick={() => setShowSelfieModal(true)}
+                    className="mt-2 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 hover:border-[#2D5016] transition-colors"
+                    title="Voir le selfie pris à l'inscription"
+                  >
+                    <img src={user.selfie_url} alt="Selfie" className="w-full h-full object-cover" />
+                  </button>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-1">Aucun selfie enregistré.</p>
+                )}
               </div>
               {/* Verification Status */}
               <div>
@@ -610,6 +623,30 @@ export default function AdminUserDetailPage() {
               >
                 {actionLoading === "verify_reject" ? "Rejet…" : "Confirmer le rejet"}
               </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Selfie Lightbox */}
+      {showSelfieModal && user.selfie_url && (
+        <div
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowSelfieModal(false)}
+        >
+          <button
+            onClick={() => setShowSelfieModal(false)}
+            className="absolute top-5 right-5 w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20 transition-all"
+          >
+            <X className="w-5 h-5" />
+          </button>
+          <div className="bg-white rounded-2xl overflow-hidden max-w-md w-full" onClick={(e) => e.stopPropagation()}>
+            <img src={user.selfie_url} alt="Selfie" className="w-full aspect-square object-cover" />
+            <div className="p-4">
+              <p className="text-[13px] font-semibold text-gray-900">Selfie pris à l'inscription</p>
+              <p className="text-[12px] text-gray-500 mt-0.5">
+                Score de correspondance calculé côté serveur : {user.selfie_verification_score || 0}%
+              </p>
             </div>
           </div>
         </div>

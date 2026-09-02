@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
+import { verifySelfieServer } from "@/lib/face-verification-server";
 
 export async function POST(request: NextRequest) {
   try {
@@ -17,9 +18,21 @@ export async function POST(request: NextRequest) {
       charterAuthorizeVerification,
       charterCommitRespectful,
       charterAcceptFull,
-      selfieVerified,
-      selfieVerificationScore,
+      selfieImage,
+      profilePhotos,
     } = body;
+
+    // Selfie verification is recomputed here from the actual uploaded photos — the
+    // client's own score/verified claim is never trusted, since it's just JSON an
+    // attacker could forge without ever taking a real selfie. The Google account
+    // avatar is deliberately never used as a reference photo.
+    let selfieVerified = false;
+    let selfieVerificationScore = 0;
+    if (typeof selfieImage === "string" && selfieImage.startsWith("data:")) {
+      const result = await verifySelfieServer(selfieImage, (profilePhotos || []).filter(Boolean));
+      selfieVerified = result.verified;
+      selfieVerificationScore = result.score;
+    }
 
     // Validate required fields
     if (!gender || !birthDate || !civilStatus || !region || !country || !city) {
@@ -146,8 +159,10 @@ export async function POST(request: NextRequest) {
       marriage_vision: marriageVision || [],
       status: "pending",
       onboarding_completed: true,
-      selfie_verified: selfieVerified || false,
-      selfie_verification_score: selfieVerificationScore || 0,
+      selfie_verified: selfieVerified,
+      selfie_verification_score: selfieVerificationScore,
+      selfie_url: selfieImage || null,
+      profile_photos: profilePhotos || [],
       updated_at: new Date().toISOString(),
     };
 
@@ -170,8 +185,10 @@ export async function POST(request: NextRequest) {
         marriage_vision: marriageVision || [],
         status: "pending",
         onboarding_completed: true,
-        selfie_verified: selfieVerified || false,
-        selfie_verification_score: selfieVerificationScore || 0,
+        selfie_verified: selfieVerified,
+        selfie_verification_score: selfieVerificationScore,
+        selfie_url: selfieImage || null,
+        profile_photos: profilePhotos || [],
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };

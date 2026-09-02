@@ -1068,6 +1068,8 @@
     "statRequests": "Requests",
     "discoverTitle": "Discover",
     "discoverSubtitle": "Explore the profiles that grace places on your path",
+    "discoverIncompleteProfileTitle": "Incomplete profile ({pct}%)",
+    "discoverIncompleteProfileDesc": "Complete your profile to 100% to reveal your matches — profiles that truly align with you will only appear once your profile is complete.",
     "discoverSearchPlaceholder": "Search by name, city, profession…",
     "filterAll": "All",
     "filterNearMe": "Near me",

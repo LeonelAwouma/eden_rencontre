@@ -1523,6 +1523,26 @@ export default function DashboardPage() {
         return (
           <div className="space-y-6">
             <TabHeader icon={Search} title={t("dashboard.discoverTitle")} subtitle={t("dashboard.discoverSubtitle")} />
+            {profileCompletionPct !== null && profileCompletionPct < 100 && (
+              <div className="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
+                style={{ background: "linear-gradient(135deg, #FFFBEB 0%, #FAF9F6 100%)", border: "1px solid #FDE68A" }}>
+                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#FFFBEB" }}>
+                  <Lock className="w-5 h-5" style={{ color: "#D97706" }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>
+                    {t("dashboard.discoverIncompleteProfileTitle", { pct: profileCompletionPct })}
+                  </p>
+                  <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "#777777" }}>
+                    {t("dashboard.discoverIncompleteProfileDesc")}
+                  </p>
+                </div>
+                <Button onClick={() => setActiveTab("Profil")} className="h-9 shrink-0 rounded-xl font-bold text-xs px-4"
+                  style={{ background: "#486B46", color: "#FFFFFF" }}>
+                  {t("dashboard.completeMyProfile")}
+                </Button>
+              </div>
+            )}
             <div className="relative max-w-xl">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: "#486B46" }} />
               <Input value={discoverSearch} onChange={(e) => { setDiscoverSearch(e.target.value); setDiscoverCount(24); }}
