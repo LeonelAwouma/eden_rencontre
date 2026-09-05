@@ -175,22 +175,6 @@ export function GardenHero() {
               sizes="(max-width: 1023px) 100vw, 50vw"
             />
           </div>
-
-          {/* Fondu vers le crème : la photo ne se coupe plus net contre le texte */}
-          <div
-            className="absolute inset-y-0 left-0 w-24 xl:w-32 pointer-events-none hidden lg:block"
-            aria-hidden="true"
-            style={{
-              background: "linear-gradient(90deg, hsl(42 35% 97%) 0%, hsl(42 35% 97% / 0) 100%)",
-            }}
-          />
-          <div
-            className="absolute inset-x-0 top-0 h-20 pointer-events-none lg:hidden"
-            aria-hidden="true"
-            style={{
-              background: "linear-gradient(180deg, hsl(42 35% 97%) 0%, hsl(42 35% 97% / 0) 100%)",
-            }}
-          />
         </div>
       </div>
 

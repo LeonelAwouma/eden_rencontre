@@ -33,7 +33,7 @@ export function GardenCard({ icon: Icon, title, description, className, index = 
 
       <div className="relative z-10">
         {/* Médaillon de l'icône */}
-        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary/8 flex items-center justify-center mb-6 sm:mb-8 ring-1 ring-primary/12 group-hover:bg-primary/12 group-hover:ring-primary/20 transition-colors duration-500">
+        <div className="w-14 h-14 sm:w-16 sm:h-16 rounded-2xl bg-primary/10 flex items-center justify-center mb-6 sm:mb-8 ring-1 ring-primary/15 group-hover:bg-primary/15 group-hover:ring-primary/25 transition-colors duration-500">
           <Icon className="w-7 h-7 sm:w-8 sm:h-8 text-primary transition-colors duration-500" />
         </div>
 
