@@ -4,12 +4,12 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenHero, PromoBanner, AnnouncementBar } from "@/components/garden";
+import { GardenHero, PromoBanner, AnnouncementBar, SkyFlock } from "@/components/garden";
 import { FeaturesSection } from "@/components/garden/features-section";
 import { QuoteSection } from "@/components/garden/quote-section";
 import { useI18n } from "@/lib/i18n";
 
-/** Animated counter that counts up from 0 to `end` when in viewport */
+/** Compteur qui monte de 0 à `end` dès qu'il entre dans le champ de vision. */
 function AnimatedCounter({ end, suffix = "", duration = 2000 }: { end: number; suffix?: string; duration?: number }) {
   const [count, setCount] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
@@ -31,7 +31,7 @@ function AnimatedCounter({ end, suffix = "", duration = 2000 }: { end: number; s
           const step = (currentTime: number) => {
             const elapsed = currentTime - startTime;
             const progress = Math.min(elapsed / duration, 1);
-            // Ease-out cubic for natural deceleration
+            // Sortie cubique : la décélération paraît naturelle
             const eased = 1 - Math.pow(1 - progress, 3);
             setCount(Math.round(eased * end));
 
@@ -52,7 +52,7 @@ function AnimatedCounter({ end, suffix = "", duration = 2000 }: { end: number; s
   return <span ref={ref}>{count.toLocaleString("fr-FR")}{suffix}</span>;
 }
 
-/** Lightweight stats bar between hero and features */
+/** Bandeau de chiffres, posé entre le hero et les piliers. */
 function StatsBar() {
   const { t } = useI18n();
 
@@ -63,18 +63,24 @@ function StatsBar() {
   ];
 
   return (
-    <section className="py-12 sm:py-16 bg-background relative">
-      {/* Top organic divider */}
-      <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-sage/15 to-transparent" aria-hidden="true" />
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-sage/15 to-transparent" aria-hidden="true" />
+    <section className="py-14 sm:py-20 bg-background relative overflow-hidden">
+      <div className="absolute top-0 left-0 right-0 eden-hairline" aria-hidden="true" />
+      <div className="absolute bottom-0 left-0 right-0 eden-hairline" aria-hidden="true" />
 
-      <div className="container mx-auto px-4 sm:px-6">
+      {/* Deux oiseaux lointains, très en retrait, sur les marges */}
+      <SkyFlock count={3} className="hidden lg:block absolute top-6 left-[4%] w-28 opacity-[0.1]" />
+      <SkyFlock count={2} className="hidden lg:block absolute bottom-6 right-[5%] w-20 opacity-[0.08]" />
+
+      <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-4 text-center">
           {stats.map((stat, i) => (
-            <div key={stat.label} className="space-y-1 relative">
-              {/* Vertical sage accent between stats on desktop */}
+            <div key={stat.label} className="space-y-1.5 relative">
+              {/* Séparateur végétal entre les colonnes, sur écran large */}
               {i > 0 && (
-                <div className="hidden sm:block absolute left-0 top-1/2 -translate-y-1/2 w-px h-10 bg-gradient-to-b from-transparent via-sage/20 to-transparent" aria-hidden="true" />
+                <div
+                  className="hidden sm:block absolute left-0 top-1/2 -translate-y-1/2 w-px h-12 bg-gradient-to-b from-transparent via-sage/30 to-transparent"
+                  aria-hidden="true"
+                />
               )}
               <div className="text-3xl sm:text-4xl font-headline font-bold text-deep-eden">
                 <AnimatedCounter end={stat.end} suffix={stat.suffix} duration={2200} />
@@ -90,7 +96,7 @@ function StatsBar() {
 
 export default function Home() {
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
+    <div className="eden-public flex flex-col min-h-screen bg-background text-foreground">
       <AnnouncementBar />
       <Navigation />
 

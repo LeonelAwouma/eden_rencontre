@@ -102,13 +102,13 @@ export default function ResourceDetailPage() {
   };
 
   if (loading) return (
-    <div className="min-h-screen bg-[#FAF9F6]"><Navigation/>
+    <div className="eden-public min-h-screen bg-background"><Navigation/>
       <div className="flex items-center justify-center py-40"><div className="w-10 h-10 rounded-full border-[3px] border-[#E8E5E0] border-t-[#486B46] animate-spin"/></div>
     <Footer/></div>
   );
 
   if (!resource) return (
-    <div className="min-h-screen bg-[#FAF9F6]"><Navigation/>
+    <div className="eden-public min-h-screen bg-background"><Navigation/>
       <div className="text-center py-40"><Library className="w-12 h-12 text-[#D1D5DB] mx-auto mb-4"/>
         <h2 className="text-xl font-bold text-[#2F2F2F] mb-2">Ressource introuvable</h2>
         <Link href="/mediatheque" className="text-[#486B46] font-medium hover:underline">← Retour à la médiathèque</Link>
@@ -121,7 +121,7 @@ export default function ResourceDetailPage() {
   const embed = resource.external_url ? extractEmbedUrl(resource.external_url) : null;
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6]">
+    <div className="eden-public min-h-screen bg-background">
       <Navigation />
       <main className="container mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-8">
         <Link href="/mediatheque" className="flex items-center gap-2 text-[13px] text-[#6B7280] hover:text-[#2F2F2F] mb-6 font-medium">

@@ -5,17 +5,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
-import { FlyingDove } from "./flying-dove";
+import { GlidingDove, SkyFlock, PerchOrnament } from "./bird-scene";
+import { OliveBirdDivider } from "./page-header";
 
-/** Floating pollen particles */
+/** Pollen porté par l'air — quelques grains, jamais une pluie. */
 function PollenParticles() {
   const particles = [
-    { x: "12%", y: "18%", delay: 0, duration: 7, size: 3 },
-    { x: "78%", y: "30%", delay: 1.5, duration: 8, size: 2.5 },
-    { x: "42%", y: "55%", delay: 3, duration: 9, size: 2 },
-    { x: "88%", y: "12%", delay: 0.5, duration: 6, size: 3 },
-    { x: "22%", y: "70%", delay: 2, duration: 7.5, size: 2 },
-    { x: "65%", y: "82%", delay: 4, duration: 8.5, size: 2 },
+    { x: "14%", y: "20%", delay: 0, duration: 7, size: 3 },
+    { x: "76%", y: "32%", delay: 1.5, duration: 8, size: 2.5 },
+    { x: "40%", y: "58%", delay: 3, duration: 9, size: 2 },
+    { x: "86%", y: "14%", delay: 0.5, duration: 6, size: 3 },
+    { x: "24%", y: "72%", delay: 2, duration: 7.5, size: 2 },
   ];
 
   return (
@@ -29,7 +29,7 @@ function PollenParticles() {
             top: p.y,
             width: p.size,
             height: p.size,
-            background: "hsl(145 22% 62% / 0.3)",
+            background: "hsl(145 22% 62% / 0.32)",
             animationDelay: `${p.delay}s`,
             animationDuration: `${p.duration}s`,
           }}
@@ -45,30 +45,32 @@ export function GardenHero() {
 
   return (
     <section className="relative overflow-hidden">
-      {/* ── Top Accent Line ── */}
+      {/* ── Filet végétal en tête de page ── */}
       <div
-        className="absolute top-0 left-0 right-0 h-[1px] pointer-events-none z-30"
+        className="absolute top-0 left-0 right-0 h-px pointer-events-none z-30 eden-hairline"
         aria-hidden="true"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent 5%, hsl(145 22% 62% / 0.15) 25%, hsl(145 22% 62% / 0.3) 50%, hsl(145 22% 62% / 0.15) 75%, transparent 95%)",
-        }}
       />
 
-      {/* Pollen particles — only on desktop where image is separate */}
+      {/* ── Faune : une nuée immobile, une colombe qui passe ── */}
       <div className="hidden lg:block">
         {!reduced && <PollenParticles />}
+        <SkyFlock
+          count={5}
+          className="absolute top-[13%] left-[6%] w-40 xl:w-52 opacity-[0.16] z-20"
+        />
+        <GlidingDove className="top-[9%] z-20" duration={46} />
       </div>
 
-      {/* Colombe — clin d'œil discret au Jardin d'Éden, un seul passage très lent */}
-      <div className="hidden lg:block">
-        <FlyingDove className="top-[12%]" />
-      </div>
-
-      {/* ── Main Layout: CSS Grid on desktop (avoids sub-pixel rounding gap), stacked on mobile ── */}
+      {/* ── Mise en page : grille sur desktop, empilée sur mobile ── */}
       <div className="relative z-10 flex flex-col lg:grid lg:grid-cols-[52fr_48fr] xl:grid-cols-2 min-h-[100vh] lg:min-h-[92vh]">
-        {/* ═══ LEFT COLUMN: Text Content ═══ */}
-        <div className="flex items-center relative">
+        {/* ═══ COLONNE GAUCHE : le texte, sur le ciel du jardin ═══ */}
+        <div className="flex items-center relative eden-sky">
+          {/* Nuée mobile, discrète, au-dessus du titre */}
+          <SkyFlock
+            count={3}
+            className="lg:hidden absolute top-[7%] right-[8%] w-24 opacity-[0.15]"
+          />
+
           <div className="container mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 py-20 sm:py-24 lg:py-0">
             <motion.div
               initial={reduced ? false : { opacity: 0, y: 36 }}
@@ -76,20 +78,20 @@ export function GardenHero() {
               transition={{ duration: 1.1, ease: [0.22, 1, 0.36, 1] }}
               className="max-w-xl lg:max-w-lg xl:max-w-xl space-y-6 sm:space-y-7 text-center"
             >
-              {/* Eyebrow */}
+              {/* Sur-titre */}
               <motion.div
                 initial={reduced ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.7, delay: 0.25 }}
                 className="flex justify-center"
               >
-                <span className="inline-flex items-center gap-2.5 text-[10px] sm:text-[11px] font-semibold uppercase tracking-[0.28em] text-deep-eden/50">
-                  <span className="w-6 sm:w-8 h-[1px] bg-deep-eden/20" />
+                <span className="eden-eyebrow text-[10px] sm:text-[11px]">
+                  <span className="w-6 sm:w-8 h-px bg-deep-eden/25" aria-hidden="true" />
                   {t("hero.eyebrow")}
                 </span>
               </motion.div>
 
-              {/* Headline */}
+              {/* Titre */}
               <h1 className="font-headline text-[2.5rem] sm:text-5xl md:text-[3.5rem] lg:text-6xl xl:text-[4rem] font-bold leading-[1.08] sm:leading-[1.06] text-foreground tracking-tight">
                 {t("hero.headline1")}
                 <span className="block mt-1.5">
@@ -99,27 +101,22 @@ export function GardenHero() {
                 </span>
               </h1>
 
-              {/* Olive leaf divider */}
+              {/* Rameau d'olivier ponctué d'un oiseau */}
               <motion.div
                 initial={reduced ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.8, delay: 0.5 }}
                 className="flex justify-center"
               >
-                <svg viewBox="0 0 80 14" className="w-16 sm:w-20 h-3.5 opacity-35" fill="none" aria-hidden="true">
-                  <path d="M0 7 L25 7" stroke="hsl(155 42% 18%)" strokeWidth="0.5" />
-                  <ellipse cx="40" cy="7" rx="11" ry="4.5" fill="hsl(145 22% 62% / 0.3)" transform="rotate(-15 40 7)" />
-                  <ellipse cx="40" cy="7" rx="2.5" ry="5" fill="hsl(95 28% 38% / 0.15)" />
-                  <path d="M55 7 L80 7" stroke="hsl(155 42% 18%)" strokeWidth="0.5" />
-                </svg>
+                <OliveBirdDivider className="w-32 sm:w-40" />
               </motion.div>
 
-              {/* Subheading */}
+              {/* Chapô */}
               <p className="text-[0.95rem] sm:text-base lg:text-lg text-muted-foreground leading-relaxed max-w-md font-body mx-auto">
                 {t("hero.subtitle")}
               </p>
 
-              {/* CTAs */}
+              {/* Appels à l'action */}
               <motion.div
                 initial={reduced ? false : { opacity: 0, y: 14 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -138,27 +135,27 @@ export function GardenHero() {
                   className="growing-underline text-foreground/60 hover:text-primary font-medium text-[0.95rem] sm:text-base flex items-center gap-2.5 group transition-colors py-3 sm:py-0"
                 >
                   {t("hero.visionLink")}
-                  <span className="group-hover:translate-x-1.5 transition-transform duration-300 text-sm">→</span>
+                  <span className="group-hover:translate-x-1.5 transition-transform duration-300 text-sm">&rarr;</span>
                 </Link>
               </motion.div>
 
-              {/* Trust indicators */}
+              {/* Repères de confiance */}
               <motion.div
                 initial={reduced ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.7, delay: 1.1 }}
-                className="flex items-center justify-center gap-5 sm:gap-7 pt-4 text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-foreground/25 font-medium"
+                className="flex items-center justify-center gap-5 sm:gap-7 pt-4 text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-foreground/70 font-medium"
               >
                 <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-natural-sage/50" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-natural-sage/60" />
                   {t("hero.couples")}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sage/50" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-sage/60" />
                   {t("hero.countries")}
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-deep-eden/30" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-deep-eden/35" />
                   {t("hero.moderated")}
                 </span>
               </motion.div>
@@ -166,9 +163,8 @@ export function GardenHero() {
           </div>
         </div>
 
-        {/* ═══ RIGHT COLUMN: Hero Image ═══ */}
+        {/* ═══ COLONNE DROITE : la photo ═══ */}
         <div className="relative min-h-[50vh] sm:min-h-[55vh] lg:min-h-[92vh]">
-          {/* Image fills this column naturally */}
           <div className="absolute inset-0">
             <Image
               src="/hero.webp"
@@ -180,12 +176,27 @@ export function GardenHero() {
             />
           </div>
 
-
+          {/* Fondu vers le crème : la photo ne se coupe plus net contre le texte */}
+          <div
+            className="absolute inset-y-0 left-0 w-24 xl:w-32 pointer-events-none hidden lg:block"
+            aria-hidden="true"
+            style={{
+              background: "linear-gradient(90deg, hsl(42 35% 97%) 0%, hsl(42 35% 97% / 0) 100%)",
+            }}
+          />
+          <div
+            className="absolute inset-x-0 top-0 h-20 pointer-events-none lg:hidden"
+            aria-hidden="true"
+            style={{
+              background: "linear-gradient(180deg, hsl(42 35% 97%) 0%, hsl(42 35% 97% / 0) 100%)",
+            }}
+          />
         </div>
       </div>
 
-      {/* ── Bottom Organic Divider ── */}
+      {/* ── Vague de séparation, avec un oiseau posé dessus ── */}
       <div className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none" aria-hidden="true">
+        <PerchOrnament className="hidden md:block absolute bottom-6 left-[6%] lg:left-[8%] w-20 lg:w-24 opacity-[0.22]" />
         <svg viewBox="0 0 1440 48" fill="none" className="w-full h-8 sm:h-10 lg:h-12" preserveAspectRatio="none">
           <path
             d="M0 48 L0 32 Q120 18 240 26 Q360 36 480 22 Q600 10 720 18 Q840 28 960 14 Q1080 4 1200 12 Q1320 22 1440 8 L1440 48 Z"
@@ -193,7 +204,7 @@ export function GardenHero() {
           />
           <path
             d="M0 44 Q120 30 240 38 Q360 48 480 34 Q600 22 720 30 Q840 40 960 26 Q1080 16 1200 24 Q1320 34 1440 20"
-            stroke="hsl(145 22% 62% / 0.12)"
+            stroke="hsl(145 22% 62% / 0.16)"
             strokeWidth="0.8"
             fill="none"
           />

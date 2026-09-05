@@ -154,6 +154,30 @@ export default {
           '92%':  { opacity: '0.08' },
           '100%': { transform: 'translate(115vw, -16vh) scale(0.85)', opacity: '0' },
         },
+        // ── Faune du jardin ──
+        'swallow-flight': {
+          '0%':   { transform: 'translate(112vw, -2vh) scaleX(-1) scale(0.75)', opacity: '0' },
+          '10%':  { opacity: '0.13' },
+          '50%':  { transform: 'translate(48vw, 7vh) scaleX(-1) scale(1)', opacity: '0.13' },
+          '88%':  { opacity: '0.06' },
+          '100%': { transform: 'translate(-16vw, 1vh) scaleX(-1) scale(0.7)', opacity: '0' },
+        },
+        'wing-beat': {
+          '0%, 100%': { transform: 'scaleY(1)' },
+          '50%':      { transform: 'scaleY(0.74)' },
+        },
+        'wing-beat-quick': {
+          '0%, 100%': { transform: 'scaleY(1)' },
+          '50%':      { transform: 'scaleY(0.6)' },
+        },
+        'flock-drift': {
+          '0%, 100%': { transform: 'translate(0, 0)' },
+          '50%':      { transform: 'translate(-14px, -7px)' },
+        },
+        'perch-sway': {
+          '0%, 100%': { transform: 'rotate(-1.2deg)' },
+          '50%':      { transform: 'rotate(1.2deg)' },
+        },
       },
       animation: {
         'accordion-down': 'accordion-down 0.2s ease-out',
@@ -170,6 +194,11 @@ export default {
         'bloom': 'bloom 0.6s ease-out forwards',
         'undergrow': 'undergrow 0.4s ease-out forwards',
         'dove-flight': 'dove-flight 38s ease-in-out infinite',
+        'swallow-flight': 'swallow-flight 34s ease-in-out infinite',
+        'wing-beat': 'wing-beat 2.6s ease-in-out infinite',
+        'wing-beat-quick': 'wing-beat-quick 1.1s ease-in-out infinite',
+        'flock-drift': 'flock-drift 18s ease-in-out infinite',
+        'perch-sway': 'perch-sway 7s ease-in-out infinite',
       },
       boxShadow: {
         'botanical': '0 2px 20px -4px hsl(152 22% 42% / 0.08)',

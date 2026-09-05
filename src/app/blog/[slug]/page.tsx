@@ -38,7 +38,7 @@ export default function BlogPostPage() {
   }, [slug]);
 
   if (loading) return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="eden-public flex flex-col min-h-screen bg-background">
       <Navigation /><main className="flex-1 container mx-auto px-4 py-16">
         <div className="max-w-3xl mx-auto space-y-4">
           <div className="h-8 bg-card rounded animate-pulse w-3/4" />
@@ -50,7 +50,7 @@ export default function BlogPostPage() {
   );
 
   if (!post) return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="eden-public flex flex-col min-h-screen bg-background">
       <Navigation /><main className="flex-1 flex items-center justify-center">
         <div className="text-center space-y-4">
           <BookOpen className="w-16 h-16 mx-auto text-foreground/20" />
@@ -66,7 +66,7 @@ export default function BlogPostPage() {
     : "";
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="eden-public flex flex-col min-h-screen bg-background">
       <Navigation />
       <main className="flex-1">
         <section className="relative py-16 sm:py-24 bg-card">

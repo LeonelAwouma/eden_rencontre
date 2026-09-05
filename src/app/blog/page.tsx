@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Calendar, User, ArrowRight, Search, Clock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { PageHeader, SkyFlock } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 interface BlogPostItem {
@@ -41,28 +42,50 @@ export default function BlogPage() {
   }, [selectedCategory, searchQuery]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="eden-public flex flex-col min-h-screen bg-background">
       <Navigation />
       
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative py-24 bg-card overflow-hidden">
-          <div className="absolute inset-0 opacity-10">
-            <Image 
-              src="https://picsum.photos/seed/blog-hero/1200/800"
-              alt="Background"
+        {/* ═══ Hero ═══ */}
+        <section className="relative py-20 sm:py-28 overflow-hidden">
+          {/* Image de fond conservée, fondue dans le crème du jardin */}
+          <div className="absolute inset-0" aria-hidden="true">
+            <Image
+              src="https://picsum.photos/seed/blog-hero/1600/900"
+              alt=""
               fill
-              className="object-cover"
+              className="object-cover opacity-[0.18]"
               data-ai-hint="bible study"
+              priority
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(ellipse 110% 80% at 50% 0%, hsl(42 40% 98% / 0.72) 0%, hsl(42 35% 97% / 0.9) 55%, hsl(42 35% 97%) 100%)",
+              }}
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "radial-gradient(ellipse 85% 60% at 88% 12%, hsl(152 35% 32% / 0.07) 0%, transparent 55%), radial-gradient(ellipse 70% 55% at 8% 92%, hsl(145 22% 62% / 0.1) 0%, transparent 55%)",
+              }}
             />
           </div>
-          <div className="container mx-auto px-4 relative z-10 text-center space-y-6">
-            <Badge className="bg-accent text-background border-none px-4 py-1">{t("blog.eyebrow")}</Badge>
-            <h1 className="font-headline text-5xl md:text-6xl font-bold text-foreground">{t("blog.pageTitle")}</h1>
-            <p className="text-xl text-foreground/60 max-w-2xl mx-auto leading-relaxed">
-              {t("blog.pageSubtitle")}
-            </p>
+
+          <SkyFlock count={5} className="hidden sm:block absolute top-[18%] left-[7%] w-36 lg:w-48 opacity-[0.14] z-10" />
+
+          <div className="container mx-auto px-4 sm:px-6 relative z-20">
+            <PageHeader
+              eyebrow={t("blog.eyebrow")}
+              title={t("blog.pageTitle")}
+              subtitle={t("blog.pageSubtitle")}
+              flock={false}
+            />
           </div>
+
+          <div className="absolute bottom-0 left-0 right-0 eden-hairline z-20" aria-hidden="true" />
         </section>
 
         {/* Blog Posts Grid */}
@@ -71,7 +94,7 @@ export default function BlogPage() {
             <h2 className="font-headline text-3xl font-bold">{t("blog.title")} {t("blog.titleHighlight")}</h2>
             <div className="relative w-full sm:w-64">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-foreground/40" />
-              <Input placeholder={t("blog.searchPlaceholder")} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 bg-card border-none" />
+              <Input placeholder={t("blog.searchPlaceholder")} value={searchQuery} onChange={e => setSearchQuery(e.target.value)} className="pl-10 bg-card border border-sage/25 rounded-xl focus-visible:ring-primary/30" />
             </div>
           </div>
 
@@ -86,7 +109,7 @@ export default function BlogPage() {
 
           {loading ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {[...Array(6)].map((_, i) => <div key={i} className="h-80 bg-card rounded-2xl animate-pulse" />)}
+              {[...Array(6)].map((_, i) => <div key={i} className="h-80 rounded-2xl animate-pulse bg-muted/70" />)}
             </div>
           ) : posts.length === 0 ? (
             <div className="text-center py-16">
@@ -97,7 +120,7 @@ export default function BlogPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {posts.map((post) => (
                 <Link key={post.id} href={`/blog/${post.slug}`}>
-                  <Card className="group overflow-hidden border-foreground/5 bg-card hover:border-accent/30 transition-all flex flex-col h-full">
+                  <Card className="eden-leaf-card group overflow-hidden border-none shadow-none bg-transparent flex flex-col h-full">
                     <div className="relative h-56 overflow-hidden">
                       {post.cover_image_url ? (
                         <Image src={post.cover_image_url} alt={post.title} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />

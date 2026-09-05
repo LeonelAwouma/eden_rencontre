@@ -2,42 +2,43 @@
 
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenSection, OrganicSeparator } from "@/components/garden";
+import { GardenSection, OliveBirdDivider, SkyFlock } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 export default function CGUPage() {
   const { t } = useI18n();
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="eden-public flex flex-col min-h-screen bg-background">
       <Navigation />
 
       <main className="flex-1">
-        <GardenSection variant="garden" className="py-20">
+        <GardenSection variant="garden" className="py-16 sm:py-24 relative">
+          <SkyFlock count={4} className="hidden sm:block absolute top-10 right-[7%] w-32 opacity-[0.11]" />
           <div className="container mx-auto px-4 sm:px-6">
             <div className="max-w-3xl mx-auto text-center space-y-6 mb-16">
-              <span className="inline-block text-[10px] font-semibold uppercase tracking-[0.3em] text-deep-eden/50">{t("legalCgu.eyebrow")}</span>
+              <span className="eden-eyebrow">{t("legalCgu.eyebrow")}</span>
               <h1 className="font-headline text-4xl md:text-5xl font-bold text-foreground tracking-tight">
                 {t("legalCgu.title")} <span className="italic text-primary">{t("legalCgu.titleHighlight")}</span>
               </h1>
-              <OrganicSeparator />
+              <OliveBirdDivider className="mx-auto" />
               <p className="text-muted-foreground text-lg leading-relaxed font-body">
                 {t("legalCgu.lastUpdate")}
               </p>
             </div>
 
             <div className="max-w-3xl mx-auto space-y-8">
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalCgu.s1Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">{t("legalCgu.s1Body")}</p>
               </div>
 
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalCgu.s2Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">{t("legalCgu.s2Body")}</p>
               </div>
 
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalCgu.s3Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body mb-4">{t("legalCgu.s3Intro")}</p>
                 <ul className="text-muted-foreground leading-relaxed font-body space-y-2 list-disc list-inside">
@@ -50,7 +51,7 @@ export default function CGUPage() {
                 </ul>
               </div>
 
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalCgu.s4Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body mb-4">{t("legalCgu.s4Intro")}</p>
                 <ul className="text-muted-foreground leading-relaxed font-body space-y-2 list-disc list-inside">
@@ -63,22 +64,22 @@ export default function CGUPage() {
                 </ul>
               </div>
 
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalCgu.s5Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">{t("legalCgu.s5Body")}</p>
               </div>
 
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalCgu.s6Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">{t("legalCgu.s6Body")}</p>
               </div>
 
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalCgu.s7Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">{t("legalCgu.s7Body")}</p>
               </div>
 
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalCgu.s8Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">{t("legalCgu.s8Body")}</p>
               </div>

@@ -2,31 +2,30 @@
 
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenSection, OrganicSeparator } from "@/components/garden";
+import { GardenSection, PageHeader, SkyFlock, PerchOrnament } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 export default function ContactPage() {
   const { t } = useI18n();
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="eden-public flex flex-col min-h-screen bg-background">
       <Navigation />
 
       <main className="flex-1">
-        <GardenSection variant="garden" className="py-20">
+        <GardenSection variant="garden" className="py-16 sm:py-24 relative">
+          <SkyFlock count={4} className="hidden sm:block absolute top-10 left-[6%] w-32 opacity-[0.12]" />
+          <PerchOrnament className="hidden lg:block absolute bottom-14 right-[6%] w-24 opacity-[0.18]" flip />
           <div className="container mx-auto px-4 sm:px-6">
-            <div className="max-w-3xl mx-auto text-center space-y-6 mb-16">
-              <span className="inline-block text-[10px] font-semibold uppercase tracking-[0.3em] text-deep-eden/50">{t("contact.eyebrow")}</span>
-              <h1 className="font-headline text-4xl md:text-5xl font-bold text-foreground tracking-tight">
-                {t("contact.title")} <span className="italic text-primary">{t("contact.titleHighlight")}</span>
-              </h1>
-              <OrganicSeparator />
-              <p className="text-muted-foreground text-lg leading-relaxed font-body">
-                {t("contact.subtitle")}
-              </p>
-            </div>
+            <PageHeader
+              eyebrow={t("contact.eyebrow")}
+              title={t("contact.title")}
+              highlight={t("contact.titleHighlight")}
+              subtitle={t("contact.subtitle")}
+              className="mb-14 sm:mb-20"
+            />
 
             <div className="max-w-2xl mx-auto space-y-8">
-              <div className="garden-card p-8 rounded-2xl text-center">
+              <div className="eden-leaf-card p-8 text-center">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("contact.emailTitle")}</h3>
                 <p className="text-muted-foreground font-body mb-4">{t("contact.emailDesc")}</p>
                 <a href="mailto:support@edenconnexion.com" className="text-primary font-headline text-xl font-bold hover:text-deep-eden transition-colors">
@@ -36,11 +35,11 @@ export default function ContactPage() {
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                <div className="garden-card p-6 rounded-2xl text-center">
+                <div className="eden-leaf-card p-6 text-center">
                   <h3 className="font-headline text-lg font-bold text-deep-eden mb-3">{t("contact.reportTitle")}</h3>
                   <p className="text-muted-foreground text-sm font-body">{t("contact.reportDesc")}</p>
                 </div>
-                <div className="garden-card p-6 rounded-2xl text-center">
+                <div className="eden-leaf-card p-6 text-center">
                   <h3 className="font-headline text-lg font-bold text-deep-eden mb-3">{t("contact.partnershipTitle")}</h3>
                   <p className="text-muted-foreground text-sm font-body">{t("contact.partnershipDesc")}</p>
                 </div>

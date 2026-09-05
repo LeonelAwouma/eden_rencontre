@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Heart, MessageCircleCode, CheckCircle2, MapPin, Calendar, X, Check, ImageIcon, Loader2, Clock } from "lucide-react";
 import { getSession } from "@/lib/auth";
+import { PageHeader, SkyFlock, PerchOrnament } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 interface Testimonial {
@@ -217,31 +218,32 @@ export default function TemoignagesPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-background text-foreground">
+    <div className="eden-public flex flex-col min-h-screen bg-background text-foreground">
       <Navigation />
 
       <main className="flex-1">
-        {/* Hero Section */}
-        <section className="relative py-24 bg-card overflow-hidden border-b border-foreground/5">
-          <div className="absolute inset-0 opacity-5">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(198, 166, 79,0.15)_0,transparent_100%)]" />
+        {/* Hero */}
+        <section className="relative py-20 sm:py-28 eden-sky overflow-hidden">
+          <SkyFlock count={5} className="hidden sm:block absolute top-12 left-[6%] w-36 lg:w-48 opacity-[0.14]" />
+          <PerchOrnament className="hidden lg:block absolute bottom-12 right-[6%] w-24 opacity-[0.18]" flip />
+
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <PageHeader
+              eyebrow={t("testimonials.heroBadge")}
+              title={t("testimonials.heroTitle")}
+              subtitle={t("testimonials.heroSubtitle")}
+              flock={false}
+            />
           </div>
-          <div className="container mx-auto px-4 relative z-10 text-center space-y-6">
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-primary/10 rounded-full border border-primary/20 text-primary mb-2 text-sm font-medium">
-              <span>{t("testimonials.heroBadge")}</span>
-            </div>
-            <h1 className="font-headline text-5xl md:text-6xl font-bold text-foreground">{t("testimonials.heroTitle")}</h1>
-            <p className="text-xl text-foreground/60 max-w-3xl mx-auto leading-relaxed">
-              {t("testimonials.heroSubtitle")}
-            </p>
-          </div>
+
+          <div className="absolute bottom-0 left-0 right-0 eden-hairline" aria-hidden="true" />
         </section>
 
         {/* Testimonials Filter & Main section */}
-        <section className="py-20 container mx-auto px-4">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-16 border-b border-foreground/5 pb-8">
+        <section className="py-16 sm:py-24 container mx-auto px-4 sm:px-6">
+          <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-14 border-b border-sage/25 pb-8">
             {/* Tabs */}
-            <div className="flex bg-foreground/5 p-1.5 rounded-2xl border border-foreground/5">
+            <div className="flex bg-muted/70 p-1.5 rounded-2xl border border-sage/25">
               <button
                 onClick={() => setActiveTab("tous")}
                 className={`px-6 py-3 rounded-xl text-sm font-bold tracking-wide transition-all ${
@@ -277,7 +279,7 @@ export default function TemoignagesPage() {
             {/* Write a testimony button */}
             <Button
               onClick={() => setIsModalOpen(true)}
-              className="bg-transparent hover:bg-foreground/5 border border-primary text-primary font-bold px-6 h-12 rounded-xl transition-all"
+              className="eden-btn-ghost font-semibold px-6 h-12 rounded-xl"
             >
               {t("testimonials.shareStory")}
             </Button>
@@ -288,7 +290,7 @@ export default function TemoignagesPage() {
             {filteredTestimonials.map((testimonial) => (
               <div
                 key={testimonial.id}
-                className="bg-card border border-foreground/5 hover:border-primary/20 hover:scale-[1.02] transition-all duration-300 rounded-3xl p-8 flex flex-col justify-between shadow-2xl relative group overflow-hidden"
+                className="eden-leaf-card p-8 flex flex-col justify-between relative group overflow-hidden"
               >
                 {/* Accent line */}
                 <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-primary/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />

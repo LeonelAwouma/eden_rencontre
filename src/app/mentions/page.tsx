@@ -3,7 +3,7 @@
 import { Fragment } from "react";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenSection, OrganicSeparator } from "@/components/garden";
+import { GardenSection, OliveBirdDivider, SkyFlock } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 export default function MentionsPage() {
@@ -11,22 +11,23 @@ export default function MentionsPage() {
   const s1Lines = t("legalMentions.s1Body").split("{br}");
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="eden-public flex flex-col min-h-screen bg-background">
       <Navigation />
 
       <main className="flex-1">
-        <GardenSection variant="garden" className="py-20">
+        <GardenSection variant="garden" className="py-16 sm:py-24 relative">
+          <SkyFlock count={4} className="hidden sm:block absolute top-10 right-[7%] w-32 opacity-[0.11]" />
           <div className="container mx-auto px-4 sm:px-6">
             <div className="max-w-3xl mx-auto text-center space-y-6 mb-16">
-              <span className="inline-block text-[10px] font-semibold uppercase tracking-[0.3em] text-deep-eden/50">{t("legalMentions.eyebrow")}</span>
+              <span className="eden-eyebrow">{t("legalMentions.eyebrow")}</span>
               <h1 className="font-headline text-4xl md:text-5xl font-bold text-foreground tracking-tight">
                 {t("legalMentions.title")} <span className="italic text-primary">{t("legalMentions.titleHighlight")}</span>
               </h1>
-              <OrganicSeparator />
+              <OliveBirdDivider className="mx-auto" />
             </div>
 
             <div className="max-w-3xl mx-auto space-y-8">
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalMentions.s1Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">
                   {s1Lines.map((line, i) => (
@@ -38,24 +39,24 @@ export default function MentionsPage() {
                 </p>
               </div>
 
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalMentions.s2Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">{t("legalMentions.s2Body")}</p>
               </div>
 
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalMentions.s3Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">{t("legalMentions.s3Body")}</p>
               </div>
 
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalMentions.s4Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">
                   {t("legalMentions.s4Body")} <a href="/confidentialite" className="text-primary hover:text-deep-eden transition-colors underline">{t("legalMentions.s4Link")}</a>.
                 </p>
               </div>
 
-              <div className="garden-card p-8 rounded-2xl">
+              <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalMentions.s5Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">{t("legalMentions.s5Body")}</p>
               </div>

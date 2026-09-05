@@ -1,4 +1,8 @@
 export { RoseBloom, LavenderSprig, SageLeaf, DelicateFlower, VineCurve, FloralCorner, OrganicDivider, GardenFoliageCluster, LianeVertical, DoveInFlight } from "./botanical-svgs";
+export { Dove, DoveWithOliveBranch, PerchedBird, Swallow, DistantBirds, DistantBird, Nest } from "./birds";
+export { SkyFlock, GlidingDove, GlidingSwallow, PerchOrnament } from "./bird-scene";
+export { BotanicalBackdrop } from "./botanical-backdrop";
+export { PageHeader, OliveBirdDivider } from "./page-header";
 export { FloatingBotanical } from "./floating-botanical";
 export { FlyingDove } from "./flying-dove";
 export { FloralCorners } from "./floral-corners";

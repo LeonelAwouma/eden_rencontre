@@ -47,7 +47,7 @@ export default function MediathequePage() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   return (
-    <div className="min-h-screen bg-[#FAF9F6]">
+    <div className="eden-public min-h-screen bg-background">
       <Navigation />
       <main className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-12">
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-12">

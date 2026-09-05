@@ -1,72 +1,83 @@
 "use client";
 
+import Link from "next/link";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenSection, OrganicSeparator } from "@/components/garden";
+import { PageHeader, SkyFlock, PerchOrnament } from "@/components/garden";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
 import { useI18n } from "@/lib/i18n";
+
+const FAQ_COUNT = 7;
 
 export default function FAQPage() {
   const { t } = useI18n();
 
-  const faqs = [
-    {
-      q: "Qu'est-ce qu'Eden Connexion ?",
-      a: "Eden Connexion est une plateforme matrimoniale haut de gamme dédiée aux célibataires chrétiens d'Afrique et de la diaspora. Notre mission est de faciliter des rencontres sérieuses basées sur la foi, les valeurs bibliques et l'engagement envers le mariage.",
-    },
-    {
-      q: "Comment fonctionne la modération des profils ?",
-      a: "Chaque profil est vérifié manuellement par notre équipe. Nous comparons la photo de profil avec une pièce d'identité pour garantir l'authenticité. Les comportements inappropriés sont immédiatement signalés et traités.",
-    },
-    {
-      q: "Les échanges sont-ils sécurisés ?",
-      a: "Oui. Notre système bloque automatiquement le partage de liens externes et de numéros de téléphone lors des premiers échanges. Cette protection permet de créer un climat de confiance et de protéger nos membres contre les arnaques.",
-    },
-    {
-      q: "Puis-je utiliser Eden Connexion gratuitement ?",
-      a: "L'inscription et la création de profil sont gratuites. Vous pouvez parcourir les profils et recevoir des suggestions. Pour accéder aux fonctionnalités de messagerie avancées, nous proposons différents abonnements adaptés à vos besoins.",
-    },
-    {
-      q: "Comment fonctionne l'algorithme de suggestion ?",
-      a: "Notre algorithme prend en compte vos critères de foi, vos valeurs, votre localisation et vos préférences personnelles pour vous suggérer des profils compatibles. L'objectif est de favoriser des unions fondées sur une vision commune du mariage.",
-    },
-    {
-      q: "Puis-je supprimer mon compte ?",
-      a: "Oui, vous pouvez supprimer votre compte à tout moment depuis les paramètres de votre profil. Toutes vos données seront supprimées conformément au RGPD dans un délai de 30 jours.",
-    },
-    {
-      q: "Comment contacter le support ?",
-      a: "Vous pouvez nous écrire via la page Contact ou par email à support@edenconnexion.com. Notre équipe vous répondra sous 24 à 48 heures.",
-    },
-  ];
+  const faqs = Array.from({ length: FAQ_COUNT }, (_, i) => ({
+    q: t(`faq.q${i + 1}`),
+    a: t(`faq.a${i + 1}`),
+  }));
 
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="eden-public flex flex-col min-h-screen bg-background">
       <Navigation />
 
       <main className="flex-1">
-        <GardenSection variant="garden" className="py-20">
-          <div className="container mx-auto px-4 sm:px-6">
-            <div className="max-w-3xl mx-auto text-center space-y-6 mb-16">
-              <span className="inline-block text-[10px] font-semibold uppercase tracking-[0.3em] text-deep-eden/50">{t("faq.eyebrow")}</span>
-              <h1 className="font-headline text-4xl md:text-5xl font-bold text-foreground tracking-tight">
-                {t("faq.title")} <span className="italic text-primary">{t("faq.titleHighlight")}</span>
-              </h1>
-              <OrganicSeparator />
-              <p className="text-muted-foreground text-lg leading-relaxed font-body">
-                {t("faq.subtitle")}
-              </p>
-            </div>
+        <section className="relative eden-sky py-16 sm:py-24 overflow-hidden">
+          <SkyFlock count={4} className="hidden sm:block absolute top-12 left-[6%] w-32 lg:w-40 opacity-[0.13]" />
+          <PerchOrnament className="hidden lg:block absolute bottom-16 right-[5%] w-24 opacity-[0.18]" flip />
 
-            <div className="max-w-3xl mx-auto space-y-6">
-              {faqs.map((faq, i) => (
-                <div key={i} className="garden-card p-6 sm:p-8 rounded-2xl">
-                  <h3 className="font-headline text-lg sm:text-xl font-bold text-deep-eden mb-3">{faq.q}</h3>
-                  <p className="text-muted-foreground leading-relaxed font-body">{faq.a}</p>
-                </div>
-              ))}
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <PageHeader
+              eyebrow={t("faq.eyebrow")}
+              title={t("faq.title")}
+              highlight={t("faq.titleHighlight")}
+              subtitle={t("faq.subtitle")}
+            />
+
+            {/* ── Les questions, repliées par défaut : la page reste courte et lisible ── */}
+            <div className="max-w-3xl mx-auto mt-14 sm:mt-20">
+              <Accordion type="single" collapsible className="space-y-4">
+                {faqs.map((faq, i) => (
+                  <AccordionItem
+                    key={i}
+                    value={`item-${i}`}
+                    className="eden-leaf-card border-none px-6 sm:px-8 data-[state=open]:border-sage/45"
+                  >
+                    <AccordionTrigger className="py-5 sm:py-6 text-left hover:no-underline gap-4 [&>svg]:text-primary/60 [&>svg]:w-5 [&>svg]:h-5">
+                      <span className="font-headline text-lg sm:text-xl font-bold text-foreground tracking-tight">
+                        {faq.q}
+                      </span>
+                    </AccordionTrigger>
+                    <AccordionContent className="pb-6 sm:pb-7 pr-6">
+                      <div className="eden-hairline mb-5" aria-hidden="true" />
+                      <p className="text-[0.95rem] sm:text-base text-muted-foreground leading-relaxed font-body">
+                        {faq.a}
+                      </p>
+                    </AccordionContent>
+                  </AccordionItem>
+                ))}
+              </Accordion>
+
+              {/* ── Sortie de secours vers le support ── */}
+              <div className="mt-12 text-center">
+                <p className="text-sm sm:text-base text-muted-foreground font-body">
+                  {t("faq.stillStuck")}{" "}
+                  <Link
+                    href="/contact"
+                    className="growing-underline text-primary font-medium hover:text-deep-eden transition-colors"
+                  >
+                    {t("faq.contactLink")}
+                  </Link>
+                </p>
+              </div>
             </div>
           </div>
-        </GardenSection>
+        </section>
       </main>
 
       <Footer />

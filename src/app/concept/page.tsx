@@ -2,7 +2,7 @@
 
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenSection, OrganicSeparator } from "@/components/garden";
+import { GardenSection, PageHeader, SkyFlock, GlidingSwallow, PerchOrnament } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 /** Botanical vine ornament for section dividers */
@@ -35,32 +35,31 @@ function VineDivider() {
 export default function ConceptPage() {
   const { t } = useI18n();
   return (
-    <div className="flex flex-col min-h-screen bg-background">
+    <div className="eden-public flex flex-col min-h-screen bg-background">
       <Navigation />
 
       <main className="flex-1">
         {/* Hero Vision */}
-        <GardenSection variant="garden" className="py-24 relative overflow-hidden">
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="relative max-w-3xl mx-auto text-center space-y-6 py-8">
-              <span className="inline-block text-[10px] font-semibold uppercase tracking-[0.3em] text-deep-eden/50">
-                {t("concept.philosophyLabel")}
-              </span>
-              <h1 className="font-headline text-5xl md:text-6xl font-bold text-foreground tracking-tight">
-                {t("concept.sacredVision")} <span className="italic text-primary">{t("concept.sacredHighlight")}</span>
-              </h1>
-              <OrganicSeparator />
-              <p className="text-xl text-muted-foreground leading-relaxed font-body">
-                {t("concept.visionDesc")}
-              </p>
-            </div>
+        <GardenSection variant="garden" className="py-20 sm:py-28 relative overflow-hidden">
+          <SkyFlock count={5} className="hidden sm:block absolute top-12 left-[6%] w-36 lg:w-48 opacity-[0.14]" />
+          <div className="hidden lg:block">
+            <GlidingSwallow className="top-[22%]" delay={6} duration={38} />
+          </div>
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <PageHeader
+              eyebrow={t("concept.philosophyLabel")}
+              title={t("concept.sacredVision")}
+              highlight={t("concept.sacredHighlight")}
+              subtitle={t("concept.visionDesc")}
+              flock={false}
+            />
           </div>
         </GardenSection>
 
         <VineDivider />
 
         {/* Values */}
-        <section className="py-24 container mx-auto px-4 relative">
+        <section className="py-20 sm:py-28 container mx-auto px-4 sm:px-6 relative">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center relative">
             <div className="space-y-12">
               <div className="space-y-4">
@@ -115,7 +114,7 @@ export default function ConceptPage() {
                 />
               </div>
 
-              <div className="relative garden-card p-10 rounded-2xl text-center overflow-hidden">
+              <div className="relative eden-leaf-card p-10 text-center overflow-hidden">
                 {/* Decorative botanical corners */}
                 <div className="absolute top-3 left-3 opacity-30 pointer-events-none" aria-hidden="true">
                   <svg viewBox="0 0 40 40" fill="none" className="w-8 h-8">
@@ -151,8 +150,9 @@ export default function ConceptPage() {
         <VineDivider />
 
         {/* Security / Anti-Brouteur */}
-        <section className="py-24 garden-section-muted relative overflow-hidden">
-          <div className="container mx-auto px-4 text-center relative z-10">
+        <section className="py-20 sm:py-28 eden-undergrowth relative overflow-hidden">
+          <PerchOrnament className="hidden lg:block absolute bottom-12 left-[5%] w-24 opacity-[0.18]" />
+          <div className="container mx-auto px-4 sm:px-6 text-center relative z-10">
             <div className="max-w-4xl mx-auto space-y-12">
               <div className="inline-block p-4 bg-deep-eden/5 rounded-full mb-4 ring-1 ring-deep-eden/8">
                 <svg viewBox="0 0 24 24" className="w-12 h-12 text-deep-eden" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2L3 7V12C3 17.5 7.8 22.5 12 24C16.2 22.5 21 17.5 21 12V7L12 2Z"/><path d="M9 12l2 2 4-4"/></svg>
@@ -161,13 +161,13 @@ export default function ConceptPage() {
                 Sécurité <span className="text-primary italic">{t("concept.securityHighlight")}</span>
               </h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8 text-left">
-                <div className="garden-card p-8 rounded-2xl relative overflow-hidden group">
+                <div className="eden-leaf-card p-8 relative overflow-hidden group">
                   <h4 className="text-deep-eden font-headline font-bold text-lg mb-3">{t("concept.moderatedCommTitle")}</h4>
                   <p className="text-muted-foreground text-sm font-body leading-relaxed">{t("concept.moderatedCommDesc")}</p>
                   {/* Golden accent line on hover */}
                   <div className="absolute bottom-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-sage/0 to-transparent group-hover:via-sage/20 transition-all duration-700" aria-hidden="true" />
                 </div>
-                <div className="garden-card p-8 rounded-2xl relative overflow-hidden group">
+                <div className="eden-leaf-card p-8 relative overflow-hidden group">
                   <h4 className="text-deep-eden font-headline font-bold text-lg mb-3">{t("concept.realtimeVerificationTitle")}</h4>
                   <p className="text-muted-foreground text-sm font-body leading-relaxed">{t("concept.realtimeVerificationDesc")}</p>
                   <div className="absolute bottom-0 left-8 right-8 h-[1px] bg-gradient-to-r from-transparent via-sage/0 to-transparent group-hover:via-sage/20 transition-all duration-700" aria-hidden="true" />

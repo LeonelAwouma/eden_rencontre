@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Heart, Leaf } from "lucide-react";
 import { useEffect, useState } from "react";
 import { Monogram } from "@/components/ornaments";
+import { SkyFlock, PerchOrnament } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 export function Footer() {
@@ -15,7 +15,10 @@ export function Footer() {
   }, []);
 
   return (
-    <footer className="relative bg-background border-t border-sage/10 py-16 overflow-hidden">
+    <footer className="relative bg-background border-t border-sage/20 py-16 overflow-hidden">
+      {/* Le jardin salue une derniere fois : une nuee, un oiseau pose */}
+      <SkyFlock count={4} className="hidden sm:block absolute top-8 right-[8%] w-32 lg:w-40 opacity-[0.11]" />
+      <PerchOrnament className="hidden lg:block absolute bottom-10 left-[3%] w-24 opacity-[0.14]" />
       {/* Subtle botanical background pattern */}
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.015]"
@@ -35,7 +38,7 @@ export function Footer() {
                 Eden <span>Connexion</span>
               </span>
             </Link>
-            <p className="text-foreground/60 text-sm leading-relaxed font-body">
+            <p className="text-muted-foreground text-sm leading-relaxed font-body">
               {t("footer.description")}
             </p>
             <div className="flex gap-4">
@@ -54,7 +57,7 @@ export function Footer() {
 
           <div>
             <h4 className="font-headline text-foreground font-bold mb-6 text-base">{t("footer.platform")}</h4>
-            <ul className="space-y-4 text-sm text-foreground/60 font-body">
+            <ul className="space-y-3.5 text-sm text-muted-foreground font-body">
               <li><Link href="/concept" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.theConcept")}</Link></li>
               <li><Link href="/parcours" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.faithJourney")}</Link></li>
               <li><Link href="/tarifs" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.pricing")}</Link></li>
@@ -64,7 +67,7 @@ export function Footer() {
 
           <div>
             <h4 className="font-headline text-foreground font-bold mb-6 text-base">{t("footer.support")}</h4>
-            <ul className="space-y-4 text-sm text-foreground/60 font-body">
+            <ul className="space-y-3.5 text-sm text-muted-foreground font-body">
               <li><Link href="/faq" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.faq")}</Link></li>
               <li><Link href="/contact" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.contact")}</Link></li>
               <li><Link href="/securite" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.securityTrust")}</Link></li>
@@ -74,7 +77,7 @@ export function Footer() {
 
           <div>
             <h4 className="font-headline text-foreground font-bold mb-6 text-base">{t("footer.legal")}</h4>
-            <ul className="space-y-4 text-sm text-foreground/60 font-body">
+            <ul className="space-y-3.5 text-sm text-muted-foreground font-body">
               <li><Link href="/mentions" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.legalNotice")}</Link></li>
               <li><Link href="/confidentialite" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.privacy")}</Link></li>
               <li><Link href="/cgu" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.terms")}</Link></li>
@@ -84,11 +87,11 @@ export function Footer() {
         </div>
 
         {/* Bottom bar with botanical divider */}
-        <div className="mt-16 pt-8 border-t border-sage/8 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-foreground/40 text-xs font-body">
+        <div className="mt-16 pt-8 border-t border-sage/25 flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-muted-foreground text-xs font-body">
             {t("footer.copyright", { year: String(year ?? "...") })}
           </p>
-          <p className="text-foreground/40 text-xs flex items-center gap-1.5 font-body">
+          <p className="text-muted-foreground text-xs flex items-center gap-1.5 font-body">
             {t("footer.madeWith", { heart: "❤", leaf: "🌿" })}
           </p>
         </div>

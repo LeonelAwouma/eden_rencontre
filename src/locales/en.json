@@ -278,6 +278,7 @@
     "realtimeVerificationDesc": "Our verification compares your profile photo with your ID to ensure you are who you claim to be."
   },
   "parcours": {
+    "heroEyebrow": "The Path",
     "heroTitle": "Your Path to Alliance",
     "heroDesc": "Eden Connexion accompanies you step by step in your quest for a blessed union, combining modern technology and timeless biblical values.",
     "step1Title": "1. Faith Profile",
@@ -433,7 +434,23 @@
     "eyebrow": "Help",
     "title": "Frequently",
     "titleHighlight": "Asked Questions",
-    "subtitle": "Quickly find answers to your questions about Eden Connexion."
+    "subtitle": "Quickly find answers to your questions about Eden Connexion.",
+    "q1": "What is Eden Connexion?",
+    "a1": "Eden Connexion is a premium matrimonial platform for Christian singles from Africa and the diaspora. Our mission is to make serious introductions possible, grounded in faith, biblical values and a commitment to marriage.",
+    "q2": "How is profile moderation handled?",
+    "a2": "Every profile is reviewed by hand by our team. We compare the profile photo against an identity document to confirm authenticity. Inappropriate behaviour is flagged and acted on immediately.",
+    "q3": "Are conversations secure?",
+    "a3": "Yes. Our system automatically blocks external links and phone numbers during early exchanges. That protection builds trust and shields members from scams.",
+    "q4": "Can I use Eden Connexion for free?",
+    "a4": "Signing up and creating a profile are free. You can browse profiles and receive suggestions. Advanced messaging features are covered by subscriptions tailored to different needs.",
+    "q5": "How does the matching algorithm work?",
+    "a5": "The algorithm weighs your faith criteria, your values, your location and your personal preferences to suggest compatible profiles. The aim is unions built on a shared vision of marriage.",
+    "q6": "Can I delete my account?",
+    "a6": "Yes, you can delete your account at any time from your profile settings. All your data is erased in line with GDPR within 30 days.",
+    "q7": "How do I contact support?",
+    "a7": "Write to us through the Contact page or by email at support@edenconnexion.com. Our team replies within 24 to 48 hours.",
+    "stillStuck": "Cannot find your answer?",
+    "contactLink": "Write to us"
   },
   "contact": {
     "eyebrow": "Support",
@@ -804,23 +821,71 @@
     "suggestedReadings": "Recommended readings",
     "footerVerse": "\"Unless the LORD builds the house, the builders labor in vain.\" — Psalm 127:1",
     "lessons": {
-      "criteresEssentiels": { "title": "Essential criteria for choosing", "desc": "Discern the fundamental qualities of a future spouse according to the Word.", "duration": "8 min" },
-      "periodeConnaissance": { "title": "The courtship period", "desc": "Live your engagement in purity and wisdom, step by step.", "duration": "6 min" },
-      "prieDiscernement": { "title": "The Prayer of Discernment", "desc": "Entrust your choice to God and recognize His peaceful direction.", "duration": "5 min" }
+      "criteresEssentiels": {
+        "title": "Essential criteria for choosing",
+        "desc": "Discern the fundamental qualities of a future spouse according to the Word.",
+        "duration": "8 min"
+      },
+      "periodeConnaissance": {
+        "title": "The courtship period",
+        "desc": "Live your engagement in purity and wisdom, step by step.",
+        "duration": "6 min"
+      },
+      "prieDiscernement": {
+        "title": "The Prayer of Discernment",
+        "desc": "Entrust your choice to God and recognize His peaceful direction.",
+        "duration": "5 min"
+      }
     },
     "themes": {
-      "vision-biblique": { "title": "The Biblical Vision of Marriage", "description": "The sacred covenant, a reflection of Christ's love for His Church." },
-      "communication": { "title": "Communication & Conflict", "description": "The languages of love and the art of loyal resolution." },
-      "finances": { "title": "Managing Finances", "description": "Shared budget, transparency, and generosity at home." },
-      "belle-famille": { "title": "In-Laws & Boundaries", "description": "\"Leaving\" to cling to one another, and setting healthy boundaries." },
-      "intimite": { "title": "Marital Intimacy", "description": "Pleasure as God's gift for the unity of the couple." },
-      "roles": { "title": "Roles & Responsibilities", "description": "Servant leadership and balancing family and ambitions." },
-      "vie-spirituelle": { "title": "The Couple's Spiritual Life", "description": "Cultivating the family altar: praying and meditating together." },
-      "enfants": { "title": "Raising Children", "description": "Discipline, and passing on the faith to future generations." },
-      "temps-loisirs": { "title": "Time & Leisure", "description": "Preserving your secret garden while cultivating unity." },
-      "cinq-piliers": { "title": "The 5 pillars of a home", "description": "Building on the rock: faith, prayer, truth, faithfulness, forgiveness." },
-      "celibat-foi": { "title": "Singleness & Faith", "description": "Living the wait as a fruitful season of preparation." },
-      "conflits-bibliques": { "title": "Handling Conflict God's Way", "description": "From disagreement to reconciliation, in the light of Scripture." }
+      "vision-biblique": {
+        "title": "The Biblical Vision of Marriage",
+        "description": "The sacred covenant, a reflection of Christ's love for His Church."
+      },
+      "communication": {
+        "title": "Communication & Conflict",
+        "description": "The languages of love and the art of loyal resolution."
+      },
+      "finances": {
+        "title": "Managing Finances",
+        "description": "Shared budget, transparency, and generosity at home."
+      },
+      "belle-famille": {
+        "title": "In-Laws & Boundaries",
+        "description": "\"Leaving\" to cling to one another, and setting healthy boundaries."
+      },
+      "intimite": {
+        "title": "Marital Intimacy",
+        "description": "Pleasure as God's gift for the unity of the couple."
+      },
+      "roles": {
+        "title": "Roles & Responsibilities",
+        "description": "Servant leadership and balancing family and ambitions."
+      },
+      "vie-spirituelle": {
+        "title": "The Couple's Spiritual Life",
+        "description": "Cultivating the family altar: praying and meditating together."
+      },
+      "enfants": {
+        "title": "Raising Children",
+        "description": "Discipline, and passing on the faith to future generations."
+      },
+      "temps-loisirs": {
+        "title": "Time & Leisure",
+        "description": "Preserving your secret garden while cultivating unity."
+      },
+      "cinq-piliers": {
+        "title": "The 5 pillars of a home",
+        "description": "Building on the rock: faith, prayer, truth, faithfulness, forgiveness."
+      },
+      "celibat-foi": {
+        "title": "Singleness & Faith",
+        "description": "Living the wait as a fruitful season of preparation."
+      },
+      "conflits-bibliques": {
+        "title": "Handling Conflict God's Way",
+        "description": "From disagreement to reconciliation, in the light of Scripture."
+      }
     }
   },
   "academyModule": {

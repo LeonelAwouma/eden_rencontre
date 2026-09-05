@@ -3,6 +3,7 @@
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
+import { SkyFlock, PerchOrnament, OliveBirdDivider } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 import {
   Check,
@@ -79,19 +80,20 @@ export default function PricingPage() {
   ];
 
   return (
-    <div className="flex flex-col min-h-screen" style={{ background: "#FAF9F6" }}>
+    <div className="eden-public flex flex-col min-h-screen bg-background">
       <Navigation />
 
       <main className="flex-1">
         {/* ══ HERO SECTION ══ */}
-        <section className="relative pt-24 pb-16 sm:pt-32 sm:pb-24 overflow-hidden">
-          {/* Background decorations */}
-          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] rounded-full pointer-events-none opacity-20"
-            style={{ background: "radial-gradient(circle, #C6A15B 0%, transparent 70%)", filter: "blur(80px)" }} />
-          <div className="absolute top-20 left-10 w-[200px] h-[200px] rounded-full pointer-events-none opacity-10"
-            style={{ background: "radial-gradient(circle, #486B46 0%, transparent 70%)", filter: "blur(60px)" }} />
-          <div className="absolute top-20 right-10 w-[200px] h-[200px] rounded-full pointer-events-none opacity-10"
-            style={{ background: "radial-gradient(circle, #486B46 0%, transparent 70%)", filter: "blur(60px)" }} />
+        <section className="relative eden-sky pt-20 pb-14 sm:pt-28 sm:pb-20 overflow-hidden">
+          {/* Halo vegetal, tres lave */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[620px] h-[380px] rounded-full pointer-events-none opacity-25"
+            style={{ background: "radial-gradient(circle, hsl(145 30% 55%) 0%, transparent 70%)", filter: "blur(90px)" }} aria-hidden="true" />
+          <div className="absolute top-24 right-12 w-[220px] h-[220px] rounded-full pointer-events-none opacity-15"
+            style={{ background: "radial-gradient(circle, hsl(95 28% 38%) 0%, transparent 70%)", filter: "blur(70px)" }} aria-hidden="true" />
+
+          <SkyFlock count={5} className="hidden sm:block absolute top-12 left-[6%] w-36 lg:w-48 opacity-[0.14]" />
+          <PerchOrnament className="hidden lg:block absolute bottom-8 right-[6%] w-24 opacity-[0.17]" flip />
 
           <div className="relative z-10 container mx-auto px-4 text-center max-w-3xl">
             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full mb-6"
@@ -101,17 +103,15 @@ export default function PricingPage() {
                 {t("tarifs.badge")}
               </span>
             </div>
-            <h1 className="font-headline text-4xl sm:text-5xl lg:text-6xl font-bold mb-6" style={{ color: "#2F2F2F" }}>
+            <h1 className="font-headline text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 text-foreground tracking-tight">
               {t("tarifs.heroTitle")}{" "}
-              <span className="italic" style={{ color: "#486B46" }}>{t("tarifs.heroTitleHighlight")}</span>
+              <span className="italic text-primary">{t("tarifs.heroTitleHighlight")}</span>
             </h1>
-            <p className="text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto" style={{ color: "#777777" }}>
+            <p className="text-lg sm:text-xl leading-relaxed max-w-2xl mx-auto text-muted-foreground font-body">
               {t("tarifs.heroSubtitle")}
             </p>
-            <div className="mt-8 flex items-center justify-center gap-3">
-              <div className="h-px w-16" style={{ background: "linear-gradient(to right, transparent, #C6D4C0)" }} />
-              <Heart className="w-5 h-5" style={{ color: "#C6A15B" }} />
-              <div className="h-px w-16" style={{ background: "linear-gradient(to left, transparent, #C6D4C0)" }} />
+            <div className="mt-8 flex items-center justify-center">
+              <OliveBirdDivider className="w-44 sm:w-56" />
             </div>
           </div>
         </section>

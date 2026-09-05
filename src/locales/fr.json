@@ -278,6 +278,7 @@
     "realtimeVerificationDesc": "Notre vérification compare votre photo de profil avec votre pièce d'identité pour garantir que vous êtes bien qui vous prétendez être."
   },
   "parcours": {
+    "heroEyebrow": "Le Chemin",
     "heroTitle": "Votre Chemin vers l'Alliance",
     "heroDesc": "Eden Connexion vous accompagne pas à pas dans votre quête d'une union bénie, en alliant technologie moderne et valeurs bibliques immuables.",
     "step1Title": "1. Profil de Foi",
@@ -433,7 +434,23 @@
     "eyebrow": "Aide",
     "title": "Questions",
     "titleHighlight": "Fréquentes",
-    "subtitle": "Trouvez rapidement les réponses à vos questions sur Eden Connexion."
+    "subtitle": "Trouvez rapidement les réponses à vos questions sur Eden Connexion.",
+    "q1": "Qu'est-ce qu'Eden Connexion ?",
+    "a1": "Eden Connexion est une plateforme matrimoniale haut de gamme dédiée aux célibataires chrétiens d'Afrique et de la diaspora. Notre mission est de faciliter des rencontres sérieuses basées sur la foi, les valeurs bibliques et l'engagement envers le mariage.",
+    "q2": "Comment fonctionne la modération des profils ?",
+    "a2": "Chaque profil est vérifié manuellement par notre équipe. Nous comparons la photo de profil avec une pièce d'identité pour garantir l'authenticité. Les comportements inappropriés sont immédiatement signalés et traités.",
+    "q3": "Les échanges sont-ils sécurisés ?",
+    "a3": "Oui. Notre système bloque automatiquement le partage de liens externes et de numéros de téléphone lors des premiers échanges. Cette protection permet de créer un climat de confiance et de protéger nos membres contre les arnaques.",
+    "q4": "Puis-je utiliser Eden Connexion gratuitement ?",
+    "a4": "L'inscription et la création de profil sont gratuites. Vous pouvez parcourir les profils et recevoir des suggestions. Pour accéder aux fonctionnalités de messagerie avancées, nous proposons différents abonnements adaptés à vos besoins.",
+    "q5": "Comment fonctionne l'algorithme de suggestion ?",
+    "a5": "Notre algorithme prend en compte vos critères de foi, vos valeurs, votre localisation et vos préférences personnelles pour vous suggérer des profils compatibles. L'objectif est de favoriser des unions fondées sur une vision commune du mariage.",
+    "q6": "Puis-je supprimer mon compte ?",
+    "a6": "Oui, vous pouvez supprimer votre compte à tout moment depuis les paramètres de votre profil. Toutes vos données seront supprimées conformément au RGPD dans un délai de 30 jours.",
+    "q7": "Comment contacter le support ?",
+    "a7": "Vous pouvez nous écrire via la page Contact ou par email à support@edenconnexion.com. Notre équipe vous répondra sous 24 à 48 heures.",
+    "stillStuck": "Vous ne trouvez pas votre réponse ?",
+    "contactLink": "Écrivez-nous"
   },
   "contact": {
     "eyebrow": "Support",
@@ -804,23 +821,71 @@
     "suggestedReadings": "Lectures conseillées",
     "footerVerse": "« Si l'Éternel ne bâtit la maison, ceux qui la bâtissent travaillent en vain. » — Psaume 127:1",
     "lessons": {
-      "criteresEssentiels": { "title": "Critères essentiels du choix", "desc": "Discerner les qualités fondamentales d'un futur conjoint selon la Parole.", "duration": "8 min" },
-      "periodeConnaissance": { "title": "La période de connaissance", "desc": "Vivre les fiançailles dans la pureté et la sagesse, étape par étape.", "duration": "6 min" },
-      "prieDiscernement": { "title": "La Prière de Discernement", "desc": "Confier son choix à Dieu et reconnaître Sa direction paisible.", "duration": "5 min" }
+      "criteresEssentiels": {
+        "title": "Critères essentiels du choix",
+        "desc": "Discerner les qualités fondamentales d'un futur conjoint selon la Parole.",
+        "duration": "8 min"
+      },
+      "periodeConnaissance": {
+        "title": "La période de connaissance",
+        "desc": "Vivre les fiançailles dans la pureté et la sagesse, étape par étape.",
+        "duration": "6 min"
+      },
+      "prieDiscernement": {
+        "title": "La Prière de Discernement",
+        "desc": "Confier son choix à Dieu et reconnaître Sa direction paisible.",
+        "duration": "5 min"
+      }
     },
     "themes": {
-      "vision-biblique": { "title": "La vision biblique du Mariage", "description": "L'alliance sacrée, reflet de l'amour de Christ pour son Église." },
-      "communication": { "title": "Communication & Conflits", "description": "Les langages de l'amour et l'art de la résolution loyale." },
-      "finances": { "title": "Gestion des Finances", "description": "Budget commun, transparence et générosité au foyer." },
-      "belle-famille": { "title": "Belle-famille & Limites", "description": "« Quitter » pour s'attacher, et poser des frontières saines." },
-      "intimite": { "title": "Intimité conjugale", "description": "Le plaisir comme don de Dieu pour l'unité du couple." },
-      "roles": { "title": "Rôles & Responsabilités", "description": "Leadership serviteur et équilibre famille / ambitions." },
-      "vie-spirituelle": { "title": "Vie spirituelle de couple", "description": "Cultiver l'autel familial : prier et méditer ensemble." },
-      "enfants": { "title": "Éducation des enfants", "description": "Discipline, transmission de la foi aux générations futures." },
-      "temps-loisirs": { "title": "Temps & Loisirs", "description": "Préserver son jardin secret tout en cultivant l'unité." },
-      "cinq-piliers": { "title": "Les 5 piliers d'un foyer", "description": "Bâtir sur le roc : foi, prière, vérité, fidélité, pardon." },
-      "celibat-foi": { "title": "Célibat & Foi", "description": "Vivre l'attente comme une saison féconde de préparation." },
-      "conflits-bibliques": { "title": "Gérer les conflits selon la Bible", "description": "Du désaccord à la réconciliation, à la lumière de l'Écriture." }
+      "vision-biblique": {
+        "title": "La vision biblique du Mariage",
+        "description": "L'alliance sacrée, reflet de l'amour de Christ pour son Église."
+      },
+      "communication": {
+        "title": "Communication & Conflits",
+        "description": "Les langages de l'amour et l'art de la résolution loyale."
+      },
+      "finances": {
+        "title": "Gestion des Finances",
+        "description": "Budget commun, transparence et générosité au foyer."
+      },
+      "belle-famille": {
+        "title": "Belle-famille & Limites",
+        "description": "« Quitter » pour s'attacher, et poser des frontières saines."
+      },
+      "intimite": {
+        "title": "Intimité conjugale",
+        "description": "Le plaisir comme don de Dieu pour l'unité du couple."
+      },
+      "roles": {
+        "title": "Rôles & Responsabilités",
+        "description": "Leadership serviteur et équilibre famille / ambitions."
+      },
+      "vie-spirituelle": {
+        "title": "Vie spirituelle de couple",
+        "description": "Cultiver l'autel familial : prier et méditer ensemble."
+      },
+      "enfants": {
+        "title": "Éducation des enfants",
+        "description": "Discipline, transmission de la foi aux générations futures."
+      },
+      "temps-loisirs": {
+        "title": "Temps & Loisirs",
+        "description": "Préserver son jardin secret tout en cultivant l'unité."
+      },
+      "cinq-piliers": {
+        "title": "Les 5 piliers d'un foyer",
+        "description": "Bâtir sur le roc : foi, prière, vérité, fidélité, pardon."
+      },
+      "celibat-foi": {
+        "title": "Célibat & Foi",
+        "description": "Vivre l'attente comme une saison féconde de préparation."
+      },
+      "conflits-bibliques": {
+        "title": "Gérer les conflits selon la Bible",
+        "description": "Du désaccord à la réconciliation, à la lumière de l'Écriture."
+      }
     }
   },
   "academyModule": {
