@@ -24,6 +24,7 @@ export interface ChatMessage {
 export interface DirectoryUser {
   id: string;
   name: string;
+  pseudo?: string | null;
   email: string;
   city?: string | null;
   country?: string | null;
@@ -34,6 +35,7 @@ export interface DirectoryUser {
 export interface MemberProfile {
   id: string;
   name: string;
+  pseudo?: string | null;
   email: string;
   city?: string | null;
   country?: string | null;
@@ -210,7 +212,7 @@ export async function getProfileById(id: string): Promise<{ profile?: MemberProf
   if (!id) return {};
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, name, email, city, country, region, gender, birth_date, civil_status, profession, bio, marriage_vision, avatar_url, verification_status")
+    .select("id, name, pseudo, email, city, country, region, gender, birth_date, civil_status, profession, bio, marriage_vision, avatar_url, verification_status")
     .eq("id", id)
     .maybeSingle();
   if (error) {
@@ -222,7 +224,7 @@ export async function getProfileById(id: string): Promise<{ profile?: MemberProf
   return {
     profile: {
       id: d.id,
-      name: d.name,
+      name: d.pseudo || d.name,
       email: d.email,
       city: d.city,
       country: d.country,
@@ -249,15 +251,18 @@ export async function searchUsers(
   if (q.length < 2) return { users: [] };
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, name, email, city, country, avatar_url")
-    .or(`name.ilike.*${q}*,email.ilike.*${q}*`)
+    .select("id, name, pseudo, email, city, country, avatar_url")
+    .or(`name.ilike.*${q}*,pseudo.ilike.*${q}*,email.ilike.*${q}*`)
     .limit(20);
   if (error) {
     console.error("[Eden] recherche membres échouée:", error.message);
     return { users: [], error: error.message };
   }
-  // On s'exclut soi-même côté client (évite tout souci si myId est vide)
-  const users = ((data as DirectoryUser[]) || []).filter((u) => u.id !== myId);
+  // On s'exclut soi-même côté client (évite tout souci si myId est vide), et on
+  // affiche le pseudo à la place du vrai nom (repli sur le nom si pas encore défini).
+  const users = ((data as any[]) || [])
+    .filter((u) => u.id !== myId)
+    .map((u) => ({ ...u, name: u.pseudo || u.name }));
   return { users };
 }
 
@@ -289,7 +294,7 @@ export async function listConversations(myId: string): Promise<ChatConversation[
   if (otherIds.length) {
     const { data: profs } = await supabase
       .from("profiles")
-      .select("id, name, email, city, country, avatar_url")
+      .select("id, name, pseudo, email, city, country, avatar_url")
       .in("id", otherIds);
     (profs || []).forEach((p: any) => (profById[p.id] = p));
   }
@@ -312,7 +317,7 @@ export async function listConversations(myId: string): Promise<ChatConversation[
     return {
       id: cid,
       otherId,
-      name: prof?.name || prof?.email || "Member",
+      name: prof?.pseudo || prof?.name || prof?.email || "Member",
       avatar: prof?.avatar_url || null,
       last: preview,
       when: lastRow ? fmt(lastRow.created_at) : "",

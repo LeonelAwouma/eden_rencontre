@@ -28,6 +28,7 @@ import { isProfileFullyComplete } from "@/lib/profile-completion";
 interface UserProfile {
   id: string;
   name: string;
+  pseudo?: string | null;
   email: string;
   gender: string;
   status: string;
@@ -198,7 +199,7 @@ export default function AdminUserDetailPage() {
         </button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900">
-            {user.name || "Sans nom"}
+            {user.pseudo || "Sans pseudo"} <span className="text-gray-400 font-normal text-lg">· {user.name || "Sans nom"}</span>
           </h1>
           <p className="text-sm text-gray-500">{user.email}</p>
         </div>
@@ -293,6 +294,7 @@ export default function AdminUserDetailPage() {
               Informations personnelles
             </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <InfoItem icon={User} label="Pseudo" value={user.pseudo} />
               <InfoItem icon={User} label="Nom" value={user.name} />
               <InfoItem icon={Mail} label="Email" value={user.email} />
               <InfoItem icon={Calendar} label="Âge" value={age ? `${age} ans` : null} />

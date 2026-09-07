@@ -28,6 +28,12 @@ alter table public.profiles add column if not exists birth_date date;
 alter table public.profiles add column if not exists questionnaire jsonb not null default '{}'::jsonb;
 alter table public.profiles add column if not exists onboarding_completed boolean not null default false;
 
+-- Pseudonyme public (affiché sur la plateforme) — le vrai nom (name) reste réservé
+-- à l'admin, aux emails et à la vérification d'identité.
+alter table public.profiles add column if not exists pseudo text;
+alter table public.profiles add column if not exists first_name text;
+alter table public.profiles add column if not exists last_name text;
+
 -- Selfie verification fields
 alter table public.profiles add column if not exists selfie_verified boolean not null default false;
 alter table public.profiles add column if not exists selfie_verification_score integer default 0;
@@ -54,11 +60,14 @@ security definer
 set search_path = public
 as $$
 begin
-  insert into public.profiles (id, email, name, gender, civil_status, region, country, city, profession, bio, marriage_vision, birth_date)
+  insert into public.profiles (id, email, name, pseudo, first_name, last_name, gender, civil_status, region, country, city, profession, bio, marriage_vision, birth_date)
   values (
     new.id,
     new.email,
     coalesce(new.raw_user_meta_data->>'name', new.raw_user_meta_data->>'full_name', split_part(new.email, '@', 1)),
+    new.raw_user_meta_data->>'pseudo',
+    new.raw_user_meta_data->>'firstName',
+    new.raw_user_meta_data->>'lastName',
     new.raw_user_meta_data->>'gender',
     new.raw_user_meta_data->>'civilStatus',
     new.raw_user_meta_data->>'region',

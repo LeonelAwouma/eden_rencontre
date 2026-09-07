@@ -8,6 +8,9 @@ import { supabase } from "./supabase";
 export interface EdenUser {
   id?: string;
   name: string;
+  pseudo?: string;
+  firstName?: string;
+  lastName?: string;
   email: string;
   gender?: string;
   birthDate?: string; // ISO (AAAA-MM-JJ) — choisi à l'inscription, 18 ans minimum
@@ -25,7 +28,7 @@ export interface EdenUser {
 }
 
 // Champs modifiables par l'utilisateur (email, sexe, etc. exclus — verrouillés)
-export type EditableProfile = Partial<Pick<EdenUser, "name" | "city" | "country" | "civilStatus" | "profession" | "bio" | "marriageVision" | "avatar_url">>;
+export type EditableProfile = Partial<Pick<EdenUser, "name" | "pseudo" | "city" | "country" | "civilStatus" | "profession" | "bio" | "marriageVision" | "avatar_url">>;
 
 export type RegisterInput = Omit<EdenUser, "createdAt"> & { password: string };
 export type AuthResult = { ok: true; user: EdenUser } | { ok: false; error: string };
@@ -53,6 +56,9 @@ function mapSupabaseUser(u: any): EdenUser {
   return {
     id: u?.id,
     name: m.name || m.full_name || (u?.email ? String(u.email).split("@")[0] : "Membre"),
+    pseudo: m.pseudo,
+    firstName: m.firstName,
+    lastName: m.lastName,
     email: u?.email || "",
     gender: m.gender,
     birthDate: m.birthDate,

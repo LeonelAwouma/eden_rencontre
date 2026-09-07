@@ -294,6 +294,10 @@ export default function DashboardPage() {
   const [discoverSearch, setDiscoverSearch] = useState("");
   const [discoverCount, setDiscoverCount] = useState(24);
   const [user, setUser] = useState<EdenUser | null>(null);
+  const [needsPseudo, setNeedsPseudo] = useState(false);
+  const [pseudoInput, setPseudoInput] = useState("");
+  const [pseudoSaving, setPseudoSaving] = useState(false);
+  const [pseudoError, setPseudoError] = useState<string | null>(null);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [adminUser, setAdminUser] = useState<{ id: string; name: string } | null>(null);
@@ -364,7 +368,7 @@ export default function DashboardPage() {
       ? { id: ADMIN_VIRTUAL_ID, otherId: adminUser.id, name: adminUser.name, avatar: null, last: "", when: "", unread: 0 }
       : null);
   const messageNotifs = conversations.filter((c) => c.unread > 0);
-  const displayName = user?.name || "Membre";
+  const displayName = user?.pseudo || user?.name || "Membre";
 
   // Meeting notifications
   const [meetingNotifs, setMeetingNotifs] = useState<{ id: string; meeting_id: string; notification_type: string; title: string; message: string; is_read: boolean; created_at: string }[]>([]);
@@ -792,7 +796,10 @@ export default function DashboardPage() {
     // Use a temporary placeholder; will be updated once user loads with gender
     const defaultVerses = getDailyVerses(null);
     setDailyQuote(defaultVerses[dayOfYear % defaultVerses.length]);
-    getSession().then(setUser);
+    getSession().then((u) => {
+      setUser(u);
+      if (u && !u.pseudo) setNeedsPseudo(true);
+    });
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
     if (tabParam && (TABS as string[]).includes(tabParam)) setActiveTab(tabParam as Tab);
@@ -817,6 +824,26 @@ export default function DashboardPage() {
     const genderVerses = getDailyVerses(user.gender);
     setDailyQuote(genderVerses[dayOfYear % genderVerses.length]);
   }, [user?.gender]);
+
+  // Comptes créés avant l'introduction du pseudonyme : on force son choix avant
+  // de laisser accéder au reste du dashboard (le vrai nom ne doit plus être visible).
+  const handleSetPseudo = async () => {
+    const pseudo = pseudoInput.trim();
+    if (!pseudo) {
+      setPseudoError(t("dashboard.pseudoRequired"));
+      return;
+    }
+    setPseudoSaving(true);
+    setPseudoError(null);
+    const res = await updateProfile({ pseudo });
+    setPseudoSaving(false);
+    if (!res.ok) {
+      setPseudoError(res.error);
+      return;
+    }
+    setUser(res.user);
+    setNeedsPseudo(false);
+  };
 
   useEffect(() => {
     if (!user?.id) return;
@@ -975,6 +1002,32 @@ export default function DashboardPage() {
   // ═══════════════════════════════════════════════════════════
   return (
     <div className="min-h-screen" style={{ background: "#FAF9F6" }}>
+      {needsPseudo && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-5">
+          <div className="w-full max-w-md bg-white rounded-2xl p-8 shadow-2xl space-y-5">
+            <div>
+              <h2 className="text-xl font-bold text-[#2F2F2F]">{t("dashboard.choosePseudoTitle")}</h2>
+              <p className="text-sm text-[#777777] mt-1">{t("dashboard.choosePseudoDesc")}</p>
+            </div>
+            <Input
+              autoFocus
+              placeholder={t("dashboard.pseudoPlaceholder")}
+              value={pseudoInput}
+              onChange={(e) => { setPseudoInput(e.target.value); setPseudoError(null); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleSetPseudo(); }}
+              className="h-12"
+            />
+            {pseudoError && <p className="text-xs text-destructive">{pseudoError}</p>}
+            <Button
+              onClick={handleSetPseudo}
+              disabled={pseudoSaving || !pseudoInput.trim()}
+              className="w-full h-12 bg-primary text-primary-foreground font-bold rounded-xl"
+            >
+              {pseudoSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : t("dashboard.pseudoConfirm")}
+            </Button>
+          </div>
+        </div>
+      )}
       {/* ══ LAYER 1: SIDEBAR ══ */}
       <DashboardSidebar
         activeTab={activeTab}

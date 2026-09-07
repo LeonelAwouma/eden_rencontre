@@ -38,6 +38,7 @@ interface CharterAcceptance {
 interface UserProfile {
   id: string;
   name: string;
+  pseudo?: string | null;
   email: string;
   gender: string;
   status: string;
@@ -351,11 +352,11 @@ export default function AdminUsersPage() {
                       <td className="px-6 py-3.5">
                         <Link href={`/admin/users/${user.id}`} className="flex items-center gap-3 group/name">
                           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#38C172]/20 to-[#86EFAC]/30 flex items-center justify-center text-[13px] font-bold text-[#38C172] shrink-0">
-                            {(user.name || "U").charAt(0).toUpperCase()}
+                            {(user.pseudo || user.name || "U").charAt(0).toUpperCase()}
                           </div>
                           <div>
                             <p className="text-[13px] font-semibold text-[#1a1a1a] group-hover/name:text-[#38C172] transition-colors">
-                              {user.name || "Sans nom"}
+                              {user.pseudo || "Sans pseudo"} <span className="text-[#9CA3AF] font-normal">· {user.name || "Sans nom"}</span>
                             </p>
                             <p className="text-[11px] text-[#9CA3AF] font-medium">{user.email}</p>
                           </div>
@@ -497,11 +498,11 @@ export default function AdminUsersPage() {
                 >
                   <div className="flex items-center gap-3 mb-3">
                     <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#38C172]/20 to-[#86EFAC]/30 flex items-center justify-center text-[13px] font-bold text-[#38C172]">
-                      {(user.name || "U").charAt(0).toUpperCase()}
+                      {(user.pseudo || user.name || "U").charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[13px] font-semibold text-[#1a1a1a] truncate">
-                        {user.name || "Sans nom"}
+                        {user.pseudo || "Sans pseudo"} <span className="text-[#9CA3AF] font-normal">· {user.name || "Sans nom"}</span>
                       </p>
                       <p className="text-[11px] text-[#9CA3AF] truncate font-medium">{user.email}</p>
                     </div>
@@ -679,7 +680,7 @@ export default function AdminUsersPage() {
             <div className="p-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <p className="text-[14px] font-semibold text-[#1a1a1a] truncate">
-                  {viewingUser.name || "Sans nom"}
+                  {viewingUser.pseudo || "Sans pseudo"} <span className="text-[#9CA3AF] font-normal">· {viewingUser.name || "Sans nom"}</span>
                 </p>
                 <p className="text-[12px] text-[#9CA3AF] truncate">{viewingUser.email}</p>
               </div>

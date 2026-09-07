@@ -135,7 +135,9 @@ export default function RegisterPage() {
     region: "",
     country: "",
     city: "",
-    name: "",
+    pseudo: "",
+    firstName: "",
+    lastName: "",
     birthDate: "",
     email: "",
     password: "",
@@ -252,7 +254,10 @@ export default function RegisterPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          name: formData.name,
+          name: `${formData.firstName} ${formData.lastName}`.trim(),
+          pseudo: formData.pseudo,
+          firstName: formData.firstName,
+          lastName: formData.lastName,
           email: formData.email,
           password: formData.password,
           gender: formData.gender,
@@ -759,14 +764,35 @@ export default function RegisterPage() {
                 </div>
                 <div className="space-y-5">
                   <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.nameLabel")}</Label>
+                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.pseudoLabel")}</Label>
                     <Input
                       autoFocus
-                      placeholder={t("register.namePlaceholder")}
-                      value={formData.name}
-                      onChange={(e) => setFormData({...formData, name: e.target.value})}
+                      placeholder={t("register.pseudoPlaceholder")}
+                      value={formData.pseudo}
+                      onChange={(e) => setFormData({...formData, pseudo: e.target.value})}
                       className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30"
                     />
+                    <p className="text-[11px] text-foreground/30">{t("register.pseudoHint")}</p>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.firstNameLabel")}</Label>
+                      <Input
+                        placeholder={t("register.firstNamePlaceholder")}
+                        value={formData.firstName}
+                        onChange={(e) => setFormData({...formData, firstName: e.target.value})}
+                        className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.lastNameLabel")}</Label>
+                      <Input
+                        placeholder={t("register.lastNamePlaceholder")}
+                        value={formData.lastName}
+                        onChange={(e) => setFormData({...formData, lastName: e.target.value})}
+                        className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30"
+                      />
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.birthDateLabel")}</Label>
@@ -835,7 +861,7 @@ export default function RegisterPage() {
                   </div>
                   <Button
                     onClick={nextStep}
-                    disabled={!formData.name || !ageValid || !formData.email || formData.password.length < 8}
+                    disabled={!formData.pseudo || !formData.firstName || !formData.lastName || !ageValid || !formData.email || formData.password.length < 8}
                     className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                   >
                     {t("register.continue")} <ArrowRight className="w-5 h-5 ml-2" />

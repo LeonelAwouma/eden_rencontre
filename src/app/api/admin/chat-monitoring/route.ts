@@ -135,11 +135,11 @@ export async function GET(req: NextRequest) {
   // Fetch user profiles
   const { data: profiles } = await supabase
     .from("profiles")
-    .select("id, name, email, avatar_url, status")
+    .select("id, name, pseudo, email, avatar_url, status")
     .in("id", Array.from(allUserIds));
 
   const profileMap: Record<string, {
-    id: string; name: string; email: string;
+    id: string; name: string; pseudo: string | null; email: string;
     avatar_url: string | null; status: string;
     subscription_plan: string;
   }> = {};
@@ -147,6 +147,7 @@ export async function GET(req: NextRequest) {
     profileMap[p.id] = {
       id: p.id,
       name: p.name || "Utilisateur",
+      pseudo: p.pseudo || null,
       email: p.email || "",
       avatar_url: p.avatar_url || null,
       status: p.status || "approved",

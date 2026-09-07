@@ -31,6 +31,7 @@ import { DashboardHeader } from "@/components/admin/dashboard-header";
 interface ChatUser {
   id: string;
   name: string;
+  pseudo: string | null;
   email: string;
   avatar_url: string | null;
   status: string;
@@ -65,6 +66,7 @@ interface ChatMessage {
   sender: {
     id: string;
     name: string;
+    pseudo: string | null;
     email: string;
     avatar_url: string | null;
   };
@@ -296,15 +298,18 @@ function ConversationViewer({
           </button>
           <div className="flex -space-x-2">
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#38C172] to-[#86EFAC] flex items-center justify-center text-white text-xs font-bold border-2 border-white/30 z-10">
-              {userA?.name?.charAt(0)?.toUpperCase() || "?"}
+              {(userA?.pseudo || userA?.name)?.charAt(0)?.toUpperCase() || "?"}
             </div>
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#4F7DF3] to-[#86EFAC] flex items-center justify-center text-white text-xs font-bold border-2 border-white/30">
-              {userB?.name?.charAt(0)?.toUpperCase() || "?"}
+              {(userB?.pseudo || userB?.name)?.charAt(0)?.toUpperCase() || "?"}
             </div>
           </div>
           <div>
             <h3 className="text-white font-semibold text-sm">
-              {userA?.name || "?"} & {userB?.name || "?"}
+              {userA?.pseudo || userA?.name || "?"} & {userB?.pseudo || userB?.name || "?"}
+              {(userA?.pseudo || userB?.pseudo) && (
+                <span className="text-white/50 font-normal"> ({userA?.name || "?"} & {userB?.name || "?"})</span>
+              )}
             </h3>
             <p className="text-white/70 text-xs">
               {messages.length} messages · {userA?.subscription_plan || "free"} / {userB?.subscription_plan || "free"}
@@ -350,7 +355,7 @@ function ConversationViewer({
                 >
                   {isUserA && (
                     <div className="w-7 h-7 rounded-full bg-gradient-to-br from-[#38C172] to-[#86EFAC] flex items-center justify-center text-white text-[10px] font-bold shrink-0 mt-1">
-                      {msg.sender?.name?.charAt(0)?.toUpperCase() || "?"}
+                      {(msg.sender?.pseudo || msg.sender?.name)?.charAt(0)?.toUpperCase() || "?"}
                     </div>
                   )}
                   <div
@@ -404,7 +409,8 @@ function ConversationViewer({
                         })}
                       </span>
                       <span className="text-[10px] text-[#9CA3AF]">
-                        · {msg.sender?.name || "Inconnu"}
+                        · {msg.sender?.pseudo || msg.sender?.name || "Inconnu"}
+                        {msg.sender?.pseudo && msg.sender?.name ? ` (${msg.sender.name})` : ""}
                       </span>
                       {msg.is_flagged && (
                         <Flag className="w-3 h-3 text-[#F56565]" />
@@ -478,13 +484,13 @@ function ConversationViewer({
             href={`/admin/users/${userA?.id}`}
             className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB] transition-all"
           >
-            Profil {userA?.name?.split(" ")[0]}
+            Profil {userA?.pseudo || userA?.name?.split(" ")[0]}
           </Link>
           <Link
             href={`/admin/users/${userB?.id}`}
             className="px-3 py-1.5 rounded-lg text-xs font-medium border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB] transition-all"
           >
-            Profil {userB?.name?.split(" ")[0]}
+            Profil {userB?.pseudo || userB?.name?.split(" ")[0]}
           </Link>
         </div>
       </div>
@@ -762,20 +768,20 @@ export default function ChatMonitoringPage() {
                       <div className="flex items-center gap-3 flex-1 min-w-0">
                         <div className="flex -space-x-2">
                           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#38C172] to-[#86EFAC] flex items-center justify-center text-white text-xs font-bold border-2 border-white z-10">
-                            {conv.user_a?.name?.charAt(0)?.toUpperCase() || "?"}
+                            {(conv.user_a?.pseudo || conv.user_a?.name)?.charAt(0)?.toUpperCase() || "?"}
                           </div>
                           <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#4F7DF3] to-[#86EFAC] flex items-center justify-center text-white text-xs font-bold border-2 border-white">
-                            {conv.user_b?.name?.charAt(0)?.toUpperCase() || "?"}
+                            {(conv.user_b?.pseudo || conv.user_b?.name)?.charAt(0)?.toUpperCase() || "?"}
                           </div>
                         </div>
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <Link href={`/admin/users/${conv.user_a_id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#486B46] truncate" onClick={(e) => e.stopPropagation()}>
-                              {conv.user_a?.name || "?"}
+                              {conv.user_a?.pseudo || conv.user_a?.name || "?"}
                             </Link>
                             <span className="text-[#9CA3AF]">&</span>
                             <Link href={`/admin/users/${conv.user_b_id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#486B46] truncate" onClick={(e) => e.stopPropagation()}>
-                              {conv.user_b?.name || "?"}
+                              {conv.user_b?.pseudo || conv.user_b?.name || "?"}
                             </Link>
                           </div>
                           <p className="text-xs text-[#9CA3AF] mt-0.5">
@@ -879,7 +885,7 @@ export default function ChatMonitoringPage() {
                           <p className="text-xs text-[#9CA3AF] italic p-2 bg-[#F9FAFB] rounded-lg">"{alert.snippet}"</p>
                         )}
                         <p className="text-xs text-[#9CA3AF] mt-2">
-                          Utilisateur signalé: <Link href={`/admin/users/${alert.reported_user_id}`} className="font-semibold text-[#486B46] hover:underline">{alert.reported_user?.name || "Inconnu"}</Link>
+                          Utilisateur signalé: <Link href={`/admin/users/${alert.reported_user_id}`} className="font-semibold text-[#486B46] hover:underline">{alert.reported_user?.pseudo || alert.reported_user?.name || "Inconnu"}</Link>
                         </p>
                       </div>
 
@@ -995,7 +1001,7 @@ export default function ChatMonitoringPage() {
                         : "border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]"
                     )}
                   >
-                    {selectedConv.user_a?.name}
+                    {selectedConv.user_a?.pseudo || selectedConv.user_a?.name}
                   </button>
                   <button
                     onClick={() => setModAction((a) => ({ ...a, target_user_id: selectedConv.user_b_id }))}
@@ -1005,7 +1011,7 @@ export default function ChatMonitoringPage() {
                         : "border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]"
                     )}
                   >
-                    {selectedConv.user_b?.name}
+                    {selectedConv.user_b?.pseudo || selectedConv.user_b?.name}
                   </button>
                 </div>
               </div>

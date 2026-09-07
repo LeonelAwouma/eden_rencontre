@@ -46,14 +46,15 @@ export async function GET(req: NextRequest) {
   const senderIds = [...new Set((messages || []).map(m => m.sender_id))];
   const { data: senders } = await supabase
     .from("profiles")
-    .select("id, name, email, avatar_url")
+    .select("id, name, pseudo, email, avatar_url")
     .in("id", senderIds);
 
-  const senderMap: Record<string, { id: string; name: string; email: string; avatar_url: string | null }> = {};
+  const senderMap: Record<string, { id: string; name: string; pseudo: string | null; email: string; avatar_url: string | null }> = {};
   for (const s of senders || []) {
     senderMap[s.id] = {
       id: s.id,
       name: s.name || "Utilisateur",
+      pseudo: s.pseudo || null,
       email: s.email || "",
       avatar_url: s.avatar_url || null,
     };
@@ -74,6 +75,7 @@ export async function GET(req: NextRequest) {
     sender: senderMap[msg.sender_id] || {
       id: msg.sender_id,
       name: "Utilisateur",
+      pseudo: null,
       email: "",
       avatar_url: null,
     },
@@ -88,7 +90,7 @@ export async function GET(req: NextRequest) {
   const memberIds = (members || []).map(m => m.user_id);
   const { data: memberProfiles } = await supabase
     .from("profiles")
-    .select("id, name, email, avatar_url, status, subscription_plan")
+    .select("id, name, pseudo, email, avatar_url, status, subscription_plan")
     .in("id", memberIds);
 
   const conversation = {
@@ -99,19 +101,21 @@ export async function GET(req: NextRequest) {
     user_a: memberProfiles?.[0] ? {
       id: memberProfiles[0].id,
       name: memberProfiles[0].name || "Utilisateur",
+      pseudo: memberProfiles[0].pseudo || null,
       email: memberProfiles[0].email || "",
       avatar_url: memberProfiles[0].avatar_url || null,
       status: (memberProfiles[0] as Record<string, unknown>).status as string || "approved",
       subscription_plan: (memberProfiles[0] as Record<string, unknown>).subscription_plan as string || "free",
-    } : { id: memberIds[0] || "", name: "Inconnu", email: "", avatar_url: null, status: "unknown", subscription_plan: "free" },
+    } : { id: memberIds[0] || "", name: "Inconnu", pseudo: null, email: "", avatar_url: null, status: "unknown", subscription_plan: "free" },
     user_b: memberProfiles?.[1] ? {
       id: memberProfiles[1].id,
       name: memberProfiles[1].name || "Utilisateur",
+      pseudo: memberProfiles[1].pseudo || null,
       email: memberProfiles[1].email || "",
       avatar_url: memberProfiles[1].avatar_url || null,
       status: (memberProfiles[1] as Record<string, unknown>).status as string || "approved",
       subscription_plan: (memberProfiles[1] as Record<string, unknown>).subscription_plan as string || "free",
-    } : { id: memberIds[1] || "", name: "Inconnu", email: "", avatar_url: null, status: "unknown", subscription_plan: "free" },
+    } : { id: memberIds[1] || "", name: "Inconnu", pseudo: null, email: "", avatar_url: null, status: "unknown", subscription_plan: "free" },
   };
 
   return NextResponse.json({

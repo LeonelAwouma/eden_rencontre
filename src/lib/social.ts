@@ -21,7 +21,7 @@ export interface Friendship {
 }
 
 const PROFILE_COLS =
-  "id, name, email, city, country, region, gender, birth_date, civil_status, profession, bio, marriage_vision, avatar_url, verification_status";
+  "id, name, pseudo, email, city, country, region, gender, birth_date, civil_status, profession, bio, marriage_vision, avatar_url, verification_status";
 
 // Champs du questionnaire utilisés par l'algorithme de matching (src/lib/matching.ts).
 // On ne sélectionne jamais les sections privées (santé, appréhensions) d'un AUTRE membre :
@@ -36,7 +36,7 @@ const FULL_PROFILE_COLS = `${PROFILE_COLS}, ${MATCH_QUESTIONNAIRE_COLS}`;
 function mapRow(d: any): MemberProfile {
   return {
     id: d.id,
-    name: d.name,
+    name: d.pseudo || d.name,
     email: d.email,
     city: d.city,
     country: d.country,

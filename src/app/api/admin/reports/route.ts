@@ -16,8 +16,8 @@ export async function GET(req: NextRequest) {
       .from("user_reports")
       .select(`
         *,
-        reporter:profiles!reporter_id(id, name, email, avatar_url),
-        reported_user:profiles!reported_user_id(id, name, email, avatar_url, status)
+        reporter:profiles!reporter_id(id, name, pseudo, email, avatar_url),
+        reported_user:profiles!reported_user_id(id, name, pseudo, email, avatar_url, status)
       `, { count: "exact" })
       .order("created_at", { ascending: false })
       .range(offset, offset + limit - 1);

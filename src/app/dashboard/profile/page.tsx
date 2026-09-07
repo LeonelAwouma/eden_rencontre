@@ -23,6 +23,7 @@ interface ProfileData {
   id: string;
   email: string | null;
   name: string | null;
+  pseudo: string | null;
   city: string | null;
   country: string | null;
   avatar_url: string | null;
@@ -103,6 +104,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: profile.name || "",
+    pseudo: profile.pseudo || "",
     city: profile.city || "",
     country: profile.country || "",
     region: profile.region || "",
@@ -116,7 +118,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
 
   useEffect(() => {
     setForm({
-      name: profile.name || "", city: profile.city || "", country: profile.country || "",
+      name: profile.name || "", pseudo: profile.pseudo || "", city: profile.city || "", country: profile.country || "",
       region: profile.region || "", profession: profile.profession || "", bio: profile.bio || "",
       civil_status: profile.civil_status || "", gender: profile.gender || "",
       birth_date: profile.birth_date || "", marriage_vision: profile.marriage_vision || [],
@@ -125,17 +127,18 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
 
   const handleSave = async () => {
     if (!form.name.trim()) { alert(t("profilePage.nameRequired")); return; }
+    if (!form.pseudo.trim()) { alert(t("profilePage.pseudoRequired")); return; }
     setSaving(true);
     try {
       if (!supabase) return;
       const { error } = await supabase.from("profiles").update({
-        name: form.name.trim(), city: form.city.trim(), country: form.country.trim(),
+        name: form.name.trim(), pseudo: form.pseudo.trim(), city: form.city.trim(), country: form.country.trim(),
         region: form.region.trim(), profession: form.profession.trim(), bio: form.bio.trim(),
         civil_status: form.civil_status, gender: form.gender, birth_date: form.birth_date || null,
         marriage_vision: form.marriage_vision, updated_at: new Date().toISOString(),
       }).eq("id", profile.id);
       if (error) throw error;
-      await updateProfile({ name: form.name.trim(), city: form.city, country: form.country, profession: form.profession, bio: form.bio, marriageVision: form.marriage_vision });
+      await updateProfile({ name: form.name.trim(), pseudo: form.pseudo.trim(), city: form.city, country: form.country, profession: form.profession, bio: form.bio, marriageVision: form.marriage_vision });
       setEditing(false);
       onRefresh();
     } catch (e: any) {
@@ -174,10 +177,10 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
         <div className="space-y-5">
           {/* Profile Header */}
           <div className="flex items-center gap-5 pb-5 border-b border-[#F0EDE8]">
-            <ProfileAvatar name={profile.name} avatarUrl={profile.avatar_url} size="lg" />
+            <ProfileAvatar name={profile.pseudo || profile.name} avatarUrl={profile.avatar_url} size="lg" />
             <div className="min-w-0">
               <h4 className="text-xl font-bold text-[#2F2F2F] truncate inline-flex items-center gap-2">
-                {profile.name || "—"}
+                {profile.pseudo || profile.name || "—"}
                 {profile.verification_status === "verified" && isProfileFullyComplete(profile) && <VerifiedBadge size={18} />}
               </h4>
               <p className="text-sm text-[#777777] truncate">{profile.email}</p>
@@ -191,6 +194,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
               <User size={14} /> {t("profilePage.personalInformation")}
             </h4>
             <div className="space-y-0">
+              <InfoRow label={t("profilePage.pseudo")} value={profile.pseudo} />
               <InfoRow label={t("profilePage.fullName")} value={profile.name} />
               <InfoRow label={t("profilePage.email")} value={profile.email} />
               <InfoRow label={t("profilePage.gender")} value={profile.gender} />
@@ -282,6 +286,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
               <User size={14} /> {t("profilePage.identity")}
             </h4>
             <div className="space-y-4">
+              <EditField label={t("profilePage.pseudo")} value={form.pseudo} onChange={v => setForm(f => ({ ...f, pseudo: v }))} required />
               <EditField label={t("profilePage.fullName")} value={form.name} onChange={v => setForm(f => ({ ...f, name: v }))} required />
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <EditField label={t("profilePage.gender")} value={form.gender} onChange={v => setForm(f => ({ ...f, gender: v }))} type="select" options={GENDER_OPTIONS.map(o => o.value)} optionLabels={Object.fromEntries(GENDER_OPTIONS.map(o => [o.value, o.label]))} />
@@ -670,7 +675,7 @@ export default function ProfilePage() {
       if (!session?.id) { router.replace("/login"); return; }
 
       const { data, error } = await supabase.from("profiles")
-        .select("id, email, name, city, country, avatar_url, gender, civil_status, region, profession, bio, marriage_vision, birth_date, questionnaire, onboarding_completed, verification_status, updated_at")
+        .select("id, email, name, pseudo, city, country, avatar_url, gender, civil_status, region, profession, bio, marriage_vision, birth_date, questionnaire, onboarding_completed, verification_status, updated_at")
         .eq("id", session.id)
         .maybeSingle();
       if (error) throw error;

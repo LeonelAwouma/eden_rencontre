@@ -8,6 +8,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const {
       name,
+      pseudo,
+      firstName,
+      lastName,
       email,
       password,
       gender,
@@ -36,9 +39,9 @@ export async function POST(request: NextRequest) {
       selfieVerificationScore = result.score;
     }
 
-    if (!email || !password || !name) {
+    if (!email || !password || !name || !pseudo || !firstName || !lastName) {
       return NextResponse.json(
-        { error: "Email, mot de passe et nom requis." },
+        { error: "Email, mot de passe, pseudo, prénom et nom requis." },
         { status: 400 }
       );
     }
@@ -53,6 +56,9 @@ export async function POST(request: NextRequest) {
       email_confirm: true, // Auto-confirm email since we manage approval manually
       user_metadata: {
         name,
+        pseudo,
+        firstName,
+        lastName,
         gender,
         birthDate,
         discoverySource,
@@ -110,6 +116,9 @@ export async function POST(request: NextRequest) {
         id: userId,
         email: cleanEmail,
         name,
+        pseudo,
+        first_name: firstName,
+        last_name: lastName,
         gender: gender || null,
         birth_date: birthDate || null,
         discovery_source: discoverySource || null,
@@ -134,6 +143,9 @@ export async function POST(request: NextRequest) {
         .from("profiles")
         .update({
           name,
+          pseudo,
+          first_name: firstName,
+          last_name: lastName,
           gender: gender || null,
           birth_date: birthDate || null,
           discovery_source: discoverySource || null,
