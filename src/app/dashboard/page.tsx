@@ -40,6 +40,7 @@ import {
   respondToRequest, buildRelationMap, listFavorites, setFavorite,
   listVisitors, type RelationStatus, type FriendRequest, type Visitor,
 } from "@/lib/social";
+import { getEngagementStatus, sendEngagementRequest, respondToEngagementRequest, type EngagementStatus } from "@/lib/engagement";
 import { motion, AnimatePresence } from "framer-motion";
 import { Monogram, Flourish, VitrailPattern } from "@/components/ornaments";
 import { ImposingFloralCorners, ImposingFloralSide } from "@/components/garden";
@@ -300,6 +301,9 @@ export default function DashboardPage() {
   const [pseudoError, setPseudoError] = useState<string | null>(null);
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
+  const [engagement, setEngagement] = useState<Record<string, EngagementStatus>>({});
+  const [engagementActing, setEngagementActing] = useState(false);
+  const [showEngageConfirm, setShowEngageConfirm] = useState(false);
   const [adminUser, setAdminUser] = useState<{ id: string; name: string } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -378,6 +382,7 @@ export default function DashboardPage() {
 
   // Verification notifications
   const [verificationNotifs, setVerificationNotifs] = useState<{ id: string; notification_type: string; title: string; message: string; is_read: boolean; created_at: string }[]>([]);
+  const [engagementNotifs, setEngagementNotifs] = useState<{ id: string; notification_type: string; title: string; message: string; is_read: boolean; created_at: string }[]>([]);
 
   // Verification status
   const [verificationStatus, setVerificationStatus] = useState<string>("none");
@@ -411,6 +416,10 @@ export default function DashboardPage() {
             n.notification_type === "verification_approved" || n.notification_type === "verification_rejected" || n.notification_type === "verification_pending"
           );
           setVerificationNotifs(vNotifs);
+          const eNotifs = d.notifications.filter((n: any) =>
+            n.notification_type === "engagement_request" || n.notification_type === "engagement_accepted" || n.notification_type === "engagement_declined"
+          );
+          setEngagementNotifs(eNotifs);
         }
       })
       .catch(() => {});
@@ -428,10 +437,12 @@ export default function DashboardPage() {
       .catch(() => {});
   }, [user?.id]);
 
-  const unreadMeetingNotifs = meetingNotifs.filter((n) => !n.is_read && n.notification_type !== "verification_approved" && n.notification_type !== "verification_rejected" && n.notification_type !== "verification_pending");
+  const ENGAGEMENT_NOTIF_TYPES = ["engagement_request", "engagement_accepted", "engagement_declined"];
+  const unreadMeetingNotifs = meetingNotifs.filter((n) => !n.is_read && n.notification_type !== "verification_approved" && n.notification_type !== "verification_rejected" && n.notification_type !== "verification_pending" && !ENGAGEMENT_NOTIF_TYPES.includes(n.notification_type));
   const unreadBlogNotifs = blogNotifs.filter((n) => !n.is_read);
   const unreadVerificationNotifs = verificationNotifs.filter((n) => !n.is_read);
-  const notifCount = unreadMeetingNotifs.length + unreadBlogNotifs.length + unreadVerificationNotifs.length;
+  const unreadEngagementNotifs = engagementNotifs.filter((n) => !n.is_read);
+  const notifCount = unreadMeetingNotifs.length + unreadBlogNotifs.length + unreadVerificationNotifs.length + unreadEngagementNotifs.length;
 
   const markMeetingNotifsRead = async () => {
     if (!user?.id || unreadMeetingNotifs.length === 0) return;
@@ -460,6 +471,15 @@ export default function DashboardPage() {
       body: JSON.stringify({ notification_ids: verificationNotifs.map((n) => n.id) }),
     }).catch(() => {});
   };
+  const markEngagementNotifsRead = async () => {
+    if (!user?.id || unreadEngagementNotifs.length === 0) return;
+    setEngagementNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
+    fetch("/api/meetings/notifications", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ notification_ids: engagementNotifs.map((n) => n.id) }),
+    }).catch(() => {});
+  };
   const displayInitial = displayName.charAt(0).toUpperCase();
   const myAvatar = user?.avatar_url || undefined;
   const displayLocation = user ? [user.city, user.country].filter(Boolean).join(", ") || "Eden" : "Eden";
@@ -478,6 +498,9 @@ export default function DashboardPage() {
     setMessages(await getMessages(convId, meId));
     await markConversationRead(convId, meId);
     setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, unread: 0 } : c)));
+    if (meId) {
+      getEngagementStatus(convId, meId).then((status) => setEngagement((prev) => ({ ...prev, [convId]: status })));
+    }
   };
 
   const handleStartConversation = async (other: DirectoryUser) => {
@@ -845,6 +868,43 @@ export default function DashboardPage() {
     setNeedsPseudo(false);
   };
 
+  // ── Demande d'engagement (bouton "S'engager" du chat) ──
+  const handleSendEngagement = async () => {
+    if (!displayConv || !meId) return;
+    const convId = displayConv.id;
+    const recipientId = displayConv.otherId;
+    setEngagementActing(true);
+    const res = await sendEngagementRequest(convId, meId, recipientId);
+    setEngagementActing(false);
+    setShowEngageConfirm(false);
+    if (!res.ok) {
+      toast({ title: res.error || t("dashboard.toastEngagementErrorGeneric"), variant: "destructive" });
+      return;
+    }
+    setEngagement((prev) => ({ ...prev, [convId]: { status: "pending", requestId: res.requestId, requesterId: meId, recipientId } }));
+    toast({ title: t("dashboard.toastEngagementSentTitle"), description: t("dashboard.toastEngagementSentDesc", { name: displayConv.name }) });
+  };
+
+  const handleRespondEngagement = async (accept: boolean) => {
+    if (!displayConv || !meId) return;
+    const convId = displayConv.id;
+    const current = engagement[convId];
+    if (!current?.requestId) return;
+    setEngagementActing(true);
+    const res = await respondToEngagementRequest(current.requestId, meId, accept);
+    setEngagementActing(false);
+    if (!res.ok) {
+      toast({ title: res.error || t("dashboard.toastEngagementErrorGeneric"), variant: "destructive" });
+      return;
+    }
+    setEngagement((prev) => ({ ...prev, [convId]: { ...prev[convId], status: accept ? "accepted" : "declined" } }));
+    toast({ title: accept ? t("dashboard.toastEngagementAcceptedTitle") : t("dashboard.toastEngagementDeclinedTitle") });
+  };
+
+  const handleViewEngagementPayment = () => {
+    toast({ title: t("dashboard.toastEngagementPaymentSoon") });
+  };
+
   useEffect(() => {
     if (!user?.id) return;
     upsertMyProfile(user).then((r) => {
@@ -1025,6 +1085,27 @@ export default function DashboardPage() {
             >
               {pseudoSaving ? <Loader2 className="w-4 h-4 animate-spin" /> : t("dashboard.pseudoConfirm")}
             </Button>
+          </div>
+        </div>
+      )}
+      {showEngageConfirm && displayConv && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-5">
+          <div className="w-full max-w-md bg-white rounded-2xl p-8 shadow-2xl space-y-5">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center" style={{ background: "#EEF5EC" }}>
+              <HeartHandshake className="w-7 h-7" style={{ color: "#486B46" }} />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold text-[#2F2F2F]">{t("dashboard.engageConfirmTitle")}</h2>
+              <p className="text-sm text-[#777777] mt-1">{t("dashboard.engageConfirmDesc", { name: displayConv.name })}</p>
+            </div>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowEngageConfirm(false)} disabled={engagementActing} className="flex-1 h-12 rounded-xl">
+                {t("dashboard.engageCancel")}
+              </Button>
+              <Button onClick={handleSendEngagement} disabled={engagementActing} className="flex-1 h-12 bg-primary text-primary-foreground font-bold rounded-xl">
+                {engagementActing ? <Loader2 className="w-4 h-4 animate-spin" /> : t("dashboard.engageConfirmSend")}
+              </Button>
+            </div>
           </div>
         </div>
       )}
@@ -1924,7 +2005,52 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     </button>
+                    {!isAdminThread && (() => {
+                      const eng = engagement[displayConv.id];
+                      const status = eng?.status || "none";
+                      if (status === "none" || status === "declined") {
+                        return (
+                          <button onClick={() => setShowEngageConfirm(true)}
+                            className="ml-auto shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-bold transition-colors"
+                            style={{ background: "#EEF5EC", color: "#486B46" }}>
+                            <HeartHandshake className="w-4 h-4" /> <span className="hidden sm:inline">{t("dashboard.engageButton")}</span>
+                          </button>
+                        );
+                      }
+                      if (status === "pending" && eng?.requesterId === meId) {
+                        return <span className="ml-auto shrink-0 text-[11px] font-medium px-2" style={{ color: "#777777" }}>{t("dashboard.engagePendingAsRequester")}</span>;
+                      }
+                      if (status === "accepted") {
+                        return (
+                          <button onClick={handleViewEngagementPayment}
+                            className="ml-auto shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-bold transition-colors"
+                            style={{ background: "#486B46", color: "#FFFFFF" }}>
+                            💍 <span className="hidden sm:inline">{t("dashboard.viewPayment")}</span>
+                          </button>
+                        );
+                      }
+                      return null;
+                    })()}
                   </div>
+                  {!isAdminThread && engagement[displayConv.id]?.status === "pending" && engagement[displayConv.id]?.recipientId === meId && (
+                    <div className="p-4 flex items-center gap-3 flex-wrap" style={{ background: "#EEF5EC", borderBottom: "1px solid #E8E5E0" }}>
+                      <HeartHandshake className="w-5 h-5 shrink-0" style={{ color: "#486B46" }} />
+                      <div className="flex-1 min-w-[180px]">
+                        <p className="text-sm font-bold" style={{ color: "#2F2F2F" }}>{t("dashboard.engageBannerRecipientTitle", { name: displayConv.name })}</p>
+                        <p className="text-xs" style={{ color: "#4B5563" }}>{t("dashboard.engageBannerRecipientDesc")}</p>
+                      </div>
+                      <div className="flex gap-2 shrink-0">
+                        <button disabled={engagementActing} onClick={() => handleRespondEngagement(true)}
+                          className="h-9 px-4 rounded-xl text-xs font-bold disabled:opacity-60" style={{ background: "#486B46", color: "#FFFFFF" }}>
+                          {t("dashboard.engageAccept")}
+                        </button>
+                        <button disabled={engagementActing} onClick={() => handleRespondEngagement(false)}
+                          className="h-9 px-4 rounded-xl text-xs font-bold disabled:opacity-60" style={{ background: "#FFFFFF", color: "#EF4444", border: "1px solid #E8E5E0" }}>
+                          {t("dashboard.engageDecline")}
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   <div className="relative flex-1 min-h-0" style={{ background: "#FAF9F6" }}>
                     <VitrailPattern className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.03]" />
                     <div className="relative h-full overflow-y-auto p-4 space-y-2 custom-scrollbar">
@@ -2043,6 +2169,7 @@ export default function DashboardPage() {
         if (unreadMeetingNotifs.length > 0) markMeetingNotifsRead();
         if (unreadBlogNotifs.length > 0) markBlogNotifsRead();
         if (unreadVerificationNotifs.length > 0) markVerificationNotifsRead();
+        if (unreadEngagementNotifs.length > 0) markEngagementNotifsRead();
 
         return (
           <div className="space-y-6">
@@ -2062,6 +2189,36 @@ export default function DashboardPage() {
                         style={{ borderLeft: n.is_read ? "3px solid transparent" : "3px solid #486B46" }}>
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: isApproved ? "#EEF5EC" : "#FEF2F2" }}>
                           <ShieldCheck className="w-5 h-5" style={{ color: isApproved ? "#38C172" : "#EF4444" }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-semibold" style={{ color: "#2F2F2F" }}>{n.title}</p>
+                          <p className="text-xs mt-1 leading-relaxed" style={{ color: "#4B5563" }}>{n.message}</p>
+                          <p className="text-[10px] mt-1.5" style={{ color: "#9CA3AF" }}>{formattedDate}</p>
+                        </div>
+                        {!n.is_read && (
+                          <span className="w-2 h-2 rounded-full shrink-0 mt-2" style={{ background: "#486B46" }} />
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Engagement notifications */}
+            {engagementNotifs.length > 0 && (
+              <div className="space-y-2">
+                <p className="text-[10px] font-bold uppercase tracking-[0.3em] px-1" style={{ color: "#486B46" }}>{t("dashboard.engagementNotifLabel")}</p>
+                <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
+                  {engagementNotifs.map((n) => {
+                    const notifDate = new Date(n.created_at);
+                    const formattedDate = notifDate.toLocaleDateString("en-US", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                    const isDeclined = n.notification_type === "engagement_declined";
+                    return (
+                      <div key={n.id} className="flex items-start gap-4 p-4 transition-colors"
+                        style={{ borderLeft: n.is_read ? "3px solid transparent" : "3px solid #486B46" }}>
+                        <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: isDeclined ? "#FEF2F2" : "#EEF5EC" }}>
+                          <HeartHandshake className="w-5 h-5" style={{ color: isDeclined ? "#EF4444" : "#38C172" }} />
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold" style={{ color: "#2F2F2F" }}>{n.title}</p>
@@ -2179,7 +2336,7 @@ export default function DashboardPage() {
             )}
 
             {/* Empty state when no notifications at all */}
-            {meetingNotifs.length === 0 && messageNotifs.length === 0 && blogNotifs.length === 0 && verificationNotifs.length === 0 && (
+            {meetingNotifs.length === 0 && messageNotifs.length === 0 && blogNotifs.length === 0 && verificationNotifs.length === 0 && engagementNotifs.length === 0 && (
               <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                 {[
                   { icon: Heart, text: t("dashboard.viewActivityNotifsHere"), when: "" },
