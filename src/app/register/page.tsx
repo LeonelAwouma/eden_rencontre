@@ -19,6 +19,7 @@ import { registerUser, ageFromBirthDate, MIN_AGE } from "@/lib/auth";
 import { MARRIAGE_VALUES } from "@/lib/values";
 import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
 import { Monogram } from "@/components/ornaments";
+import { AvatarPicker } from "@/components/avatar-picker";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
 import { useMobileContinueGate, MobileContinueGate } from "@/components/mobile-continue-gate";
@@ -198,7 +199,9 @@ export default function RegisterPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const totalSteps = 11;
+  const [publicAvatar, setPublicAvatar] = useState<string | null>(null);
+
+  const totalSteps = 12;
   const progress = ((step + 1) / totalSteps) * 100;
 
   const nextStep = () => setStep(prev => prev + 1);
@@ -273,6 +276,7 @@ export default function RegisterPage() {
           charterAcceptFull: formData.charterAcceptFull,
           selfieImage: selfieDataUri,
           profilePhotos: photos.filter(Boolean),
+          avatarUrl: publicAvatar,
         }),
       });
 
@@ -1174,8 +1178,32 @@ export default function RegisterPage() {
               </div>
             )}
 
-            {/* Step 11 — Completion */}
-            {step >= 11 && (
+            {/* ============================================================ */}
+            {/* Step 11 — Public Avatar */}
+            {/* ============================================================ */}
+            {step === 11 && (
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.avatarTitle")}</h1>
+                  <p className="text-foreground/50 text-sm">{t("register.avatarSubtitle")}</p>
+                </div>
+
+                <AvatarPicker photos={photos} value={publicAvatar} onChange={setPublicAvatar} seedBase={formData.pseudo || formData.email} />
+
+                <Button
+                  onClick={nextStep}
+                  className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                >
+                  {t("register.continueToCompletion")} <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
+                  <ChevronLeft className="w-4 h-4" /> {t("register.back")}
+                </button>
+              </div>
+            )}
+
+            {/* Step 12 — Completion */}
+            {step >= 12 && (
               <div className="space-y-8">
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">

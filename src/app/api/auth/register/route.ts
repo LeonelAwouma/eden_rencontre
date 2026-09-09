@@ -26,6 +26,7 @@ export async function POST(request: NextRequest) {
       charterAcceptFull,
       selfieImage,
       profilePhotos,
+      avatarUrl,
     } = body;
 
     // Selfie verification is recomputed here from the actual images — the client's
@@ -59,6 +60,7 @@ export async function POST(request: NextRequest) {
         pseudo,
         firstName,
         lastName,
+        avatar_url: avatarUrl || null,
         gender,
         birthDate,
         discoverySource,
@@ -133,6 +135,7 @@ export async function POST(request: NextRequest) {
         selfie_verification_score: selfieVerificationScore,
         selfie_url: selfieImage || null,
         profile_photos: profilePhotos || [],
+        avatar_url: avatarUrl || null,
         updated_at: new Date().toISOString(),
       });
 
@@ -160,6 +163,7 @@ export async function POST(request: NextRequest) {
           selfie_verification_score: selfieVerificationScore,
           selfie_url: selfieImage || null,
           profile_photos: profilePhotos || [],
+          avatar_url: avatarUrl || null,
           updated_at: new Date().toISOString(),
         })
         .eq("id", userId);

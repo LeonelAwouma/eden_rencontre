@@ -227,6 +227,9 @@
     "selfieVerified": "Selfie verified ✓",
     "selfieSkipBtn": "Skip verification",
     "selfieSkipWarning": "Without verification, your profile will have reduced visibility.",
+    "avatarTitle": "Choose your public photo",
+    "avatarSubtitle": "Use one of your photos or generate an illustrated avatar — this is what other members will see.",
+    "continueToCompletion": "Continue",
     "completionBadge": "Identity verified",
     "completionBadgeDesc": "Your photos have been successfully validated.",
     "creatingProfile": "Creating profile…",
@@ -1035,7 +1038,17 @@
     "viewPhoto": "View photo",
     "closePhoto": "Close photo"
   },
+  "avatarPicker": {
+    "myPhotosLabel": "My photos",
+    "generatedLabel": "Generated avatar",
+    "regenerate": "Regenerate"
+  },
   "dashboard": {
+    "chooseAvatarTitle": "Choose your public photo",
+    "chooseAvatarDesc": "Use one of your photos or generate an illustrated avatar.",
+    "generateAvatarButton": "Generate an avatar",
+    "avatarPickerConfirm": "Confirm",
+    "avatarPickerCancel": "Cancel",
     "choosePseudoTitle": "Choose your nickname",
     "choosePseudoDesc": "This is the name other members will now see, instead of your real name.",
     "pseudoPlaceholder": "Your nickname",

@@ -15,7 +15,7 @@ import {
   Pencil, Filter, ShieldCheck, CheckCircle2, LogOut, Camera,
   HeartHandshake, Hash, Share2, Video, CalendarDays, Church,
   Bookmark, ThumbsUp, Send, ArrowLeft, Smile, ImagePlus, Loader2,
-  Trash2, UserPlus, ChurchIcon
+  Trash2, UserPlus, ChurchIcon, Sparkles
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -43,6 +43,7 @@ import {
 import { getEngagementStatus, sendEngagementRequest, respondToEngagementRequest, type EngagementStatus } from "@/lib/engagement";
 import { motion, AnimatePresence } from "framer-motion";
 import { Monogram, Flourish, VitrailPattern } from "@/components/ornaments";
+import { AvatarPicker } from "@/components/avatar-picker";
 import { ImposingFloralCorners, ImposingFloralSide } from "@/components/garden";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { ChatGuide } from "@/components/dashboard/chat-guide";
@@ -319,6 +320,9 @@ export default function DashboardPage() {
   const [editingProfile, setEditingProfile] = useState(false);
   const [savingProfile, setSavingProfile] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false);
+  const [pickedAvatar, setPickedAvatar] = useState<string | null>(null);
+  const [savingAvatar, setSavingAvatar] = useState(false);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [profileForm, setProfileForm] = useState({ name: "", city: "", country: "", civilStatus: "", profession: "", bio: "", marriageVision: [] as string[] });
   const [questionnaireAnswers, setQuestionnaireAnswers] = useState<Record<string, any>>({});
@@ -670,6 +674,22 @@ export default function DashboardPage() {
     const res = await updateProfile({ avatar_url: up.url });
     if (!res.ok) { toast({ title: t("dashboard.toastFailed"), description: res.error, variant: "destructive" }); return; }
     setUser(res.user);
+    toast({ title: t("dashboard.toastPhotoUpdated") });
+  };
+
+  const openAvatarPicker = () => {
+    setPickedAvatar(user?.avatar_url || null);
+    setShowAvatarPicker(true);
+  };
+
+  const handleConfirmGeneratedAvatar = async () => {
+    if (!pickedAvatar) return;
+    setSavingAvatar(true);
+    const res = await updateProfile({ avatar_url: pickedAvatar });
+    setSavingAvatar(false);
+    if (!res.ok) { toast({ title: t("dashboard.toastFailed"), description: res.error, variant: "destructive" }); return; }
+    setUser(res.user);
+    setShowAvatarPicker(false);
     toast({ title: t("dashboard.toastPhotoUpdated") });
   };
 
@@ -1104,6 +1124,25 @@ export default function DashboardPage() {
               </Button>
               <Button onClick={handleSendEngagement} disabled={engagementActing} className="flex-1 h-12 bg-primary text-primary-foreground font-bold rounded-xl">
                 {engagementActing ? <Loader2 className="w-4 h-4 animate-spin" /> : t("dashboard.engageConfirmSend")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showAvatarPicker && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-5">
+          <div className="w-full max-w-lg bg-white rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
+            <div>
+              <h2 className="text-xl font-bold text-[#2F2F2F]">{t("dashboard.chooseAvatarTitle")}</h2>
+              <p className="text-sm text-[#777777] mt-1">{t("dashboard.chooseAvatarDesc")}</p>
+            </div>
+            <AvatarPicker value={pickedAvatar} onChange={setPickedAvatar} seedBase={user?.pseudo || user?.name} />
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowAvatarPicker(false)} disabled={savingAvatar} className="flex-1 h-12 rounded-xl">
+                {t("dashboard.avatarPickerCancel")}
+              </Button>
+              <Button onClick={handleConfirmGeneratedAvatar} disabled={savingAvatar || !pickedAvatar} className="flex-1 h-12 bg-primary text-primary-foreground font-bold rounded-xl">
+                {savingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : t("dashboard.avatarPickerConfirm")}
               </Button>
             </div>
           </div>
@@ -2430,6 +2469,11 @@ export default function DashboardPage() {
                         className="absolute bottom-0 right-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg"
                         style={{ background: "#486B46", color: "#FFFFFF" }}>
                         {uploadingAvatar ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5" />}
+                      </button>
+                      <button onClick={openAvatarPicker} aria-label={t("dashboard.generateAvatarButton")}
+                        className="absolute bottom-0 left-0 w-8 h-8 rounded-full flex items-center justify-center shadow-lg"
+                        style={{ background: "#EEF5EC", color: "#486B46", border: "1px solid #C6D4C0" }}>
+                        <Sparkles className="w-3.5 h-3.5" />
                       </button>
                       <input ref={avatarInputRef} type="file" accept="image/*" className="hidden"
                         onChange={(e) => { handlePickAvatar(e.target.files?.[0]); e.target.value = ""; }} />
