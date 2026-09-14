@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
+import { GardenIllustration } from "./illustration";
 
 /** Promotional banner showcasing Garden of Alliance value proposition */
 export function PromoBanner() {
@@ -16,7 +17,7 @@ export function PromoBanner() {
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-sage/15 to-transparent" aria-hidden="true" />
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-sage/15 to-transparent" aria-hidden="true" />
 
-      <div className="container mx-auto px-4 sm:px-6">
+      <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16 items-center">
           {/* Image Column */}
           <motion.div
@@ -75,27 +76,17 @@ export function PromoBanner() {
         </div>
       </div>
 
-      {/* Decorative botanical accent — top-right */}
-      <div className="absolute -top-4 right-8 w-32 h-32 opacity-[0.07] pointer-events-none" aria-hidden="true">
-        <svg viewBox="0 0 120 120" fill="none" className="w-full h-full text-sage">
-          <path d="M60 10C60 10 20 40 20 70C20 100 60 110 60 110C60 110 100 100 100 70C100 40 60 10 60 10Z" stroke="currentColor" strokeWidth="1" />
-          <path d="M60 30V90" stroke="currentColor" strokeWidth="0.5" />
-          <path d="M40 50C40 50 50 45 60 40" stroke="currentColor" strokeWidth="0.5" />
-          <path d="M80 50C80 50 70 45 60 40" stroke="currentColor" strokeWidth="0.5" />
-          <path d="M35 70C35 70 48 62 60 55" stroke="currentColor" strokeWidth="0.5" />
-          <path d="M85 70C85 70 72 62 60 55" stroke="currentColor" strokeWidth="0.5" />
-        </svg>
-      </div>
-
-      {/* Decorative botanical accent — bottom-left */}
-      <div className="absolute -bottom-4 left-8 w-24 h-24 opacity-[0.07] pointer-events-none" aria-hidden="true">
-        <svg viewBox="0 0 100 100" fill="none" className="w-full h-full text-sage">
-          <circle cx="50" cy="50" r="40" stroke="currentColor" strokeWidth="0.8" />
-          <circle cx="50" cy="50" r="25" stroke="currentColor" strokeWidth="0.5" />
-          <path d="M50 10V90" stroke="currentColor" strokeWidth="0.5" />
-          <path d="M10 50H90" stroke="currentColor" strokeWidth="0.5" />
-        </svg>
-      </div>
+      {/* Illustration botanique — bouquet d'hibiscus et colibri, coin haut-droit */}
+      <GardenIllustration
+        src="/image_garden.png"
+        placement="corner"
+        corner="tr"
+        opacity={0.55}
+        fringe="heavy"
+        width={1254}
+        height={1254}
+        className="hidden sm:block absolute -top-6 right-4 w-40 lg:w-56 z-0"
+      />
     </section>
   );
 }

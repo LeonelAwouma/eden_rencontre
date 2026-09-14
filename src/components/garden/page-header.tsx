@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { SkyFlock } from "./bird-scene";
@@ -87,32 +88,28 @@ export function PageHeader({
   );
 }
 
-/** Rameau d'olivier centré, avec un oiseau minuscule posé dessus. */
+/**
+ * Séparateur floral — deux traits fins encadrant le médaillon "alliance"
+ * (bouquet, anneaux, cœur) recadré depuis decor.png.
+ */
 export function OliveBirdDivider({ className }: { className?: string }) {
   return (
-    <svg
-      viewBox="0 0 220 26"
-      fill="none"
-      className={cn("w-40 sm:w-52 h-6 opacity-40", className)}
-      aria-hidden="true"
-    >
-      {/* Rameau */}
-      <path d="M6 17 L86 17" stroke="hsl(155 42% 18%)" strokeWidth="0.6" strokeLinecap="round" />
-      <path d="M134 17 L214 17" stroke="hsl(155 42% 18%)" strokeWidth="0.6" strokeLinecap="round" />
-      {/* Olives */}
-      <ellipse cx="110" cy="17" rx="22" ry="6.5" fill="hsl(145 22% 62% / 0.28)" transform="rotate(-8 110 17)" />
-      <ellipse cx="110" cy="17" rx="4.5" ry="9" fill="hsl(95 28% 38% / 0.14)" />
-      <circle cx="92" cy="15" r="2" fill="hsl(95 28% 38% / 0.2)" />
-      <circle cx="128" cy="15" r="2" fill="hsl(95 28% 38% / 0.2)" />
-      {/* L'oiseau, posé au-dessus */}
-      <path
-        d="M100 7 C104 1 108 1 110 6 C112 1 116 1 120 7"
-        stroke="hsl(155 42% 18%)"
-        strokeWidth="1.1"
-        strokeLinecap="round"
-        fill="none"
-        opacity="0.55"
-      />
-    </svg>
+    <div className={cn("flex items-center gap-2.5 sm:gap-3 w-48 sm:w-64", className)} aria-hidden="true">
+      <span className="h-px flex-1" style={{ backgroundColor: "#617863", opacity: 0.5 }} />
+      <div
+        className="relative shrink-0 w-16 sm:w-20"
+        style={{ aspectRatio: "495 / 170" }}
+      >
+        <Image
+          src="/decor.png"
+          alt=""
+          fill
+          sizes="80px"
+          className="object-cover"
+          style={{ objectPosition: "50% 48.8%" }}
+        />
+      </div>
+      <span className="h-px flex-1" style={{ backgroundColor: "#617863", opacity: 0.5 }} />
+    </div>
   );
 }

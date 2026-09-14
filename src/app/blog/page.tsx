@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Calendar, User, ArrowRight, Search, Clock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { PageHeader, SkyFlock } from "@/components/garden";
+import { PageHeader, SkyFlock, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 interface BlogPostItem {
@@ -48,32 +48,6 @@ export default function BlogPage() {
       <main className="flex-1">
         {/* ═══ Hero ═══ */}
         <section className="relative py-20 sm:py-28 overflow-hidden">
-          {/* Image de fond conservée, fondue dans le crème du jardin */}
-          <div className="absolute inset-0" aria-hidden="true">
-            <Image
-              src="https://picsum.photos/seed/blog-hero/1600/900"
-              alt=""
-              fill
-              className="object-cover opacity-[0.18]"
-              data-ai-hint="bible study"
-              priority
-            />
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "radial-gradient(ellipse 110% 80% at 50% 0%, hsl(42 40% 98% / 0.72) 0%, hsl(42 35% 97% / 0.9) 55%, hsl(42 35% 97%) 100%)",
-              }}
-            />
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "radial-gradient(ellipse 85% 60% at 88% 12%, hsl(152 35% 32% / 0.07) 0%, transparent 55%), radial-gradient(ellipse 70% 55% at 8% 92%, hsl(145 22% 62% / 0.1) 0%, transparent 55%)",
-              }}
-            />
-          </div>
-
           <SkyFlock count={5} className="hidden sm:block absolute top-[18%] left-[7%] w-36 lg:w-48 opacity-[0.14] z-10" />
 
           <div className="container mx-auto px-4 sm:px-6 relative z-20">
@@ -82,6 +56,16 @@ export default function BlogPage() {
               title={t("blog.pageTitle")}
               subtitle={t("blog.pageSubtitle")}
               flock={false}
+            />
+
+            <GardenIllustration
+              src="/image_four_garden.png"
+              placement="hero-frame"
+              opacity={0.85}
+              fringe="none"
+              width={1254}
+              height={1254}
+              className="w-[85vw] sm:w-[55vw] lg:w-[640px] mx-auto mt-10 sm:mt-14"
             />
           </div>
 

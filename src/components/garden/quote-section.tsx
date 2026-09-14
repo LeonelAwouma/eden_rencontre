@@ -4,9 +4,8 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { GardenSection } from "./garden-section";
-import { DoveWithOliveBranch } from "./birds";
-import { SkyFlock } from "./bird-scene";
 import { OliveBirdDivider } from "./page-header";
+import { GardenIllustration } from "./illustration";
 import { useI18n } from "@/lib/i18n";
 
 export function QuoteSection() {
@@ -15,10 +14,6 @@ export function QuoteSection() {
 
   return (
     <GardenSection variant="garden" className="py-20 sm:py-32 relative overflow-hidden">
-      {/* Deux nuées lointaines encadrent la citation sans jamais la toucher */}
-      <SkyFlock count={4} className="hidden sm:block absolute top-12 left-[6%] w-32 lg:w-44 opacity-[0.12]" />
-      <SkyFlock count={3} className="hidden lg:block absolute bottom-16 right-[7%] w-28 opacity-[0.1]" />
-
       <div className="container mx-auto px-5 sm:px-6 relative z-10 text-center">
         <motion.div
           initial={reduced ? false : { opacity: 0, y: 32 }}
@@ -29,7 +24,13 @@ export function QuoteSection() {
         >
           {/* La colombe au rameau — l'emblème de l'alliance, en ouverture */}
           <div className="flex justify-center">
-            <DoveWithOliveBranch className="w-28 sm:w-36 h-auto text-deep-eden/45" />
+            <GardenIllustration
+              src="/image_four_garden.png"
+              placement="centerpiece"
+              width={1254}
+              height={1254}
+              className="w-40 sm:w-56 lg:w-64"
+            />
           </div>
 
           <h2 className="font-headline text-[1.7rem] leading-snug sm:text-5xl md:text-6xl font-bold text-foreground sm:leading-tight italic">

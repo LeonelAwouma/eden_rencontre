@@ -2,7 +2,7 @@
 
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenSection, PageHeader, SkyFlock, PerchOrnament } from "@/components/garden";
+import { GardenSection, PageHeader, SkyFlock, PerchOrnament, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 export default function ContactPage() {
@@ -15,7 +15,17 @@ export default function ContactPage() {
         <GardenSection variant="garden" className="py-16 sm:py-24 relative">
           <SkyFlock count={4} className="hidden sm:block absolute top-10 left-[6%] w-32 opacity-[0.12]" />
           <PerchOrnament className="hidden lg:block absolute bottom-14 right-[6%] w-24 opacity-[0.18]" flip />
-          <div className="container mx-auto px-4 sm:px-6">
+          <GardenIllustration
+            src="/image_two_garden.png"
+            placement="hero-frame"
+            corner="tl"
+            opacity={0.6}
+            fringe="light"
+            width={1448}
+            height={1086}
+            className="hidden md:block absolute top-8 left-0 w-72 lg:w-96 xl:w-[28rem] z-0"
+          />
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <PageHeader
               eyebrow={t("contact.eyebrow")}
               title={t("contact.title")}

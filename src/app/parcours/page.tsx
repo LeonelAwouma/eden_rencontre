@@ -5,9 +5,8 @@ import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CheckCircle2, Heart, ScrollText, ShieldCheck, Users } from "lucide-react";
-import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
-import { PageHeader, SkyFlock, PerchOrnament, OliveBirdDivider } from "@/components/garden";
+import { PageHeader, SkyFlock, PerchOrnament, OliveBirdDivider, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 export default function ParcoursPage() {
@@ -48,32 +47,15 @@ export default function ParcoursPage() {
       <main className="flex-1">
         {/* ═══ Hero ═══ */}
         <section className="relative py-20 sm:py-28 overflow-hidden">
-          {/* Image de fond, conservée, mais fondue dans le crème */}
-          <div className="absolute inset-0" aria-hidden="true">
-            <Image
-              src="https://picsum.photos/seed/eden-parcours/1600/900"
-              alt=""
-              fill
-              className="object-cover opacity-[0.18]"
-              data-ai-hint="bible wedding"
-              priority
-            />
-            {/* Le dégradé jardin rattrape la photo et la ramène au crème */}
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "radial-gradient(ellipse 110% 80% at 50% 0%, hsl(42 40% 98% / 0.72) 0%, hsl(42 35% 97% / 0.9) 55%, hsl(42 35% 97%) 100%)",
-              }}
-            />
-            <div
-              className="absolute inset-0"
-              style={{
-                background:
-                  "radial-gradient(ellipse 90% 60% at 85% 10%, hsl(152 35% 32% / 0.07) 0%, transparent 55%), radial-gradient(ellipse 70% 55% at 10% 95%, hsl(145 22% 62% / 0.1) 0%, transparent 55%)",
-              }}
-            />
-          </div>
+          {/* Halo chaud derrière l'ouverture de l'arche — se lit comme la lumière du portail */}
+          <div
+            className="absolute inset-0"
+            aria-hidden="true"
+            style={{
+              background:
+                "radial-gradient(ellipse 45% 55% at 50% 42%, hsl(45 55% 88% / 0.55) 0%, transparent 65%)",
+            }}
+          />
 
           {/* Nuée lointaine */}
           <SkyFlock count={5} className="hidden sm:block absolute top-[16%] left-[7%] w-36 lg:w-48 opacity-[0.14] z-10" />
@@ -84,6 +66,17 @@ export default function ParcoursPage() {
               title={t("parcours.heroTitle")}
               subtitle={t("parcours.heroDesc")}
               flock={false}
+            />
+
+            <GardenIllustration
+              src="/image_three_garden.png"
+              placement="hero-frame"
+              opacity={0.9}
+              fringe="none"
+              shadow
+              width={1448}
+              height={1086}
+              className="w-[90vw] sm:w-[70vw] lg:w-[900px] mx-auto mt-10 sm:mt-14"
             />
           </div>
 

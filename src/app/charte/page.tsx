@@ -2,7 +2,7 @@
 
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenSection, OliveBirdDivider, SkyFlock } from "@/components/garden";
+import { GardenSection, OliveBirdDivider, SkyFlock, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 export default function ChartePage() {
@@ -15,7 +15,17 @@ export default function ChartePage() {
       <main className="flex-1">
         <GardenSection variant="garden" className="py-16 sm:py-24 relative">
           <SkyFlock count={4} className="hidden sm:block absolute top-10 right-[7%] w-32 opacity-[0.11]" />
-          <div className="container mx-auto px-4 sm:px-6">
+          <GardenIllustration
+            src="/image_two_garden.png"
+            placement="corner"
+            corner="tr"
+            opacity={0.35}
+            fringe="light"
+            width={1448}
+            height={1086}
+            className="hidden sm:block absolute top-0 right-0 w-40 lg:w-52 z-0"
+          />
+          <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <div className="max-w-3xl mx-auto text-center space-y-6 mb-16">
               <span className="eden-eyebrow">{t("legalCharte.eyebrow")}</span>
               <h1 className="font-headline text-4xl md:text-5xl font-bold text-foreground tracking-tight">

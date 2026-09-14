@@ -2,7 +2,7 @@
 
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenSection, PageHeader, SkyFlock, GlidingSwallow, PerchOrnament } from "@/components/garden";
+import { GardenSection, PageHeader, SkyFlock, GlidingSwallow, PerchOrnament, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 /** Botanical vine ornament for section dividers */
@@ -45,6 +45,16 @@ export default function ConceptPage() {
           <div className="hidden lg:block">
             <GlidingSwallow className="top-[22%]" delay={6} duration={38} />
           </div>
+          <GardenIllustration
+            src="/image_three_garden.png"
+            placement="corner"
+            corner="tr"
+            opacity={0.5}
+            fringe="light"
+            width={1448}
+            height={1086}
+            className="hidden lg:block absolute top-0 right-0 w-64 xl:w-80 z-0"
+          />
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <PageHeader
               eyebrow={t("concept.philosophyLabel")}

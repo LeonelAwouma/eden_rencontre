@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Heart, MessageCircleCode, CheckCircle2, MapPin, Calendar, X, Check, ImageIcon, Loader2, Clock } from "lucide-react";
 import { getSession } from "@/lib/auth";
-import { PageHeader, SkyFlock, PerchOrnament } from "@/components/garden";
+import { PageHeader, SkyFlock, PerchOrnament, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 interface Testimonial {
@@ -228,6 +228,15 @@ export default function TemoignagesPage() {
           <PerchOrnament className="hidden lg:block absolute bottom-12 right-[6%] w-24 opacity-[0.18]" flip />
 
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
+            <GardenIllustration
+              src="/image_five_garden.png"
+              placement="centerpiece"
+              opacity={1}
+              fringe="none"
+              width={1254}
+              height={1254}
+              className="mx-auto w-28 sm:w-40 lg:w-52 mb-6"
+            />
             <PageHeader
               eyebrow={t("testimonials.heroBadge")}
               title={t("testimonials.heroTitle")}
@@ -563,8 +572,18 @@ export default function TemoignagesPage() {
         )}
 
         {/* CTA Section */}
-        <section className="py-24 bg-accent/5 border-t border-foreground/5">
-          <div className="container mx-auto px-4 text-center space-y-12">
+        <section className="relative py-24 bg-accent/5 border-t border-foreground/5 overflow-hidden">
+          <GardenIllustration
+            src="/image_six_garden.png"
+            placement="side-accent"
+            corner="br"
+            opacity={0.6}
+            fringe="light"
+            width={1254}
+            height={1254}
+            className="hidden sm:block absolute bottom-0 right-[4%] w-48 lg:w-64 z-0"
+          />
+          <div className="container mx-auto px-4 text-center space-y-12 relative z-10">
             <div className="max-w-3xl mx-auto space-y-6">
               <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-4">
                 <Heart className="w-8 h-8 text-primary fill-primary" />
