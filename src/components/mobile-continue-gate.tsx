@@ -64,7 +64,7 @@ export function MobileContinueGate({ onContinueDesktop }: { onContinueDesktop: (
       <Link href="/" className="flex items-center gap-3">
         <Monogram className="w-10 h-10 text-primary" />
         <span className="font-headline text-2xl font-bold text-foreground">
-          Eden <span>Connexion</span>
+          Garden <span>of Alliance</span>
         </span>
       </Link>
 

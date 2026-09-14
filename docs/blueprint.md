@@ -1,4 +1,4 @@
-# **App Name**: GARDEN OF ALLIANCE
+# **App Name**: Garden of Alliance
 
 ## Core Features:
 

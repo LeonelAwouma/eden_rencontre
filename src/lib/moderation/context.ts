@@ -1,5 +1,5 @@
 /**
- * GARDEN OF ALLIANCE — Intelligent Rule-Based Communication Protection Engine
+ * Garden of Alliance — Intelligent Rule-Based Communication Protection Engine
  * Context Analysis Module
  * Evaluates surrounding words to distinguish legitimate content from attempts to exchange contact details.
  * Uses rule-based heuristics — no AI/ML dependency.

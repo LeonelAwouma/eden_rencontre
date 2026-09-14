@@ -98,12 +98,12 @@ export default function AdminLoginPage() {
             </div>
 
             <p className="text-[13px] font-semibold text-[#2F2F2F] tracking-tight">
-              Eden{" "}
+              Garden{" "}
               <span
                 className="italic font-normal text-[#486B46]"
                 style={{ fontFamily: "'Playfair Display', 'Cormorant Garamond', serif" }}
               >
-                Connexion
+                of Alliance
               </span>
             </p>
 
@@ -256,7 +256,7 @@ export default function AdminLoginPage() {
           <div className="mt-7 pt-5 border-t border-[#EFEDE8]">
             <p className="flex items-center justify-center gap-1.5 text-[12px] text-[#6B746E]">
               <ShieldCheck className="w-3.5 h-3.5 shrink-0 text-[#486B46]" aria-hidden="true" />
-              Accès réservé aux administrateurs Eden
+              Accès réservé aux administrateurs Garden of Alliance
             </p>
           </div>
         </div>

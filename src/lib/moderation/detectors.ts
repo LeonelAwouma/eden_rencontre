@@ -1,5 +1,5 @@
 /**
- * GARDEN OF ALLIANCE — Intelligent Rule-Based Communication Protection Engine
+ * Garden of Alliance — Intelligent Rule-Based Communication Protection Engine
  * Detection Engine — phone, email, URL, keyword, obfuscation, move-off-platform, username
  * All detectors are plugin-based, configurable, and run independently.
  * Results are merged by the pipeline orchestrator.

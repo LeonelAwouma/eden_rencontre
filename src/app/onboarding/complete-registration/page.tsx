@@ -422,7 +422,7 @@ export default function CompleteRegistrationPage() {
       <div className="hidden lg:flex lg:w-[42%] xl:w-[45%] relative overflow-hidden">
         <Image
           src="/mariage.webp"
-          alt="GARDEN OF ALLIANCE — Alliance Bénie"
+          alt="Garden of Alliance — Alliance Bénie"
           fill
           className="object-cover object-center"
           priority
@@ -434,7 +434,7 @@ export default function CompleteRegistrationPage() {
           <Link href="/" className="flex items-center gap-3 group">
             <Monogram className="w-10 h-10 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
             <span className="font-headline text-2xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
-              Eden <span>Connexion</span>
+              Garden <span>of Alliance</span>
             </span>
           </Link>
 
@@ -480,7 +480,7 @@ export default function CompleteRegistrationPage() {
           <Link href="/" className="flex items-center gap-3 group">
             <Monogram className="w-8 h-8 text-primary shrink-0" />
             <span className="font-headline text-lg font-bold text-foreground">
-              Eden <span>Connexion</span>
+              Garden <span>of Alliance</span>
             </span>
           </Link>
         </div>

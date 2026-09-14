@@ -19,7 +19,7 @@ function PendingContent() {
         <Link href="/" className="inline-flex items-center gap-3 group">
           <Monogram className="w-10 h-10 text-primary shrink-0" />
           <span className="font-headline text-2xl font-bold tracking-tight text-foreground">
-            Eden <span>Connexion</span>
+            Garden <span>of Alliance</span>
           </span>
         </Link>
 

@@ -20,7 +20,7 @@ export default function EditBlogPostPage() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const coverRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
-    title: "", excerpt: "", content: "", category_id: "", author: "GARDEN OF ALLIANCE",
+    title: "", excerpt: "", content: "", category_id: "", author: "Garden of Alliance",
     cover_image_url: "", status: "draft", featured: false, tags: "", slug: "",
   });
 
@@ -34,7 +34,7 @@ export default function EditBlogPostPage() {
         const p = postData.post;
         setForm({
           title: p.title || "", excerpt: p.excerpt || "", content: p.content || "",
-          category_id: p.category_id || "", author: p.author || "GARDEN OF ALLIANCE",
+          category_id: p.category_id || "", author: p.author || "Garden of Alliance",
           cover_image_url: p.cover_image_url || "", status: p.status || "draft",
           featured: p.featured || false, slug: p.slug || "",
           tags: (p.tags || []).map((t: any) => t.name).join(", "),

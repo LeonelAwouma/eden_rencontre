@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Matching, Testimonials & Chat Monitoring
+--  Garden of Alliance — Matching, Testimonials & Chat Monitoring
 --  Run after admin-schema.sql
 -- ============================================================
 

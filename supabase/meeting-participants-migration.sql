@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Meetings + Multi-participant Schema
+--  Garden of Alliance — Meetings + Multi-participant Schema
 --  SELF-CONTAINED: includes all dependency tables.
 --  Run in Supabase Dashboard → SQL Editor → New query
 -- ============================================================

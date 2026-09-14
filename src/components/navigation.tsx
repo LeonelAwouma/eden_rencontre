@@ -31,7 +31,7 @@ export function Navigation() {
             <Link href="/" className="flex items-center gap-3 group">
               <Monogram className="w-11 h-11 xl:w-12 xl:h-12 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
               <span className="font-headline text-2xl xl:text-3xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors whitespace-nowrap">
-                Eden <span>Connexion</span>
+                Garden <span>of Alliance</span>
               </span>
             </Link>
           </div>
@@ -71,7 +71,7 @@ export function Navigation() {
           <Link href="/" className="flex items-center gap-2.5 sm:gap-3 group">
             <Monogram className="w-8 h-8 sm:w-10 sm:h-10 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
             <span className="font-headline text-lg sm:text-xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors whitespace-nowrap">
-              Eden <span>Connexion</span>
+              Garden <span>of Alliance</span>
             </span>
           </Link>
 

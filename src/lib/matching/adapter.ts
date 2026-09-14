@@ -1,5 +1,5 @@
 // ============================================================================
-//  GARDEN OF ALLIANCE — Adapter: raw onboarding answers → sophisticated engine
+//  Garden of Alliance — Adapter: raw onboarding answers → sophisticated engine
 //  ---------------------------------------------------------------------------
 //  The onboarding questionnaire (src/lib/onboarding.ts + onboarding.en.ts)
 //  was designed independently from the matching engine (src/lib/matching/).

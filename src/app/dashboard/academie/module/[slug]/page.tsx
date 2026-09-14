@@ -64,7 +64,7 @@ export default function AcademyModulePage({ params }: { params: Promise<{ slug: 
       <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b border-secondary/15 px-4 sm:px-6 h-20 flex items-center justify-between">
         <Link href="/dashboard/academie" className="flex items-center gap-2.5 group">
           <Monogram className="w-9 h-8 text-primary group-hover:text-secondary transition-colors" />
-          <span className="font-headline text-xl font-bold text-foreground">Eden <span className="text-primary italic font-normal">Académie</span></span>
+          <span className="font-headline text-xl font-bold text-foreground">Garden of Alliance <span className="text-primary italic font-normal">Académie</span></span>
         </Link>
         <Button variant="ghost" onClick={() => router.push("/dashboard/academie")} className="text-foreground/60 gap-2 hover:bg-foreground/5 hover:text-secondary">
           <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">{t("academyModule.academyLink")}</span>

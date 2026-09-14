@@ -151,7 +151,7 @@ export async function loginUser(emailRaw: string, password: string): Promise<Aut
 
   // Repli localStorage
   const user = readUsers().find((u) => u.email === email);
-  if (!user) return { ok: false, error: "Aucun compte n'est associé à cet email. Créez votre profil pour rejoindre Eden." };
+  if (!user) return { ok: false, error: "Aucun compte n'est associé à cet email. Créez votre profil pour rejoindre Garden of Alliance." };
   if (user.password !== password) return { ok: false, error: "Mot de passe incorrect. Veuillez réessayer." };
   window.localStorage.setItem(SESSION_KEY, email);
   return { ok: true, user };

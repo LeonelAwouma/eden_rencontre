@@ -8,7 +8,7 @@ async function sendBlogNotifications(db: any, post: any) {
   try {
     const { data: users } = await db.from("profiles").select("id").eq("status", "approved");
     if (!users || users.length === 0) return;
-    const excerpt = post.excerpt || "Découvrez notre dernier article sur GARDEN OF ALLIANCE.";
+    const excerpt = post.excerpt || "Découvrez notre dernier article sur Garden of Alliance.";
     const rows = users.map((u: { id: string }) => ({
       user_id: u.id, notification_type: "blog_post", blog_post_id: post.id,
       title: "Nouvel article publié",
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
     const { data: post, error } = await db.from("blog_posts").insert({
       title, slug: finalSlug, excerpt: excerpt || null, content: content || null,
       cover_image_url: cover_image_url || null, category_id: category_id || null,
-      author: author || "GARDEN OF ALLIANCE", reading_time_minutes: readingTime,
+      author: author || "Garden of Alliance", reading_time_minutes: readingTime,
       status: status || "draft", featured: featured || false,
       published_at: isPublished ? new Date().toISOString() : null,
       created_by: admin.adminId === "env-admin" ? null : admin.adminId,

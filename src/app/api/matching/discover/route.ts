@@ -1,5 +1,5 @@
 // ============================================================================
-//  GARDEN OF ALLIANCE — Matching Discovery API Route
+//  Garden of Alliance — Matching Discovery API Route
 //  GET /api/matching/discover — Returns compatible profiles for the authenticated user
 //  Backend-only: frontend never receives all users
 // ============================================================================

@@ -1,5 +1,5 @@
 // ============================================================================
-//  GARDEN OF ALLIANCE — Hard Filter Engine
+//  Garden of Alliance — Hard Filter Engine
 //  Eliminates incompatible profiles BEFORE any scoring occurs.
 //  These filters are non-negotiable — no amount of compatibility elsewhere
 //  can compensate for a hard filter failure.

@@ -1,5 +1,5 @@
 /**
- * GARDEN OF ALLIANCE — Intelligent Rule-Based Communication Protection Engine
+ * Garden of Alliance — Intelligent Rule-Based Communication Protection Engine
  * Pipeline Orchestrator — Risk Scoring, Decision Engine, Trust, Escalation, Logging
  * Single entry point: validateMessage()
  */

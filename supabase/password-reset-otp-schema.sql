@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Password Reset OTP System (Supabase)
+--  Garden of Alliance — Password Reset OTP System (Supabase)
 --  Run in: Supabase Dashboard → SQL Editor → New query
 -- ============================================================
 

@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Admin Notifications
+--  Garden of Alliance — Admin Notifications
 --  Run this in Supabase SQL Editor
 -- ============================================================
 

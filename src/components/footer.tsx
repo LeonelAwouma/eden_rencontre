@@ -35,7 +35,7 @@ export function Footer() {
             <Link href="/" className="flex items-center gap-3 group">
               <Monogram className="w-8 h-8 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
               <span className="font-headline text-xl font-bold text-foreground group-hover:text-deep-eden transition-colors">
-                Eden <span>Connexion</span>
+                Garden <span>of Alliance</span>
               </span>
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed font-body">

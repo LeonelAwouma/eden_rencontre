@@ -17,7 +17,7 @@ export default function NewBlogPostPage() {
   const [uploadingCover, setUploadingCover] = useState(false);
   const coverRef = useRef<HTMLInputElement>(null);
   const [form, setForm] = useState({
-    title: "", excerpt: "", content: "", category_id: "", author: "GARDEN OF ALLIANCE",
+    title: "", excerpt: "", content: "", category_id: "", author: "Garden of Alliance",
     cover_image_url: "", status: "draft", featured: false, tags: "", slug: "",
   });
 

@@ -1,5 +1,5 @@
 /**
- * GARDEN OF ALLIANCE — Moderation API
+ * Garden of Alliance — Moderation API
  * POST /api/moderation/validate — validate a message before sending
  */
 

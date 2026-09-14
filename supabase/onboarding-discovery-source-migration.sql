@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Add discovery_source to profiles
+--  Garden of Alliance — Add discovery_source to profiles
 --  Run this migration on your Supabase database
 -- ============================================================
 

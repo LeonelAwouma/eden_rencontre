@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Google Meet Spaces Schema
+--  Garden of Alliance — Google Meet Spaces Schema
 --  For admin-created Google Meet meetings with email invitations
 --  Run after meetings-schema.sql
 -- ============================================================

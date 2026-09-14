@@ -124,7 +124,7 @@ export async function listIncomingRequests(myId: string): Promise<FriendRequest[
   // On n'écarte jamais une demande : si le profil de l'expéditeur manque, on met un repli minimal.
   return rows.map((r: any) => ({
     id: r.id,
-    requester: byId[r.requester_id] || { id: r.requester_id, name: "Membre Eden", email: "" },
+    requester: byId[r.requester_id] || { id: r.requester_id, name: "Membre Garden of Alliance", email: "" },
     message: r.message,
     when: whenLabel(r.created_at),
   }));

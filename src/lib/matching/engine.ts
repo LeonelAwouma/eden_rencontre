@@ -1,5 +1,5 @@
 // ============================================================================
-//  GARDEN OF ALLIANCE — Reciprocal Matchmaking Engine
+//  Garden of Alliance — Reciprocal Matchmaking Engine
 //  The main entry point for finding matches. Computes reciprocal compatibility,
 //  ranks candidates, generates explanations, and returns only compatible profiles.
 // ============================================================================

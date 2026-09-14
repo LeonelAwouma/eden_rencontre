@@ -1,5 +1,5 @@
 // ============================================================================
-//  GARDEN OF ALLIANCE — Matchmaking Engine: Example Profiles & Tests
+//  Garden of Alliance — Matchmaking Engine: Example Profiles & Tests
 //  Demonstrates the engine with realistic Cameroonian Pentecostal profiles
 // ============================================================================
 
@@ -387,7 +387,7 @@ function createDavid(): EdenUserProfile {
 // TEST CASES
 // ═══════════════════════════════════════════════════════════════════════════════
 
-describe("GARDEN OF ALLIANCE Matchmaking Engine", () => {
+describe("Garden of Alliance Matchmaking Engine", () => {
   
   describe("Hard Filters", () => {
     test("Samuel & Grace should pass all hard filters", () => {

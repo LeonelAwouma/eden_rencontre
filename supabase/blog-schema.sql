@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Blog System Schema
+--  Garden of Alliance — Blog System Schema
 --  Run in Supabase SQL Editor
 -- ============================================================
 
@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   content TEXT,
   cover_image_url TEXT,
   category_id UUID REFERENCES blog_categories(id) ON DELETE SET NULL,
-  author TEXT NOT NULL DEFAULT 'GARDEN OF ALLIANCE',
+  author TEXT NOT NULL DEFAULT 'Garden of Alliance',
   reading_time_minutes INTEGER DEFAULT 5,
   status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'published', 'archived')),
   featured BOOLEAN DEFAULT false,
@@ -132,5 +132,5 @@ INSERT INTO blog_categories (name, slug, description, color, sort_order) VALUES
   ('Témoignages', 'temoignages', 'Histoires inspirantes de couples', '#EC4899', 5),
   ('Spiritualité', 'spiritualite', 'Croissance spirituelle et couple', '#8B5CF6', 6),
   ('Communication', 'communication', 'Dialoguer et s''écouter dans le couple', '#10B981', 7),
-  ('Actualités', 'actualités', 'Nouvelles et annonces d''GARDEN OF ALLIANCE', '#F59E0B', 8)
+  ('Actualités', 'actualités', 'Nouvelles et annonces d''Garden of Alliance', '#F59E0B', 8)
 ON CONFLICT (slug) DO NOTHING;

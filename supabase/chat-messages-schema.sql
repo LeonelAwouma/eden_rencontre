@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Chat Messages for Real-time Monitoring
+--  Garden of Alliance — Chat Messages for Real-time Monitoring
 --  Run after matching-testimonials-chat-schema.sql
 -- ============================================================
 

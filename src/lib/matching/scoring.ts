@@ -1,5 +1,5 @@
 // ============================================================================
-//  GARDEN OF ALLIANCE — Compatibility Scoring Engine
+//  Garden of Alliance — Compatibility Scoring Engine
 //  Deterministic, explainable scoring for each compatibility category.
 //  Priority: Faith → Marriage Vision → Family → Values → Personality → Lifestyle → Preferences
 // ============================================================================

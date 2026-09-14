@@ -257,7 +257,7 @@ function VerifyOTPContent() {
         <div className="absolute inset-0 animate-breathe">
           <Image
             src="/mariage.webp"
-            alt="GARDEN OF ALLIANCE — Union Bénie"
+            alt="Garden of Alliance — Union Bénie"
             fill
             className="object-cover"
             priority
@@ -271,7 +271,7 @@ function VerifyOTPContent() {
           <Link href="/" className="flex items-center gap-3 group">
             <Monogram className="w-10 h-10 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
             <span className="font-headline text-2xl font-bold tracking-tight text-foreground group-hover:text-primary transition-colors">
-              Eden <span>Connexion</span>
+              Garden <span>of Alliance</span>
             </span>
           </Link>
 
@@ -307,7 +307,7 @@ function VerifyOTPContent() {
           <Link href="/" className="flex items-center gap-3 group">
             <Monogram className="w-8 h-8 text-primary shrink-0" />
             <span className="font-headline text-xl font-bold text-foreground">
-              Eden <span>Connexion</span>
+              Garden <span>of Alliance</span>
             </span>
           </Link>
         </div>

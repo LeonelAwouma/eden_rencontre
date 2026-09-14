@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Google Meet Integration Schema
+--  Garden of Alliance — Google Meet Integration Schema
 --  Run after admin-schema.sql and admin-extensions.sql
 -- ============================================================
 

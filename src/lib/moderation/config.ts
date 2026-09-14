@@ -1,5 +1,5 @@
 /**
- * GARDEN OF ALLIANCE — Intelligent Rule-Based Communication Protection Engine
+ * Garden of Alliance — Intelligent Rule-Based Communication Protection Engine
  * Default configuration — all values are configurable via admin panel
  * Every rule, weight, threshold, and dictionary is editable without code changes
  */

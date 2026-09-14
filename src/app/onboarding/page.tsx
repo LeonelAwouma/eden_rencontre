@@ -120,7 +120,7 @@ export default function OnboardingPage() {
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-secondary/15 px-4 sm:px-6 h-20 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <Monogram className="w-9 h-8 text-primary shrink-0" />
-          <span className="font-headline text-xl font-bold text-foreground">Eden <span>Connexion</span></span>
+          <span className="font-headline text-xl font-bold text-foreground">Garden <span>of Alliance</span></span>
         </div>
         <button onClick={skip} className="text-foreground/50 hover:text-foreground text-sm font-medium transition-colors">
           {t("onboarding.skipForNow")}

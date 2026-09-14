@@ -1,5 +1,5 @@
 // ============================================================================
-//  GARDEN OF ALLIANCE — Matchmaking Engine: Barrel Export
+//  Garden of Alliance — Matchmaking Engine: Barrel Export
 //  Single entry point for all matching functionality
 // ============================================================================
 

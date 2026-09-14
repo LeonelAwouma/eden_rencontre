@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Add pseudo/first_name/last_name to profiles
+--  Garden of Alliance — Add pseudo/first_name/last_name to profiles
 --  Run this migration on your Supabase database
 -- ============================================================
 

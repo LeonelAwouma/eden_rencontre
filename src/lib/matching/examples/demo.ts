@@ -1,5 +1,5 @@
 // ============================================================================
-//  GARDEN OF ALLIANCE — Matchmaking Engine: Example Profiles & Demonstration
+//  Garden of Alliance — Matchmaking Engine: Example Profiles & Demonstration
 //  Run with: npx ts-node src/lib/matching/examples/demo.ts
 //  Demonstrates the engine with realistic Cameroonian Pentecostal profiles
 // ============================================================================
@@ -382,7 +382,7 @@ const david: EdenUserProfile = {
 
 function runDemo() {
   console.log("╔══════════════════════════════════════════════════════════════╗");
-  console.log("║   GARDEN OF ALLIANCE — Matchmaking Engine Demonstration        ║");
+  console.log("║   Garden of Alliance — Matchmaking Engine Demonstration        ║");
   console.log("╚══════════════════════════════════════════════════════════════╝\n");
 
   // ── 1. Hard Filters ──

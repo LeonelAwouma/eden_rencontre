@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Add created_at to profiles
+--  Garden of Alliance — Add created_at to profiles
 --  Run this migration on your Supabase database
 -- ============================================================
 

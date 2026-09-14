@@ -50,7 +50,7 @@ export async function POST(request: NextRequest) {
     if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
     if (age < 18) {
       return NextResponse.json(
-        { error: "Vous devez avoir au moins 18 ans pour rejoindre Eden." },
+        { error: "Vous devez avoir au moins 18 ans pour rejoindre Garden of Alliance." },
         { status: 400 }
       );
     }

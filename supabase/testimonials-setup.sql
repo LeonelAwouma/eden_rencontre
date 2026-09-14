@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Testimonials Table Setup
+--  Garden of Alliance — Testimonials Table Setup
 --  Run this in Supabase SQL Editor to create/update the table
 -- ============================================================
 

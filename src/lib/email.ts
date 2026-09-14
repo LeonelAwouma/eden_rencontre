@@ -1,10 +1,10 @@
-// ── Email Service for GARDEN OF ALLIANCE ─────────────────────────
+// ── Email Service for Garden of Alliance ─────────────────────────
 // Uses Gmail SMTP via nodemailer for sending emails.
 // Configure GMAIL_USER and GMAIL_APP_PASSWORD in .env.local
 
 import nodemailer from "nodemailer";
 
-const FROM_EMAIL = "GARDEN OF ALLIANCE <corpceleste3@gmail.com>";
+const FROM_EMAIL = "Garden of Alliance <corpceleste3@gmail.com>";
 
 // Create a reusable transporter
 function getTransporter() {
@@ -74,16 +74,16 @@ export async function sendRegistrationReceivedEmail(
 ): Promise<boolean> {
   return sendEmail({
     to: email,
-    subject: "Inscription reçue — GARDEN OF ALLIANCE",
+    subject: "Inscription reçue — Garden of Alliance",
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Garden <em>of Alliance</em></h1>
         </div>
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${name},</h2>
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
-            Merci de votre inscription sur <strong>GARDEN OF ALLIANCE</strong>.
+            Merci de votre inscription sur <strong>Garden of Alliance</strong>.
           </p>
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
             Vos informations sont actuellement <strong>en cours de vérification</strong> par notre équipe.
@@ -103,7 +103,7 @@ export async function sendRegistrationReceivedEmail(
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} GARDEN OF ALLIANCE — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Garden of Alliance — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -118,11 +118,11 @@ export async function sendAccountApprovedEmail(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com";
   return sendEmail({
     to: email,
-    subject: "Votre compte a été approuvé — GARDEN OF ALLIANCE",
+    subject: "Votre compte a été approuvé — Garden of Alliance",
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Garden <em>of Alliance</em></h1>
         </div>
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Félicitations ${name} ! 🎉</h2>
@@ -131,7 +131,7 @@ export async function sendAccountApprovedEmail(
             <strong>votre profil a été validé</strong>.
           </p>
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
-            Vous pouvez désormais accéder à la plateforme GARDEN OF ALLIANCE et commencer
+            Vous pouvez désormais accéder à la plateforme Garden of Alliance et commencer
             votre chemin vers l'alliance bénie.
           </p>
           <div style="text-align: center; margin: 30px 0;">
@@ -145,7 +145,7 @@ export async function sendAccountApprovedEmail(
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} GARDEN OF ALLIANCE — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Garden of Alliance — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -160,16 +160,16 @@ export async function sendAccountRejectedEmail(
 ): Promise<boolean> {
   return sendEmail({
     to: email,
-    subject: "Votre demande d'inscription — GARDEN OF ALLIANCE",
+    subject: "Votre demande d'inscription — Garden of Alliance",
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Garden <em>of Alliance</em></h1>
         </div>
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${name},</h2>
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
-            Nous vous remercions pour votre intérêt envers <strong>GARDEN OF ALLIANCE</strong>.
+            Nous vous remercions pour votre intérêt envers <strong>Garden of Alliance</strong>.
           </p>
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
             Après examen de votre dossier, nous avons le regret de vous informer que
@@ -187,7 +187,7 @@ export async function sendAccountRejectedEmail(
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} GARDEN OF ALLIANCE — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Garden of Alliance — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -206,7 +206,7 @@ export async function sendOTPEmail(
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Garden <em>of Alliance</em></h1>
         </div>
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Réinitialisation de mot de passe</h2>
@@ -231,11 +231,11 @@ export async function sendOTPEmail(
             </p>
           </div>
           <p style="color: #888; font-size: 13px; margin-bottom: 0;">
-            Ne partagez ce code avec personne. L'équipe GARDEN OF ALLIANCE ne vous demandera jamais votre code.
+            Ne partagez ce code avec personne. L'équipe Garden of Alliance ne vous demandera jamais votre code.
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} GARDEN OF ALLIANCE — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Garden of Alliance — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -250,11 +250,11 @@ export async function sendPasswordResetSuccessEmail(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com";
   return sendEmail({
     to: email,
-    subject: "Votre mot de passe a été modifié — GARDEN OF ALLIANCE",
+    subject: "Votre mot de passe a été modifié — Garden of Alliance",
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Garden <em>of Alliance</em></h1>
         </div>
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Mot de passe modifié ✓</h2>
@@ -279,7 +279,7 @@ export async function sendPasswordResetSuccessEmail(
           </div>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} GARDEN OF ALLIANCE — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Garden of Alliance — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -346,7 +346,7 @@ export async function sendMeetInvitationEmail(
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Garden <em>of Alliance</em></h1>
         </div>
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${userName},</h2>
@@ -391,7 +391,7 @@ export async function sendMeetInvitationEmail(
           ` : ""}
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} GARDEN OF ALLIANCE — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Garden of Alliance — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -443,7 +443,7 @@ export async function sendMeetingInvitationEmail(
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Garden <em>of Alliance</em></h1>
         </div>
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${userName},</h2>
@@ -465,7 +465,7 @@ export async function sendMeetingInvitationEmail(
           <p style="color: #888; font-size: 13px; margin-top: 24px; text-align: center;">Connectez-vous à votre espace pour plus de détails.</p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} GARDEN OF ALLIANCE — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Garden of Alliance — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -501,7 +501,7 @@ export async function sendMeetingRescheduledEmail(
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Garden <em>of Alliance</em></h1>
         </div>
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${userName},</h2>
@@ -520,7 +520,7 @@ export async function sendMeetingRescheduledEmail(
           ${meetLink ? `<p style="color: #888; font-size: 12px; text-align: center; word-break: break-all;">Ou copiez ce lien : <a href="${meetLink}" style="color: #2D5016;">${meetLink}</a></p>` : ""}
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} GARDEN OF ALLIANCE — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Garden of Alliance — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -541,7 +541,7 @@ export async function sendMeetingCancelledEmail(
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Garden <em>of Alliance</em></h1>
         </div>
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${userName},</h2>
@@ -559,7 +559,7 @@ export async function sendMeetingCancelledEmail(
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} GARDEN OF ALLIANCE — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Garden of Alliance — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -574,16 +574,16 @@ export async function sendAccountSuspendedEmail(
 ): Promise<boolean> {
   return sendEmail({
     to: email,
-    subject: "Suspension de votre compte — GARDEN OF ALLIANCE",
+    subject: "Suspension de votre compte — Garden of Alliance",
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Garden <em>of Alliance</em></h1>
         </div>
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${name},</h2>
           <p style="color: #555; font-size: 16px; line-height: 1.7;">
-            Nous vous informons que votre compte sur <strong>GARDEN OF ALLIANCE</strong> a été temporairement suspendu.
+            Nous vous informons que votre compte sur <strong>Garden of Alliance</strong> a été temporairement suspendu.
           </p>
           ${reason ? `
           <div style="margin: 20px 0; padding: 20px; background: #fff3cd; border-radius: 12px; border-left: 4px solid #ffc107;">
@@ -597,7 +597,7 @@ export async function sendAccountSuspendedEmail(
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} GARDEN OF ALLIANCE — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Garden of Alliance — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -612,11 +612,11 @@ export async function sendVerificationApprovedEmail(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com";
   return sendEmail({
     to: email,
-    subject: "✅ Profil Vérifié — GARDEN OF ALLIANCE",
+    subject: "✅ Profil Vérifié — Garden of Alliance",
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Garden <em>of Alliance</em></h1>
         </div>
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Félicitations ${name} ! ✅</h2>
@@ -634,7 +634,7 @@ export async function sendVerificationApprovedEmail(
           </div>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} GARDEN OF ALLIANCE — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Garden of Alliance — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,
@@ -650,11 +650,11 @@ export async function sendVerificationRejectedEmail(
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com";
   return sendEmail({
     to: email,
-    subject: "Vérification de profil — GARDEN OF ALLIANCE",
+    subject: "Vérification de profil — Garden of Alliance",
     html: `
       <div style="font-family: 'Georgia', serif; max-width: 600px; margin: 0 auto; padding: 40px 20px; background-color: #FAF8F3;">
         <div style="text-align: center; margin-bottom: 30px;">
-          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Eden <em>Rencontre</em></h1>
+          <h1 style="color: #2D5016; font-size: 28px; margin: 0;">Garden <em>of Alliance</em></h1>
         </div>
         <div style="background: white; border-radius: 16px; padding: 40px; border: 1px solid #e8e4db;">
           <h2 style="color: #1a1a1a; font-size: 22px; margin-top: 0;">Bonjour ${name},</h2>
@@ -678,7 +678,7 @@ export async function sendVerificationRejectedEmail(
           </div>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
-          © ${new Date().getFullYear()} GARDEN OF ALLIANCE — L'alliance bénie commence par une rencontre vraie.
+          © ${new Date().getFullYear()} Garden of Alliance — L'alliance bénie commence par une rencontre vraie.
         </p>
       </div>
     `,

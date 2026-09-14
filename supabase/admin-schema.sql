@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Administration Platform Schema
+--  Garden of Alliance — Administration Platform Schema
 --  Run after the main schema.sql
 -- ============================================================
 

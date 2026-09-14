@@ -1,5 +1,5 @@
 // ============================================================================
-//  GARDEN OF ALLIANCE — Shared "Admin" system account
+//  Garden of Alliance — Shared "Admin" system account
 //  A real profiles/auth.users row that represents the platform's admin team
 //  inside the normal conversations/messages tables, so support messages reuse
 //  the existing chat infrastructure instead of a parallel one.

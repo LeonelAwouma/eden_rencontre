@@ -1,4 +1,4 @@
-# GARDEN OF ALLIANCE — Matchmaking Engine
+# Garden of Alliance — Matchmaking Engine
 
 ## Architecture Overview
 

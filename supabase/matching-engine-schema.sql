@@ -1,5 +1,5 @@
 -- ============================================================================
--- GARDEN OF ALLIANCE — Matchmaking Engine: Database Schema
+-- Garden of Alliance — Matchmaking Engine: Database Schema
 -- Stores questionnaire responses, matching configuration, and computed match results.
 -- ============================================================================
 

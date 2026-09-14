@@ -1,5 +1,5 @@
 -- ============================================================
---  GARDEN OF ALLIANCE — Demandes d'engagement (bouton "S'engager" du chat)
+--  Garden of Alliance — Demandes d'engagement (bouton "S'engager" du chat)
 --  Run this migration on your Supabase database
 -- ============================================================
 
