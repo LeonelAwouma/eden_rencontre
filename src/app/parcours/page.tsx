@@ -65,7 +65,7 @@ export default function ParcoursPage() {
             />
 
             <GardenIllustration
-              src="/image_three_garden.png"
+              src="/image_three_garden.webp"
               placement="hero-frame"
               opacity={0.9}
               fringe="none"

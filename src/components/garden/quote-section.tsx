@@ -25,7 +25,7 @@ export function QuoteSection() {
           {/* La colombe au rameau — l'emblème de l'alliance, en ouverture */}
           <div className="flex justify-center">
             <GardenIllustration
-              src="/image_four_garden.png"
+              src="/image_four_garden.webp"
               placement="centerpiece"
               width={1254}
               height={1254}

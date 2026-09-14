@@ -436,8 +436,8 @@ export default function RegisterPage() {
         {/* Photo — léger mouvement pour une image "vivante" */}
         <div className="absolute inset-0 animate-breathe">
           <Image
-            src="/mariage.webp"
-            alt="Garden of Alliance — Alliance Bénie"
+            src="/couple-jardin.webp"
+            alt="Couple chrétien, fronts joints au jardin"
             fill
             className="object-cover object-center"
             priority
@@ -511,7 +511,7 @@ export default function RegisterPage() {
           <div className="absolute inset-0 animate-breathe">
             <Image
               src="/mariage.webp"
-              alt="Garden of Alliance — Alliance Bénie"
+              alt="Mariage chrétien — Garden of Alliance"
               fill
               className="object-cover object-[50%_22%]"
             />

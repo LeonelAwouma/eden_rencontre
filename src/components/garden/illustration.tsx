@@ -28,7 +28,7 @@ const defaultSizes: Record<Placement, string> = {
 };
 
 // Le dégradé s'étire depuis le coin ancré vers le coin opposé, pour ne jamais
-// rogner le motif déjà composé en coin (ex: image_two_garden.png).
+// rogner le motif déjà composé en coin (ex: image_two_garden.webp).
 const cornerMaskAngle: Record<Corner, string> = {
   tl: "135deg",
   tr: "225deg",

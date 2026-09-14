@@ -83,7 +83,7 @@ const oliveBirdSizes = {
 
 /**
  * Séparateur floral — l'emblème "alliance" (bouquet, anneaux, cœur) découpé de
- * decor.png, posé sur un filet qui s'étire avec le conteneur.
+ * decor.webp, posé sur un filet qui s'étire avec le conteneur.
  *
  * Le filet court derrière l'emblème et non jusqu'à ses bords : le feuillage
  * l'occulte en passant, comme dans l'illustration d'origine. L'emblème est
@@ -107,7 +107,7 @@ export function OliveBirdDivider({
         style={{ backgroundColor: "#5b715d", opacity: 0.55 }}
       />
       <Image
-        src="/decor-emblem.png"
+        src="/decor-emblem.webp"
         alt=""
         width={502}
         height={203}

@@ -42,7 +42,7 @@ export default function ConceptPage() {
         {/* Hero Vision */}
         <GardenSection variant="garden" className="py-20 sm:py-28 relative overflow-hidden">
           <GardenIllustration
-            src="/image_three_garden.png"
+            src="/image_three_garden.webp"
             placement="corner"
             corner="tr"
             opacity={0.5}

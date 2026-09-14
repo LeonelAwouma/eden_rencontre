@@ -256,8 +256,8 @@ function VerifyOTPContent() {
         <ImposingFloralCorners size="xl" corners={["bl", "tl"]} opacity={0.8} />
         <div className="absolute inset-0 animate-breathe">
           <Image
-            src="/mariage.webp"
-            alt="Garden of Alliance — Union Bénie"
+            src="/couple-priere.webp"
+            alt="Couple en prière sur la Bible ouverte"
             fill
             className="object-cover"
             priority

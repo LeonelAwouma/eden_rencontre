@@ -123,13 +123,15 @@ export default function LoginPage() {
       {/* Left Panel — Image & Branding */}
       <div className="hidden lg:flex lg:w-[45%] xl:w-[50%] relative overflow-hidden">
         <ImposingFloralCorners size="xl" corners={["bl", "tl"]} opacity={0.8} />
-        {/* Background Image — léger mouvement pour une photo "vivante" */}
+        {/* Background Image — léger mouvement pour une photo "vivante".
+            Le bandeau de marque est incrusté sur le bord droit du visuel :
+            on ancre le recadrage à droite pour ne jamais le rogner. */}
         <div className="absolute inset-0 animate-breathe">
           <Image
-            src="/mariage.webp"
-            alt="Garden of Alliance — Union Bénie"
+            src="/couple-mariage.webp"
+            alt="Mariage chrétien — baiser sur le front"
             fill
-            className="object-cover"
+            className="object-cover object-right"
             priority
           />
         </div>
@@ -177,12 +179,13 @@ export default function LoginPage() {
 
       {/* Right Panel — Login Form */}
       <div className="flex-1 flex flex-col justify-center items-center pb-12 sm:py-12 relative">
-        {/* Mobile Image Banner — le visuel est mis en avant sur mobile aussi */}
+        {/* Mobile Image Banner — bandeau large : on garde le visuel sans texte
+            incrusté, qui doublerait le logo du site et serait rogné ici. */}
         <div className="lg:hidden relative w-full h-52 sm:h-64 shrink-0 overflow-hidden">
           <div className="absolute inset-0 animate-breathe">
             <Image
               src="/mariage.webp"
-              alt="Garden of Alliance — Union Bénie"
+              alt="Mariage chrétien — Garden of Alliance"
               fill
               className="object-cover object-[50%_25%]"
             />

@@ -57,7 +57,7 @@ export default function BlogPage() {
             />
 
             <GardenIllustration
-              src="/image_four_garden.png"
+              src="/image_four_garden.webp"
               placement="hero-frame"
               opacity={0.85}
               fringe="none"

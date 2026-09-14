@@ -78,7 +78,7 @@ export function PromoBanner() {
 
       {/* Illustration botanique — bouquet d'hibiscus et colibri, coin haut-droit */}
       <GardenIllustration
-        src="/image_garden.png"
+        src="/image_garden.webp"
         placement="corner"
         corner="tr"
         opacity={0.55}

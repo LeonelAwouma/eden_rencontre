@@ -198,8 +198,8 @@ function ResetPasswordContent() {
         <ImposingFloralCorners size="xl" corners={["bl", "tl"]} opacity={0.8} />
         <div className="absolute inset-0 animate-breathe">
           <Image
-            src="/mariage.webp"
-            alt="Garden of Alliance — Union Bénie"
+            src="/couple-complicite.webp"
+            alt="Couple souriant, complicité"
             fill
             className="object-cover"
             priority

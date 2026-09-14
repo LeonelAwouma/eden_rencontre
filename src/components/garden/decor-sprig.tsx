@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 type Corner = "tl" | "tr" | "bl" | "br";
 
 /**
- * Brin fleuri découpé de decor.png — le bouquet latéral de l'emblème d'alliance,
+ * Brin fleuri découpé de decor.webp — le bouquet latéral de l'emblème d'alliance,
  * sans les anneaux ni le filet.
  *
  * Sert d'ornement de coin : même aquarelle que le séparateur, au lieu des
@@ -34,7 +34,7 @@ export function DecorSprig({
       aria-hidden="true"
     >
       <Image
-        src="/decor-sprig.png"
+        src="/decor-sprig.webp"
         alt=""
         width={184}
         height={131}

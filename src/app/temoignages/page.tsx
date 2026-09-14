@@ -227,7 +227,7 @@ export default function TemoignagesPage() {
 
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <GardenIllustration
-              src="/image_five_garden.png"
+              src="/image_five_garden.webp"
               placement="centerpiece"
               opacity={1}
               fringe="none"
@@ -571,7 +571,7 @@ export default function TemoignagesPage() {
         {/* CTA Section */}
         <section className="relative py-24 bg-accent/5 border-t border-foreground/5 overflow-hidden">
           <GardenIllustration
-            src="/image_six_garden.png"
+            src="/image_six_garden.webp"
             placement="side-accent"
             corner="br"
             opacity={0.6}

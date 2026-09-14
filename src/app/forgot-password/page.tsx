@@ -80,8 +80,8 @@ export default function ForgotPasswordPage() {
         <ImposingFloralCorners size="xl" corners={["bl", "tl"]} opacity={0.8} />
         <div className="absolute inset-0 animate-breathe">
           <Image
-            src="/mariage.webp"
-            alt="Garden of Alliance — Union Bénie"
+            src="/couple-horizon.webp"
+            alt="Couple face au coucher de soleil"
             fill
             className="object-cover"
             priority

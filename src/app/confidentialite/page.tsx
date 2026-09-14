@@ -15,7 +15,7 @@ export default function ConfidentialitePage() {
       <main className="flex-1">
         <GardenSection variant="garden" className="py-16 sm:py-24 relative">
           <GardenIllustration
-            src="/image_two_garden.png"
+            src="/image_two_garden.webp"
             placement="corner"
             corner="tr"
             opacity={0.3}
