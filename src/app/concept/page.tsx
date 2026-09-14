@@ -140,7 +140,7 @@ export default function ConceptPage() {
                   <h4 className="font-headline text-2xl font-bold text-sage mb-4 italic">
                     &ldquo;L'alliance bénie commence par une rencontre vraie.&rdquo;
                   </h4>
-                  <p className="text-muted-foreground italic font-body">Fondatrice d'Eden Connexion</p>
+                  <p className="text-muted-foreground italic font-body">Fondatrice d'GARDEN OF ALLIANCE</p>
                 </div>
               </div>
             </div>

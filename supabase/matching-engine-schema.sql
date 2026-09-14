@@ -1,5 +1,5 @@
 -- ============================================================================
--- Eden Connexion — Matchmaking Engine: Database Schema
+-- GARDEN OF ALLIANCE — Matchmaking Engine: Database Schema
 -- Stores questionnaire responses, matching configuration, and computed match results.
 -- ============================================================================
 

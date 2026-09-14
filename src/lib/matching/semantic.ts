@@ -1,5 +1,5 @@
 // ============================================================================
-//  Eden Connexion — Semantic Extraction Model
+//  GARDEN OF ALLIANCE — Semantic Extraction Model
 //  Converts open-ended questionnaire responses into structured attributes.
 //  LLM may be used for extraction, but the output is deterministic structured data.
 // ============================================================================

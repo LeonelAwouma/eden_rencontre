@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Connexion — Meetings + Multi-participant Schema
+--  GARDEN OF ALLIANCE — Meetings + Multi-participant Schema
 --  SELF-CONTAINED: includes all dependency tables.
 --  Run in Supabase Dashboard → SQL Editor → New query
 -- ============================================================

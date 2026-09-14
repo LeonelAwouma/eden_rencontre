@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Connexion — Administration Platform Schema
+--  GARDEN OF ALLIANCE — Administration Platform Schema
 --  Run after the main schema.sql
 -- ============================================================
 

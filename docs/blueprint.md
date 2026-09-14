@@ -1,4 +1,4 @@
-# **App Name**: Eden Connexion
+# **App Name**: GARDEN OF ALLIANCE
 
 ## Core Features:
 

@@ -1,5 +1,5 @@
 /**
- * Eden Connexion — Intelligent Rule-Based Communication Protection Engine
+ * GARDEN OF ALLIANCE — Intelligent Rule-Based Communication Protection Engine
  * Detection Engine — phone, email, URL, keyword, obfuscation, move-off-platform, username
  * All detectors are plugin-based, configurable, and run independently.
  * Results are merged by the pipeline orchestrator.

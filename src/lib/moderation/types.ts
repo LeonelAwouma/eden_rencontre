@@ -1,5 +1,5 @@
 /**
- * Eden Connexion — Intelligent Rule-Based Communication Protection Engine
+ * GARDEN OF ALLIANCE — Intelligent Rule-Based Communication Protection Engine
  * Core TypeScript interfaces, types, and enums
  * 100% deterministic, no LLM/AI dependency — plugin-based, SOLID, Clean Architecture
  */

@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Connexion — Admin Extensions (Reports, Payments, Settings)
+--  GARDEN OF ALLIANCE — Admin Extensions (Reports, Payments, Settings)
 --  Run after admin-schema.sql
 -- ============================================================
 
@@ -93,7 +93,7 @@ CREATE POLICY settings_service_only ON public.platform_settings FOR ALL USING (f
 
 -- Seed default settings
 INSERT INTO public.platform_settings (category, key, value) VALUES
-  ('general', 'platform_name', '"Eden Connexion"'),
+  ('general', 'platform_name', '"GARDEN OF ALLIANCE"'),
   ('general', 'contact_email', '"contact@edenconnexion.com"'),
   ('general', 'support_email', '"support@edenconnexion.com"'),
   ('general', 'default_language', '"fr"'),
@@ -116,5 +116,5 @@ INSERT INTO public.platform_settings (category, key, value) VALUES
   ('appearance', 'theme', '"light"'),
   ('appearance', 'accent_color', '"#486B46"'),
   ('appearance', 'logo_url', 'null'),
-  ('appearance', 'banner_text', '"Bienvenue sur Eden Connexion"')
+  ('appearance', 'banner_text', '"Bienvenue sur GARDEN OF ALLIANCE"')
 ON CONFLICT (category, key) DO NOTHING;

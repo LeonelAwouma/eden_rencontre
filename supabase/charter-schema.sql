@@ -1,5 +1,5 @@
 -- ═══════════════════════════════════════════════════════════
--- EDEN CONNEXIONS — Charter Acceptance Schema
+-- Garden of Alliance — Charter Acceptance Schema
 -- ═══════════════════════════════════════════════════════════
 
 -- Table to store each user's charter acceptance record

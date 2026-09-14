@@ -5,7 +5,7 @@ import { AccentColorProvider } from "@/components/accent-color-provider";
 import { LanguageProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
-  title: 'Eden Connexion — L\'alliance bénie commence par une rencontre vraie.',
+  title: 'GARDEN OF ALLIANCE — L\'alliance bénie commence par une rencontre vraie.',
   description: 'Plateforme matrimoniale haut de gamme dédiée aux célibataires chrétiens d\'Afrique et de la diaspora. Un sanctuaire numérique pour bâtir des foyers sur les fondements de la foi.',
 };
 

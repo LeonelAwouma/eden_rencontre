@@ -1,5 +1,5 @@
 // ============================================================================
-//  Eden Connexion — Matchmaking Engine: Configuration
+//  GARDEN OF ALLIANCE — Matchmaking Engine: Configuration
 //  All weights, thresholds, and rules are configurable here.
 //  Never hardcode these values in the frontend or scoring logic.
 // ============================================================================

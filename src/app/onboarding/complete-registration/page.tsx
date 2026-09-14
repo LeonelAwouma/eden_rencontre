@@ -422,7 +422,7 @@ export default function CompleteRegistrationPage() {
       <div className="hidden lg:flex lg:w-[42%] xl:w-[45%] relative overflow-hidden">
         <Image
           src="/mariage.webp"
-          alt="Eden Connexion — Alliance Bénie"
+          alt="GARDEN OF ALLIANCE — Alliance Bénie"
           fill
           className="object-cover object-center"
           priority

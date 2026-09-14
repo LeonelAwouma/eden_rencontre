@@ -81,7 +81,7 @@ export default function ForgotPasswordPage() {
         <div className="absolute inset-0 animate-breathe">
           <Image
             src="/mariage.webp"
-            alt="Eden Connexion — Union Bénie"
+            alt="GARDEN OF ALLIANCE — Union Bénie"
             fill
             className="object-cover"
             priority

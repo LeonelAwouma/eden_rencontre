@@ -1,5 +1,5 @@
 // ============================================================================
-//  Eden Connexion — Compatibility Scoring Engine
+//  GARDEN OF ALLIANCE — Compatibility Scoring Engine
 //  Deterministic, explainable scoring for each compatibility category.
 //  Priority: Faith → Marriage Vision → Family → Values → Personality → Lifestyle → Preferences
 // ============================================================================

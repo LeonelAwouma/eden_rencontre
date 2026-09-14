@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Connexion — Password Reset OTP System (Supabase)
+--  GARDEN OF ALLIANCE — Password Reset OTP System (Supabase)
 --  Run in: Supabase Dashboard → SQL Editor → New query
 -- ============================================================
 

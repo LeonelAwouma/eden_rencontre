@@ -168,7 +168,7 @@ export function GardenHero() {
           <div className="absolute inset-0">
             <Image
               src="/hero.webp"
-              alt="Couple chrétien — Eden Connexion"
+              alt="Couple chrétien — GARDEN OF ALLIANCE"
               fill
               className="object-cover object-center"
               priority

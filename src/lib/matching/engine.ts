@@ -1,5 +1,5 @@
 // ============================================================================
-//  Eden Connexion — Reciprocal Matchmaking Engine
+//  GARDEN OF ALLIANCE — Reciprocal Matchmaking Engine
 //  The main entry point for finding matches. Computes reciprocal compatibility,
 //  ranks candidates, generates explanations, and returns only compatible profiles.
 // ============================================================================

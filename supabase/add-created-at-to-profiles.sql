@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Connexion — Add created_at to profiles
+--  GARDEN OF ALLIANCE — Add created_at to profiles
 --  Run this migration on your Supabase database
 -- ============================================================
 

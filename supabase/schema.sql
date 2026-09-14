@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Connexion — Messagerie à 2 participants réels (Supabase)
+--  GARDEN OF ALLIANCE — Messagerie à 2 participants réels (Supabase)
 --  À exécuter dans : Supabase Dashboard → SQL Editor → New query
 --  (Recrée la table messages — les anciens messages de démo seront supprimés.)
 -- ============================================================

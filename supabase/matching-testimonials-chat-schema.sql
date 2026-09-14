@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Connexion — Matching, Testimonials & Chat Monitoring
+--  GARDEN OF ALLIANCE — Matching, Testimonials & Chat Monitoring
 --  Run after admin-schema.sql
 -- ============================================================
 

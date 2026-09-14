@@ -92,7 +92,7 @@ export function Sidebar({
                 <div className="min-w-0">
                   <h1 className="text-[14px] font-bold text-zinc-900 tracking-tight truncate"
                     style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
-                    Eden Connexion
+                    GARDEN OF ALLIANCE
                   </h1>
                   <p className="text-[10px] text-zinc-400 font-medium">Administration</p>
                 </div>

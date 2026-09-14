@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Connexion — Admin Notifications
+--  GARDEN OF ALLIANCE — Admin Notifications
 --  Run this in Supabase SQL Editor
 -- ============================================================
 

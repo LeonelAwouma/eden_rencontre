@@ -1,5 +1,5 @@
 /**
- * Eden Connexion — Intelligent Rule-Based Communication Protection Engine
+ * GARDEN OF ALLIANCE — Intelligent Rule-Based Communication Protection Engine
  * Default configuration — all values are configurable via admin panel
  * Every rule, weight, threshold, and dictionary is editable without code changes
  */

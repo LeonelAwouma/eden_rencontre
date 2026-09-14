@@ -1,5 +1,5 @@
 /**
- * Eden Connexion — Intelligent Rule-Based Communication Protection Engine
+ * GARDEN OF ALLIANCE — Intelligent Rule-Based Communication Protection Engine
  * Text Normalization Engine
  * Multi-layer normalization: Unicode, emoji, homoglyphs, leetspeak, obfuscation,
  * number reconstruction, number word conversion, character standardization, tokenization

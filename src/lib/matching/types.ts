@@ -1,5 +1,5 @@
 // ============================================================================
-//  Eden Connexion — Christian Matchmaking Engine: Type Definitions
+//  GARDEN OF ALLIANCE — Christian Matchmaking Engine: Type Definitions
 //  Deterministic, explainable, reciprocal compatibility engine
 //  Designed for Pentecostal Cameroonian adults aged 21+
 // ============================================================================

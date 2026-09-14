@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Connexion — Chat Messages for Real-time Monitoring
+--  GARDEN OF ALLIANCE — Chat Messages for Real-time Monitoring
 --  Run after matching-testimonials-chat-schema.sql
 -- ============================================================
 

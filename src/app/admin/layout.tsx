@@ -103,7 +103,7 @@ export default function AdminLayout({
             <div className="w-12 h-12 rounded-full border-[3px] border-[#E8E5E0] border-t-[#486B46] animate-spin" />
           </div>
           <div className="text-center">
-            <p className="text-sm font-semibold text-[#2F2F2F]">Eden Connexion</p>
+            <p className="text-sm font-semibold text-[#2F2F2F]">GARDEN OF ALLIANCE</p>
             <p className="text-xs text-[#9CA3AF] mt-1">Chargement de l'administration…</p>
           </div>
         </div>

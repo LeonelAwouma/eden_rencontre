@@ -1,4 +1,4 @@
-# Eden Connexion — Matchmaking Engine
+# GARDEN OF ALLIANCE — Matchmaking Engine
 
 ## Architecture Overview
 

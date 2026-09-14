@@ -437,7 +437,7 @@ export default function RegisterPage() {
         <div className="absolute inset-0 animate-breathe">
           <Image
             src="/mariage.webp"
-            alt="Eden Connexion — Alliance Bénie"
+            alt="GARDEN OF ALLIANCE — Alliance Bénie"
             fill
             className="object-cover object-center"
             priority
@@ -511,7 +511,7 @@ export default function RegisterPage() {
           <div className="absolute inset-0 animate-breathe">
             <Image
               src="/mariage.webp"
-              alt="Eden Connexion — Alliance Bénie"
+              alt="GARDEN OF ALLIANCE — Alliance Bénie"
               fill
               className="object-cover object-[50%_22%]"
             />

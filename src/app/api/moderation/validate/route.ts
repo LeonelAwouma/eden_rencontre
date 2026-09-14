@@ -1,5 +1,5 @@
 /**
- * Eden Connexion — Moderation API
+ * GARDEN OF ALLIANCE — Moderation API
  * POST /api/moderation/validate — validate a message before sending
  */
 

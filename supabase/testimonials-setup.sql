@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Connexion — Testimonials Table Setup
+--  GARDEN OF ALLIANCE — Testimonials Table Setup
 --  Run this in Supabase SQL Editor to create/update the table
 -- ============================================================
 

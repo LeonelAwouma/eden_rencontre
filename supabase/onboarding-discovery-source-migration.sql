@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Connexion — Add discovery_source to profiles
+--  GARDEN OF ALLIANCE — Add discovery_source to profiles
 --  Run this migration on your Supabase database
 -- ============================================================
 

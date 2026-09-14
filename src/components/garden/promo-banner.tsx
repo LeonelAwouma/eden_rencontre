@@ -5,7 +5,7 @@ import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
 
-/** Promotional banner showcasing Eden Connexion value proposition */
+/** Promotional banner showcasing GARDEN OF ALLIANCE value proposition */
 export function PromoBanner() {
   const reduced = useReducedMotion();
   const { t } = useI18n();

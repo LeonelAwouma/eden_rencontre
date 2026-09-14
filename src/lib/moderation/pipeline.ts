@@ -1,5 +1,5 @@
 /**
- * Eden Connexion — Intelligent Rule-Based Communication Protection Engine
+ * GARDEN OF ALLIANCE — Intelligent Rule-Based Communication Protection Engine
  * Pipeline Orchestrator — Risk Scoring, Decision Engine, Trust, Escalation, Logging
  * Single entry point: validateMessage()
  */

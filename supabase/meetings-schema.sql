@@ -1,5 +1,5 @@
 -- ============================================================
---  Eden Connexion — Google Meet Integration Schema
+--  GARDEN OF ALLIANCE — Google Meet Integration Schema
 --  Run after admin-schema.sql and admin-extensions.sql
 -- ============================================================
 

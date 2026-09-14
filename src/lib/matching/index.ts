@@ -1,5 +1,5 @@
 // ============================================================================
-//  Eden Connexion — Matchmaking Engine: Barrel Export
+//  GARDEN OF ALLIANCE — Matchmaking Engine: Barrel Export
 //  Single entry point for all matching functionality
 // ============================================================================
 
