@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { CheckCircle2, Heart, ScrollText, ShieldCheck, Users } from "lucide-react";
 import { motion, useReducedMotion } from "framer-motion";
-import { PageHeader, SkyFlock, PerchOrnament, OliveBirdDivider, GardenIllustration } from "@/components/garden";
+import { PageHeader, OliveBirdDivider, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 export default function ParcoursPage() {
@@ -57,15 +57,11 @@ export default function ParcoursPage() {
             }}
           />
 
-          {/* Nuée lointaine */}
-          <SkyFlock count={5} className="hidden sm:block absolute top-[16%] left-[7%] w-36 lg:w-48 opacity-[0.14] z-10" />
-
           <div className="container mx-auto px-4 sm:px-6 relative z-20">
             <PageHeader
               eyebrow={t("parcours.heroEyebrow")}
               title={t("parcours.heroTitle")}
               subtitle={t("parcours.heroDesc")}
-              flock={false}
             />
 
             <GardenIllustration
@@ -85,7 +81,6 @@ export default function ParcoursPage() {
 
         {/* ═══ Le chemin : les étapes reliées par une liane ═══ */}
         <section className="relative py-20 sm:py-28 overflow-hidden">
-          <PerchOrnament className="hidden lg:block absolute top-16 right-[6%] w-24 opacity-[0.2]" flip />
 
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <ol className="relative max-w-3xl mx-auto">
@@ -144,7 +139,6 @@ export default function ParcoursPage() {
         {/* ═══ Appel à l'action ═══ */}
         <section className="relative py-20 sm:py-28 eden-undergrowth overflow-hidden">
           <div className="absolute top-0 left-0 right-0 eden-hairline" aria-hidden="true" />
-          <SkyFlock count={4} className="hidden sm:block absolute top-10 right-[8%] w-32 opacity-[0.12]" />
 
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <motion.div

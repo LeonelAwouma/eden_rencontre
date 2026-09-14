@@ -2,7 +2,7 @@
 
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenSection, PageHeader, SkyFlock, PerchOrnament } from "@/components/garden";
+import { GardenSection, PageHeader } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 export default function SecuritePage() {
@@ -13,8 +13,6 @@ export default function SecuritePage() {
 
       <main className="flex-1">
         <GardenSection variant="garden" className="py-16 sm:py-24 relative">
-          <SkyFlock count={4} className="hidden sm:block absolute top-10 right-[6%] w-32 opacity-[0.12]" />
-          <PerchOrnament className="hidden lg:block absolute bottom-14 left-[5%] w-24 opacity-[0.18]" />
           <div className="container mx-auto px-4 sm:px-6">
             <PageHeader
               eyebrow={t("security.eyebrow")}

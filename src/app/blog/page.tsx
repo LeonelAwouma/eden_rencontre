@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { BookOpen, Calendar, User, ArrowRight, Search, Clock } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
-import { PageHeader, SkyFlock, GardenIllustration } from "@/components/garden";
+import { PageHeader, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 interface BlogPostItem {
@@ -48,14 +48,12 @@ export default function BlogPage() {
       <main className="flex-1">
         {/* ═══ Hero ═══ */}
         <section className="relative py-20 sm:py-28 overflow-hidden">
-          <SkyFlock count={5} className="hidden sm:block absolute top-[18%] left-[7%] w-36 lg:w-48 opacity-[0.14] z-10" />
 
           <div className="container mx-auto px-4 sm:px-6 relative z-20">
             <PageHeader
               eyebrow={t("blog.eyebrow")}
               title={t("blog.pageTitle")}
               subtitle={t("blog.pageSubtitle")}
-              flock={false}
             />
 
             <GardenIllustration

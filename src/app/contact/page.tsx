@@ -2,7 +2,7 @@
 
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenSection, PageHeader, SkyFlock, PerchOrnament, GardenIllustration } from "@/components/garden";
+import { GardenSection, PageHeader, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 export default function ContactPage() {
@@ -13,8 +13,6 @@ export default function ContactPage() {
 
       <main className="flex-1">
         <GardenSection variant="garden" className="py-16 sm:py-24 relative">
-          <SkyFlock count={4} className="hidden sm:block absolute top-10 left-[6%] w-32 opacity-[0.12]" />
-          <PerchOrnament className="hidden lg:block absolute bottom-14 right-[6%] w-24 opacity-[0.18]" flip />
           <GardenIllustration
             src="/image_two_garden.png"
             placement="hero-frame"

@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Monogram } from "@/components/ornaments";
-import { SkyFlock, PerchOrnament } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 export function Footer() {
@@ -16,9 +15,6 @@ export function Footer() {
 
   return (
     <footer className="relative bg-background border-t border-sage/20 py-16 overflow-hidden">
-      {/* Le jardin salue une derniere fois : une nuee, un oiseau pose */}
-      <SkyFlock count={4} className="hidden sm:block absolute top-8 right-[8%] w-32 lg:w-40 opacity-[0.11]" />
-      <PerchOrnament className="hidden lg:block absolute bottom-10 left-[3%] w-24 opacity-[0.14]" />
       {/* Subtle botanical background pattern */}
       <div
         className="absolute inset-0 pointer-events-none opacity-[0.015]"

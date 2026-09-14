@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { PageHeader, SkyFlock, PerchOrnament } from "@/components/garden";
+import { PageHeader } from "@/components/garden";
 import {
   Accordion,
   AccordionContent,
@@ -28,8 +28,6 @@ export default function FAQPage() {
 
       <main className="flex-1">
         <section className="relative eden-sky py-16 sm:py-24 overflow-hidden">
-          <SkyFlock count={4} className="hidden sm:block absolute top-12 left-[6%] w-32 lg:w-40 opacity-[0.13]" />
-          <PerchOrnament className="hidden lg:block absolute bottom-16 right-[5%] w-24 opacity-[0.18]" flip />
 
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <PageHeader

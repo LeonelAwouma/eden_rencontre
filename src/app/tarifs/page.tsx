@@ -3,7 +3,7 @@
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
-import { SkyFlock, PerchOrnament, OliveBirdDivider } from "@/components/garden";
+import { OliveBirdDivider } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 import {
   Check,
@@ -91,9 +91,6 @@ export default function PricingPage() {
             style={{ background: "radial-gradient(circle, hsl(145 30% 55%) 0%, transparent 70%)", filter: "blur(90px)" }} aria-hidden="true" />
           <div className="absolute top-24 right-12 w-[220px] h-[220px] rounded-full pointer-events-none opacity-15"
             style={{ background: "radial-gradient(circle, hsl(95 28% 38%) 0%, transparent 70%)", filter: "blur(70px)" }} aria-hidden="true" />
-
-          <SkyFlock count={5} className="hidden sm:block absolute top-12 left-[6%] w-36 lg:w-48 opacity-[0.14]" />
-          <PerchOrnament className="hidden lg:block absolute bottom-8 right-[6%] w-24 opacity-[0.17]" flip />
 
           <div className="relative z-10 container mx-auto px-4 text-center max-w-3xl">
             <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full mb-6"

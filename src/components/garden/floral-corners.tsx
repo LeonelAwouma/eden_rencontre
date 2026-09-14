@@ -1,6 +1,5 @@
 import { cn } from "@/lib/utils";
-import { FloralCorner } from "./botanical-svgs";
-import { ImposingFloralCorner } from "./imposing-floral-svgs";
+import { DecorSprig } from "./decor-sprig";
 
 type Variant = "delicate" | "imposing";
 type Corner = "tl" | "tr" | "bl" | "br";
@@ -47,23 +46,14 @@ export function FloralCorners({
 
   return (
     <div className={cn("pointer-events-none absolute inset-0 overflow-visible", className)} aria-hidden="true">
-      {activeCorners.map((pos) =>
-        variant === "imposing" ? (
-          <ImposingFloralCorner
-            key={pos}
-            position={pos}
-            className={cn(cornerPos[pos], sizes[size])}
-            style={{ opacity }}
-          />
-        ) : (
-          <FloralCorner
-            key={pos}
-            position={pos}
-            className={cn(cornerPos[pos], sizes[size])}
-            style={{ opacity }}
-          />
-        )
-      )}
+      {activeCorners.map((pos) => (
+        <DecorSprig
+          key={pos}
+          position={pos}
+          className={cn(cornerPos[pos], sizes[size])}
+          style={{ opacity }}
+        />
+      ))}
     </div>
   );
 }

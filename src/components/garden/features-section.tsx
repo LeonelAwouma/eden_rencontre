@@ -5,7 +5,6 @@ import { motion, useReducedMotion } from "framer-motion";
 import { GardenSection } from "./garden-section";
 import { GardenCard } from "./garden-card";
 import { OliveBirdDivider } from "./page-header";
-import { SkyFlock, PerchOrnament } from "./bird-scene";
 import { useI18n } from "@/lib/i18n";
 
 /** Nature-inspired icons as SVG components */
@@ -68,9 +67,6 @@ export function FeaturesSection() {
 
   return (
     <GardenSection variant="muted" className="relative overflow-hidden">
-      <SkyFlock count={4} className="hidden sm:block absolute top-12 right-[7%] w-32 lg:w-44 opacity-[0.12]" />
-      <PerchOrnament className="hidden lg:block absolute bottom-12 left-[4%] w-24 opacity-[0.16]" />
-
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <motion.div
           initial={reduced ? false : { opacity: 0, y: 24 }}
@@ -88,7 +84,6 @@ export function FeaturesSection() {
             {t("features.sectionTitle1")}{" "}
             <span className="text-primary italic">{t("features.sectionTitle2")}</span>
           </h2>
-          {/* Rameau d'olivier ponctue d'un oiseau */}
           <div className="flex justify-center">
             <OliveBirdDivider />
           </div>

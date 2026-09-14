@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenHero, PromoBanner, AnnouncementBar, SkyFlock } from "@/components/garden";
+import { GardenHero, PromoBanner, AnnouncementBar } from "@/components/garden";
 import { FeaturesSection } from "@/components/garden/features-section";
 import { QuoteSection } from "@/components/garden/quote-section";
 import { useI18n } from "@/lib/i18n";
@@ -66,10 +66,6 @@ function StatsBar() {
     <section className="py-14 sm:py-20 bg-background relative overflow-hidden">
       <div className="absolute top-0 left-0 right-0 eden-hairline" aria-hidden="true" />
       <div className="absolute bottom-0 left-0 right-0 eden-hairline" aria-hidden="true" />
-
-      {/* Deux oiseaux lointains, très en retrait, sur les marges */}
-      <SkyFlock count={3} className="hidden lg:block absolute top-6 left-[4%] w-28 opacity-[0.1]" />
-      <SkyFlock count={2} className="hidden lg:block absolute bottom-6 right-[5%] w-20 opacity-[0.08]" />
 
       <div className="container mx-auto px-4 sm:px-6 relative z-10">
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 sm:gap-4 text-center">

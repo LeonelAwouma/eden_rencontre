@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { ImposingFloralCorner } from "./imposing-floral-svgs";
+import { DecorSprig } from "./decor-sprig";
 
 type Corner = "tl" | "tr" | "bl" | "br";
 type Size = "sm" | "md" | "lg" | "xl";
@@ -19,11 +19,12 @@ const sizeMap: Record<Size, string> = {
   xl: "w-48 h-48 sm:w-64 sm:h-64 md:w-72 md:h-72",
 };
 
+// Décalés par la position, pas par translate : DecorSprig occupe déjà `transform`.
 const cornerPos: Record<Corner, string> = {
-  tl: "top-0 left-0 -translate-x-[8%] -translate-y-[8%]",
-  tr: "top-0 right-0 translate-x-[8%] -translate-y-[8%]",
-  bl: "bottom-0 left-0 -translate-x-[8%] translate-y-[8%]",
-  br: "bottom-0 right-0 translate-x-[8%] translate-y-[8%]",
+  tl: "-top-3 -left-3",
+  tr: "-top-3 -right-3",
+  bl: "-bottom-3 -left-3",
+  br: "-bottom-3 -right-3",
 };
 
 export function GardenFrame({
@@ -40,15 +41,10 @@ export function GardenFrame({
     <div className={cn("relative overflow-hidden", className)}>
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
         {activeCorners.map((pos) => (
-          <ImposingFloralCorner
+          <DecorSprig
             key={pos}
             position={pos}
-            className={cn(
-              "absolute",
-              sizeMap[size],
-              cornerPos[pos],
-              "transition-transform duration-700"
-            )}
+            className={cn("absolute", sizeMap[size], cornerPos[pos])}
             style={{ opacity }}
           />
         ))}
@@ -76,7 +72,7 @@ export function ImposingFloralCorners({
   return (
     <div className={cn("pointer-events-none absolute inset-0 overflow-visible", className)} aria-hidden="true">
       {activeCorners.map((pos) => (
-        <ImposingFloralCorner
+        <DecorSprig
           key={pos}
           position={pos}
           className={cn("absolute", sizeMap[size], cornerPos[pos])}

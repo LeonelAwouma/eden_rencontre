@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Heart, MessageCircleCode, CheckCircle2, MapPin, Calendar, X, Check, ImageIcon, Loader2, Clock } from "lucide-react";
 import { getSession } from "@/lib/auth";
-import { PageHeader, SkyFlock, PerchOrnament, GardenIllustration } from "@/components/garden";
+import { PageHeader, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 interface Testimonial {
@@ -224,8 +224,6 @@ export default function TemoignagesPage() {
       <main className="flex-1">
         {/* Hero */}
         <section className="relative py-20 sm:py-28 eden-sky overflow-hidden">
-          <SkyFlock count={5} className="hidden sm:block absolute top-12 left-[6%] w-36 lg:w-48 opacity-[0.14]" />
-          <PerchOrnament className="hidden lg:block absolute bottom-12 right-[6%] w-24 opacity-[0.18]" flip />
 
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <GardenIllustration
@@ -241,7 +239,6 @@ export default function TemoignagesPage() {
               eyebrow={t("testimonials.heroBadge")}
               title={t("testimonials.heroTitle")}
               subtitle={t("testimonials.heroSubtitle")}
-              flock={false}
             />
           </div>
 

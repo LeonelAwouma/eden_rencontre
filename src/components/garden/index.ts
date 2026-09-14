@@ -6,6 +6,7 @@ export { PageHeader, OliveBirdDivider } from "./page-header";
 export { FloatingBotanical } from "./floating-botanical";
 export { FlyingDove } from "./flying-dove";
 export { FloralCorners } from "./floral-corners";
+export { DecorSprig } from "./decor-sprig";
 export { OrganicSeparator } from "./organic-separator";
 export { GardenCard } from "./garden-card";
 export { GardenHero } from "./garden-hero";

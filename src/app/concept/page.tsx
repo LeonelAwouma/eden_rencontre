@@ -2,7 +2,7 @@
 
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenSection, PageHeader, SkyFlock, GlidingSwallow, PerchOrnament, GardenIllustration } from "@/components/garden";
+import { GardenSection, PageHeader, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 /** Botanical vine ornament for section dividers */
@@ -41,10 +41,6 @@ export default function ConceptPage() {
       <main className="flex-1">
         {/* Hero Vision */}
         <GardenSection variant="garden" className="py-20 sm:py-28 relative overflow-hidden">
-          <SkyFlock count={5} className="hidden sm:block absolute top-12 left-[6%] w-36 lg:w-48 opacity-[0.14]" />
-          <div className="hidden lg:block">
-            <GlidingSwallow className="top-[22%]" delay={6} duration={38} />
-          </div>
           <GardenIllustration
             src="/image_three_garden.png"
             placement="corner"
@@ -61,7 +57,6 @@ export default function ConceptPage() {
               title={t("concept.sacredVision")}
               highlight={t("concept.sacredHighlight")}
               subtitle={t("concept.visionDesc")}
-              flock={false}
             />
           </div>
         </GardenSection>
@@ -161,7 +156,6 @@ export default function ConceptPage() {
 
         {/* Security / Anti-Brouteur */}
         <section className="py-20 sm:py-28 eden-undergrowth relative overflow-hidden">
-          <PerchOrnament className="hidden lg:block absolute bottom-12 left-[5%] w-24 opacity-[0.18]" />
           <div className="container mx-auto px-4 sm:px-6 text-center relative z-10">
             <div className="max-w-4xl mx-auto space-y-12">
               <div className="inline-block p-4 bg-deep-eden/5 rounded-full mb-4 ring-1 ring-deep-eden/8">

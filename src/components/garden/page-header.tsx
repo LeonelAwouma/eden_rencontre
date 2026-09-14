@@ -3,15 +3,12 @@
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { cn } from "@/lib/utils";
-import { SkyFlock } from "./bird-scene";
-import { DistantBird } from "./birds";
 
 /**
  * En-tête commun aux pages publiques.
  *
  * Toutes les pages répétaient le même bloc (sur-titre, titre, séparateur, chapô)
- * avec de légères dérives. Ce composant fixe le rythme vertical une bonne fois,
- * et pose la nuée d'oiseaux au même endroit partout.
+ * avec de légères dérives. Ce composant fixe le rythme vertical une bonne fois.
  */
 export function PageHeader({
   eyebrow,
@@ -20,7 +17,6 @@ export function PageHeader({
   subtitle,
   children,
   align = "center",
-  flock = true,
   className,
 }: {
   eyebrow?: string;
@@ -29,7 +25,6 @@ export function PageHeader({
   subtitle?: string;
   children?: React.ReactNode;
   align?: "center" | "left";
-  flock?: boolean;
   className?: string;
 }) {
   const reduced = useReducedMotion();
@@ -37,14 +32,6 @@ export function PageHeader({
 
   return (
     <div className={cn("relative", className)}>
-      {/* Nuée lointaine, calée en haut à droite — jamais devant le texte */}
-      {flock && (
-        <SkyFlock
-          count={4}
-          className="hidden sm:block absolute -top-6 right-0 lg:right-8 w-32 lg:w-44 opacity-[0.13]"
-        />
-      )}
-
       <motion.div
         initial={reduced ? false : { opacity: 0, y: 22 }}
         animate={{ opacity: 1, y: 0 }}
@@ -59,7 +46,7 @@ export function PageHeader({
             <span className="eden-eyebrow">
               <span className="w-7 h-px bg-deep-eden/25" aria-hidden="true" />
               {eyebrow}
-              <DistantBird className="w-3.5 h-auto text-deep-eden/35" />
+              <span className="w-7 h-px bg-deep-eden/25" aria-hidden="true" />
             </span>
           </div>
         )}
@@ -88,28 +75,45 @@ export function PageHeader({
   );
 }
 
+const oliveBirdSizes = {
+  sm: { wrap: "w-60 sm:w-72", emblem: "w-24 sm:w-28", sizes: "112px" },
+  md: { wrap: "w-72 sm:w-96", emblem: "w-32 sm:w-36", sizes: "144px" },
+  lg: { wrap: "w-80 sm:w-[26rem]", emblem: "w-44 sm:w-52", sizes: "208px" },
+} as const;
+
 /**
- * Séparateur floral — deux traits fins encadrant le médaillon "alliance"
- * (bouquet, anneaux, cœur) recadré depuis decor.png.
+ * Séparateur floral — l'emblème "alliance" (bouquet, anneaux, cœur) découpé de
+ * decor.png, posé sur un filet qui s'étire avec le conteneur.
+ *
+ * Le filet court derrière l'emblème et non jusqu'à ses bords : le feuillage
+ * l'occulte en passant, comme dans l'illustration d'origine. L'emblème est
+ * recadré pour que le filet tombe pile sur son axe.
  */
-export function OliveBirdDivider({ className }: { className?: string }) {
+export function OliveBirdDivider({
+  className,
+  size = "sm",
+}: {
+  className?: string;
+  size?: keyof typeof oliveBirdSizes;
+}) {
+  const s = oliveBirdSizes[size];
   return (
-    <div className={cn("flex items-center gap-2.5 sm:gap-3 w-48 sm:w-64", className)} aria-hidden="true">
-      <span className="h-px flex-1" style={{ backgroundColor: "#617863", opacity: 0.5 }} />
-      <div
-        className="relative shrink-0 w-16 sm:w-20"
-        style={{ aspectRatio: "495 / 170" }}
-      >
-        <Image
-          src="/decor.png"
-          alt=""
-          fill
-          sizes="80px"
-          className="object-cover"
-          style={{ objectPosition: "50% 48.8%" }}
-        />
-      </div>
-      <span className="h-px flex-1" style={{ backgroundColor: "#617863", opacity: 0.5 }} />
+    <div
+      className={cn("relative flex items-center justify-center", s.wrap, className)}
+      aria-hidden="true"
+    >
+      <span
+        className="absolute inset-x-0 top-1/2 h-px -translate-y-1/2"
+        style={{ backgroundColor: "#5b715d", opacity: 0.55 }}
+      />
+      <Image
+        src="/decor-emblem.png"
+        alt=""
+        width={502}
+        height={203}
+        sizes={s.sizes}
+        className={cn("relative shrink-0 h-auto", s.emblem)}
+      />
     </div>
   );
 }

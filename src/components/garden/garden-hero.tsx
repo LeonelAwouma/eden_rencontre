@@ -5,7 +5,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
-import { GlidingDove, SkyFlock, PerchOrnament } from "./bird-scene";
 import { OliveBirdDivider } from "./page-header";
 
 /** Pollen porté par l'air — quelques grains, jamais une pluie. */
@@ -51,26 +50,16 @@ export function GardenHero() {
         aria-hidden="true"
       />
 
-      {/* ── Faune : une nuée immobile, une colombe qui passe ── */}
-      <div className="hidden lg:block">
-        {!reduced && <PollenParticles />}
-        <SkyFlock
-          count={5}
-          className="absolute top-[13%] left-[6%] w-40 xl:w-52 opacity-[0.16] z-20"
-        />
-        <GlidingDove className="top-[9%] z-20" duration={46} />
-      </div>
+      {!reduced && (
+        <div className="hidden lg:block">
+          <PollenParticles />
+        </div>
+      )}
 
       {/* ── Mise en page : grille sur desktop, empilée sur mobile ── */}
       <div className="relative z-10 flex flex-col lg:grid lg:grid-cols-[52fr_48fr] xl:grid-cols-2 min-h-[100vh] lg:min-h-[92vh]">
         {/* ═══ COLONNE GAUCHE : le texte, sur le ciel du jardin ═══ */}
         <div className="flex items-center relative eden-sky">
-          {/* Nuée mobile, discrète, au-dessus du titre */}
-          <SkyFlock
-            count={3}
-            className="lg:hidden absolute top-[7%] right-[8%] w-24 opacity-[0.15]"
-          />
-
           <div className="container mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 py-20 sm:py-24 lg:py-0">
             <motion.div
               initial={reduced ? false : { opacity: 0, y: 36 }}
@@ -108,7 +97,7 @@ export function GardenHero() {
                 transition={{ duration: 0.8, delay: 0.5 }}
                 className="flex justify-center"
               >
-                <OliveBirdDivider className="w-32 sm:w-40" />
+                <OliveBirdDivider size="md" />
               </motion.div>
 
               {/* Chapô */}
@@ -178,9 +167,8 @@ export function GardenHero() {
         </div>
       </div>
 
-      {/* ── Vague de séparation, avec un oiseau posé dessus ── */}
+      {/* ── Vague de séparation ── */}
       <div className="absolute bottom-0 left-0 right-0 z-30 pointer-events-none" aria-hidden="true">
-        <PerchOrnament className="hidden md:block absolute bottom-6 left-[6%] lg:left-[8%] w-20 lg:w-24 opacity-[0.22]" />
         <svg viewBox="0 0 1440 48" fill="none" className="w-full h-8 sm:h-10 lg:h-12" preserveAspectRatio="none">
           <path
             d="M0 48 L0 32 Q120 18 240 26 Q360 36 480 22 Q600 10 720 18 Q840 28 960 14 Q1080 4 1200 12 Q1320 22 1440 8 L1440 48 Z"

@@ -38,7 +38,7 @@ export function QuoteSection() {
           </h2>
 
           <div className="flex justify-center">
-            <OliveBirdDivider className="w-40 sm:w-52" />
+            <OliveBirdDivider size="lg" />
           </div>
 
           <p className="text-base sm:text-xl text-primary font-headline tracking-[0.2em] uppercase opacity-85">

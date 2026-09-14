@@ -3,7 +3,7 @@
 import { Fragment } from "react";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
-import { GardenSection, OliveBirdDivider, SkyFlock, GardenIllustration } from "@/components/garden";
+import { GardenSection, OliveBirdDivider, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
 export default function MentionsPage() {
@@ -16,7 +16,6 @@ export default function MentionsPage() {
 
       <main className="flex-1">
         <GardenSection variant="garden" className="py-16 sm:py-24 relative">
-          <SkyFlock count={4} className="hidden sm:block absolute top-10 right-[7%] w-32 opacity-[0.11]" />
           <GardenIllustration
             src="/image_two_garden.png"
             placement="corner"
