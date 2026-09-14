@@ -25,7 +25,9 @@ export function Navigation() {
     <nav className="sticky top-0 z-50 w-full garden-nav">
       {/* ── Desktop header ── */}
       <div className="hidden lg:block">
-        <div className="container mx-auto max-w-screen-2xl px-6 xl:px-10 h-20 xl:h-24 flex items-center justify-between">
+        {/* `.container` est redéfini globalement à max-w-7xl (1280px), trop
+            étroit pour cette barre : on pose la largeur ici sans passer par lui. */}
+        <div className="w-full max-w-screen-2xl mx-auto px-6 xl:px-10 h-20 xl:h-24 flex items-center justify-between gap-8">
           {/* Left: Logo — flush left in its equal-third column */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center gap-3 group">
@@ -37,12 +39,12 @@ export function Navigation() {
           </div>
 
           {/* Center: Nav — centered between logo and actions */}
-          <div className="flex items-center gap-6 xl:gap-8">
+          <div className="flex items-center gap-4 xl:gap-6">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-[11px] xl:text-xs font-black tracking-[0.18em] xl:tracking-[0.2em] uppercase text-foreground/60 hover:text-primary transition-all duration-300 relative group/link whitespace-nowrap"
+                className="text-[11px] xl:text-xs font-black tracking-[0.14em] xl:tracking-[0.16em] uppercase text-foreground/60 hover:text-primary transition-all duration-300 relative group/link whitespace-nowrap"
               >
                 {link.name}
                 <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover/link:w-full" />
@@ -51,12 +53,12 @@ export function Navigation() {
           </div>
 
           {/* Right: Actions — flush right in its equal-third column */}
-          <div className="flex items-center gap-4 xl:gap-5">
+          <div className="flex items-center gap-3 xl:gap-5">
             <LanguageSwitcher />
-            <Button variant="ghost" asChild className="text-foreground hover:text-primary font-bold text-sm tracking-wide transition-colors px-3 xl:px-4">
+            <Button variant="ghost" asChild className="text-foreground hover:text-primary font-bold text-sm tracking-wide transition-colors px-2 xl:px-4">
               <Link href="/login">{t("nav.login")}</Link>
             </Button>
-            <Button className="garden-btn-primary font-black px-6 xl:px-8 h-10 xl:h-12 rounded-xl text-xs xl:text-sm tracking-tight group" asChild>
+            <Button className="garden-btn-primary font-black px-5 xl:px-7 h-10 xl:h-12 rounded-xl text-xs xl:text-sm tracking-tight group" asChild>
               <Link href="/login" className="flex items-center justify-center">
                 {t("nav.start")}
               </Link>
