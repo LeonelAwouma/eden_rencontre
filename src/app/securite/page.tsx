@@ -12,7 +12,7 @@ export default function SecuritePage() {
       <Navigation />
 
       <main className="flex-1">
-        <GardenSection variant="garden" className="py-16 sm:py-24 relative">
+        <GardenSection variant="garden" className="py-12 sm:py-16 relative">
           <div className="container mx-auto px-4 sm:px-6">
             <PageHeader
               eyebrow={t("security.eyebrow")}

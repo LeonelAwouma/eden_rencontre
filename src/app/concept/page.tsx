@@ -40,7 +40,7 @@ export default function ConceptPage() {
 
       <main className="flex-1">
         {/* Hero Vision */}
-        <GardenSection variant="garden" className="py-20 sm:py-28 relative overflow-hidden">
+        <GardenSection variant="garden" className="py-14 sm:py-20 relative overflow-hidden">
           <GardenIllustration
             src="/image_three_garden.webp"
             placement="corner"
@@ -64,7 +64,7 @@ export default function ConceptPage() {
         <VineDivider />
 
         {/* Values */}
-        <section className="py-20 sm:py-28 container mx-auto px-4 sm:px-6 relative">
+        <section className="py-14 sm:py-20 container mx-auto px-4 sm:px-6 relative">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center relative">
             <div className="space-y-12">
               <div className="space-y-4">
@@ -155,7 +155,7 @@ export default function ConceptPage() {
         <VineDivider />
 
         {/* Security / Anti-Brouteur */}
-        <section className="py-20 sm:py-28 eden-undergrowth relative overflow-hidden">
+        <section className="py-14 sm:py-20 eden-undergrowth relative overflow-hidden">
           <div className="container mx-auto px-4 sm:px-6 text-center relative z-10">
             <div className="max-w-4xl mx-auto space-y-12">
               <div className="inline-block p-4 bg-deep-eden/5 rounded-full mb-4 ring-1 ring-deep-eden/8">

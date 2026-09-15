@@ -33,7 +33,7 @@ export function GardenSection({
       whileInView={{ opacity: 1 }}
       viewport={{ once: true, margin: "-80px" }}
       transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-      className={cn("relative overflow-hidden py-20 sm:py-32", bgMap[variant], className)}
+      className={cn("relative overflow-hidden py-14 sm:py-20", bgMap[variant], className)}
     >
       {/* Subtle vine decorations */}
       {showVines && (

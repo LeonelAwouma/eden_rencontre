@@ -47,7 +47,7 @@ export default function BlogPage() {
       
       <main className="flex-1">
         {/* ═══ Hero ═══ */}
-        <section className="relative py-20 sm:py-28 overflow-hidden">
+        <section className="relative py-14 sm:py-20 overflow-hidden">
 
           <div className="container mx-auto px-4 sm:px-6 relative z-20">
             <PageHeader
@@ -71,7 +71,7 @@ export default function BlogPage() {
         </section>
 
         {/* Blog Posts Grid */}
-        <section className="py-24 container mx-auto px-4">
+        <section className="py-16 container mx-auto px-4">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8 gap-4">
             <h2 className="font-headline text-3xl font-bold">{t("blog.title")} {t("blog.titleHighlight")}</h2>
             <div className="relative w-full sm:w-64">
@@ -131,7 +131,7 @@ export default function BlogPage() {
         </section>
 
         {/* Newsletter */}
-        <section className="py-24 bg-card border-y border-foreground/5">
+        <section className="py-16 bg-card border-y border-foreground/5">
           <div className="container mx-auto px-4 text-center max-w-2xl">
             <div className="w-16 h-16 bg-accent/10 rounded-full flex items-center justify-center mx-auto mb-8">
               <BookOpen className="w-8 h-8 text-accent" />

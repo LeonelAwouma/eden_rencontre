@@ -46,7 +46,7 @@ export default function ParcoursPage() {
 
       <main className="flex-1">
         {/* ═══ Hero ═══ */}
-        <section className="relative py-20 sm:py-28 overflow-hidden">
+        <section className="relative py-14 sm:py-20 overflow-hidden">
           {/* Halo chaud derrière l'ouverture de l'arche — se lit comme la lumière du portail */}
           <div
             className="absolute inset-0"
@@ -80,7 +80,7 @@ export default function ParcoursPage() {
         </section>
 
         {/* ═══ Le chemin : les étapes reliées par une liane ═══ */}
-        <section className="relative py-20 sm:py-28 overflow-hidden">
+        <section className="relative py-14 sm:py-20 overflow-hidden">
 
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <ol className="relative max-w-3xl mx-auto">
@@ -137,7 +137,7 @@ export default function ParcoursPage() {
         </section>
 
         {/* ═══ Appel à l'action ═══ */}
-        <section className="relative py-20 sm:py-28 eden-undergrowth overflow-hidden">
+        <section className="relative py-14 sm:py-20 eden-undergrowth overflow-hidden">
           <div className="absolute top-0 left-0 right-0 eden-hairline" aria-hidden="true" />
 
           <div className="container mx-auto px-4 sm:px-6 relative z-10">

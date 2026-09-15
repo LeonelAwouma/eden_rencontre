@@ -13,7 +13,7 @@ export function QuoteSection() {
   const { t } = useI18n();
 
   return (
-    <GardenSection variant="garden" className="py-20 sm:py-32 relative overflow-hidden">
+    <GardenSection variant="garden" className="py-14 sm:py-20 relative overflow-hidden">
       <div className="container mx-auto px-5 sm:px-6 relative z-10 text-center">
         <motion.div
           initial={reduced ? false : { opacity: 0, y: 32 }}

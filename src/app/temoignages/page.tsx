@@ -223,7 +223,7 @@ export default function TemoignagesPage() {
 
       <main className="flex-1">
         {/* Hero */}
-        <section className="relative py-20 sm:py-28 eden-sky overflow-hidden">
+        <section className="relative py-14 sm:py-20 eden-sky overflow-hidden">
 
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <GardenIllustration
@@ -246,7 +246,7 @@ export default function TemoignagesPage() {
         </section>
 
         {/* Testimonials Filter & Main section */}
-        <section className="py-16 sm:py-24 container mx-auto px-4 sm:px-6">
+        <section className="py-12 sm:py-16 container mx-auto px-4 sm:px-6">
           <div className="flex flex-col md:flex-row justify-between items-center gap-6 mb-14 border-b border-sage/25 pb-8">
             {/* Tabs */}
             <div className="flex bg-muted/70 p-1.5 rounded-2xl border border-sage/25">
@@ -569,7 +569,7 @@ export default function TemoignagesPage() {
         )}
 
         {/* CTA Section */}
-        <section className="relative py-24 bg-accent/5 border-t border-foreground/5 overflow-hidden">
+        <section className="relative py-16 bg-accent/5 border-t border-foreground/5 overflow-hidden">
           <GardenIllustration
             src="/image_six_garden.webp"
             placement="side-accent"

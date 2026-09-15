@@ -27,7 +27,7 @@ export default function FAQPage() {
       <Navigation />
 
       <main className="flex-1">
-        <section className="relative eden-sky py-16 sm:py-24 overflow-hidden">
+        <section className="relative eden-sky py-12 sm:py-16 overflow-hidden">
 
           <div className="container mx-auto px-4 sm:px-6 relative z-10">
             <PageHeader

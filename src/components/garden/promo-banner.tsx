@@ -12,7 +12,7 @@ export function PromoBanner() {
   const { t } = useI18n();
 
   return (
-    <section className="relative py-16 sm:py-24 bg-gradient-to-b from-background via-sage/5 to-background overflow-hidden">
+    <section className="relative py-12 sm:py-16 bg-gradient-to-b from-background via-sage/5 to-background overflow-hidden">
       {/* Subtle top/bottom organic dividers */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-sage/15 to-transparent" aria-hidden="true" />
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-sage/15 to-transparent" aria-hidden="true" />

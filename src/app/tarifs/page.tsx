@@ -85,7 +85,7 @@ export default function PricingPage() {
 
       <main className="flex-1">
         {/* ══ HERO SECTION ══ */}
-        <section className="relative eden-sky pt-20 pb-14 sm:pt-28 sm:pb-20 overflow-hidden">
+        <section className="relative eden-sky pt-14 pb-10 sm:pt-20 sm:pb-14 overflow-hidden">
           {/* Halo vegetal, tres lave */}
           <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[620px] h-[380px] rounded-full pointer-events-none opacity-25"
             style={{ background: "radial-gradient(circle, hsl(145 30% 55%) 0%, transparent 70%)", filter: "blur(90px)" }} aria-hidden="true" />
@@ -114,7 +114,7 @@ export default function PricingPage() {
         </section>
 
         {/* ══ PRICING CARDS ══ */}
-        <section className="pb-16 sm:pb-24 -mt-4">
+        <section className="pb-12 sm:pb-16 -mt-4">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto items-start">
               {plans.map((plan) => (
@@ -292,7 +292,7 @@ export default function PricingPage() {
         </section>
 
         {/* ══ BOTTOM CTA SECTION ══ */}
-        <section className="pb-24 sm:pb-32">
+        <section className="pb-16 sm:pb-20">
           <div className="container mx-auto px-4">
             <div
               className="relative overflow-hidden rounded-[28px] max-w-3xl mx-auto text-center px-6 py-14 sm:py-20"
@@ -339,7 +339,7 @@ export default function PricingPage() {
         </section>
 
         {/* ══ TRUST BADGES ══ */}
-        <section className="pb-20">
+        <section className="pb-14">
           <div className="container mx-auto px-4">
             <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 max-w-2xl mx-auto">
               {[

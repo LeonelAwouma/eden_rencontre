@@ -161,6 +161,7 @@ export function GardenHero() {
               fill
               className="object-cover object-center"
               priority
+              quality={90}
               sizes="(max-width: 1023px) 100vw, 50vw"
             />
           </div>
