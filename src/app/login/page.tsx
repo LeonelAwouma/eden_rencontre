@@ -178,7 +178,10 @@ export default function LoginPage() {
       </div>
 
       {/* Right Panel — Login Form */}
-      <div className="flex-1 flex flex-col justify-center items-center pb-12 sm:py-12 relative">
+      {/* Le retrait horizontal desktop est porté par la colonne, pas par le bloc
+          de formulaire : sinon il se soustrait de son max-w-md et rétrécit les
+          champs. En dessous de lg, la bannière image doit rester pleine largeur. */}
+      <div className="flex-1 flex flex-col justify-center items-center pb-12 sm:py-12 lg:px-16 xl:px-24 relative">
         {/* Mobile Image Banner — bandeau large : on garde le visuel sans texte
             incrusté, qui doublerait le logo du site et serait rogné ici. */}
         <div className="lg:hidden relative w-full h-52 sm:h-64 shrink-0 overflow-hidden">
@@ -200,10 +203,10 @@ export default function LoginPage() {
           </Link>
         </div>
 
-        <div className="w-full max-w-md space-y-8 sm:space-y-10 px-5 sm:px-12 lg:px-16 xl:px-24 pt-8 lg:pt-0 animate-in fade-in slide-in-from-right-4 duration-700 relative">
+        <div className="w-full max-w-md space-y-8 sm:space-y-10 px-5 sm:px-12 lg:px-0 pt-8 lg:pt-0 animate-in fade-in slide-in-from-right-4 duration-700 relative">
           <ImposingFloralCorners size="md" corners={["tr"]} opacity={0.45} className="hidden sm:block" />
-          {/* Header */}
-          <div className="space-y-3">
+          {/* Header — passe au-dessus du brin floral, qui est en absolu sur le bloc */}
+          <div className="relative z-10 space-y-3">
             <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-primary/10 rounded-full border border-primary/20 text-primary text-xs font-bold uppercase tracking-widest mb-2">
               <Heart className="w-3.5 h-3.5 fill-primary" />
               {t("login.title")} {t("login.titleHighlight")}
@@ -342,7 +345,7 @@ export default function LoginPage() {
           </div>
 
           {/* Footer info */}
-          <p className="text-center text-foreground/20 text-[10px] font-medium uppercase tracking-widest pt-4">
+          <p className="text-center text-balance text-foreground/20 text-[10px] font-medium uppercase tracking-widest pt-4">
             {t("login.termsPrefix")}{" "}
             <Link href="/charte" className="text-foreground/30 hover:text-primary/60 transition-colors">{t("login.charter")}</Link>
             {" "}{t("login.termsAnd")}{" "}
