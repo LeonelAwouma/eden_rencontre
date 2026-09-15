@@ -35,6 +35,7 @@ export function PromoBanner() {
                 alt={t("promo.imageAlt")}
                 fill
                 className="object-contain"
+                quality={90}
                 sizes="(max-width: 1024px) 100vw, 50vw"
               />
 
