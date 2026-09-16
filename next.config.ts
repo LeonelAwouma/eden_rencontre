@@ -1,7 +1,12 @@
+import path from 'node:path';
 import type {NextConfig} from 'next';
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  // Racine explicite de l'espace de travail : un package-lock.json traîne dans
+  // C:\Users\MARCOM, et Next inférait ce dossier-là comme racine du projet.
+  turbopack: {
+    root: path.join(__dirname),
+  },
   typescript: {
     ignoreBuildErrors: true,
   },
