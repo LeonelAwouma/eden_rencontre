@@ -1,11 +1,11 @@
 "use client";
 
 import { motion, useReducedMotion } from "framer-motion";
-import Image from "next/image";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { OliveBirdDivider } from "./page-header";
+import { HeroFlipCard } from "./hero-flip-card";
 
 /** Pollen porté par l'air — quelques grains, jamais une pluie. */
 function PollenParticles() {
@@ -152,19 +152,12 @@ export function GardenHero() {
           </div>
         </div>
 
-        {/* ═══ COLONNE DROITE : la photo ═══ */}
-        <div className="relative min-h-[50vh] sm:min-h-[55vh] lg:min-h-[92vh]">
-          <div className="absolute inset-0">
-            <Image
-              src="/hero.webp"
-              alt="Couple chrétien — Garden of Alliance"
-              fill
-              className="object-cover object-center"
-              priority
-              quality={90}
-              sizes="(max-width: 1023px) 100vw, 50vw"
-            />
-          </div>
+        {/* ═══ COLONNE DROITE : la carte qui pivote ═══ */}
+        <div className="relative min-h-[50vh] sm:min-h-[55vh] lg:min-h-[92vh] p-4 sm:p-6 lg:p-8 pb-12 sm:pb-14 lg:pb-16">
+          <HeroFlipCard
+            label={t("hero.imageAlt")}
+            className="w-full h-full min-h-[58vh] sm:min-h-[62vh] lg:min-h-0"
+          />
         </div>
       </div>
 
