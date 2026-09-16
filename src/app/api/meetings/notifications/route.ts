@@ -1,21 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getAuthenticatedUser } from "@/lib/api-auth";
 
-// GET — Get meeting notifications for a specific user
+// GET — Get meeting notifications for the authenticated user
 export async function GET(req: NextRequest) {
   try {
-    const supabase = getSupabaseAdmin();
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("user_id");
-
-    if (!userId) {
-      return NextResponse.json({ error: "user_id requis" }, { status: 400 });
+    const authUser = await getAuthenticatedUser(req);
+    if (!authUser) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
+    const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from("meeting_notifications")
       .select("id, meeting_id, notification_type, title, message, is_read, created_at")
-      .eq("user_id", userId)
+      .eq("user_id", authUser.id)
       .order("created_at", { ascending: false })
       .limit(50);
 
@@ -32,15 +31,20 @@ export async function GET(req: NextRequest) {
 // PATCH — Mark notification(s) as read
 export async function PATCH(req: NextRequest) {
   try {
+    const authUser = await getAuthenticatedUser(req);
+    if (!authUser) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+    }
+
     const supabase = getSupabaseAdmin();
     const body = await req.json();
-    const { notification_ids, mark_all, user_id } = body;
+    const { notification_ids, mark_all } = body;
 
-    if (mark_all && user_id) {
+    if (mark_all) {
       const { error } = await supabase
         .from("meeting_notifications")
         .update({ is_read: true })
-        .eq("user_id", user_id)
+        .eq("user_id", authUser.id)
         .eq("is_read", false);
 
       if (error) throw error;
@@ -48,9 +52,12 @@ export async function PATCH(req: NextRequest) {
     }
 
     if (Array.isArray(notification_ids) && notification_ids.length > 0) {
+      // Restreint à ses propres notifications : sans ce eq(user_id),
+      // on pourrait marquer lues celles de n'importe qui.
       const { error } = await supabase
         .from("meeting_notifications")
         .update({ is_read: true })
+        .eq("user_id", authUser.id)
         .in("id", notification_ids);
 
       if (error) throw error;

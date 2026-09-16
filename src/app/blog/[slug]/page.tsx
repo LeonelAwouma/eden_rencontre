@@ -10,6 +10,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Calendar, User, Clock, ArrowLeft, BookOpen, Tag } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import { sanitizeHtml } from "@/lib/sanitize";
 import { useI18n } from "@/lib/i18n";
 
 interface BlogPostData {
@@ -100,7 +101,7 @@ export default function BlogPostPage() {
               <p className="text-lg text-foreground/70 leading-relaxed mb-8 italic border-l-4 border-accent pl-4">{post.excerpt}</p>
             )}
             <article className="blog-content prose prose-lg max-w-none" style={{color:"#2F2F2F",lineHeight:"1.8"}}
-              dangerouslySetInnerHTML={{ __html: post.content || "" }} />
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(post.content || "") }} />
             {post.tags && post.tags.length > 0 && (
               <div className="flex flex-wrap items-center gap-2 mt-10 pt-8 border-t border-foreground/10">
                 <Tag className="w-4 h-4 text-foreground/40" />

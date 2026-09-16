@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getAuthenticatedUser } from "@/lib/api-auth";
 
-// GET — Get meetings for a specific user (participant only)
+// GET — Get meetings for the authenticated user (participant only)
 export async function GET(req: NextRequest) {
   try {
-    const supabase = getSupabaseAdmin();
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("user_id");
-
-    if (!userId) {
-      return NextResponse.json({ error: "user_id requis" }, { status: 400 });
+    // L'identité vient de la session, jamais d'un paramètre d'URL :
+    // sinon n'importe qui lit les rendez-vous d'autrui (IDOR).
+    const authUser = await getAuthenticatedUser(req);
+    if (!authUser) {
+      return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
 
-    const { data, error } = await supabase.rpc("get_user_meetings", { p_user_id: userId });
+    const supabase = getSupabaseAdmin();
+    const { data, error } = await supabase.rpc("get_user_meetings", { p_user_id: authUser.id });
 
     if (error) throw error;
 
