@@ -4,6 +4,7 @@
 
 import crypto from "crypto";
 import { getSupabaseAdmin } from "./supabase-admin";
+import { getSessionSecret } from "./session-secret";
 
 // ── Constants ───────────────────────────────────────────────
 const OTP_LENGTH = 6;
@@ -321,7 +322,7 @@ export async function verifyOTP(email: string, otp: string): Promise<VerifyResul
  * Format: base64(JSON({userId, expiresAt, signature}))
  */
 export function generateResetToken(userId: string): string {
-  const secret = process.env.ADMIN_SESSION_SECRET || process.env.NEXT_PUBLIC_SUPABASE_URL || "eden-reset-secret";
+  const secret = getSessionSecret();
   const expiresAt = Date.now() + OTP_EXPIRY_MINUTES * 60 * 1000;
 
   const payload = JSON.stringify({ userId, expiresAt });
@@ -339,7 +340,7 @@ export function generateResetToken(userId: string): string {
  */
 export function verifyResetToken(token: string): { valid: boolean; userId?: string; error?: string } {
   try {
-    const secret = process.env.ADMIN_SESSION_SECRET || process.env.NEXT_PUBLIC_SUPABASE_URL || "eden-reset-secret";
+    const secret = getSessionSecret();
     const decoded = JSON.parse(Buffer.from(token, "base64url").toString("utf-8"));
     const { payload, signature } = decoded;
 

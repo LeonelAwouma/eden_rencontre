@@ -9,8 +9,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
+import { requireAdmin } from "@/lib/admin-auth";
 
 export async function GET(request: NextRequest) {
-  const origin = request.headers.get("origin") || request.nextUrl.origin;
+  const origin = request.nextUrl.origin;
+  if (!(await requireAdmin().catch(() => null))) {
+    return NextResponse.redirect(`${origin}/admin/login`);
+  }
   return NextResponse.redirect(`${origin}/admin/meets`);
 }

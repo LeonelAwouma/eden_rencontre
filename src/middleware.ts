@@ -1,32 +1,64 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { getSessionSecret } from "@/lib/session-secret";
 
 const ADMIN_SESSION_COOKIE = "eden_admin_session";
 const ADMIN_LOGIN_PATH = "/admin/login";
 
-// Verify the session token (lightweight — same logic as admin-auth.ts but for Edge runtime)
-function verifyAdminToken(token: string): boolean {
+function hexToBytes(hex: string): Uint8Array | null {
+  if (hex.length === 0 || hex.length % 2 !== 0 || !/^[0-9a-f]+$/i.test(hex)) {
+    return null;
+  }
+  const bytes = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < bytes.length; i++) {
+    bytes[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  }
+  return bytes;
+}
+
+/**
+ * Vérifie *réellement* la signature HMAC-SHA256 du cookie (Web Crypto, Edge).
+ * HttpOnly n'empêche pas un attaquant d'envoyer un cookie forgé : sans ce
+ * contrôle de signature, n'importe quel cookie structurellement valide passait.
+ */
+async function verifyAdminToken(token: string): Promise<boolean> {
   try {
-    const secret =
-      process.env.ADMIN_SESSION_SECRET || "eden-admin-secret-change-me";
-    // We use Web Crypto API for Edge runtime compatibility
+    const secret = getSessionSecret();
     const decoded = JSON.parse(atob(token));
     const { payload, signature } = decoded;
-    
-    // Simple expiry check
+    if (typeof payload !== "string" || typeof signature !== "string") {
+      return false;
+    }
+
+    const sigBytes = hexToBytes(signature);
+    if (!sigBytes) return false;
+
+    const key = await crypto.subtle.importKey(
+      "raw",
+      new TextEncoder().encode(secret),
+      { name: "HMAC", hash: "SHA-256" },
+      false,
+      ["verify"]
+    );
+    const valid = await crypto.subtle.verify(
+      "HMAC",
+      key,
+      sigBytes,
+      new TextEncoder().encode(payload)
+    );
+    if (!valid) return false;
+
     const session = JSON.parse(payload);
-    if (session.exp < Date.now()) return false;
-    
-    // We can't easily verify HMAC in Edge runtime without Web Crypto,
-    // so we do a basic structural check. Full verification happens server-side.
-    // The cookie is HttpOnly so it can't be tampered with from the client.
+    if (typeof session.exp !== "number" || session.exp < Date.now()) {
+      return false;
+    }
     return true;
   } catch {
     return false;
   }
 }
 
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
   // Only protect /admin routes
@@ -35,7 +67,7 @@ export function middleware(request: NextRequest) {
   }
 
   const adminToken = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
-  const isAuthenticated = adminToken ? verifyAdminToken(adminToken) : false;
+  const isAuthenticated = adminToken ? await verifyAdminToken(adminToken) : false;
 
   // Allow the login page for unauthenticated users
   if (pathname === ADMIN_LOGIN_PATH || pathname === "/admin/login/") {

@@ -2,9 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { updateGoogleMeetEvent, deleteGoogleMeetEvent } from "@/lib/google-calendar";
 import { sendMeetingInvitationEmail, sendMeetingRescheduledEmail, sendMeetingCancelledEmail } from "@/lib/email";
+import { requireAdmin } from "@/lib/admin-auth";
 
 // GET — Get a single meeting
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await requireAdmin().catch(() => null))) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
   try {
     const { id } = await params;
     const supabase = getSupabaseAdmin();
@@ -32,6 +36,9 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
 
 // PATCH — Update/reschedule/cancel a meeting
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await requireAdmin().catch(() => null))) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
   try {
     const { id } = await params;
     const supabase = getSupabaseAdmin();
@@ -192,6 +199,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
 // DELETE — Permanently delete a meeting
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  if (!(await requireAdmin().catch(() => null))) {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
   try {
     const { id } = await params;
     const supabase = getSupabaseAdmin();

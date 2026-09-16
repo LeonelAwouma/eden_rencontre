@@ -1,6 +1,7 @@
 import crypto from "crypto";
 import { cookies } from "next/headers";
 import { getSupabaseAdmin } from "./supabase-admin";
+import { getSessionSecret } from "./session-secret";
 
 // ── Constants ────────────────────────────────────────────────
 const ADMIN_SESSION_COOKIE = "eden_admin_session";
@@ -58,7 +59,7 @@ export async function verifyPassword(
 
 // ── Session Token ────────────────────────────────────────────
 function createSessionToken(session: AdminSession): string {
-  const secret = process.env.ADMIN_SESSION_SECRET || "eden-admin-secret-change-me";
+  const secret = getSessionSecret();
   const payload = JSON.stringify(session);
   const signature = crypto
     .createHmac("sha256", secret)
@@ -71,8 +72,7 @@ function createSessionToken(session: AdminSession): string {
 
 function verifySessionToken(token: string): AdminSession | null {
   try {
-    const secret =
-      process.env.ADMIN_SESSION_SECRET || "eden-admin-secret-change-me";
+    const secret = getSessionSecret();
     const decoded = JSON.parse(Buffer.from(token, "base64").toString("utf-8"));
     const { payload, signature } = decoded;
     const expectedSignature = crypto
