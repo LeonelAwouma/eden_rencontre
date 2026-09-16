@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { RefreshCw, Check } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { AVATAR_STYLES, generateAvatarDataUri, randomAvatarSeed, type AvatarStyle } from "@/lib/avatar";
+import { buildAvatarUrl, randomAvatarSeed } from "@/lib/avatar";
 
 const GRID_SIZE = 6;
 
@@ -16,14 +16,13 @@ interface AvatarPickerProps {
 
 export function AvatarPicker({ photos, value, onChange, seedBase }: AvatarPickerProps) {
   const { t } = useI18n();
-  const [style, setStyle] = useState<AvatarStyle>("personas");
   const [seeds, setSeeds] = useState<string[]>(() =>
     Array.from({ length: GRID_SIZE }, (_, i) => (seedBase ? `${seedBase}-${i}` : randomAvatarSeed()))
   );
 
   const avatars = useMemo(
-    () => seeds.map((seed) => ({ seed, uri: generateAvatarDataUri(style, seed) })),
-    [seeds, style]
+    () => seeds.map((seed) => ({ seed, uri: buildAvatarUrl(seed) })),
+    [seeds]
   );
 
   const regenerate = () => setSeeds(Array.from({ length: GRID_SIZE }, () => randomAvatarSeed()));
@@ -59,18 +58,6 @@ export function AvatarPicker({ photos, value, onChange, seedBase }: AvatarPicker
             className="flex items-center gap-1.5 text-xs font-bold" style={{ color: "#486B46" }}>
             <RefreshCw className="w-3.5 h-3.5" /> {t("avatarPicker.regenerate")}
           </button>
-        </div>
-
-        <div className="flex gap-2">
-          {AVATAR_STYLES.map((s) => (
-            <button key={s.id} type="button" onClick={() => setStyle(s.id)}
-              className="h-8 px-3 rounded-lg text-xs font-bold transition-colors"
-              style={style === s.id
-                ? { background: "#486B46", color: "#FFFFFF" }
-                : { background: "#EEF5EC", color: "#486B46" }}>
-              {s.label}
-            </button>
-          ))}
         </div>
 
         <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">

@@ -88,7 +88,7 @@ export function Footer() {
             {t("footer.copyright", { year: String(year ?? "...") })}
           </p>
           <p className="text-muted-foreground text-xs flex items-center gap-1.5 font-body">
-            {t("footer.madeWith", { heart: "❤", leaf: "🌿" })}
+            {t("footer.madeWith")}
           </p>
         </div>
       </div>
