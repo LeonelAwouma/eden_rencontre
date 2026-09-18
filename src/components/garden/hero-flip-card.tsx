@@ -26,7 +26,14 @@ type Deck = {
   faces: [string, string];
   rotation: number;
   count: number;
+  /** La face cachée a fini de charger sa photo. */
+  ready: boolean;
+  /** Le minuteur a sonné : on retourne dès que `ready`. */
+  due: boolean;
 };
+
+/** Face tournée vers l'arrière pour un compteur donné. */
+const hiddenIndexOf = (count: number) => (count % 2 === 0 ? 1 : 0);
 
 function pickOther(exclude: readonly string[]): string {
   const pool = PHOTOS.filter((p) => !exclude.includes(p));
@@ -36,10 +43,13 @@ function pickOther(exclude: readonly string[]): string {
 /**
  * Carte qui pivote sur elle-même pour révéler une photo tirée au hasard.
  *
- * Deux faces seulement : la face cachée reçoit la photo suivante *avant* la
- * rotation, ce qui la précharge et évite tout clignotement. La rotation
- * s'accumule (±180° à chaque tour) au lieu d'alterner entre 0 et 180 : le sens
- * peut ainsi changer d'un tour à l'autre sans saut de transformation.
+ * Le retournement est conditionné au chargement : tant que la face cachée n'a
+ * pas signalé son `onLoad`, on ne tourne pas. Sans ce verrou la carte révélait
+ * une face vide, la photo n'arrivant que plusieurs secondes plus tard.
+ *
+ * La photo suivante est posée à la *fin* du retournement précédent, pas à son
+ * départ : pendant la première moitié de la rotation l'ancienne face est encore
+ * face au spectateur, et y changer l'image se verrait.
  *
  * Un seul axe (Y) : combiner rotateX et rotateY laisserait la carte à l'envers
  * quand les deux atteignent 180°.
@@ -56,35 +66,58 @@ export function HeroFlipCard({
     faces: [PHOTOS[0], PHOTOS[1]],
     rotation: 0,
     count: 0,
+    ready: false,
+    due: false,
   }));
   const paused = useRef(false);
 
-  const advance = useCallback(() => {
-    setDeck((d) => {
-      const hidden = d.count % 2 === 1 ? 0 : 1;
-      const faces: [string, string] = [d.faces[0], d.faces[1]];
-      faces[hidden] = pickOther(d.faces);
-      const dir = Math.random() < 0.5 ? 1 : -1;
-      return { faces, rotation: d.rotation + 180 * dir, count: d.count + 1 };
-    });
-  }, []);
-
+  // Minuteur : il ne fait qu'armer `due`, jamais tourner directement.
   useEffect(() => {
     if (reduced) return;
     let timer: ReturnType<typeof setTimeout>;
     const schedule = () => {
       timer = setTimeout(() => {
-        // On saute le tour si l'onglet est en arrière-plan ou au survol.
-        if (!paused.current && !document.hidden) advance();
+        if (!paused.current && !document.hidden) {
+          setDeck((d) => (d.due ? d : { ...d, due: true }));
+        }
         schedule();
       }, BASE_DELAY + Math.random() * JITTER);
     };
     schedule();
     return () => clearTimeout(timer);
-  }, [advance, reduced]);
+  }, [reduced]);
 
-  // L'ombre et les arrondis vivent sur les faces, jamais sur le conteneur :
-  // sinon on aperçoit un panneau vide derrière la carte pendant la rotation.
+  // Le retournement n'a lieu que si la face cachée est prête ET le minuteur armé.
+  useEffect(() => {
+    if (!deck.due || !deck.ready) return;
+    setDeck((d) => {
+      if (!d.due || !d.ready) return d;
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      return {
+        ...d,
+        rotation: d.rotation + 180 * dir,
+        count: d.count + 1,
+        ready: false,
+        due: false,
+      };
+    });
+  }, [deck.due, deck.ready]);
+
+  // Rotation terminée : la face arrière est désormais totalement masquée,
+  // on peut y poser la photo suivante sans que le changement se voie.
+  const preloadNext = useCallback(() => {
+    setDeck((d) => {
+      const hidden = hiddenIndexOf(d.count);
+      const faces: [string, string] = [d.faces[0], d.faces[1]];
+      faces[hidden] = pickOther(d.faces);
+      return { ...d, faces, ready: false };
+    });
+  }, []);
+
+  const markReady = useCallback((index: number) => {
+    setDeck((d) => (index === hiddenIndexOf(d.count) ? { ...d, ready: true } : d));
+  }, []);
+
   const frame =
     "absolute inset-0 overflow-hidden rounded-[22px] sm:rounded-[28px] ring-1 ring-deep-eden/10 shadow-2xl shadow-deep-eden/20";
   const sizes = "(max-width: 1023px) 100vw, 50vw";
@@ -124,6 +157,7 @@ export function HeroFlipCard({
         style={{ transformStyle: "preserve-3d" }}
         animate={{ rotateY: deck.rotation }}
         transition={{ duration: 1.15, ease: [0.22, 1, 0.36, 1] }}
+        onAnimationComplete={preloadNext}
       >
         {deck.faces.map((src, i) => (
           <div
@@ -143,6 +177,9 @@ export function HeroFlipCard({
               quality={86}
               sizes={sizes}
               className="object-cover object-center"
+              onLoad={() => markReady(i)}
+              // Une photo introuvable ne doit pas figer le carrousel.
+              onError={() => markReady(i)}
             />
           </div>
         ))}

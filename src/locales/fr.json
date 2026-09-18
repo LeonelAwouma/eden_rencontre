@@ -1429,6 +1429,14 @@
     "pronounShe": "elle",
     "pronounThey": "iel"
   },
+  "camera": {
+    "denied": "Accès à la caméra refusé. Autorisez-le dans les réglages de votre navigateur, puis réessayez.",
+    "notFound": "Aucune caméra détectée sur cet appareil.",
+    "busy": "La caméra est déjà utilisée par une autre application. Fermez-la puis réessayez.",
+    "insecure": "La caméra nécessite une connexion sécurisée (HTTPS).",
+    "error": "Impossible d'accéder à la caméra. Veuillez réessayer.",
+    "verifyError": "Erreur lors de la vérification. Veuillez réessayer."
+  },
   "completeRegistration": {
     "loadingProfile": "Chargement de votre profil…",
     "leftTitle": "Complétez votre",
@@ -1504,8 +1512,6 @@
     "activateCameraPrompt": "Activez votre caméra pour prendre un selfie",
     "activateCamera": "Activer la caméra",
     "retake": "Reprendre",
-    "cameraError": "Impossible d'accéder à la caméra. Veuillez autoriser l'accès.",
-    "verifyError": "Erreur lors de la vérification. Veuillez réessayer.",
     "verifySuccess": "Vérification réussie",
     "verifyFailed": "Vérification échouée",
     "scoreLabel": "(Score : {score}%)",

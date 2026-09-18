@@ -20,6 +20,7 @@ import { getSession, ageFromBirthDate, MIN_AGE } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { MARRIAGE_VALUES } from "@/lib/values";
 import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
+import { cameraErrorKey } from "@/lib/camera-error";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { useMobileContinueGate, MobileContinueGate } from "@/components/mobile-continue-gate";
@@ -230,8 +231,8 @@ export default function CompleteRegistrationPage() {
       // The <video> element only mounts once cameraActive is true, so the stream
       // can't be attached here yet — a useEffect below does it once the ref exists.
       setCameraActive(true);
-    } catch {
-      setSelfieError(t("completeRegistration.cameraError"));
+    } catch (err) {
+      setSelfieError(t(cameraErrorKey(err)));
     }
   };
 
@@ -263,6 +264,9 @@ export default function CompleteRegistrationPage() {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
+    // Tant que la vidéo n'a pas démarré, videoWidth vaut 0 : le canvas serait
+    // vide et toDataURL renverrait "data:," — une image invalide.
+    if (!video.videoWidth || !video.videoHeight) return;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
@@ -309,7 +313,7 @@ export default function CompleteRegistrationPage() {
         setTimeout(() => nextStep(), 1000);
       }
     } catch {
-      setSelfieError(t("completeRegistration.verifyError"));
+      setSelfieError(t("camera.verifyError"));
     } finally {
       setSelfieVerifying(false);
     }
@@ -1017,7 +1021,8 @@ export default function CompleteRegistrationPage() {
                         <div className="w-48 h-48 border-2 border-primary/50 rounded-full" />
                       </div>
                       <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                        <Button onClick={captureSelfie} className="bg-primary text-primary-foreground font-bold rounded-full w-16 h-16 p-0 shadow-lg">
+                        <Button onClick={captureSelfie} disabled={!videoPlaying}
+                          className="bg-primary text-primary-foreground font-bold rounded-full w-16 h-16 p-0 shadow-lg disabled:opacity-40">
                           <Camera className="w-6 h-6" />
                         </Button>
                       </div>

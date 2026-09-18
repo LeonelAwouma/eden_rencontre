@@ -18,6 +18,7 @@ import { cn } from "@/lib/utils";
 import { registerUser, ageFromBirthDate, MIN_AGE } from "@/lib/auth";
 import { MARRIAGE_VALUES } from "@/lib/values";
 import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
+import { cameraErrorKey } from "@/lib/camera-error";
 import { Monogram } from "@/components/ornaments";
 import { AvatarPicker } from "@/components/avatar-picker";
 import { useRouter } from "next/navigation";
@@ -308,8 +309,8 @@ export default function RegisterPage() {
       // The <video> element only mounts once cameraActive is true, so the stream
       // can't be attached here yet — a useEffect below does it once the ref exists.
       setCameraActive(true);
-    } catch {
-      setSelfieError("Unable to access camera. Please allow access.");
+    } catch (err) {
+      setSelfieError(t(cameraErrorKey(err)));
     }
   };
 
@@ -341,6 +342,9 @@ export default function RegisterPage() {
     if (!videoRef.current || !canvasRef.current) return;
     const video = videoRef.current;
     const canvas = canvasRef.current;
+    // Tant que la vidéo n'a pas démarré, videoWidth vaut 0 : le canvas serait
+    // vide et toDataURL renverrait "data:," — une image invalide.
+    if (!video.videoWidth || !video.videoHeight) return;
     canvas.width = video.videoWidth;
     canvas.height = video.videoHeight;
     const ctx = canvas.getContext("2d");
@@ -385,7 +389,7 @@ export default function RegisterPage() {
         setTimeout(() => nextStep(), 1000);
       }
     } catch {
-      setSelfieError("Verification error. Please try again.");
+      setSelfieError(t("camera.verifyError"));
     } finally {
       setSelfieVerifying(false);
     }
@@ -1108,7 +1112,8 @@ export default function RegisterPage() {
                         <div className="w-48 h-48 border-2 border-primary/50 rounded-full" />
                       </div>
                       <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                        <Button onClick={captureSelfie} className="bg-primary text-primary-foreground font-bold rounded-full w-16 h-16 p-0 shadow-lg">
+                        <Button onClick={captureSelfie} disabled={!videoPlaying}
+                          className="bg-primary text-primary-foreground font-bold rounded-full w-16 h-16 p-0 shadow-lg disabled:opacity-40">
                           <Camera className="w-6 h-6" />
                         </Button>
                       </div>

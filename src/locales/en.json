@@ -1429,6 +1429,14 @@
     "pronounShe": "she",
     "pronounThey": "they"
   },
+  "camera": {
+    "denied": "Camera access denied. Allow it in your browser settings, then try again.",
+    "notFound": "No camera detected on this device.",
+    "busy": "The camera is already in use by another application. Close it and try again.",
+    "insecure": "The camera requires a secure connection (HTTPS).",
+    "error": "Unable to access the camera. Please try again.",
+    "verifyError": "Error during verification. Please try again."
+  },
   "completeRegistration": {
     "loadingProfile": "Loading your profile…",
     "leftTitle": "Complete your",
@@ -1504,8 +1512,6 @@
     "activateCameraPrompt": "Turn on your camera to take a selfie",
     "activateCamera": "Turn on camera",
     "retake": "Retake",
-    "cameraError": "Unable to access the camera. Please allow access.",
-    "verifyError": "Error during verification. Please try again.",
     "verifySuccess": "Verification successful",
     "verifyFailed": "Verification failed",
     "scoreLabel": "(Score: {score}%)",
