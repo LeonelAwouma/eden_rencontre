@@ -99,7 +99,7 @@ export async function sendRegistrationReceivedEmail(
           </div>
           <p style="color: #888; font-size: 13px; margin-bottom: 0;">
             En attendant, nous vous invitons à relire notre
-            <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com"}/charte" style="color: #2D5016;">Charte Éthique</a>.
+            <a href="${process.env.NEXT_PUBLIC_APP_URL || "https://gardenofalliance.com"}/charte" style="color: #2D5016;">Charte Éthique</a>.
           </p>
         </div>
         <p style="color: #aaa; font-size: 12px; text-align: center; margin-top: 30px;">
@@ -115,7 +115,7 @@ export async function sendAccountApprovedEmail(
   email: string,
   name: string
 ): Promise<boolean> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gardenofalliance.com";
   return sendEmail({
     to: email,
     subject: "Votre compte a été approuvé — Garden of Alliance",
@@ -199,7 +199,7 @@ export async function sendOTPEmail(
   email: string,
   otp: string
 ): Promise<boolean> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gardenofalliance.com";
   return sendEmail({
     to: email,
     subject: "Code de vérification — Réinitialisation de mot de passe",
@@ -247,7 +247,7 @@ export async function sendPasswordResetSuccessEmail(
   email: string,
   name?: string
 ): Promise<boolean> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gardenofalliance.com";
   return sendEmail({
     to: email,
     subject: "Votre mot de passe a été modifié — Garden of Alliance",
@@ -609,7 +609,7 @@ export async function sendVerificationApprovedEmail(
   email: string,
   name: string
 ): Promise<boolean> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gardenofalliance.com";
   return sendEmail({
     to: email,
     subject: "✅ Profil Vérifié — Garden of Alliance",
@@ -647,7 +647,7 @@ export async function sendVerificationRejectedEmail(
   name: string,
   reason?: string
 ): Promise<boolean> {
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://edenconnexion.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL || "https://gardenofalliance.com";
   return sendEmail({
     to: email,
     subject: "Vérification de profil — Garden of Alliance",

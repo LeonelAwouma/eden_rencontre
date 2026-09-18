@@ -61,7 +61,7 @@ export function PromoBanner() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 pt-2 justify-center lg:justify-start">
               <Link
-                href="/inscription"
+                href="/register"
                 className="inline-flex items-center justify-center px-8 py-3 rounded-full bg-deep-eden text-white font-semibold hover:bg-deep-eden/90 transition-colors shadow-lg shadow-deep-eden/20"
               >
                 {t("promo.cta")}

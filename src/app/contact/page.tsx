@@ -36,8 +36,8 @@ export default function ContactPage() {
               <div className="eden-leaf-card p-8 text-center">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("contact.emailTitle")}</h3>
                 <p className="text-muted-foreground font-body mb-4">{t("contact.emailDesc")}</p>
-                <a href="mailto:support@edenconnexion.com" className="text-primary font-headline text-xl font-bold hover:text-deep-eden transition-colors">
-                  support@edenconnexion.com
+                <a href="mailto:support@gardenofalliance.com" className="text-primary font-headline text-xl font-bold hover:text-deep-eden transition-colors">
+                  support@gardenofalliance.com
                 </a>
                 <p className="text-muted-foreground text-sm font-body mt-3">{t("contact.emailResponseTime")}</p>
               </div>

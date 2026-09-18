@@ -69,7 +69,7 @@ export default function ConfidentialitePage() {
                   <li><strong>{t("legalConfidentialite.s5Item6Strong")}</strong> {t("legalConfidentialite.s5Item6")}</li>
                 </ul>
                 <p className="text-muted-foreground leading-relaxed font-body mt-4">
-                  {t("legalConfidentialite.s5Contact")} <a href="mailto:privacy@edenconnexion.com" className="text-primary hover:text-deep-eden transition-colors underline">privacy@edenconnexion.com</a>
+                  {t("legalConfidentialite.s5Contact")} <a href="mailto:privacy@gardenofalliance.com" className="text-primary hover:text-deep-eden transition-colors underline">privacy@gardenofalliance.com</a>
                 </p>
               </div>
 
@@ -86,7 +86,7 @@ export default function ConfidentialitePage() {
               <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalConfidentialite.s8Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">
-                  {t("legalConfidentialite.s8Body")} <a href="mailto:privacy@edenconnexion.com" className="text-primary hover:text-deep-eden transition-colors underline">privacy@edenconnexion.com</a>
+                  {t("legalConfidentialite.s8Body")} <a href="mailto:privacy@gardenofalliance.com" className="text-primary hover:text-deep-eden transition-colors underline">privacy@gardenofalliance.com</a>
                 </p>
               </div>
             </div>

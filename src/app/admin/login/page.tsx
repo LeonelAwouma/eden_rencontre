@@ -148,7 +148,7 @@ export default function AdminLoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@edenconnexion.com"
+                    placeholder="admin@gardenofalliance.com"
                     aria-invalid={error ? true : undefined}
                     aria-describedby={error ? "admin-login-error" : undefined}
                     className={fieldClass}
