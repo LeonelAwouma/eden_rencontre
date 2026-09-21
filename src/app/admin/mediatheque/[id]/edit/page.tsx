@@ -2,7 +2,6 @@
 import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Loader2 } from "lucide-react";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 import { cn } from "@/lib/utils";
 import { RESOURCE_TYPE_CONFIG, LEVEL_CONFIG } from "@/lib/mediatheque";
 
@@ -54,7 +53,7 @@ export default function EditResourcePage({ params }: { params: Promise<{ id: str
   if (loading) return <div className="flex items-center justify-center py-20"><Loader2 className="w-8 h-8 text-[#486B46] animate-spin" /></div>;
 
   return (<>
-    <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+    
     <div className="max-w-4xl mx-auto">
       <button onClick={() => router.back()} className="flex items-center gap-2 text-[13px] text-[#6B7280] hover:text-[#2F2F2F] mb-6 font-medium"><ArrowLeft className="w-4 h-4" /> Retour</button>
       <h1 className="text-[24px] font-bold text-[#1a1a1a] mb-6">Modifier la ressource</h1>

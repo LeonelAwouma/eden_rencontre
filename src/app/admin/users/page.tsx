@@ -23,8 +23,8 @@ import {
   User,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
+import { PageHeader } from "@/components/admin/page-header";
 
 interface CharterAcceptance {
   authorize_verification: boolean;
@@ -183,37 +183,19 @@ export default function AdminUsersPage() {
 
   return (
     <>
-      <DashboardHeader
-        adminName="Administrateur"
-        onMenuClick={() => {}}
-      />
+      
 
-      {/* Page Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6"
-      >
-        <div>
-          <h1
-            className="text-[24px] font-bold text-[#1a1a1a] tracking-tight"
-            style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
-          >
-            Utilisateurs
-          </h1>
-          <p className="text-[13px] text-[#9CA3AF] mt-0.5 font-medium">
-            {total} utilisateur{total !== 1 ? "s" : ""} au total
-          </p>
-        </div>
-      </motion.div>
+      <PageHeader
+        title="Utilisateurs"
+        subtitle={`${total} utilisateur${total !== 1 ? "s" : ""} au total`}
+      />
 
       {/* Error banner */}
       {actionError && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-4 p-3 rounded-xl bg-[#FEE2E2] border border-[#FECACA] text-[13px] font-medium text-[#DC2626]"
+          className="mb-4 p-3 rounded-xl bg-destructive/10 border border-destructive/30 text-[13px] font-medium text-destructive"
         >
           {actionError}
         </motion.div>
@@ -224,10 +206,10 @@ export default function AdminUsersPage() {
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
-        className="flex flex-col sm:flex-row gap-3 mb-6"
+        className="flex flex-col sm:flex-row sm:flex-wrap gap-3 mb-6"
       >
         {/* Status filter tabs */}
-        <div className="flex gap-1 bg-[#F9FAFB] rounded-xl p-1 border border-[#E5E7EB] overflow-x-auto">
+        <div className="flex gap-1 bg-muted rounded-xl p-1 border border-border overflow-x-auto">
           {STATUS_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -238,8 +220,8 @@ export default function AdminUsersPage() {
               className={cn(
                 "flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-all duration-200",
                 statusFilter === opt.value
-                  ? "bg-white text-[#1a1a1a] shadow-sm border border-[#E5E7EB]"
-                  : "text-[#9CA3AF] hover:text-[#6B7280]"
+                  ? "bg-white text-foreground shadow-sm border border-border"
+                  : "text-muted-foreground hover:text-muted-foreground"
               )}
             >
               <opt.icon className="w-3.5 h-3.5" />
@@ -249,7 +231,7 @@ export default function AdminUsersPage() {
         </div>
 
         {/* Plan filter */}
-        <div className="flex gap-1 bg-[#F9FAFB] rounded-xl p-1 border border-[#E5E7EB] overflow-x-auto">
+        <div className="flex gap-1 bg-muted rounded-xl p-1 border border-border overflow-x-auto">
           {[
             { value: "all", label: "Tous plans", icon: CreditCard },
             { value: "free", label: "Gratuit", icon: Users },
@@ -266,8 +248,8 @@ export default function AdminUsersPage() {
               className={cn(
                 "flex items-center gap-1.5 px-3 py-2 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-all duration-200",
                 planFilter === opt.value
-                  ? "bg-white text-[#1a1a1a] shadow-sm border border-[#E5E7EB]"
-                  : "text-[#9CA3AF] hover:text-[#6B7280]"
+                  ? "bg-white text-foreground shadow-sm border border-border"
+                  : "text-muted-foreground hover:text-muted-foreground"
               )}
             >
               <opt.icon className="w-3.5 h-3.5" />
@@ -279,12 +261,12 @@ export default function AdminUsersPage() {
         {/* Search */}
         <form onSubmit={handleSearch} className="flex gap-2 flex-1 max-w-md">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#D1D5DB]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               placeholder="Rechercher nom, email, ville…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-[13px] text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all font-medium"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-border rounded-xl text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all font-medium"
             />
           </div>
         </form>
@@ -295,20 +277,20 @@ export default function AdminUsersPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.2 }}
-        className="bg-white rounded-[20px] border border-[#E5E7EB] overflow-hidden"
+        className="bg-white rounded-[20px] border border-border overflow-hidden"
       >
         {loading ? (
           <div className="p-12 text-center">
-            <div className="w-8 h-8 border-[3px] border-[#38C172]/20 border-t-[#38C172] rounded-full animate-spin mx-auto" />
-            <p className="text-[13px] text-[#9CA3AF] mt-3 font-medium">Chargement…</p>
+            <div className="w-8 h-8 border-[3px] border-success/20 border-t-[#38C172] rounded-full animate-spin mx-auto" />
+            <p className="text-[13px] text-muted-foreground mt-3 font-medium">Chargement…</p>
           </div>
         ) : users.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-6">
-            <div className="w-16 h-16 rounded-2xl bg-[#F9FAFB] border border-[#E5E7EB] flex items-center justify-center mb-4">
-              <UserCheck className="w-7 h-7 text-[#D1D5DB]" />
+            <div className="w-16 h-16 rounded-2xl bg-muted border border-border flex items-center justify-center mb-4">
+              <UserCheck className="w-7 h-7 text-muted-foreground" />
             </div>
-            <p className="text-[15px] font-semibold text-[#6B7280]">Aucun utilisateur trouvé</p>
-            <p className="text-[13px] text-[#9CA3AF] mt-1">Modifiez vos filtres pour voir plus de résultats</p>
+            <p className="text-[15px] font-semibold text-muted-foreground">Aucun utilisateur trouvé</p>
+            <p className="text-[13px] text-muted-foreground mt-1">Modifiez vos filtres pour voir plus de résultats</p>
           </div>
         ) : (
           <>
@@ -316,68 +298,73 @@ export default function AdminUsersPage() {
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-[#F3F4F6]">
-                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
+                  <tr className="border-b border-border">
+                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-4 py-4">
                       Utilisateur
                     </th>
-                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
+                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-4 py-4">
                       Localisation
                     </th>
-                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
+                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-4 py-4">
                       Statut
                     </th>
-                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
+                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-4 py-4">
                       Charte
                     </th>
-                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
+                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-4 py-4">
                       Vérification
                     </th>
-                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
+                    <th className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-4 py-4">
                       Inscrit le
                     </th>
-                    <th className="text-right text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">
+                    <th className="text-right text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-4 py-4">
                       Actions
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F9FAFB]">
+                <tbody className="divide-y divide-muted">
                   {users.map((user, i) => (
                     <motion.tr
                       key={user.id}
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: i * 0.03 }}
-                      className="hover:bg-[#FAFAFA] transition-colors"
+                      className="hover:bg-muted transition-colors"
                     >
-                      <td className="px-6 py-3.5">
+                      <td className="px-4 py-3.5">
                         <Link href={`/admin/users/${user.id}`} className="flex items-center gap-3 group/name">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#38C172]/20 to-[#86EFAC]/30 flex items-center justify-center text-[13px] font-bold text-[#38C172] shrink-0">
+                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-success/20 to-success/30 flex items-center justify-center text-[13px] font-bold text-success shrink-0">
                             {(user.pseudo || user.name || "U").charAt(0).toUpperCase()}
                           </div>
                           <div>
-                            <p className="text-[13px] font-semibold text-[#1a1a1a] group-hover/name:text-[#38C172] transition-colors">
-                              {user.pseudo || "Sans pseudo"} <span className="text-[#9CA3AF] font-normal">· {user.name || "Sans nom"}</span>
+                            <p className="text-[13px] font-semibold text-foreground group-hover/name:text-success transition-colors">
+                              {user.name || user.pseudo || "Sans nom"}
+                              {user.name && user.pseudo && (
+                                <span className="text-muted-foreground font-normal"> · {user.pseudo}</span>
+                              )}
                             </p>
-                            <p className="text-[11px] text-[#9CA3AF] font-medium">{user.email}</p>
+                            <p className="text-[11px] text-muted-foreground font-medium">{user.email}</p>
                           </div>
                         </Link>
                       </td>
-                      <td className="px-6 py-3.5">
-                        <p className="text-[13px] text-[#6B7280] font-medium">
+                      <td className="px-4 py-3.5">
+                        <p className="text-[13px] text-muted-foreground font-medium">
                           {[user.city, user.country].filter(Boolean).join(", ") || "—"}
                         </p>
                       </td>
-                      <td className="px-6 py-3.5">
+                      <td className="px-4 py-3.5">
                         <span
                           className={cn(
-                            "text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full",
-                            STATUS_CLASSES[user.status] || "bg-gray-100 text-gray-500"
+                            // inline-flex + nowrap : en inline simple, « EN ATTENTE »
+                            // se coupait entre ses deux mots, et la pastille avec.
+                            "inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full",
+                            STATUS_CLASSES[user.status] || "bg-muted text-muted-foreground"
                           )}
                         >
                           {STATUS_LABELS[user.status] || user.status}
                         </span>
                       </td>
-                      <td className="px-6 py-3.5">
+                      <td className="px-4 py-3.5">
                         {(() => {
                           const ca = Array.isArray(user.charter_acceptances)
                             ? user.charter_acceptances[0]
@@ -386,11 +373,11 @@ export default function AdminUsersPage() {
                           if (accepted) {
                             return (
                               <div className="flex items-center gap-1.5">
-                                <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#38C172]/10 text-[#38C172]">
+                                <span className="inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success/10 text-success">
                                   <ShieldCheck className="w-3 h-3 inline mr-1" /> Acceptée
                                 </span>
                                 {ca?.accepted_at && (
-                              <span className="text-[10px] text-[#9CA3AF]">
+                              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                                     {formatDate(ca.accepted_at)}
                                   </span>
                                 )}
@@ -398,55 +385,55 @@ export default function AdminUsersPage() {
                             );
                           }
                           return (
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">
+                            <span className="inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-warning/10 text-warning">
                               En attente
                             </span>
                           );
                         })()}
                       </td>
-                      <td className="px-6 py-3.5">
+                      <td className="px-4 py-3.5">
                         {user.verification_status === "verified" && isProfileFullyComplete(user) && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#38C172]/10 text-[#38C172]">
+                          <span className="inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success/10 text-success">
                             ✅ Vérifié
                           </span>
                         )}
                         {user.verification_status === "verified" && !isProfileFullyComplete(user) && (
                           <span title="Le profil est passé sous 100% de complétion depuis l'attribution du badge."
-                            className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">
+                            className="inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-warning/10 text-warning">
                             ⚠️ Profil incomplet
                           </span>
                         )}
                         {user.verification_status === "under_review" && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">
+                          <span className="inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-warning/10 text-warning">
                             🔍 En révision
                           </span>
                         )}
                         {user.verification_status === "rejected" && (
-                          <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-red-50 text-red-500">
+                          <span className="inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-destructive/10 text-destructive">
                             ❌ Rejeté
                           </span>
                         )}
                         {(!user.verification_status || user.verification_status === "none") && (
-                          <span className="text-[10px] text-[#9CA3AF]">—</span>
+                          <span className="text-[10px] text-muted-foreground whitespace-nowrap">—</span>
                         )}
                       </td>
-                       <td className="px-6 py-3.5">
-                        <p className="text-[13px] text-[#9CA3AF] font-medium">
+                       <td className="px-4 py-3.5">
+                        <p className="text-[13px] text-muted-foreground font-medium">
                           {formatDate(user.created_at)}
                         </p>
                       </td>
-                       <td className="px-6 py-3.5">
+                       <td className="px-4 py-3.5">
                         <div className="flex items-center justify-end gap-2">
                           <button
                             onClick={() => setViewingUser(user)}
-                            className="w-9 h-9 rounded-full flex items-center justify-center bg-[#F9FAFB] text-[#9CA3AF] shadow-sm border border-[#E5E7EB] hover:bg-[#E8F5E9] hover:text-[#486B46] hover:border-[#C6D4C0] hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#486B46] transition-all duration-200"
+                            className="w-9 h-9 rounded-full flex items-center justify-center bg-muted text-muted-foreground shadow-sm border border-border hover:bg-success/10 hover:text-primary hover:border-border hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#486B46] transition-all duration-200"
                             title="Voir la photo"
                           >
                             <Eye className="w-4 h-4" />
                           </button>
                           <Link
                             href={`/admin/chat-monitoring?user=${user.id}`}
-                            className="w-9 h-9 rounded-full flex items-center justify-center bg-[#486B46]/10 text-[#486B46] shadow-sm border border-[#486B46]/20 hover:bg-[#486B46]/20 hover:text-[#3A5A3A] hover:border-[#486B46]/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#486B46] transition-all duration-200"
+                            className="w-9 h-9 rounded-full flex items-center justify-center bg-primary/10 text-primary shadow-sm border border-primary/20 hover:bg-primary/20 hover:text-primary hover:border-primary/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#486B46] transition-all duration-200"
                             title="Surveiller les conversations"
                           >
                             <MessageCircle className="w-4 h-4" />
@@ -455,14 +442,14 @@ export default function AdminUsersPage() {
                             <>
                               <button
                                 onClick={() => handleQuickAction(user.id, "approve")}
-                                className="w-9 h-9 rounded-full flex items-center justify-center bg-[#FF9E45]/10 text-[#C27D30] shadow-sm border border-[#FF9E45]/20 hover:bg-[#FF9E45]/20 hover:text-[#A36820] hover:border-[#FF9E45]/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C27D30] transition-all duration-200"
+                                className="w-9 h-9 rounded-full flex items-center justify-center bg-warning/10 text-warning shadow-sm border border-warning/20 hover:bg-warning/20 hover:text-warning hover:border-warning/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#C27D30] transition-all duration-200"
                                 title="Approuver"
                               >
                                 <CheckCircle2 className="w-4 h-4" />
                               </button>
                               <button
                                 onClick={() => handleQuickAction(user.id, "reject")}
-                                className="w-9 h-9 rounded-full flex items-center justify-center bg-[#F56565]/10 text-[#E53E3E] shadow-sm border border-[#F56565]/20 hover:bg-[#F56565]/20 hover:text-[#C53030] hover:border-[#F56565]/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E53E3E] transition-all duration-200"
+                                className="w-9 h-9 rounded-full flex items-center justify-center bg-destructive/10 text-destructive shadow-sm border border-destructive/20 hover:bg-destructive/20 hover:text-destructive hover:border-destructive/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E53E3E] transition-all duration-200"
                                 title="Rejeter"
                               >
                                 <XCircle className="w-4 h-4" />
@@ -472,7 +459,7 @@ export default function AdminUsersPage() {
                           {user.status === "approved" && user.onboarding_completed && isProfileFullyComplete(user) && user.verification_status !== "verified" && (
                             <button
                               onClick={() => handleVerifyBadge(user.id)}
-                              className="w-9 h-9 rounded-full flex items-center justify-center bg-[#8B5CF6]/10 text-[#7C3AED] shadow-sm border border-[#8B5CF6]/20 hover:bg-[#8B5CF6]/20 hover:text-[#6D28D9] hover:border-[#8B5CF6]/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7C3AED] transition-all duration-200"
+                              className="w-9 h-9 rounded-full flex items-center justify-center bg-deep-eden/10 text-deep-eden shadow-sm border border-deep-eden/20 hover:bg-deep-eden/20 hover:text-deep-eden hover:border-deep-eden/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7C3AED] transition-all duration-200"
                               title="Attribuer le badge « Profil Vérifié »"
                             >
                               <ShieldCheck className="w-4 h-4" />
@@ -487,7 +474,7 @@ export default function AdminUsersPage() {
             </div>
 
             {/* Mobile cards */}
-            <div className="md:hidden divide-y divide-[#F9FAFB]">
+            <div className="md:hidden divide-y divide-muted">
               {users.map((user, i) => (
                 <motion.div
                   key={user.id}
@@ -497,18 +484,21 @@ export default function AdminUsersPage() {
                   className="p-5"
                 >
                   <div className="flex items-center gap-3 mb-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#38C172]/20 to-[#86EFAC]/30 flex items-center justify-center text-[13px] font-bold text-[#38C172]">
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-success/20 to-success/30 flex items-center justify-center text-[13px] font-bold text-success">
                       {(user.pseudo || user.name || "U").charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p className="text-[13px] font-semibold text-[#1a1a1a] truncate">
-                        {user.pseudo || "Sans pseudo"} <span className="text-[#9CA3AF] font-normal">· {user.name || "Sans nom"}</span>
+                      <p className="text-[13px] font-semibold text-foreground truncate">
+                        {user.name || user.pseudo || "Sans nom"}
+                        {user.name && user.pseudo && (
+                          <span className="text-muted-foreground font-normal"> · {user.pseudo}</span>
+                        )}
                       </p>
-                      <p className="text-[11px] text-[#9CA3AF] truncate font-medium">{user.email}</p>
+                      <p className="text-[11px] text-muted-foreground truncate font-medium">{user.email}</p>
                     </div>
                     <span
                       className={cn(
-                        "text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full",
+                        "inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full",
                         STATUS_CLASSES[user.status] || "bg-gray-100 text-gray-500"
                       )}
                     >
@@ -525,11 +515,11 @@ export default function AdminUsersPage() {
                       if (accepted) {
                         return (
                           <div className="flex items-center gap-1.5">
-                            <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#38C172]/10 text-[#38C172]">
+                            <span className="inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success/10 text-success">
                               <ShieldCheck className="w-3 h-3 inline mr-1" /> Charte acceptée
                             </span>
                             {ca?.accepted_at && (
-                              <span className="text-[10px] text-[#9CA3AF]">
+                              <span className="text-[10px] text-muted-foreground whitespace-nowrap">
                                 {formatDate(ca.accepted_at)}
                               </span>
                             )}
@@ -537,7 +527,7 @@ export default function AdminUsersPage() {
                         );
                       }
                       return (
-                        <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">
+                        <span className="inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-warning/10 text-warning">
                           Charte en attente
                         </span>
                       );
@@ -546,23 +536,23 @@ export default function AdminUsersPage() {
                   {/* Verification badge — mobile */}
                   <div className="mb-3">
                     {user.verification_status === "verified" && isProfileFullyComplete(user) && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#38C172]/10 text-[#38C172]">
+                      <span className="inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-success/10 text-success">
                         ✅ Profil Vérifié
                       </span>
                     )}
                     {user.verification_status === "verified" && !isProfileFullyComplete(user) && (
                       <span title="Le profil est passé sous 100% de complétion depuis l'attribution du badge."
-                        className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">
+                        className="inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-warning/10 text-warning">
                         ⚠️ Profil incomplet
                       </span>
                     )}
                     {user.verification_status === "under_review" && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-[#FEF3C7] text-[#D97706]">
+                      <span className="inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-warning/10 text-warning">
                         🔍 Vérification en cours
                       </span>
                     )}
                     {user.verification_status === "rejected" && (
-                      <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-red-50 text-red-500">
+                      <span className="inline-flex items-center whitespace-nowrap text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full bg-destructive/10 text-destructive">
                         ❌ Vérification rejetée
                       </span>
                     )}
@@ -570,20 +560,20 @@ export default function AdminUsersPage() {
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => setViewingUser(user)}
-                      className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-[#9CA3AF] bg-[#F9FAFB] border border-[#E5E7EB] hover:bg-[#E8F5E9] hover:text-[#486B46] transition-colors"
+                      className="w-10 h-10 shrink-0 rounded-xl flex items-center justify-center text-muted-foreground bg-muted border border-border hover:bg-success/10 hover:text-primary transition-colors"
                       title="Voir la photo"
                     >
                       <Eye className="w-4 h-4" />
                     </button>
                     <Link
                       href={`/admin/users/${user.id}`}
-                      className="flex-1 text-center text-[12px] font-semibold text-[#38C172] bg-[#38C172]/5 py-2.5 rounded-xl hover:bg-[#38C172]/10 transition-colors"
+                      className="flex-1 text-center text-[12px] font-semibold text-success bg-success/5 py-2.5 rounded-xl hover:bg-success/10 transition-colors"
                     >
                       Voir le profil
                     </Link>
                     <Link
                       href={`/admin/chat-monitoring?user=${user.id}`}
-                      className="flex-1 text-center text-[12px] font-semibold text-[#486B46] bg-[#486B46]/5 py-2.5 rounded-xl hover:bg-[#486B46]/10 transition-colors flex items-center justify-center gap-1.5"
+                      className="flex-1 text-center text-[12px] font-semibold text-primary bg-primary/5 py-2.5 rounded-xl hover:bg-primary/10 transition-colors flex items-center justify-center gap-1.5"
                     >
                       <MessageCircle className="w-3.5 h-3.5" />
                       Conversations
@@ -592,13 +582,13 @@ export default function AdminUsersPage() {
                       <>
                         <button
                           onClick={() => handleQuickAction(user.id, "approve")}
-                          className="flex-1 text-center text-[12px] font-semibold text-[#38C172] bg-[#38C172]/5 py-2.5 rounded-xl hover:bg-[#38C172]/10 transition-colors"
+                          className="flex-1 text-center text-[12px] font-semibold text-success bg-success/5 py-2.5 rounded-xl hover:bg-success/10 transition-colors"
                         >
                           Approuver
                         </button>
                         <button
                           onClick={() => handleQuickAction(user.id, "reject")}
-                          className="flex-1 text-center text-[12px] font-semibold text-[#F56565] bg-[#F56565]/5 py-2.5 rounded-xl hover:bg-[#F56565]/10 transition-colors"
+                          className="flex-1 text-center text-[12px] font-semibold text-destructive bg-destructive/5 py-2.5 rounded-xl hover:bg-destructive/10 transition-colors"
                         >
                           Rejeter
                         </button>
@@ -607,7 +597,7 @@ export default function AdminUsersPage() {
                     {user.status === "approved" && user.onboarding_completed && isProfileFullyComplete(user) && user.verification_status !== "verified" && (
                       <button
                         onClick={() => handleVerifyBadge(user.id)}
-                        className="flex-1 text-center text-[12px] font-semibold text-[#7C3AED] bg-[#8B5CF6]/5 py-2.5 rounded-xl hover:bg-[#8B5CF6]/10 transition-colors flex items-center justify-center gap-1.5"
+                        className="flex-1 text-center text-[12px] font-semibold text-deep-eden bg-deep-eden/5 py-2.5 rounded-xl hover:bg-deep-eden/10 transition-colors flex items-center justify-center gap-1.5"
                       >
                         <ShieldCheck className="w-3.5 h-3.5" />
                         Badge Vérifié
@@ -620,22 +610,22 @@ export default function AdminUsersPage() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-[#F3F4F6]">
-                <p className="text-[12px] text-[#9CA3AF] font-medium">
+              <div className="flex items-center justify-between px-4 py-4 border-t border-border">
+                <p className="text-[12px] text-muted-foreground font-medium">
                   Page {page} sur {totalPages}
                 </p>
                 <div className="flex gap-1.5">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page <= 1}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F9FAFB] border border-[#E5E7EB] disabled:opacity-30 transition-all"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted border border-border disabled:opacity-30 transition-all"
                   >
                     <ChevronLeft className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages}
-                    className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F9FAFB] border border-[#E5E7EB] disabled:opacity-30 transition-all"
+                    className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted border border-border disabled:opacity-30 transition-all"
                   >
                     <ChevronRight className="w-4 h-4" />
                   </button>
@@ -663,7 +653,7 @@ export default function AdminUsersPage() {
             className="bg-white rounded-2xl overflow-hidden max-w-md w-full"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="relative w-full aspect-square bg-[#F9FAFB] flex items-center justify-center">
+            <div className="relative w-full aspect-square bg-muted flex items-center justify-center">
               {viewingUser.avatar_url ? (
                 <img
                   src={viewingUser.avatar_url}
@@ -671,7 +661,7 @@ export default function AdminUsersPage() {
                   className="w-full h-full object-contain"
                 />
               ) : (
-                <div className="flex flex-col items-center gap-2 text-[#D1D5DB]">
+                <div className="flex flex-col items-center gap-2 text-muted-foreground">
                   <User className="w-16 h-16" />
                   <p className="text-[12px] font-medium">Aucune photo</p>
                 </div>
@@ -679,14 +669,17 @@ export default function AdminUsersPage() {
             </div>
             <div className="p-4 flex items-center justify-between gap-3">
               <div className="min-w-0">
-                <p className="text-[14px] font-semibold text-[#1a1a1a] truncate">
-                  {viewingUser.pseudo || "Sans pseudo"} <span className="text-[#9CA3AF] font-normal">· {viewingUser.name || "Sans nom"}</span>
+                <p className="text-[14px] font-semibold text-foreground truncate">
+                  {viewingUser.name || viewingUser.pseudo || "Sans nom"}
+                  {viewingUser.name && viewingUser.pseudo && (
+                    <span className="text-muted-foreground font-normal"> · {viewingUser.pseudo}</span>
+                  )}
                 </p>
-                <p className="text-[12px] text-[#9CA3AF] truncate">{viewingUser.email}</p>
+                <p className="text-[12px] text-muted-foreground truncate">{viewingUser.email}</p>
               </div>
               <Link
                 href={`/admin/users/${viewingUser.id}`}
-                className="shrink-0 text-[12px] font-semibold text-[#38C172] bg-[#38C172]/10 px-3.5 py-2 rounded-xl hover:bg-[#38C172]/20 transition-colors"
+                className="shrink-0 text-[12px] font-semibold text-success bg-success/10 px-3.5 py-2 rounded-xl hover:bg-success/20 transition-colors"
               >
                 Voir le profil
               </Link>

@@ -16,7 +16,6 @@ import {
   Edit3,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 
 interface TestimonialUser {
   id: string;
@@ -146,7 +145,7 @@ export default function TestimonialsPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <DashboardHeader adminName="Admin" onMenuClick={() => {}} />
+      
 
       {/* Page Title */}
       <div className="flex items-center justify-between mb-6">

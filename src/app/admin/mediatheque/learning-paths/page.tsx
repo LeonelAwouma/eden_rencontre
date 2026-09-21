@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowLeft, Plus, Edit3, Trash2, Save, X, BookOpen } from "lucide-react";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 import { cn } from "@/lib/utils";
 import { LEVEL_CONFIG } from "@/lib/mediatheque";
 
@@ -42,7 +41,7 @@ export default function LearningPathsPage() {
   const handleDelete = async (id: string) => { if (!confirm("Supprimer ?")) return; await fetch(`/api/admin/mediatheque/learning-paths/${id}`, { method: "DELETE" }); fetchPaths(); };
 
   return (<>
-    <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+    
     <div className="max-w-4xl mx-auto">
       <Link href="/admin/mediatheque" className="flex items-center gap-2 text-[13px] text-[#6B7280] hover:text-[#2F2F2F] mb-6 font-medium"><ArrowLeft className="w-4 h-4" /> Retour</Link>
       <div className="flex items-center justify-between mb-6">

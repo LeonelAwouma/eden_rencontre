@@ -19,7 +19,6 @@ import {
   Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 
 interface Report {
   id: string;
@@ -53,17 +52,17 @@ const TYPE_LABELS: Record<string, string> = {
 };
 
 const STATUS_CLASSES: Record<string, string> = {
-  pending: "bg-[#FF9E45]/10 text-[#FF9E45]",
+  pending: "bg-warning/10 text-warning",
   investigating: "bg-[#4F7DF3]/10 text-[#4F7DF3]",
-  resolved: "bg-[#38C172]/10 text-[#38C172]",
-  dismissed: "bg-[#9CA3AF]/10 text-[#9CA3AF]",
+  resolved: "bg-success/10 text-success",
+  dismissed: "bg-muted-foreground/10 text-muted-foreground",
 };
 
 const PRIORITY_CLASSES: Record<string, string> = {
-  low: "bg-[#E5E7EB] text-[#6B7280]",
+  low: "bg-border text-muted-foreground",
   normal: "bg-[#4F7DF3]/10 text-[#4F7DF3]",
-  high: "bg-[#FF9E45]/10 text-[#FF9E45]",
-  critical: "bg-[#F56565]/10 text-[#F56565]",
+  high: "bg-warning/10 text-warning",
+  critical: "bg-destructive/10 text-destructive",
 };
 
 const STATUS_LABELS: Record<string, string> = {
@@ -155,21 +154,21 @@ export default function ReportsPage() {
   };
 
   const statCards = [
-    { label: "Total signalements", value: stats.total, icon: FileText, color: "text-[#4B5563]", bg: "bg-[#F3F4F6]" },
-    { label: "En attente", value: stats.pending, icon: Clock, color: "text-[#FF9E45]", bg: "bg-[#FF9E45]/10" },
-    { label: "Résolus", value: stats.resolved, icon: CheckCircle2, color: "text-[#38C172]", bg: "bg-[#38C172]/10" },
-    { label: "Critiques", value: stats.critical, icon: AlertTriangle, color: "text-[#F56565]", bg: "bg-[#F56565]/10" },
+    { label: "Total signalements", value: stats.total, icon: FileText, color: "text-[#4B5563]", bg: "bg-border" },
+    { label: "En attente", value: stats.pending, icon: Clock, color: "text-warning", bg: "bg-warning/10" },
+    { label: "Résolus", value: stats.resolved, icon: CheckCircle2, color: "text-success", bg: "bg-success/10" },
+    { label: "Critiques", value: stats.critical, icon: AlertTriangle, color: "text-destructive", bg: "bg-destructive/10" },
   ];
 
   return (
     <>
-      <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+      
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <h1 className="text-[24px] font-bold text-[#1a1a1a] tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
+        <h1 className="text-[24px] font-bold text-foreground tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
           Signalements
         </h1>
-        <p className="text-[13px] text-[#9CA3AF] mt-0.5 font-medium mb-6">{total} signalement{total !== 1 ? "s" : ""} au total</p>
+        <p className="text-[13px] text-muted-foreground mt-0.5 font-medium mb-6">{total} signalement{total !== 1 ? "s" : ""} au total</p>
       </motion.div>
 
       {/* Stat Cards */}
@@ -180,15 +179,15 @@ export default function ReportsPage() {
             initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.4, delay: i * 0.05 }}
-            className="bg-white rounded-[20px] border border-[#E5E7EB] p-5"
+            className="bg-white rounded-[20px] border border-border p-5"
           >
             <div className="flex items-center gap-3 mb-3">
               <div className={`w-10 h-10 rounded-xl ${card.bg} flex items-center justify-center`}>
                 <card.icon className={`w-5 h-5 ${card.color}`} />
               </div>
             </div>
-            <p className="text-[28px] font-bold text-[#1a1a1a] leading-none">{card.value}</p>
-            <p className="text-[12px] text-[#9CA3AF] font-medium mt-1">{card.label}</p>
+            <p className="text-[28px] font-bold text-foreground leading-none">{card.value}</p>
+            <p className="text-[12px] text-muted-foreground font-medium mt-1">{card.label}</p>
           </motion.div>
         ))}
       </div>
@@ -200,7 +199,7 @@ export default function ReportsPage() {
         transition={{ duration: 0.4, delay: 0.2 }}
         className="flex flex-col sm:flex-row gap-3 mb-6"
       >
-        <div className="flex gap-1 bg-[#F9FAFB] rounded-xl p-1 border border-[#E5E7EB] overflow-x-auto">
+        <div className="flex gap-1 bg-muted rounded-xl p-1 border border-border overflow-x-auto">
           {STATUS_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -208,8 +207,8 @@ export default function ReportsPage() {
               className={cn(
                 "px-3 py-2 rounded-lg text-[12px] font-semibold whitespace-nowrap transition-all",
                 statusFilter === opt.value
-                  ? "bg-white text-[#1a1a1a] shadow-sm border border-[#E5E7EB]"
-                  : "text-[#9CA3AF] hover:text-[#6B7280]"
+                  ? "bg-white text-foreground shadow-sm border border-border"
+                  : "text-muted-foreground hover:text-muted-foreground"
               )}
             >
               {opt.label}
@@ -219,7 +218,7 @@ export default function ReportsPage() {
         <select
           value={typeFilter}
           onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }}
-          className="px-3 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-[13px] font-medium text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20"
+          className="px-3 py-2.5 bg-white border border-border rounded-xl text-[13px] font-medium text-foreground focus:outline-none focus:ring-2 focus:ring-success/20"
         >
           <option value="all">Tous les types</option>
           {Object.entries(TYPE_LABELS).map(([v, l]) => (
@@ -228,12 +227,12 @@ export default function ReportsPage() {
         </select>
         <form onSubmit={(e) => { e.preventDefault(); setPage(1); fetchReports(); }} className="flex gap-2 flex-1 max-w-md">
           <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#D1D5DB]" />
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
               placeholder="Rechercher..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-[13px] text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all font-medium"
+              className="w-full pl-10 pr-4 py-2.5 bg-white border border-border rounded-xl text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all font-medium"
             />
           </div>
         </form>
@@ -244,53 +243,53 @@ export default function ReportsPage() {
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5, delay: 0.3 }}
-        className="bg-white rounded-[20px] border border-[#E5E7EB] overflow-hidden"
+        className="bg-white rounded-[20px] border border-border overflow-hidden"
       >
         {loading ? (
           <div className="p-12 text-center">
-            <div className="w-8 h-8 border-[3px] border-[#38C172]/20 border-t-[#38C172] rounded-full animate-spin mx-auto" />
-            <p className="text-[13px] text-[#9CA3AF] mt-3 font-medium">Chargement…</p>
+            <div className="w-8 h-8 border-[3px] border-success/20 border-t-[#38C172] rounded-full animate-spin mx-auto" />
+            <p className="text-[13px] text-muted-foreground mt-3 font-medium">Chargement…</p>
           </div>
         ) : reports.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 px-6">
-            <div className="w-16 h-16 rounded-2xl bg-[#F9FAFB] border border-[#E5E7EB] flex items-center justify-center mb-4">
-              <Shield className="w-7 h-7 text-[#D1D5DB]" />
+            <div className="w-16 h-16 rounded-2xl bg-muted border border-border flex items-center justify-center mb-4">
+              <Shield className="w-7 h-7 text-muted-foreground" />
             </div>
-            <p className="text-[15px] font-semibold text-[#6B7280]">Aucun signalement</p>
-            <p className="text-[13px] text-[#9CA3AF] mt-1">La plateforme est en sécurité</p>
+            <p className="text-[15px] font-semibold text-muted-foreground">Aucun signalement</p>
+            <p className="text-[13px] text-muted-foreground mt-1">La plateforme est en sécurité</p>
           </div>
         ) : (
           <>
             <div className="hidden md:block overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-[#F3F4F6]">
+                  <tr className="border-b border-border">
                     {["Signalé par", "Utilisateur signalé", "Type", "Raison", "Priorité", "Statut", "Date", "Actions"].map((h) => (
-                      <th key={h} className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-[#9CA3AF] px-6 py-4">{h}</th>
+                      <th key={h} className="text-left text-[10px] font-bold uppercase tracking-[0.12em] text-muted-foreground px-6 py-4">{h}</th>
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#F9FAFB]">
+                <tbody className="divide-y divide-muted">
                   {reports.map((report, i) => (
                     <motion.tr
                       key={report.id}
                       initial={{ opacity: 0, x: -8 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.3, delay: i * 0.03 }}
-                      className="hover:bg-[#FAFAFA] transition-colors cursor-pointer"
+                      className="hover:bg-muted transition-colors cursor-pointer"
                       onClick={() => { setSelectedReport(report); setAdminNotes(report.admin_notes || ""); }}
                     >
                       <td className="px-6 py-3.5">
-                        <p className="text-[13px] font-medium text-[#374151]">{report.reporter?.name || "Anonyme"}</p>
+                        <p className="text-[13px] font-medium text-foreground">{report.reporter?.name || "Anonyme"}</p>
                       </td>
                       <td className="px-6 py-3.5">
-                        <p className="text-[13px] font-medium text-[#374151]">{report.reported_user?.name || "Inconnu"}</p>
+                        <p className="text-[13px] font-medium text-foreground">{report.reported_user?.name || "Inconnu"}</p>
                       </td>
                       <td className="px-6 py-3.5">
-                        <span className="text-[11px] font-medium text-[#6B7280]">{TYPE_LABELS[report.report_type] || report.report_type}</span>
+                        <span className="text-[11px] font-medium text-muted-foreground">{TYPE_LABELS[report.report_type] || report.report_type}</span>
                       </td>
                       <td className="px-6 py-3.5">
-                        <p className="text-[12px] text-[#9CA3AF] max-w-[200px] truncate">{report.description || "—"}</p>
+                        <p className="text-[12px] text-muted-foreground max-w-[200px] truncate">{report.description || "—"}</p>
                       </td>
                       <td className="px-6 py-3.5">
                         <span className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full", PRIORITY_CLASSES[report.priority])}>
@@ -303,12 +302,12 @@ export default function ReportsPage() {
                         </span>
                       </td>
                       <td className="px-6 py-3.5">
-                        <p className="text-[12px] text-[#9CA3AF] font-medium">
+                        <p className="text-[12px] text-muted-foreground font-medium">
                           {new Date(report.created_at).toLocaleDateString("fr-FR", { day: "2-digit", month: "short" })}
                         </p>
                       </td>
                       <td className="px-6 py-3.5">
-                        <button onClick={(e) => { e.stopPropagation(); setSelectedReport(report); setAdminNotes(report.admin_notes || ""); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#D1D5DB] hover:text-[#38C172] hover:bg-[#38C172]/5 transition-all">
+                        <button onClick={(e) => { e.stopPropagation(); setSelectedReport(report); setAdminNotes(report.admin_notes || ""); }} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-success hover:bg-success/5 transition-all">
                           <Eye className="w-4 h-4" />
                         </button>
                       </td>
@@ -319,36 +318,36 @@ export default function ReportsPage() {
             </div>
 
             {/* Mobile cards */}
-            <div className="md:hidden divide-y divide-[#F9FAFB]">
+            <div className="md:hidden divide-y divide-muted">
               {reports.map((report, i) => (
                 <motion.div
                   key={report.id}
                   initial={{ opacity: 0, y: 4 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: i * 0.04 }}
-                  className="p-5 cursor-pointer hover:bg-[#FAFAFA]"
+                  className="p-5 cursor-pointer hover:bg-muted"
                   onClick={() => { setSelectedReport(report); setAdminNotes(report.admin_notes || ""); }}
                 >
                   <div className="flex items-center justify-between mb-2">
-                    <p className="text-[13px] font-semibold text-[#1a1a1a]">{report.reported_user?.name || "Inconnu"}</p>
+                    <p className="text-[13px] font-semibold text-foreground">{report.reported_user?.name || "Inconnu"}</p>
                     <span className={cn("text-[10px] font-bold uppercase tracking-wider px-2 py-1 rounded-full", STATUS_CLASSES[report.status])}>
                       {STATUS_LABELS[report.status]}
                     </span>
                   </div>
-                  <p className="text-[12px] text-[#6B7280]">{TYPE_LABELS[report.report_type]}</p>
-                  <p className="text-[11px] text-[#9CA3AF] mt-1">{report.description || "Pas de description"}</p>
+                  <p className="text-[12px] text-muted-foreground">{TYPE_LABELS[report.report_type]}</p>
+                  <p className="text-[11px] text-muted-foreground mt-1">{report.description || "Pas de description"}</p>
                 </motion.div>
               ))}
             </div>
 
             {totalPages > 1 && (
-              <div className="flex items-center justify-between px-6 py-4 border-t border-[#F3F4F6]">
-                <p className="text-[12px] text-[#9CA3AF] font-medium">Page {page} sur {totalPages}</p>
+              <div className="flex items-center justify-between px-6 py-4 border-t border-border">
+                <p className="text-[12px] text-muted-foreground font-medium">Page {page} sur {totalPages}</p>
                 <div className="flex gap-1.5">
-                  <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F9FAFB] border border-[#E5E7EB] disabled:opacity-30 transition-all">
+                  <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted border border-border disabled:opacity-30 transition-all">
                     <ChevronLeft className="w-4 h-4" />
                   </button>
-                  <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F9FAFB] border border-[#E5E7EB] disabled:opacity-30 transition-all">
+                  <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted border border-border disabled:opacity-30 transition-all">
                     <ChevronRight className="w-4 h-4" />
                   </button>
                 </div>
@@ -372,12 +371,12 @@ export default function ReportsPage() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="bg-white rounded-[24px] border border-[#E5E7EB] shadow-[0_24px_80px_rgba(0,0,0,0.08)] w-full max-w-lg max-h-[85vh] overflow-y-auto"
+              className="bg-white rounded-[24px] border border-border shadow-[0_24px_80px_rgba(0,0,0,0.08)] w-full max-w-lg max-h-[85vh] overflow-y-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between p-6 border-b border-[#F3F4F6]">
-                <h3 className="text-[18px] font-bold text-[#1a1a1a]">Détails du signalement</h3>
-                <button onClick={() => setSelectedReport(null)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#374151] hover:bg-[#F3F4F6] transition-all">
+              <div className="flex items-center justify-between p-6 border-b border-border">
+                <h3 className="text-[18px] font-bold text-foreground">Détails du signalement</h3>
+                <button onClick={() => setSelectedReport(null)} className="w-8 h-8 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-border transition-all">
                   <X className="w-4 h-4" />
                 </button>
               </div>
@@ -385,62 +384,62 @@ export default function ReportsPage() {
               <div className="p-6 space-y-5">
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-1">Signalé par</p>
-                    <p className="text-[13px] font-semibold text-[#1a1a1a]">{selectedReport.reporter?.name || "Anonyme"}</p>
-                    <p className="text-[11px] text-[#9CA3AF]">{selectedReport.reporter?.email || "—"}</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Signalé par</p>
+                    <p className="text-[13px] font-semibold text-foreground">{selectedReport.reporter?.name || "Anonyme"}</p>
+                    <p className="text-[11px] text-muted-foreground">{selectedReport.reporter?.email || "—"}</p>
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-1">Utilisateur signalé</p>
-                    <p className="text-[13px] font-semibold text-[#1a1a1a]">{selectedReport.reported_user?.name || "Inconnu"}</p>
-                    <p className="text-[11px] text-[#9CA3AF]">{selectedReport.reported_user?.email || "—"}</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Utilisateur signalé</p>
+                    <p className="text-[13px] font-semibold text-foreground">{selectedReport.reported_user?.name || "Inconnu"}</p>
+                    <p className="text-[11px] text-muted-foreground">{selectedReport.reported_user?.email || "—"}</p>
                   </div>
                 </div>
 
                 <div className="grid grid-cols-3 gap-4">
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-1">Type</p>
-                    <span className="text-[12px] font-medium text-[#6B7280]">{TYPE_LABELS[selectedReport.report_type]}</span>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Type</p>
+                    <span className="text-[12px] font-medium text-muted-foreground">{TYPE_LABELS[selectedReport.report_type]}</span>
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-1">Priorité</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Priorité</p>
                     <span className={cn("text-[10px] font-bold uppercase px-2 py-1 rounded-full", PRIORITY_CLASSES[selectedReport.priority])}>{selectedReport.priority}</span>
                   </div>
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-1">Statut</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Statut</p>
                     <span className={cn("text-[10px] font-bold uppercase px-2.5 py-1 rounded-full", STATUS_CLASSES[selectedReport.status])}>{STATUS_LABELS[selectedReport.status]}</span>
                   </div>
                 </div>
 
                 {selectedReport.description && (
                   <div>
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-1">Description</p>
-                    <p className="text-[13px] text-[#374151] leading-relaxed bg-[#F9FAFB] rounded-xl p-4">{selectedReport.description}</p>
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-1">Description</p>
+                    <p className="text-[13px] text-foreground leading-relaxed bg-muted rounded-xl p-4">{selectedReport.description}</p>
                   </div>
                 )}
 
                 <div>
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#9CA3AF] mb-2">Notes internes</p>
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground mb-2">Notes internes</p>
                   <textarea
                     value={adminNotes}
                     onChange={(e) => setAdminNotes(e.target.value)}
                     placeholder="Ajouter des notes internes..."
-                    className="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] bg-white text-[13px] text-[#1a1a1a] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] resize-none h-24 transition-all"
+                    className="w-full px-4 py-3 rounded-xl border border-border bg-white text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success resize-none h-24 transition-all"
                   />
                   <button
                     onClick={() => saveNotes(selectedReport.id)}
                     disabled={actionLoading}
-                    className="mt-2 flex items-center gap-2 px-4 py-2 rounded-xl bg-[#F3F4F6] text-[12px] font-semibold text-[#4B5563] hover:bg-[#E5E7EB] transition-all"
+                    className="mt-2 flex items-center gap-2 px-4 py-2 rounded-xl bg-border text-[12px] font-semibold text-[#4B5563] hover:bg-border transition-all"
                   >
                     <Save className="w-3.5 h-3.5" /> Sauvegarder les notes
                   </button>
                 </div>
 
-                <div className="flex flex-wrap gap-2 pt-3 border-t border-[#F3F4F6]">
+                <div className="flex flex-wrap gap-2 pt-3 border-t border-border">
                   {selectedReport.status !== "resolved" && (
                     <button
                       onClick={() => handleAction(selectedReport.id, "resolved")}
                       disabled={actionLoading}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#38C172]/10 text-[12px] font-semibold text-[#38C172] hover:bg-[#38C172]/20 transition-all"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-success/10 text-[12px] font-semibold text-success hover:bg-success/20 transition-all"
                     >
                       <CheckCircle2 className="w-3.5 h-3.5" /> Marquer résolu
                     </button>
@@ -449,7 +448,7 @@ export default function ReportsPage() {
                     <button
                       onClick={() => handleAction(selectedReport.id, "dismissed")}
                       disabled={actionLoading}
-                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#9CA3AF]/10 text-[12px] font-semibold text-[#6B7280] hover:bg-[#9CA3AF]/20 transition-all"
+                      className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-muted-foreground/10 text-[12px] font-semibold text-muted-foreground hover:bg-muted-foreground/20 transition-all"
                     >
                       <XCircle className="w-3.5 h-3.5" /> Rejeter
                     </button>
@@ -457,7 +456,7 @@ export default function ReportsPage() {
                   <button
                     onClick={() => handleAction(selectedReport.id, "delete")}
                     disabled={actionLoading}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F56565]/10 text-[12px] font-semibold text-[#F56565] hover:bg-[#F56565]/20 transition-all"
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-destructive/10 text-[12px] font-semibold text-destructive hover:bg-destructive/20 transition-all"
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Supprimer
                   </button>

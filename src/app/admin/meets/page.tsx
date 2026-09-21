@@ -26,7 +26,6 @@ import {
   Unplug,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 
 /* ───────────────────────── Types ──────────────────────────── */
 
@@ -294,7 +293,7 @@ export default function AdminMeetsPage() {
 
   return (
     <>
-      <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+      
 
       {/* Success/Error Banners */}
       <AnimatePresence>
@@ -951,7 +950,7 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
   if (loading) {
     return (
       <>
-        <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+        
         <div className="p-12 text-center">
           <div className="w-8 h-8 border-[3px] border-[#2D5016]/20 border-t-[#2D5016] rounded-full animate-spin mx-auto" />
           <p className="text-[13px] text-[#9CA3AF] mt-3 font-medium">Chargement…</p>
@@ -963,7 +962,7 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
   if (!meet) {
     return (
       <>
-        <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+        
         <div className="p-12 text-center">
           <p className="text-[15px] font-semibold text-[#374151]">Meeting introuvable</p>
           <button onClick={onBack} className="mt-4 px-4 py-2 rounded-xl bg-[#F3F4F6] text-[13px] font-medium">Retour</button>
@@ -983,7 +982,7 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
 
   return (
     <>
-      <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+      
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         {/* Back Button */}

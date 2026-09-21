@@ -2,7 +2,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Upload, Link2, Loader2 } from "lucide-react";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 import { cn } from "@/lib/utils";
 import { RESOURCE_TYPE_CONFIG, LEVEL_CONFIG, type ResourceType, type ResourceLevel, detectUrlType } from "@/lib/mediatheque";
 
@@ -62,7 +61,7 @@ export default function NewResourcePage() {
   };
 
   return (<>
-    <DashboardHeader adminName="Administrateur" onMenuClick={()=>{}} />
+    
     <div className="max-w-4xl mx-auto">
       <button onClick={()=>router.back()} className="flex items-center gap-2 text-[13px] text-[#6B7280] hover:text-[#2F2F2F] mb-6 font-medium"><ArrowLeft className="w-4 h-4"/> Retour</button>
       <h1 className="text-[24px] font-bold text-[#1a1a1a] mb-6">Ajouter une ressource</h1>

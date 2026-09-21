@@ -34,17 +34,17 @@ const accentConfig: Record<
   },
   green: {
     border: "border-l-[#486B46]",
-    iconText: "text-[#486B46]",
-    iconBg: "bg-[#486B46]/8",
-    trendBg: "bg-[#486B46]/8",
-    trendText: "text-[#486B46]",
+    iconText: "text-primary",
+    iconBg: "bg-primary/8",
+    trendBg: "bg-primary/8",
+    trendText: "text-primary",
   },
   red: {
     border: "border-l-[#F56565]",
-    iconText: "text-[#F56565]",
-    iconBg: "bg-[#F56565]/8",
-    trendBg: "bg-[#F56565]/8",
-    trendText: "text-[#F56565]",
+    iconText: "text-destructive",
+    iconBg: "bg-destructive/8",
+    trendBg: "bg-destructive/8",
+    trendText: "text-destructive",
   },
 };
 
@@ -65,8 +65,8 @@ export function KPICard({
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, delay: index * 0.08, ease: "easeOut" }}
       className={cn(
-        "bg-white rounded-2xl border border-[#E8E5E0] p-4 sm:p-5 border-l-[3px] transition-all duration-300",
-        "hover:border-[#C6D4C0] hover:shadow-[0_4px_24px_rgba(72,107,70,0.08)] hover:-translate-y-0.5",
+        "bg-white rounded-2xl border border-border p-4 sm:p-5 border-l-[3px] transition-all duration-300",
+        "hover:border-border hover:shadow-[0_4px_24px_rgba(72,107,70,0.08)] hover:-translate-y-0.5",
         config.border
       )}
     >
@@ -83,8 +83,8 @@ export function KPICard({
           <span
             className={cn(
               "text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full",
-              trend.positive !== false ? config.trendBg : "bg-[#F56565]/8",
-              trend.positive !== false ? config.trendText : "text-[#F56565]"
+              trend.positive !== false ? config.trendBg : "bg-destructive/8",
+              trend.positive !== false ? config.trendText : "text-destructive"
             )}
           >
             {trend.value}
@@ -103,12 +103,12 @@ export function KPICard({
         )}
       </div>
       <p
-        className="text-[28px] sm:text-[36px] md:text-[42px] font-bold text-[#2F2F2F] leading-none tracking-tight"
+        className="text-[28px] sm:text-[36px] md:text-[42px] font-bold text-foreground leading-none tracking-tight"
         style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
       >
         {value.toLocaleString("fr-FR")}
       </p>
-      <p className="text-[12px] sm:text-[13px] text-[#9CA3AF] font-medium mt-1.5">
+      <p className="text-[12px] sm:text-[13px] text-muted-foreground font-medium mt-1.5">
         {title}
       </p>
     </motion.div>

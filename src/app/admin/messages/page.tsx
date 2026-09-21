@@ -7,7 +7,6 @@ import {
   Clock, X, Inbox, ArrowLeft,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 
 interface UserResult {
   id: string;
@@ -163,7 +162,6 @@ export default function AdminMessagesPage() {
     }
   };
 
-
   // Auto-clear success message
   useEffect(() => {
     if (success) {
@@ -185,7 +183,7 @@ export default function AdminMessagesPage() {
 
   return (
     <div className="min-h-screen bg-[#F9FAFB]">
-      <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+      
       <div className="max-w-6xl mx-auto px-4 py-8">
         {/* Page Title */}
         <div className="mb-8">

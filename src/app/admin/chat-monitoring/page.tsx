@@ -26,7 +26,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 
 interface ChatUser {
   id: string;
@@ -613,7 +612,7 @@ export default function ChatMonitoringPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <DashboardHeader adminName="Admin" onMenuClick={() => {}} />
+      
 
       {/* Page Title */}
       <div className="mb-6">

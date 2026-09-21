@@ -8,7 +8,6 @@ import {
   FileText, ChevronLeft, ChevronRight, Clock, Globe,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 import { KPICard } from "@/components/admin/kpi-card";
 import { EmptyState } from "@/components/admin/empty-state";
 import { BLOG_STATUS_CONFIG } from "@/lib/blog";
@@ -70,7 +69,7 @@ export default function AdminBlogPage() {
 
   return (
     <>
-      <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+      
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>

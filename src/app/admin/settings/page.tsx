@@ -15,7 +15,6 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 
 interface SettingValue {
   [key: string]: unknown;
@@ -236,7 +235,7 @@ export default function SettingsPage() {
 
   return (
     <>
-      <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+      
 
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         <h1 className="text-[24px] font-bold text-[#1a1a1a] tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>

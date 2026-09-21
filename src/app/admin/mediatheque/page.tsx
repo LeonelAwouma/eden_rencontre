@@ -9,7 +9,6 @@ import {
   ChevronLeft, ChevronRight, Archive, Send, AlertTriangle, X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 import { KPICard } from "@/components/admin/kpi-card";
 import { EmptyState } from "@/components/admin/empty-state";
 import { RESOURCE_TYPE_CONFIG, STATUS_CONFIG, type ResourceType, type ResourceStatus } from "@/lib/mediatheque";
@@ -95,7 +94,7 @@ export default function AdminMediathequePage() {
 
   return (
     <>
-      <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+      
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
         className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>

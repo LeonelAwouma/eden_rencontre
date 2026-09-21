@@ -3,6 +3,7 @@
 import { useState, useEffect, createContext, useContext } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/admin/sidebar";
+import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { cn } from "@/lib/utils";
 
 interface AdminInfo {
@@ -94,17 +95,12 @@ export default function AdminLayout({
 
   if (loading) {
     return (
-      <div
-        className="min-h-screen flex items-center justify-center"
-        style={{ background: "linear-gradient(135deg, #FAF9F6 0%, #F8F5F2 50%, #FAF9F6 100%)" }}
-      >
+      <div className="eden-admin min-h-screen flex items-center justify-center bg-background">
         <div className="flex flex-col items-center gap-4">
-          <div className="relative">
-            <div className="w-12 h-12 rounded-full border-[3px] border-[#E8E5E0] border-t-[#486B46] animate-spin" />
-          </div>
+          <div className="w-12 h-12 rounded-full border-[3px] border-border border-t-primary animate-spin" />
           <div className="text-center">
-            <p className="text-sm font-semibold text-[#2F2F2F]">Garden of Alliance</p>
-            <p className="text-xs text-[#9CA3AF] mt-1">Chargement de l'administration…</p>
+            <p className="font-headline text-base font-bold text-foreground">Garden of Alliance</p>
+            <p className="text-xs text-muted-foreground mt-1">Chargement de l&apos;administration…</p>
           </div>
         </div>
       </div>
@@ -115,7 +111,7 @@ export default function AdminLayout({
     <AdminContext.Provider
       value={{ admin, setAdmin, sidebarCollapsed, setSidebarCollapsed, sidebarOpen, setSidebarOpen }}
     >
-      <div className="eden-admin-body min-h-screen flex bg-[#FAF9F6]">
+      <div className="eden-admin eden-admin-body min-h-screen flex bg-background text-foreground">
         <Sidebar
           isOpen={sidebarOpen}
           isCollapsed={sidebarCollapsed}
@@ -131,6 +127,10 @@ export default function AdminLayout({
             sidebarCollapsed ? "lg:ml-[68px]" : "lg:ml-[256px]"
           )}
         >
+          {/* Montée une seule fois ici : elle était recopiée dans 21 pages, où
+              son bouton menu mobile était branché sur un callback vide. */}
+          <AdminTopbar adminName={admin?.name || "Administrateur"} />
+
           <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-[1600px] w-full mx-auto">
             {children}
           </main>

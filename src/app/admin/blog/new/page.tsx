@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Save, Eye, Send, Upload, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 import { BlogEditor } from "@/components/admin/blog-editor";
 import { cn } from "@/lib/utils";
 
@@ -76,7 +75,7 @@ export default function NewBlogPostPage() {
 
   return (
     <>
-      <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+      
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Link href="/admin/blog" className="flex items-center gap-2 text-[13px] text-[#777777] hover:text-[#2F2F2F]">

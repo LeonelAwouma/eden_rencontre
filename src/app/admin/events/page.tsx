@@ -17,7 +17,6 @@ import {
   Loader2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 
 interface MeetEvent {
   id: string;
@@ -104,7 +103,7 @@ export default function AdminEventsPage() {
 
   return (
     <>
-      <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+      
 
       {/* Page Header */}
       <motion.div

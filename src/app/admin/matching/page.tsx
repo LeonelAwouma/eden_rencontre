@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 
 interface MatchProfile {
   id: string;
@@ -144,7 +143,7 @@ export default function MatchingPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      <DashboardHeader adminName="Admin" onMenuClick={() => {}} />
+      
 
       {/* Page Title */}
       <div className="flex items-center justify-between mb-6">

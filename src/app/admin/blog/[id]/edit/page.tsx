@@ -4,7 +4,6 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { ArrowLeft, Save, Eye, Upload, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 import { BlogEditor } from "@/components/admin/blog-editor";
 import { cn } from "@/lib/utils";
 
@@ -85,7 +84,7 @@ export default function EditBlogPostPage() {
   };
 
   if (loading) return (
-    <><DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+    <>
     <div className="max-w-4xl mx-auto space-y-4">
       <div className="h-10 bg-white rounded-xl animate-pulse" />
       <div className="h-20 bg-white rounded-xl animate-pulse" />
@@ -95,7 +94,7 @@ export default function EditBlogPostPage() {
 
   return (
     <>
-      <DashboardHeader adminName="Administrateur" onMenuClick={() => {}} />
+      
       <div className="max-w-4xl mx-auto">
         <div className="flex items-center justify-between mb-6">
           <Link href="/admin/blog" className="flex items-center gap-2 text-[13px] text-[#777777] hover:text-[#2F2F2F]">
@@ -135,7 +134,6 @@ export default function EditBlogPostPage() {
             <label className="text-xs font-bold uppercase tracking-widest text-[#9CA3AF] mb-3 block">Contenu</label>
             <BlogEditor value={form.content} onChange={v => upd("content", v)} onImageUpload={handleEditorImageUpload} />
           </div>
-
 
           <div className="bg-white rounded-xl border border-[#E8E5E0] shadow-sm p-6 space-y-4">
             <h2 className="text-sm font-bold text-[#2F2F2F] uppercase tracking-widest">Métadonnées</h2>
@@ -192,4 +190,3 @@ export default function EditBlogPostPage() {
     </>
   );
 }
-

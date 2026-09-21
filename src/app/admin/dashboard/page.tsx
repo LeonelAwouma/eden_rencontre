@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Users, Clock, ShieldCheck, ShieldOff, CalendarDays } from "lucide-react";
-import { DashboardHeader } from "@/components/admin/dashboard-header";
 import { KPICard } from "@/components/admin/kpi-card";
 import { UsersChart } from "@/components/admin/users-chart";
 import { QuickActions } from "@/components/admin/quick-actions";
@@ -125,10 +124,7 @@ export default function DashboardPage() {
 
   return (
     <>
-      <DashboardHeader
-        adminName="Administrateur"
-        onMenuClick={() => setSidebarOpen(!sidebarOpen)}
-      />
+      
 
       {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
