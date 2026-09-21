@@ -8,7 +8,11 @@ export async function GET() {
     const db = getSupabaseAdmin();
     const { data, error } = await db.from("mediatheque_categories").select("*").order("sort_order");
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json({ categories: data || [] });
+    // Nombre de ressources par catégorie, affiché sur l'écran de gestion.
+    const { data: links } = await db.from("mediatheque_resources").select("category_id");
+    const counts: Record<string, number> = {};
+    for (const l of links || []) if (l.category_id) counts[l.category_id] = (counts[l.category_id] || 0) + 1;
+    return NextResponse.json({ categories: (data || []).map((c) => ({ ...c, resource_count: counts[c.id] || 0 })) });
   } catch (err) {
     if (err instanceof Error && err.message === "UNAUTHORIZED") return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     return NextResponse.json({ error: "Erreur interne." }, { status: 500 });

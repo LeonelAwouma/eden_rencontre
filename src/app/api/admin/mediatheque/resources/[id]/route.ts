@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { syncResourcePaths, getResourceMemberships } from "@/lib/mediatheque/path-links";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -24,7 +25,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
       tags = tagData || [];
     }
 
-    return NextResponse.json({ resource: { ...data, tags } });
+    const learning_paths = await getResourceMemberships(db, id);
+    return NextResponse.json({ resource: { ...data, tags, learning_paths } });
   } catch (err) {
     if (err instanceof Error && err.message === "UNAUTHORIZED") return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     return NextResponse.json({ error: "Erreur interne." }, { status: 500 });
@@ -66,6 +68,11 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
         }
         if (tag) await db.from("mediatheque_resource_tags").insert({ resource_id: id, tag_id: tag.id }).select().maybeSingle();
       }
+    }
+
+    if (Array.isArray(body.learning_paths)) {
+      try { await syncResourcePaths(db, id, body.learning_paths); }
+      catch (e) { return NextResponse.json({ ok: true, resource: data, warning: `Ressource enregistrée, mais les parcours n'ont pas pu être mis à jour : ${(e as Error).message}` }); }
     }
 
     return NextResponse.json({ ok: true, resource: data });

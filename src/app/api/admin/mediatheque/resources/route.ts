@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { syncResourcePaths } from "@/lib/mediatheque/path-links";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,11 +16,17 @@ export async function GET(request: NextRequest) {
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const offset = (page - 1) * limit;
+    const sort = searchParams.get("sort");
+    const [sortColumn, ascending] =
+      sort === "views" ? ["view_count", false] :
+      sort === "title" ? ["title", true] :
+      sort === "updated" ? ["updated_at", false] :
+      ["created_at", false];
 
     let query = db
       .from("mediatheque_resources")
       .select("*, category:mediatheque_categories(id,name,slug,icon,color)", { count: "exact" })
-      .order("created_at", { ascending: false })
+      .order(sortColumn as string, { ascending: ascending as boolean })
       .range(offset, offset + limit - 1);
 
     if (status && status !== "all") query = query.eq("status", status);
@@ -30,18 +37,57 @@ export async function GET(request: NextRequest) {
     const { data, error, count } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    // Stats
+    // Stats globales, indépendantes des filtres : elles alimentent les compteurs
+    // des onglets de statut et des filtres de type.
+    const countWhere = async (column: "type" | "status", value: string) => {
+      const { count: c } = await db.from("mediatheque_resources").select("*", { count: "exact", head: true }).eq(column, value);
+      return c || 0;
+    };
+    const types = ["video", "audio", "book", "pdf", "article", "guide", "testimony", "external"];
+    const statuses = ["published", "draft", "archived"];
+    const [typeCounts, statusCounts] = await Promise.all([
+      Promise.all(types.map((t) => countWhere("type", t))),
+      Promise.all(statuses.map((st) => countWhere("status", st))),
+    ]);
     const stats: Record<string, number> = {};
-    for (const t of ["video", "audio", "book", "pdf", "article"]) {
-      const { count: c } = await db.from("mediatheque_resources").select("*", { count: "exact", head: true }).eq("type", t);
-      stats[t] = c || 0;
-    }
-    const { count: publishedCount } = await db.from("mediatheque_resources").select("*", { count: "exact", head: true }).eq("status", "published");
-    const { count: draftCount } = await db.from("mediatheque_resources").select("*", { count: "exact", head: true }).eq("status", "draft");
-    stats.published = publishedCount || 0;
-    stats.draft = draftCount || 0;
+    types.forEach((t, i) => { stats[t] = typeCounts[i]; });
+    statuses.forEach((st, i) => { stats[st] = statusCounts[i]; });
+    stats.all = statusCounts.reduce((a, b) => a + b, 0);
 
-    return NextResponse.json({ resources: data || [], total: count || 0, page, limit, totalPages: Math.ceil((count || 0) / limit), stats });
+    const { data: lastUpdated } = await db.from("mediatheque_resources")
+      .select("updated_at").order("updated_at", { ascending: false }).limit(1).maybeSingle();
+
+    // Parcours auxquels appartiennent les ressources de la page, avec l'étape
+    // (position dans le parcours, selon sort_order).
+    const resources = data || [];
+    const pathsByResource: Record<string, { id: string; title: string; step: number; total: number }[]> = {};
+    if (resources.length > 0) {
+      const { data: ownLinks } = await db.from("mediatheque_learning_path_resources")
+        .select("learning_path_id").in("resource_id", resources.map((r) => r.id));
+      const pathIds = [...new Set((ownLinks || []).map((l) => l.learning_path_id))];
+      if (pathIds.length > 0) {
+        const [{ data: allLinks }, { data: paths }] = await Promise.all([
+          db.from("mediatheque_learning_path_resources").select("learning_path_id, resource_id, sort_order")
+            .in("learning_path_id", pathIds).order("sort_order"),
+          db.from("mediatheque_learning_paths").select("id, title").in("id", pathIds),
+        ]);
+        const titles = new Map((paths || []).map((p) => [p.id, p.title]));
+        for (const pathId of pathIds) {
+          const steps = (allLinks || []).filter((l) => l.learning_path_id === pathId);
+          steps.forEach((l, i) => {
+            (pathsByResource[l.resource_id] ||= []).push({
+              id: pathId, title: titles.get(pathId) || "Parcours", step: i + 1, total: steps.length,
+            });
+          });
+        }
+      }
+    }
+
+    return NextResponse.json({
+      resources: resources.map((r) => ({ ...r, learning_paths: pathsByResource[r.id] || [] })),
+      total: count || 0, page, limit, totalPages: Math.ceil((count || 0) / limit),
+      stats, last_updated_at: lastUpdated?.updated_at || null,
+    });
   } catch (err) {
     if (err instanceof Error && err.message === "UNAUTHORIZED") return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     return NextResponse.json({ error: "Erreur interne." }, { status: 500 });
@@ -89,6 +135,11 @@ export async function POST(request: NextRequest) {
         }
         if (tag) await db.from("mediatheque_resource_tags").insert({ resource_id: resource.id, tag_id: tag.id }).select().maybeSingle();
       }
+    }
+
+    if (Array.isArray(body.learning_paths)) {
+      try { await syncResourcePaths(db, resource.id, body.learning_paths); }
+      catch (e) { return NextResponse.json({ ok: true, resource, warning: `Ressource créée, mais les parcours n'ont pas pu être mis à jour : ${(e as Error).message}` }); }
     }
 
     return NextResponse.json({ ok: true, resource });

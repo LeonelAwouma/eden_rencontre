@@ -118,7 +118,7 @@ export function Sidebar({
                 <AnimatePresence>
                   {!isCollapsed && (
                     <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      className="text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-300 px-3 pt-5 pb-1.5">
+                      className="text-[10px] font-semibold uppercase tracking-[0.08em] text-zinc-500 px-3 pt-5 pb-1.5">
                       {section.label}
                     </motion.p>
                   )}
