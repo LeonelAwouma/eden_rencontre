@@ -15,7 +15,7 @@ import {
   Pencil, Filter, ShieldCheck, CheckCircle2, LogOut, Camera,
   HeartHandshake, Hash, Share2, Video, CalendarDays, Church,
   Bookmark, ThumbsUp, Send, ArrowLeft, Smile, ImagePlus, Loader2,
-  Trash2, UserPlus, ChurchIcon, Sparkles
+  Trash2, UserPlus, ChurchIcon, Sparkles, GraduationCap
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -23,6 +23,8 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { getSession, logout, updateProfile, ageFromBirthDate, type EdenUser } from "@/lib/auth";
+import { ALL_LESSONS, FORMATION_BASE_PATH } from "@/lib/formation/batir-sur-le-roc";
+import { useFormationProgress } from "@/lib/formation/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { PROFILES } from "@/lib/profiles";
 import { MARRIAGE_VALUES, getValue } from "@/lib/values";
@@ -296,6 +298,7 @@ export default function DashboardPage() {
   const [discoverSearch, setDiscoverSearch] = useState("");
   const [discoverCount, setDiscoverCount] = useState(24);
   const [user, setUser] = useState<EdenUser | null>(null);
+  const { progress: formationProgress } = useFormationProgress();
   const [needsPseudo, setNeedsPseudo] = useState(false);
   const [pseudoInput, setPseudoInput] = useState("");
   const [pseudoSaving, setPseudoSaving] = useState(false);
@@ -1590,6 +1593,37 @@ export default function DashboardPage() {
                       <p className="text-xs" style={{ color: "#777777" }}>{t("dashboard.noRecentActivity")}</p>
                     )}
                   </div>
+
+                  {/* Académie du Mariage — réservée aux membres connectés */}
+                  {user && (() => {
+                    const done = ALL_LESSONS.filter(({ lesson }) => formationProgress.completed.includes(lesson.slug)).length;
+                    const total = ALL_LESSONS.length;
+                    const next = ALL_LESSONS.find(({ lesson }) => !formationProgress.completed.includes(lesson.slug))?.lesson;
+                    const href = next ? `${FORMATION_BASE_PATH}/${next.slug}` : "/dashboard/academie";
+                    const cta = !next ? t("dashboard.academyReread") : done > 0 ? t("dashboard.academyContinue") : t("dashboard.academyStart");
+                    return (
+                      <Link href={href}
+                        className="group mt-4 pt-4 flex items-center gap-3 border-t transition-colors"
+                        style={{ borderColor: "#EFECE6" }}>
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#EEF5EC" }}>
+                          <GraduationCap className="w-4 h-4" style={{ color: "#486B46" }} />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-bold truncate group-hover:underline" style={{ color: "#2F2F2F" }}>{t("dashboard.academyTitle")}</p>
+                          <p className="text-[11px] truncate" style={{ color: "#6B746E" }}>
+                            {t("dashboard.academyFormation")} · {t("dashboard.academyProgress", { done, total })}
+                          </p>
+                          <div className="mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: "#EFECE6" }}
+                            role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done}>
+                            <div className="h-full rounded-full" style={{ width: `${(done / total) * 100}%`, background: "#486B46" }} />
+                          </div>
+                        </div>
+                        <span className="text-[11px] font-bold shrink-0 inline-flex items-center gap-0.5" style={{ color: "#486B46" }}>
+                          {cta} <ChevronRight className="w-3.5 h-3.5" />
+                        </span>
+                      </Link>
+                    );
+                  })()}
                 </div>
 
                 {/* Card 5: Dashboard Statistics */}

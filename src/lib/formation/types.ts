@@ -57,5 +57,7 @@ export interface Formation {
   title: string;
   tagline: string;
   verse: { text: string; ref: string };
+  /** Image d'identité de la formation, distincte des photos de chaque leçon. */
+  coverImage: { src: string; card: string; alt: string; position?: string };
   pillars: Pillar[];
 }

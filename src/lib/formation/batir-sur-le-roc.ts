@@ -707,6 +707,12 @@ export const BATIR_SUR_LE_ROC: Formation = {
     text: "C'est pourquoi, quiconque entend ces paroles que je dis et les met en pratique, sera semblable à un homme prudent qui a bâti sa maison sur le roc.",
     ref: "Matthieu 7.24",
   },
+  coverImage: {
+    src: `${BASE}/images/module-cover.webp`,
+    card: `${BASE}/images/module-cover-carte.webp`,
+    alt: "Des mains posent une pierre au sommet d'un cairn de pierres empilées.",
+    position: "center 30%",
+  },
   pillars: [pillar1, upcoming(2), upcoming(3), upcoming(4), upcoming(5), upcoming(6)],
 };
 

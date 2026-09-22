@@ -70,13 +70,14 @@ export default function AcademyIndexPage() {
             </figure>
           </div>
 
-          {/* Carte de progression */}
+          {/* Carte de progression — image d'identité de la formation, stable
+              même une fois toutes les leçons terminées (contrairement à la
+              vignette de la prochaine leçon, qui disparaissait alors). */}
           <div className="rounded-3xl border border-border bg-card overflow-hidden shadow-[0_10px_40px_rgba(38,70,52,0.08)]">
-            {nextLesson && (
-              <div className="relative aspect-[16/10] bg-muted">
-                <Image src={nextLesson.image.card} alt="" fill sizes="380px" className="object-cover" priority />
-              </div>
-            )}
+            <div className="relative aspect-[16/10] bg-muted">
+              <Image src={formation.coverImage.card} alt={formation.coverImage.alt} fill sizes="380px"
+                className="object-cover" style={{ objectPosition: formation.coverImage.position || "center" }} priority />
+            </div>
             <div className="p-6">
               <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#56615A]">
                 {!ready ? "Ta progression" : started ? (nextLesson ? "Reprendre" : "Pilier 1 terminé") : "Commencer"}

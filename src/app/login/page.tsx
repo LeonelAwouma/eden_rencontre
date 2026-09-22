@@ -13,6 +13,14 @@ import { Monogram } from "@/components/ornaments";
 import { ImposingFloralCorners } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
+// Page à rouvrir après connexion (?next=/dashboard/academie). Seuls les chemins
+// internes sont acceptés, pour qu'un lien piégé ne puisse pas rediriger ailleurs.
+function nextPath(): string | null {
+  if (typeof window === "undefined") return null;
+  const next = new URLSearchParams(window.location.search).get("next");
+  return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : null;
+}
+
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useI18n();
@@ -39,7 +47,7 @@ export default function LoginPage() {
     // Reconnexion automatique : si une session existe déjà, on saute la connexion.
     getSession().then((session) => {
       if (session) {
-        router.replace("/searching?returning=1");
+        router.replace(nextPath() || "/searching?returning=1");
       } else {
         setCheckingSession(false);
       }
@@ -90,7 +98,7 @@ export default function LoginPage() {
         });
       }
 
-      router.push("/searching");
+      router.push(nextPath() || "/searching");
     } catch {
       setError(t("login.errorServer"));
       setIsLoading(false);
