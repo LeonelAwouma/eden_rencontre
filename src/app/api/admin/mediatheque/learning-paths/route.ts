@@ -2,21 +2,44 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     await requireAdmin();
     const db = getSupabaseAdmin();
+    const withSteps = new URL(request.url).searchParams.get("steps") === "1";
     const { data, error } = await db.from("mediatheque_learning_paths").select("*").order("sort_order");
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    // Count resources per path
+    // Étapes de tous les parcours en une requête (au lieu d'un comptage par parcours).
     const paths = data || [];
-    for (const path of paths) {
-      const { count } = await db.from("mediatheque_learning_path_resources").select("*", { count: "exact", head: true }).eq("learning_path_id", path.id);
-      (path as any).resource_count = count || 0;
+    const { data: links } = await db.from("mediatheque_learning_path_resources")
+      .select("learning_path_id, resource_id, sort_order, is_required")
+      .order("sort_order").order("created_at");
+
+    // Avec ?steps=1 : chaque parcours porte ses leçons, dans l'ordre.
+    let resourcesById = new Map<string, Record<string, unknown>>();
+    if (withSteps && links && links.length > 0) {
+      const { data: resources } = await db.from("mediatheque_resources")
+        .select("id, title, slug, type, status, author, thumbnail_url, featured, view_count, duration, created_at, published_at, updated_at, category:mediatheque_categories(id,name,slug,icon,color)")
+        .in("id", [...new Set(links.map((l) => l.resource_id))]);
+      resourcesById = new Map((resources || []).map((r) => [r.id as string, r as Record<string, unknown>]));
     }
 
-    return NextResponse.json({ learning_paths: paths });
+    const result = paths.map((path) => {
+      const own = (links || []).filter((l) => l.learning_path_id === path.id);
+      return {
+        ...path,
+        resource_count: own.length,
+        ...(withSteps ? {
+          steps: own.flatMap((l, i) => {
+            const r = resourcesById.get(l.resource_id);
+            return r ? [{ ...r, step: i + 1, is_required: l.is_required ?? true }] : [];
+          }),
+        } : {}),
+      };
+    });
+
+    return NextResponse.json({ learning_paths: result });
   } catch (err) {
     if (err instanceof Error && err.message === "UNAUTHORIZED") return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     return NextResponse.json({ error: "Erreur interne." }, { status: 500 });

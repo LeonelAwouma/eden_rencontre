@@ -27,6 +27,12 @@ interface ResourceItem {
   learning_paths: { id: string; title: string; step: number; total: number }[];
 }
 interface CategoryOption { id: string; name: string; }
+/** Parcours (pilier) et ses leçons, dans l'ordre. */
+interface PathWithSteps {
+  id: string; title: string; slug: string; description: string; status: string;
+  cover_url: string | null; estimated_duration: string | null;
+  steps: (Omit<ResourceItem, "learning_paths"> & { step: number; is_required: boolean })[];
+}
 
 const TYPE_ICONS: Record<ResourceType, typeof Video> = {
   video: Video, audio: Headphones, book: BookOpen, pdf: File, article: FileText,
@@ -88,7 +94,12 @@ export default function AdminMediathequePage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<ResourceItem | null>(null);
+  const [paths, setPaths] = useState<PathWithSteps[]>([]);
   const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Sans filtre ni recherche, les ressources rangées dans un parcours s'affichent
+  // sous leur parcours ; la grille ne montre que les autres.
+  const grouped = typeFilter === "all" && statusFilter === "all" && categoryFilter === "all" && !debouncedSearch;
 
   useEffect(() => {
     try { const v = localStorage.getItem(VIEW_KEY); if (v === "grid" || v === "list") setView(v); } catch { /* stockage indisponible */ }
@@ -117,6 +128,7 @@ export default function AdminMediathequePage() {
       if (categoryFilter !== "all") params.set("category", categoryFilter);
       if (debouncedSearch) params.set("search", debouncedSearch);
       params.set("sort", sort);
+      if (grouped) params.set("standalone", "1");
       params.set("page", page.toString()); params.set("limit", PAGE_SIZE.toString());
       const res = await fetch(`/api/admin/mediatheque/resources?${params}`);
       const data = await res.json();
@@ -127,15 +139,25 @@ export default function AdminMediathequePage() {
       } else setError(data.error || "Impossible de charger les ressources.");
     } catch (e) { console.error(e); setError("Impossible de charger les ressources."); }
     finally { setLoading(false); }
-  }, [typeFilter, statusFilter, categoryFilter, debouncedSearch, sort, page]);
+  }, [typeFilter, statusFilter, categoryFilter, debouncedSearch, sort, page, grouped]);
+
+  const fetchPaths = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/mediatheque/learning-paths?steps=1");
+      const data = await res.json();
+      if (res.ok) setPaths((data.learning_paths || []).filter((p: PathWithSteps) => p.steps?.length > 0));
+    } catch (e) { console.error(e); }
+  }, []);
 
   useEffect(() => { fetchResources(); }, [fetchResources]);
+  useEffect(() => { fetchPaths(); }, [fetchPaths]);
+  const refresh = () => { fetchResources(); fetchPaths(); };
 
   const handleDelete = async (r: ResourceItem) => {
     setConfirmDelete(null); setBusyId(r.id);
     try {
       const res = await fetch(`/api/admin/mediatheque/resources/${r.id}`, { method: "DELETE" });
-      if (res.ok) fetchResources(); else setError("La suppression a échoué.");
+      if (res.ok) refresh(); else setError("La suppression a échoué.");
     } catch (e) { console.error(e); setError("La suppression a échoué."); }
     finally { setBusyId(null); }
   };
@@ -146,7 +168,7 @@ export default function AdminMediathequePage() {
       const res = await fetch(`/api/admin/mediatheque/resources/${id}`, {
         method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) fetchResources(); else setError("La mise à jour du statut a échoué.");
+      if (res.ok) refresh(); else setError("La mise à jour du statut a échoué.");
     } catch (e) { console.error(e); setError("La mise à jour du statut a échoué."); }
     finally { setBusyId(null); }
   };
@@ -267,8 +289,26 @@ export default function AdminMediathequePage() {
             </div>
           </div>
 
+          {/* Parcours : chaque pilier regroupe ses leçons sous une même image */}
+          {grouped && paths.length > 0 && (
+            <div className="space-y-4 mb-8">
+              {paths.map((path) => <PathBlock key={path.id} path={path} {...actions} />)}
+            </div>
+          )}
+
+          {grouped && paths.length > 0 && (
+            <h2 className="text-[15px] font-bold text-foreground mb-3">Autres ressources</h2>
+          )}
+
           {loading ? (
             view === "grid" ? <GridSkeleton /> : <ListSkeleton />
+          ) : resources.length === 0 && grouped && paths.length > 0 ? (
+            <div className="bg-white rounded-2xl border border-dashed border-border py-8 px-6 text-center">
+              <p className="text-[14px] text-[#56615A]">Toutes les ressources sont rangées dans un parcours.</p>
+              <Link href="/admin/mediatheque/new" className="mt-2 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:underline">
+                <Plus className="w-4 h-4" /> Ajouter une ressource
+              </Link>
+            </div>
           ) : resources.length === 0 ? (
             <div className="bg-white rounded-2xl border border-border py-14 px-6 text-center">
               <Search className="w-6 h-6 text-[#6B746E] mx-auto mb-3" />
@@ -347,6 +387,64 @@ function StatTile({ label, value, icon: Icon, onClick, active }: {
         {value.toLocaleString("fr-FR")}
       </p>
     </button>
+  );
+}
+
+/** Un parcours (pilier) : son image de couverture et ses leçons dans l'ordre. */
+function PathBlock({ path, ...actions }: { path: PathWithSteps } & RowActions) {
+  const published = path.steps.filter((s) => s.status === "published").length;
+  return (
+    <section className="bg-white rounded-2xl border border-border overflow-hidden">
+      <div className="grid md:grid-cols-[240px_minmax(0,1fr)]">
+        <div className="relative h-44 md:h-auto bg-primary/10">
+          {path.cover_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={path.cover_url} alt="" className="absolute inset-0 w-full h-full object-cover" />
+          ) : (
+            <div className="absolute inset-0 flex items-center justify-center"><GraduationCap className="w-10 h-10 text-primary/60" /></div>
+          )}
+        </div>
+        <div className="p-5 sm:p-6 min-w-0">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="flex items-center gap-1.5 text-[12px] font-semibold text-primary">
+                <GraduationCap className="w-3.5 h-3.5" /> Parcours · {path.steps.length} leçon{path.steps.length > 1 ? "s" : ""}
+                {path.estimated_duration && <span className="text-[#6B746E] font-medium">· {path.estimated_duration}</span>}
+              </p>
+              <h2 className="mt-1 text-[18px] font-bold text-foreground leading-snug">{path.title}</h2>
+              {path.description && <p className="mt-1 text-[13px] text-[#56615A] line-clamp-2 max-w-2xl">{path.description}</p>}
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
+              <span className="text-[12px] text-[#56615A]">{published}/{path.steps.length} publiées</span>
+              <Link href="/admin/mediatheque/learning-paths"
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-[12px] font-semibold text-foreground hover:bg-muted">
+                <Edit3 className="w-3.5 h-3.5" /> Gérer le parcours
+              </Link>
+            </div>
+          </div>
+
+          <ol className="mt-4 divide-y divide-border/70 border-t border-border/70">
+            {path.steps.map((s) => {
+              const r: ResourceItem = { ...s, learning_paths: [] };
+              return (
+                <li key={s.id} className={cn("flex items-center gap-3 py-2.5", actions.busyId === s.id && "opacity-60")}>
+                  <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-[12px] font-bold flex items-center justify-center shrink-0 tabular-nums">{s.step}</span>
+                  <Thumbnail r={r} className="w-14 h-10 rounded-md shrink-0" iconSize="w-4 h-4" />
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/admin/mediatheque/${s.id}/edit`} className="block text-[14px] font-semibold text-foreground hover:text-primary truncate">{s.title}</Link>
+                    <p className="text-[12px] text-[#6B746E] truncate">
+                      {RESOURCE_TYPE_CONFIG[s.type]?.label || s.type}{s.duration ? ` · ${s.duration}` : ""}{!s.is_required ? " · facultative" : ""}
+                    </p>
+                  </div>
+                  <span className="hidden sm:inline-flex"><StatusLabel status={s.status} /></span>
+                  <ResourceMenu r={r} {...actions} />
+                </li>
+              );
+            })}
+          </ol>
+        </div>
+      </div>
+    </section>
   );
 }
 

@@ -7,6 +7,10 @@ import { LanguageProvider } from "@/lib/i18n";
 export const metadata: Metadata = {
   title: 'Garden of Alliance — L\'alliance bénie commence par une rencontre vraie.',
   description: 'Plateforme matrimoniale haut de gamme dédiée aux célibataires chrétiens d\'Afrique et de la diaspora. Un sanctuaire numérique pour bâtir des foyers sur les fondements de la foi.',
+  // Balise <meta name="google-site-verification"> (Google Search Console).
+  verification: {
+    google: 'blrfvYQPdNNrspes5ZgqqAG1RjHK_o_DuoCajXKv_4o',
+  },
 };
 
 export const viewport: Viewport = {

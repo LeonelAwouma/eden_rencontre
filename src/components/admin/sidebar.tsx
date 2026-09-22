@@ -85,24 +85,20 @@ export function Sidebar({
             {!isCollapsed && (
               <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }} transition={{ duration: 0.2 }}
-                className="flex items-center gap-3 overflow-hidden">
-                <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#3D6B3B] to-[#5A7D54] flex items-center justify-center flex-shrink-0 shadow-sm">
-                  <Monogram className="w-4 h-4 text-white" />
-                </div>
+                className="flex items-center gap-2.5 overflow-hidden">
+                {/* Logo de marque, identique à l'espace membre : monogramme + « Garden of Alliance » */}
+                <Monogram className="w-9 h-8 text-[#486B46] flex-shrink-0" />
                 <div className="min-w-0">
-                  <h1 className="text-[14px] font-bold text-zinc-900 tracking-tight truncate"
-                    style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
-                    Garden of Alliance
-                  </h1>
-                  <p className="text-[10px] text-zinc-400 font-medium">Administration</p>
+                  <p className="font-headline text-[18px] leading-tight font-bold text-[#1F3328] truncate">
+                    Garden <span className="italic font-normal text-[#486B46]">of Alliance</span>
+                  </p>
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">Administration</p>
                 </div>
               </motion.div>
             )}
           </AnimatePresence>
           {isCollapsed && (
-            <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#3D6B3B] to-[#5A7D54] flex items-center justify-center shadow-sm">
-              <Monogram className="w-4 h-4 text-white" />
-            </div>
+            <Monogram className="w-9 h-8 text-[#486B46]" />
           )}
           <button onClick={onClose} className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 transition-colors">
             <X className="w-4 h-4" />

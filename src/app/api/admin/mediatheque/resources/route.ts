@@ -34,6 +34,14 @@ export async function GET(request: NextRequest) {
     if (category && category !== "all") query = query.eq("category_id", category);
     if (search) query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,author.ilike.%${search}%`);
 
+    // ?standalone=1 : seulement les ressources rangées dans aucun parcours
+    // (les autres s'affichent déjà sous leur parcours dans l'admin).
+    if (searchParams.get("standalone") === "1") {
+      const { data: linked } = await db.from("mediatheque_learning_path_resources").select("resource_id");
+      const ids = [...new Set((linked || []).map((l) => l.resource_id as string))];
+      if (ids.length > 0) query = query.not("id", "in", `(${ids.join(",")})`);
+    }
+
     const { data, error, count } = await query;
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
