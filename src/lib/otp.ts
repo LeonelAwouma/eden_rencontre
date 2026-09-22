@@ -137,6 +137,27 @@ export async function recordRateLimit(identifier: string, action: string): Promi
   }
 }
 
+// ── User lookup ─────────────────────────────────────────────
+/**
+ * Finds a Supabase Auth user by email, across every page of users.
+ * listUsers() without pagination only returns the first 50 accounts: beyond
+ * that, password reset silently failed for the most recent members.
+ * Returns undefined when not found, and throws on API error.
+ */
+export async function findAuthUserByEmail(email: string) {
+  const db = getSupabaseAdmin();
+  const target = email.trim().toLowerCase();
+  const perPage = 1000;
+  for (let page = 1; ; page++) {
+    const { data, error } = await db.auth.admin.listUsers({ page, perPage });
+    if (error) throw error;
+    const users = data?.users || [];
+    const found = users.find((u) => u.email?.toLowerCase() === target);
+    if (found) return found;
+    if (users.length < perPage) return undefined;
+  }
+}
+
 // ── OTP Repository Operations ───────────────────────────────
 
 /**
@@ -235,14 +256,14 @@ export async function verifyOTP(email: string, otp: string): Promise<VerifyResul
     const db = getSupabaseAdmin();
 
     // Look up user by email using Supabase Admin
-    const { data: userData, error: userError } = await db.auth.admin.listUsers();
-    if (userError) {
+    const cleanEmail = email.trim().toLowerCase();
+    let user;
+    try {
+      user = await findAuthUserByEmail(cleanEmail);
+    } catch (userError) {
       console.error("[OTP] Error listing users:", userError);
       return { success: false, error: "Verification failed." };
     }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const user = userData.users.find((u) => u.email?.toLowerCase() === cleanEmail);
     if (!user) {
       // Don't reveal whether user exists — return same generic error
       auditLog("OTP_VERIFY_NO_USER", { email: cleanEmail });

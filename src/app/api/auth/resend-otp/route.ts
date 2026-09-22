@@ -4,9 +4,9 @@
 // Always invalidates previous OTP and generates a new one.
 
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import {
   createOTP,
+  findAuthUserByEmail,
   checkRateLimit,
   recordRateLimit,
   OTP_CONFIG,
@@ -106,19 +106,13 @@ export async function POST(request: NextRequest) {
     await recordRateLimit(ip, "resend_otp_hourly");
 
     // ── Look up user and generate new OTP ──────────────────
-    const db = getSupabaseAdmin();
-
-    const { data: userData, error: userError } =
-      await db.auth.admin.listUsers();
-
-    if (userError) {
+    let user;
+    try {
+      user = await findAuthUserByEmail(email);
+    } catch (userError) {
       console.error("[ResendOTP] Error listing users:", userError);
       return NextResponse.json(GENERIC_RESPONSE);
     }
-
-    const user = userData.users.find(
-      (u) => u.email?.toLowerCase() === email
-    );
 
     // If user not found, return same generic response
     if (!user) {

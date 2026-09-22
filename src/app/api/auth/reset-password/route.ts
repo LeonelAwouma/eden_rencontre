@@ -198,16 +198,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // ── Invalidate all active sessions ─────────────────────
-    // Sign out all sessions for this user
+    // ── Record the reset on the account ────────────────────
     try {
-      // Get all sessions and revoke them
-      const { data: sessionsData } = await db.auth.admin.listUsers();
-      // We can't directly list sessions per user via admin API in all versions,
-      // but we can use the user's JWT refresh token revocation
-      // The password change itself invalidates existing JWTs
-
-      // Also revoke refresh tokens by updating user metadata
       await db.auth.admin.updateUserById(userId, {
         user_metadata: {
           ...user.user_metadata,

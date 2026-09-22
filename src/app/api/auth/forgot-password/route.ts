@@ -3,14 +3,13 @@
 // Always returns the same message to prevent user enumeration attacks.
 
 import { NextRequest, NextResponse } from "next/server";
-import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import {
   createOTP,
+  findAuthUserByEmail,
   checkRateLimit,
   recordRateLimit,
   cleanupExpiredOTPs,
   cleanupOldRateLimits,
-  OTP_CONFIG,
 } from "@/lib/otp";
 import { sendOTPEmail } from "@/lib/email";
 
@@ -86,21 +85,14 @@ export async function POST(request: NextRequest) {
     await recordRateLimit(ip, "forgot_password");
 
     // ── Look up user by email ──────────────────────────────
-    const db = getSupabaseAdmin();
-
-    // Use Supabase Admin to find user by email
-    const { data: userData, error: userError } =
-      await db.auth.admin.listUsers();
-
-    if (userError) {
+    let user;
+    try {
+      user = await findAuthUserByEmail(email);
+    } catch (userError) {
       console.error("[ForgotPassword] Error listing users:", userError);
       // Return generic response — don't reveal error
       return NextResponse.json(GENERIC_RESPONSE);
     }
-
-    const user = userData.users.find(
-      (u) => u.email?.toLowerCase() === email
-    );
 
     // ── If user not found, return same generic response ────
     if (!user) {

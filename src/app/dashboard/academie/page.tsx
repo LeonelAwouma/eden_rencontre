@@ -1,214 +1,222 @@
 "use client";
 
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
-  Heart,
-  MessageSquare,
-  Wallet,
-  Users,
-  Flame,
-  Briefcase,
-  Church,
-  Baby,
-  Clock,
-  Star,
-  ScrollText,
-  ArrowLeft,
-  ArrowRight,
-  BookOpen,
-  ChevronRight,
-  Mountain,
-  Sprout,
-  HeartHandshake,
+  Heart, MessageSquare, Wallet, Users, Flame, Briefcase, Church, Baby, Clock, Star, ScrollText,
+  ArrowLeft, ArrowRight, Mountain, Sprout, HeartHandshake, CheckCircle2, Lock, Download, Play,
 } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { Monogram, Flourish, VitrailPattern } from "@/components/ornaments";
+import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
+import { Monogram, Flourish } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
+import { BATIR_SUR_LE_ROC, FORMATION_BASE_PATH, ALL_LESSONS } from "@/lib/formation/batir-sur-le-roc";
+import { useFormationProgress } from "@/lib/formation/progress";
 
 export default function AcademyIndexPage() {
   const router = useRouter();
   const { t } = useI18n();
+  const { progress, ready } = useFormationProgress();
+  const formation = BATIR_SUR_LE_ROC;
 
+  const doneCount = ALL_LESSONS.filter(({ lesson }) => progress.completed.includes(lesson.slug)).length;
+  const nextLesson = ALL_LESSONS.find(({ lesson }) => !progress.completed.includes(lesson.slug))?.lesson ?? null;
+  const started = doneCount > 0;
+  const available = ALL_LESSONS.length;
+
+  // Ressources complémentaires, conservées de l'ancienne Académie.
   const discernementLessons = [
-    {
-      title: t("academie.lessons.criteresEssentiels.title"),
-      desc: t("academie.lessons.criteresEssentiels.desc"),
-      icon: Star,
-      href: "/dashboard/academie/criteres-essentiels",
-      duration: t("academie.lessons.criteresEssentiels.duration"),
-    },
-    {
-      title: t("academie.lessons.periodeConnaissance.title"),
-      desc: t("academie.lessons.periodeConnaissance.desc"),
-      icon: Clock,
-      href: "/dashboard/academie/periode-connaissance",
-      duration: t("academie.lessons.periodeConnaissance.duration"),
-    },
-    {
-      title: t("academie.lessons.prieDiscernement.title"),
-      desc: t("academie.lessons.prieDiscernement.desc"),
-      icon: ScrollText,
-      href: "/dashboard/academie/prie-discernement",
-      duration: t("academie.lessons.prieDiscernement.duration"),
-    },
+    { title: t("academie.lessons.criteresEssentiels.title"), icon: Star, href: "/dashboard/academie/criteres-essentiels", duration: t("academie.lessons.criteresEssentiels.duration") },
+    { title: t("academie.lessons.periodeConnaissance.title"), icon: Clock, href: "/dashboard/academie/periode-connaissance", duration: t("academie.lessons.periodeConnaissance.duration") },
+    { title: t("academie.lessons.prieDiscernement.title"), icon: ScrollText, href: "/dashboard/academie/prie-discernement", duration: t("academie.lessons.prieDiscernement.duration") },
   ];
-
   const academyThemes = [
-    { slug: "vision-biblique", title: t("academie.themes.vision-biblique.title"), description: t("academie.themes.vision-biblique.description"), icon: Church },
-    { slug: "communication", title: t("academie.themes.communication.title"), description: t("academie.themes.communication.description"), icon: MessageSquare },
-    { slug: "finances", title: t("academie.themes.finances.title"), description: t("academie.themes.finances.description"), icon: Wallet },
-    { slug: "belle-famille", title: t("academie.themes.belle-famille.title"), description: t("academie.themes.belle-famille.description"), icon: Users },
-    { slug: "intimite", title: t("academie.themes.intimite.title"), description: t("academie.themes.intimite.description"), icon: Flame },
-    { slug: "roles", title: t("academie.themes.roles.title"), description: t("academie.themes.roles.description"), icon: Briefcase },
-    { slug: "vie-spirituelle", title: t("academie.themes.vie-spirituelle.title"), description: t("academie.themes.vie-spirituelle.description"), icon: Heart },
-    { slug: "enfants", title: t("academie.themes.enfants.title"), description: t("academie.themes.enfants.description"), icon: Baby },
-    { slug: "temps-loisirs", title: t("academie.themes.temps-loisirs.title"), description: t("academie.themes.temps-loisirs.description"), icon: Clock },
-    { slug: "cinq-piliers", title: t("academie.themes.cinq-piliers.title"), description: t("academie.themes.cinq-piliers.description"), icon: Mountain },
-    { slug: "celibat-foi", title: t("academie.themes.celibat-foi.title"), description: t("academie.themes.celibat-foi.description"), icon: Sprout },
-    { slug: "conflits-bibliques", title: t("academie.themes.conflits-bibliques.title"), description: t("academie.themes.conflits-bibliques.description"), icon: HeartHandshake },
-  ];
+    { slug: "vision-biblique", icon: Church }, { slug: "communication", icon: MessageSquare },
+    { slug: "finances", icon: Wallet }, { slug: "belle-famille", icon: Users }, { slug: "intimite", icon: Flame },
+    { slug: "roles", icon: Briefcase }, { slug: "vie-spirituelle", icon: Heart }, { slug: "enfants", icon: Baby },
+    { slug: "temps-loisirs", icon: Clock }, { slug: "cinq-piliers", icon: Mountain },
+    { slug: "celibat-foi", icon: Sprout }, { slug: "conflits-bibliques", icon: HeartHandshake },
+  ].map((m) => ({ ...m, title: t(`academie.themes.${m.slug}.title`) }));
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
-      {/* Header */}
-      <header className="sticky top-0 z-50 bg-background/90 backdrop-blur-xl border-b border-secondary/15 px-4 sm:px-6 h-20 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2.5 group">
-          <Monogram className="w-9 h-8 text-primary group-hover:text-secondary transition-colors" />
-          <span className="font-headline text-xl font-bold text-foreground">Garden of Alliance <span className="text-primary italic font-normal">Académie</span></span>
-        </Link>
-        <Button variant="ghost" onClick={() => router.back()} className="text-foreground/60 gap-2 hover:bg-foreground/5 hover:text-secondary">
-          <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">{t("academie.backToDashboard")}</span>
-        </Button>
+    <div className="eden-public min-h-screen bg-background text-foreground">
+      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+          <Link href="/dashboard" className="flex items-center gap-2.5 group">
+            <Monogram className="w-8 h-7 text-primary" />
+            <span className="font-headline text-lg sm:text-xl font-bold text-foreground">
+              Garden of Alliance <span className="text-primary italic font-normal">Académie</span>
+            </span>
+          </Link>
+          <button onClick={() => router.push("/dashboard")}
+            className="inline-flex items-center gap-2 h-9 px-3 rounded-full text-[13px] font-semibold text-[#3F4A43] hover:bg-muted transition-colors">
+            <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">{t("academie.backToDashboard")}</span>
+          </button>
+        </div>
       </header>
 
-      <main className="px-4 sm:px-6 py-12 sm:py-16 max-w-6xl mx-auto space-y-16">
-        {/* Hero */}
-        <section className="text-center flex flex-col items-center space-y-5">
-          <Monogram className="w-12 h-10 text-secondary" />
-          <Badge className="bg-secondary/10 text-secondary border border-secondary/25 font-bold px-5 py-1.5 uppercase tracking-[0.25em] text-[10px] rounded-full">
-            {t("academie.badge")}
-          </Badge>
-          <h1 className="font-headline text-3xl sm:text-5xl md:text-6xl font-bold text-foreground leading-tight max-w-3xl">
-            {t("academie.heroTitle")} <span className="text-primary italic font-normal">{t("academie.heroTitleHighlight")}</span>
-          </h1>
-          <p className="text-base sm:text-xl text-muted-foreground max-w-2xl leading-relaxed">
-            {t("academie.heroSubtitle")}
-          </p>
-          <Flourish className="w-48 h-3 text-secondary/50" />
-        </section>
-
-        {/* Discernement — leçons réelles */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-secondary/10 border border-secondary/25 rounded-t-2xl rounded-b-md flex items-center justify-center shrink-0">
-              <ScrollText className="w-5 h-5 text-secondary" />
-            </div>
-            <div>
-              <h2 className="font-headline text-2xl font-bold text-foreground">{t("academie.beforeCommitting")}</h2>
-              <p className="text-muted-foreground text-sm">{t("academie.discernmentSubtitle")}</p>
-            </div>
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-16">
+        {/* ───── Présentation de la formation ───── */}
+        <section className="grid lg:grid-cols-[minmax(0,1fr)_380px] gap-8 lg:gap-12 items-center">
+          <div>
+            <p className="text-[12px] font-bold uppercase tracking-[0.22em] text-primary">Formation · Préparation au mariage</p>
+            <h1 className="mt-3 font-headline text-[42px] sm:text-[56px] font-bold leading-[1.02] tracking-tight text-foreground">
+              {formation.title}
+            </h1>
+            <p className="mt-4 text-[17px] sm:text-[18px] leading-relaxed text-[#3F4A43] max-w-xl">{formation.tagline}</p>
+            <figure className="mt-6 pl-5 border-l-2 border-primary/40 max-w-xl">
+              <blockquote className="font-headline italic text-[18px] leading-snug text-foreground">« {formation.verse.text} »</blockquote>
+              <figcaption className="mt-1.5 text-[13px] font-semibold text-primary">{formation.verse.ref}</figcaption>
+            </figure>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {discernementLessons.map((l) => (
-              <button
-                key={l.href}
-                onClick={() => router.push(l.href)}
-                className="group text-left rounded-t-3xl rounded-b-xl border border-secondary/20 bg-card hover:border-secondary/45 transition-all p-6 flex flex-col shadow-xl hover:shadow-2xl"
-              >
-                <div className="w-12 h-12 bg-secondary/10 border border-secondary/25 rounded-t-2xl rounded-b-md flex items-center justify-center mb-5">
-                  <l.icon className="w-6 h-6 text-secondary" />
-                </div>
-                <h3 className="font-headline text-lg font-bold text-foreground group-hover:text-primary transition-colors">{l.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed mt-2 flex-1">{l.desc}</p>
-                <div className="flex items-center justify-between mt-5 pt-4 border-t border-secondary/10">
-                  <span className="text-[11px] font-bold uppercase tracking-widest text-foreground/40 flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {l.duration}</span>
-                  <span className="text-secondary text-xs font-bold inline-flex items-center gap-1 group-hover:gap-2 transition-all">{t("academie.study")} <ArrowRight className="w-4 h-4" /></span>
-                </div>
-              </button>
-            ))}
-          </div>
-        </section>
-
-        {/* Programme — modules vie de couple */}
-        <section className="space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 bg-secondary/10 border border-secondary/25 rounded-t-2xl rounded-b-md flex items-center justify-center shrink-0">
-              <BookOpen className="w-5 h-5 text-secondary" />
-            </div>
-            <div>
-              <h2 className="font-headline text-2xl font-bold text-foreground">{t("academie.program")}</h2>
-              <p className="text-muted-foreground text-sm">{t("academie.programSubtitle")}</p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {academyThemes.map((theme, index) => (
-              <Card
-                key={index}
-                onClick={() => router.push(`/dashboard/academie/module/${theme.slug}`)}
-                className="group border border-secondary/15 bg-card rounded-t-2xl rounded-b-lg p-6 hover:border-secondary/40 hover:shadow-xl transition-all cursor-pointer"
-              >
-                <div className="flex items-start gap-4">
-                  <div className="w-11 h-11 bg-secondary/10 border border-secondary/20 rounded-t-xl rounded-b-md flex items-center justify-center shrink-0">
-                    <theme.icon className="w-5 h-5 text-secondary" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center gap-2">
-                      <span className="font-headline text-[10px] font-black text-secondary/60">{String(index + 1).padStart(2, "0")}</span>
-                      <h3 className="font-bold text-foreground leading-tight group-hover:text-primary transition-colors">{theme.title}</h3>
-                    </div>
-                    <p className="text-muted-foreground text-sm leading-relaxed mt-1.5">{theme.description}</p>
-                    <span className="inline-flex items-center gap-1 text-secondary text-xs font-bold mt-3 group-hover:gap-2 transition-all">{t("academie.study")} <ArrowRight className="w-3.5 h-3.5" /></span>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-
-          <div className="flex justify-center pt-2">
-            <Button onClick={() => router.push(discernementLessons[0].href)} className="h-12 px-8 rounded-full bg-primary hover:bg-primary/90 text-primary-foreground font-bold gap-2">
-              {t("academie.startJourney")} <ChevronRight className="w-5 h-5" />
-            </Button>
-          </div>
-        </section>
-
-        {/* Mentor — panneau vitrail */}
-        <section>
-          <div className="relative overflow-hidden rounded-t-[60px] sm:rounded-t-[90px] rounded-b-2xl border border-secondary/25 bg-gradient-to-br from-secondary/10 to-card p-8 sm:p-14">
-            <VitrailPattern className="absolute inset-0 w-full h-full text-secondary/[0.08] pointer-events-none" />
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-40 bg-secondary/15 blur-3xl rounded-full pointer-events-none" />
-            <div className="relative z-10 flex flex-col md:flex-row items-center gap-10 text-center md:text-left">
-              <div className="flex-1 space-y-5">
-                <Monogram className="w-11 h-9 text-secondary mx-auto md:mx-0" />
-                <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-secondary/80 block">{t("academie.mentorBadge")}</span>
-                <h2 className="font-headline text-2xl sm:text-3xl font-bold text-foreground">{t("academie.mentorTitle")}</h2>
-                <p className="text-foreground/60 leading-relaxed max-w-xl">
-                  {t("academie.mentorText")}
+          {/* Carte de progression */}
+          <div className="rounded-3xl border border-border bg-card overflow-hidden shadow-[0_10px_40px_rgba(38,70,52,0.08)]">
+            {nextLesson && (
+              <div className="relative aspect-[16/10] bg-muted">
+                <Image src={nextLesson.image.card} alt="" fill sizes="380px" className="object-cover" priority />
+              </div>
+            )}
+            <div className="p-6">
+              <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#56615A]">
+                {!ready ? "Ta progression" : started ? (nextLesson ? "Reprendre" : "Pilier 1 terminé") : "Commencer"}
+              </p>
+              {nextLesson ? (
+                <p className="mt-1.5 font-headline text-[22px] font-bold leading-tight text-foreground">
+                  Leçon {nextLesson.number} — {nextLesson.title}
                 </p>
-                <div className="flex flex-col sm:flex-row gap-3 pt-2 justify-center md:justify-start">
-                  <Button className="bg-secondary hover:bg-secondary/90 text-secondary-foreground font-bold h-12 px-7 rounded-xl gap-2">
-                    {t("academie.findMentor")} <Users className="w-5 h-5" />
-                  </Button>
-                  <Button variant="outline" className="border-secondary/30 text-foreground hover:bg-secondary/15 hover:text-foreground h-12 px-7 rounded-xl gap-2 bg-transparent">
-                    {t("academie.suggestedReadings")} <BookOpen className="w-5 h-5" />
-                  </Button>
+              ) : (
+                <p className="mt-1.5 font-headline text-[22px] font-bold leading-tight text-foreground">Bravo, les six leçons sont terminées.</p>
+              )}
+              <div className="mt-4">
+                <div className="flex justify-between text-[12.5px] text-[#56615A] mb-1.5">
+                  <span>{doneCount} / {available} leçons</span>
+                  <span>{Math.round((doneCount / available) * 100)} %</span>
+                </div>
+                <div className="h-2 rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={available} aria-valuenow={doneCount} aria-label="Progression dans le pilier 1">
+                  <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${(doneCount / available) * 100}%` }} />
                 </div>
               </div>
-              <div className="w-52 h-52 relative rounded-t-[3rem] rounded-b-2xl overflow-hidden shadow-2xl border border-secondary/30 shrink-0">
-                <Image src="/couple-bible.webp" alt="Couple lisant la Bible ensemble" fill className="object-cover" />
-              </div>
+              {nextLesson && (
+                <Link href={`${FORMATION_BASE_PATH}/${nextLesson.slug}`}
+                  className="mt-5 w-full inline-flex items-center justify-center gap-2 h-12 rounded-full bg-primary text-white text-[15px] font-bold hover:bg-primary/90 transition-colors">
+                  <Play className="w-4 h-4 fill-current" /> {started ? "Continuer" : "Commencer la formation"}
+                </Link>
+              )}
             </div>
           </div>
         </section>
 
-        <div className="flex flex-col items-center text-center pt-2">
-          <Flourish className="w-40 h-3 text-secondary/40 mb-3" />
-          <p className="text-foreground/30 text-xs font-headline italic">{t("academie.footerVerse")}</p>
+        {/* ───── Les six piliers ───── */}
+        <section aria-labelledby="piliers" className="space-y-6">
+          <div>
+            <h2 id="piliers" className="font-headline text-[30px] sm:text-[34px] font-bold text-foreground">Les six piliers</h2>
+            <p className="mt-1 text-[15px] text-[#56615A]">Un chemin progressif : chaque pilier pose une pierre de fondation avant la suivante.</p>
+          </div>
+
+          {formation.pillars.filter((p) => p.lessons.length > 0).map((pillar) => {
+            const done = pillar.lessons.filter((l) => progress.completed.includes(l.slug)).length;
+            return (
+              <div key={pillar.slug} className="rounded-3xl border border-border bg-card p-5 sm:p-7">
+                <div className="flex flex-wrap items-start justify-between gap-4">
+                  <div className="max-w-2xl">
+                    <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-primary">Pilier {pillar.number}</p>
+                    <h3 className="mt-1 font-headline text-[26px] font-bold text-foreground leading-tight">{pillar.title}</h3>
+                    {pillar.summary && <p className="mt-2 text-[15px] leading-relaxed text-[#3F4A43]">{pillar.summary}</p>}
+                  </div>
+                  <span className={cn("inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[13px] font-semibold",
+                    done === pillar.lessons.length ? "bg-primary text-white" : "bg-primary/10 text-primary")}>
+                    {done === pillar.lessons.length && <CheckCircle2 className="w-4 h-4" />}
+                    {done} / {pillar.lessons.length} leçons
+                  </span>
+                </div>
+
+                <ol className="mt-6 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {pillar.lessons.map((l) => {
+                    const isDone = progress.completed.includes(l.slug);
+                    const isNext = nextLesson?.slug === l.slug;
+                    return (
+                      <li key={l.slug}>
+                        <Link href={`${FORMATION_BASE_PATH}/${l.slug}`}
+                          className={cn("group flex flex-col h-full rounded-2xl border overflow-hidden bg-background transition-all hover:shadow-[0_8px_28px_rgba(38,70,52,0.10)]",
+                            isNext ? "border-primary/50 ring-1 ring-primary/20" : "border-border hover:border-primary/35")}>
+                          <span className="relative block aspect-[16/10] bg-muted">
+                            <Image src={l.image.card} alt={l.image.alt} fill sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw" className="object-cover" />
+                            <span className="absolute top-3 left-3 h-7 px-2.5 rounded-full bg-white/95 text-[12px] font-bold text-foreground flex items-center shadow-sm">
+                              {l.number}
+                            </span>
+                            {isDone && (
+                              <span className="absolute top-3 right-3 h-7 px-2.5 rounded-full bg-primary text-white text-[12px] font-bold flex items-center gap-1 shadow-sm">
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Terminée
+                              </span>
+                            )}
+                          </span>
+                          <span className="flex flex-col flex-1 p-4">
+                            <span className="font-headline text-[19px] font-bold leading-snug text-foreground group-hover:text-primary transition-colors">{l.title}</span>
+                            <span className="mt-auto pt-3 flex items-center justify-between text-[12.5px] text-[#56615A]">
+                              <span className="inline-flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {l.readingMinutes} min · {l.quiz.length} questions</span>
+                              <span className="inline-flex items-center gap-1 font-semibold text-primary">
+                                {isNext ? (started ? "Reprendre" : "Commencer") : isDone ? "Relire" : "Lire"} <ArrowRight className="w-3.5 h-3.5" />
+                              </span>
+                            </span>
+                          </span>
+                        </Link>
+                      </li>
+                    );
+                  })}
+                </ol>
+
+                <p className="mt-5 text-[13px] text-[#56615A]">
+                  Chaque leçon existe aussi en PDF, à télécharger depuis la leçon <Download className="inline w-3.5 h-3.5 -mt-0.5" />.
+                </p>
+              </div>
+            );
+          })}
+
+          <ol className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            {formation.pillars.filter((p) => p.lessons.length === 0).map((p) => (
+              <li key={p.slug} className="rounded-2xl border border-dashed border-[#CFC9BE] px-4 py-4">
+                <p className="flex items-center justify-between text-[12px] font-bold uppercase tracking-[0.16em] text-[#56615A]">
+                  Pilier {p.number} <Lock className="w-3.5 h-3.5" />
+                </p>
+                <p className="mt-1.5 text-[14px] text-[#3F4A43]">En préparation</p>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {/* ───── Pour aller plus loin (ancienne Académie) ───── */}
+        <section aria-labelledby="complements" className="space-y-5">
+          <div>
+            <h2 id="complements" className="font-headline text-[26px] font-bold text-foreground">Pour aller plus loin</h2>
+            <p className="mt-1 text-[15px] text-[#56615A]">Des lectures courtes sur le discernement et la vie de couple.</p>
+          </div>
+          <div className="grid md:grid-cols-3 gap-3">
+            {discernementLessons.map((l) => (
+              <Link key={l.href} href={l.href}
+                className="group flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 hover:border-primary/40 transition-colors">
+                <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0"><l.icon className="w-5 h-5" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] font-semibold text-foreground leading-snug group-hover:text-primary">{l.title}</span>
+                  <span className="block text-[12.5px] text-[#56615A]">{l.duration}</span>
+                </span>
+                <ArrowRight className="w-4 h-4 text-primary shrink-0" />
+              </Link>
+            ))}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {academyThemes.map((m) => (
+              <Link key={m.slug} href={`/dashboard/academie/module/${m.slug}`}
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-full border border-border bg-card text-[13.5px] font-medium text-[#2E3A33] hover:border-primary/40 hover:text-primary transition-colors">
+                <m.icon className="w-4 h-4 text-primary" /> {m.title}
+              </Link>
+            ))}
+          </div>
+        </section>
+
+        <div className="flex flex-col items-center text-center">
+          <Flourish className="w-40 h-3 text-primary/40 mb-3" />
+          <p className="text-[#56615A] text-[13px] font-headline italic">{t("academie.footerVerse")}</p>
         </div>
       </main>
     </div>
