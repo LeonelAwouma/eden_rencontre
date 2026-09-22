@@ -2,7 +2,7 @@
 
 import {
   Heart, MessageSquare, Wallet, Users, Flame, Briefcase, Church, Baby, Clock, Star, ScrollText,
-  ArrowLeft, ArrowRight, Mountain, Sprout, HeartHandshake, CheckCircle2, Lock, Download, Play,
+  ArrowLeft, ArrowRight, Mountain, Sprout, HeartHandshake, CheckCircle2, Lock, Play,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -166,10 +166,6 @@ export default function AcademyIndexPage() {
                     );
                   })}
                 </ol>
-
-                <p className="mt-5 text-[13px] text-[#56615A]">
-                  Chaque leçon existe aussi en PDF, à télécharger depuis la leçon <Download className="inline w-3.5 h-3.5 -mt-0.5" />.
-                </p>
               </div>
             );
           })}

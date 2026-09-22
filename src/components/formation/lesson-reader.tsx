@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import {
-  ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Compass, Download, Feather, HelpCircle,
+  ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Compass, Feather, HelpCircle,
   Lightbulb, RotateCcw, Target, X, BookOpenCheck, Quote,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -59,6 +59,19 @@ function Blocks({ blocks }: { blocks: LessonBlock[] }) {
       })}
     </>
   );
+}
+
+/**
+ * Empêche la copie du contenu pédagogique (Ctrl+C, clic droit → Copier, menu
+ * Édition). Le champ de réflexion personnelle reste copiable : il porte
+ * `data-copyable`, et l'événement `copy` remonte jusqu'ici par bulles — on le
+ * laisse donc passer quand il en vient. Ceci ne protège pas contre l'affichage
+ * de la page source ou les outils de développement, qui restent hors de portée
+ * de toute page web côté client.
+ */
+function preventContentCopy(e: React.ClipboardEvent) {
+  if ((e.target as HTMLElement).closest("[data-copyable]")) return;
+  e.preventDefault();
 }
 
 function SectionTitle({ id, eyebrow, children }: { id: string; eyebrow?: string; children: React.ReactNode }) {
@@ -169,10 +182,12 @@ function Reflection({ lesson, value, onSave }: { lesson: Lesson; value: string; 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
       <p className="text-[16px] leading-relaxed text-foreground"><RichText text={lesson.reflection.prompt} /></p>
-      <label htmlFor={`reflexion-${lesson.slug}`} className="block mt-5 text-[13px] font-semibold text-foreground">Ce que je retiens, devant Dieu</label>
+      <label htmlFor={`reflexion-${lesson.slug}`} className="block mt-5 text-[13px] font-semibold text-foreground">Ce que je retiens de cette leçon</label>
       <textarea id={`reflexion-${lesson.slug}`} value={text} onChange={(e) => change(e.target.value)} rows={6}
         placeholder="Écris librement : personne d'autre que toi ne lira ces lignes."
-        className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-[15px] leading-relaxed text-foreground placeholder:text-[#7A847D] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 resize-y" />
+        data-copyable
+        className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-[15px] leading-relaxed text-foreground placeholder:text-[#7A847D] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 resize-y select-text"
+        style={{ WebkitUserSelect: "text" } as React.CSSProperties} />
       <p className="mt-2 text-[12.5px] text-[#56615A] flex items-center gap-1.5">
         {saved ? <><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> Enregistré</> : <>Enregistrement automatique</>}
         <span aria-hidden>·</span> gardé uniquement sur cet appareil, jamais partagé.
@@ -237,9 +252,6 @@ export function LessonReader({ lesson, pillar, previous, next }: {
               );
             })}
           </nav>
-          <a href={lesson.pdf} download className="ml-auto md:ml-3 inline-flex items-center gap-1.5 h-9 px-3 rounded-full border border-border text-[13px] font-semibold text-foreground hover:border-primary/50 hover:text-primary transition-colors shrink-0">
-            <Download className="w-4 h-4" /> <span className="hidden sm:inline">PDF</span>
-          </a>
         </div>
         <div className="h-[3px] bg-transparent" aria-hidden>
           <div className="h-full bg-primary transition-[width] duration-150" style={{ width: `${scroll * 100}%` }} />
@@ -272,7 +284,11 @@ export function LessonReader({ lesson, pillar, previous, next }: {
             </div>
           </div>
 
-          <div className="mt-8 space-y-5 text-[17px] sm:text-[18px] leading-[1.75] text-[#2E3A33]">
+          <div
+            className="mt-8 space-y-5 text-[17px] sm:text-[18px] leading-[1.75] text-[#2E3A33] select-none"
+            style={{ WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
+            onCopy={preventContentCopy} onCut={preventContentCopy}
+          >
             <SectionTitle id="introduction" eyebrow="Introduction">{lesson.intro.heading}</SectionTitle>
             <Blocks blocks={lesson.intro.blocks} />
 
@@ -347,15 +363,12 @@ export function LessonReader({ lesson, pillar, previous, next }: {
               <p className="mt-1 text-[15px] text-[#56615A]">
                 {isDone ? "Tu peux la relire quand tu veux ; ta progression est enregistrée." : "Marque-la comme terminée pour suivre ta progression dans le pilier."}
               </p>
-              <div className="mt-5 flex flex-col sm:flex-row items-center justify-center gap-3">
+              <div className="mt-5 flex items-center justify-center">
                 <button type="button" onClick={() => setCompleted(lesson.slug, !isDone)}
                   className={cn("inline-flex items-center gap-2 h-11 px-5 rounded-full text-[14px] font-bold transition-colors",
                     isDone ? "border border-border text-foreground hover:bg-muted" : "bg-primary text-white hover:bg-primary/90")}>
                   {isDone ? <><RotateCcw className="w-4 h-4" /> Marquer comme non terminée</> : <><Check className="w-4 h-4" /> Marquer comme terminée</>}
                 </button>
-                <a href={lesson.pdf} download className="inline-flex items-center gap-2 h-11 px-5 rounded-full text-[14px] font-semibold text-primary hover:bg-primary/10">
-                  <Download className="w-4 h-4" /> Télécharger le PDF
-                </a>
               </div>
             </div>
 
