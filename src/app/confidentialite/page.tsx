@@ -69,7 +69,7 @@ export default function ConfidentialitePage() {
                   <li><strong>{t("legalConfidentialite.s5Item6Strong")}</strong> {t("legalConfidentialite.s5Item6")}</li>
                 </ul>
                 <p className="text-muted-foreground leading-relaxed font-body mt-4">
-                  {t("legalConfidentialite.s5Contact")} <a href="mailto:privacy@gardenofalliance.com" className="text-primary hover:text-deep-eden transition-colors underline">privacy@gardenofalliance.com</a>
+                  {t("legalConfidentialite.s5Contact")} <a href="mailto:contact@gardenofalliance.com" className="text-primary hover:text-deep-eden transition-colors underline">contact@gardenofalliance.com</a>
                 </p>
               </div>
 
@@ -86,7 +86,34 @@ export default function ConfidentialitePage() {
               <div className="eden-leaf-card p-8">
                 <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalConfidentialite.s8Title")}</h3>
                 <p className="text-muted-foreground leading-relaxed font-body">
-                  {t("legalConfidentialite.s8Body")} <a href="mailto:privacy@gardenofalliance.com" className="text-primary hover:text-deep-eden transition-colors underline">privacy@gardenofalliance.com</a>
+                  {t("legalConfidentialite.s8Body")} <a href="mailto:contact@gardenofalliance.com" className="text-primary hover:text-deep-eden transition-colors underline">contact@gardenofalliance.com</a>
+                </p>
+              </div>
+
+              {/* Exigée par Google pour la validation de l'application OAuth (Limited Use). */}
+              <div id="donnees-google" className="eden-leaf-card p-8 scroll-mt-24">
+                <h3 className="font-headline text-xl font-bold text-deep-eden mb-4">{t("legalConfidentialite.s9Title")}</h3>
+                <p className="text-muted-foreground leading-relaxed font-body mb-4">{t("legalConfidentialite.s9Intro")}</p>
+                <ul className="text-muted-foreground leading-relaxed font-body space-y-3 list-disc list-inside">
+                  <li><strong>{t("legalConfidentialite.s9Item1Strong")}</strong> {t("legalConfidentialite.s9Item1")}</li>
+                  <li><strong>{t("legalConfidentialite.s9Item2Strong")}</strong> {t("legalConfidentialite.s9Item2")}</li>
+                  <li><strong>{t("legalConfidentialite.s9Item3Strong")}</strong> {t("legalConfidentialite.s9Item3")}</li>
+                  <li><strong>{t("legalConfidentialite.s9Item4Strong")}</strong> {t("legalConfidentialite.s9Item4")}</li>
+                </ul>
+                <p className="text-muted-foreground leading-relaxed font-body mt-4">
+                  {t("legalConfidentialite.s9LimitedUseBefore")}{" "}
+                  <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-deep-eden transition-colors underline">
+                    {t("legalConfidentialite.s9LimitedUseLink")}
+                  </a>
+                  {t("legalConfidentialite.s9LimitedUseAfter")}
+                </p>
+                <p className="text-muted-foreground leading-relaxed font-body mt-4">
+                  {t("legalConfidentialite.s9RevokeBefore")}{" "}
+                  <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener noreferrer" className="text-primary hover:text-deep-eden transition-colors underline">
+                    {t("legalConfidentialite.s9RevokeLink")}
+                  </a>
+                  {t("legalConfidentialite.s9RevokeAfter")}{" "}
+                  <a href="mailto:contact@gardenofalliance.com" className="text-primary hover:text-deep-eden transition-colors underline">contact@gardenofalliance.com</a>
                 </p>
               </div>
             </div>

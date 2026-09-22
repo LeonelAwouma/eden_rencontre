@@ -10,7 +10,7 @@ VALUES (
   'batir-sur-le-roc-pilier-1',
   'Déposer nos illusions pour embrasser la vision que Dieu a de l''alliance : un sanctuaire, un but commun, un engagement sans retour, un service mutuel et la présence de Dieu au centre.',
   'Poser la première pierre de la préparation au mariage : la vision.',
-  'beginner', '6 leçons · environ 1 h', 0, 'published', now()
+  'beginner', 'environ 1 h', 0, 'published', now()
 )
 ON CONFLICT (slug) DO NOTHING;
 

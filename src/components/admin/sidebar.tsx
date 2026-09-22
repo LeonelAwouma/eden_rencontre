@@ -22,6 +22,8 @@ interface SidebarProps {
   adminName: string;
 }
 
+const BRAND_GREEN = "#486B46";
+
 const NAV_ITEMS = [
   { label: "Tableau de bord", href: "/admin/dashboard", icon: LayoutDashboard, section: "main", shortcut: "⌘D" },
   { label: "Utilisateurs", href: "/admin/users", icon: Users, section: "main", shortcut: "⌘U" },
@@ -86,11 +88,13 @@ export function Sidebar({
               <motion.div initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }}
                 exit={{ opacity: 0, width: 0 }} transition={{ duration: 0.2 }}
                 className="flex items-center gap-2.5 overflow-hidden">
-                {/* Logo de marque, identique à l'espace membre : monogramme + « Garden of Alliance » */}
-                <Monogram className="w-9 h-8 text-[#486B46] flex-shrink-0" />
+                {/* Logo de marque, identique à l'espace membre : monogramme + « Garden of Alliance ».
+                    Couleur en style inline : la couleur d'accent des Paramètres recolore toutes
+                    les classes text-[#486B46] de l'admin, mais le logo reste vert. */}
+                <Monogram className="w-9 h-8 flex-shrink-0" style={{ color: BRAND_GREEN }} />
                 <div className="min-w-0">
                   <p className="font-headline text-[18px] leading-tight font-bold text-[#1F3328] truncate">
-                    Garden <span className="italic font-normal text-[#486B46]">of Alliance</span>
+                    Garden <span className="italic font-normal" style={{ color: BRAND_GREEN }}>of Alliance</span>
                   </p>
                   <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">Administration</p>
                 </div>
@@ -98,7 +102,7 @@ export function Sidebar({
             )}
           </AnimatePresence>
           {isCollapsed && (
-            <Monogram className="w-9 h-8 text-[#486B46]" />
+            <Monogram className="w-9 h-8" style={{ color: BRAND_GREEN }} />
           )}
           <button onClick={onClose} className="lg:hidden w-8 h-8 rounded-lg flex items-center justify-center text-zinc-400 hover:text-zinc-900 hover:bg-zinc-50 transition-colors">
             <X className="w-4 h-4" />
