@@ -1193,7 +1193,7 @@ export default function RegisterPage() {
                   <p className="text-foreground/50 text-sm">{t("register.avatarSubtitle")}</p>
                 </div>
 
-                <AvatarPicker photos={photos} value={publicAvatar} onChange={setPublicAvatar} seedBase={formData.pseudo || formData.email} />
+                <AvatarPicker photos={photos} value={publicAvatar} onChange={setPublicAvatar} />
 
                 <Button
                   onClick={nextStep}

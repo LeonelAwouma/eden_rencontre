@@ -1139,7 +1139,7 @@ export default function DashboardPage() {
               <h2 className="text-xl font-bold text-[#2F2F2F]">{t("dashboard.chooseAvatarTitle")}</h2>
               <p className="text-sm text-[#777777] mt-1">{t("dashboard.chooseAvatarDesc")}</p>
             </div>
-            <AvatarPicker value={pickedAvatar} onChange={setPickedAvatar} seedBase={user?.pseudo || user?.name} />
+            <AvatarPicker value={pickedAvatar} onChange={setPickedAvatar} />
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setShowAvatarPicker(false)} disabled={savingAvatar} className="flex-1 h-12 rounded-xl">
                 {t("dashboard.avatarPickerCancel")}

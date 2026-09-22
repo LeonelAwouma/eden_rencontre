@@ -11,13 +11,15 @@ interface AvatarPickerProps {
   photos?: (string | null)[];
   value: string | null;
   onChange: (value: string) => void;
-  seedBase?: string;
 }
 
-export function AvatarPicker({ photos, value, onChange, seedBase }: AvatarPickerProps) {
+export function AvatarPicker({ photos, value, onChange }: AvatarPickerProps) {
   const { t } = useI18n();
+  // Graines toujours aléatoires : la graine part chez DiceBear et reste inscrite
+  // dans l'URL de l'avatar public. Elle ne doit jamais dériver du pseudo, du nom
+  // ou de l'e-mail du membre.
   const [seeds, setSeeds] = useState<string[]>(() =>
-    Array.from({ length: GRID_SIZE }, (_, i) => (seedBase ? `${seedBase}-${i}` : randomAvatarSeed()))
+    Array.from({ length: GRID_SIZE }, () => randomAvatarSeed())
   );
 
   const avatars = useMemo(
