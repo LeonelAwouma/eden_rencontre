@@ -372,9 +372,15 @@
     "author": "Author",
     "date": "Date",
     "newsletterTitle": "Stay Edified",
-    "newsletterDesc": "Receive our best advice and meditations directly in your inbox every week.",
+    "newsletterDesc": "Receive our new articles, advice and meditations directly in your inbox as soon as they are published.",
     "emailPlaceholder": "your@email.com",
-    "subscribe": "Subscribe"
+    "subscribe": "Subscribe",
+    "newsletterSuccess": "Thank you! Your subscription is confirmed: a welcome email is on its way.",
+    "newsletterMember": "As a member, you are already subscribed: every new article is sent to you by email.",
+    "newsletterError": "Subscription is not available right now. Please try again later.",
+    "newsletterInvalidEmail": "This email address does not look valid.",
+    "newsletterRateLimited": "Too many attempts. Please try again in an hour.",
+    "newsletterNote": "No account needed. Unsubscribe in one click from any email."
   },
   "testimonials": {
     "eyebrow": "Testimonials",
@@ -1572,5 +1578,16 @@
     "notFoundTitle": "Article not found",
     "backToBlog": "Back to blog",
     "similarArticles": "Related articles"
+  },
+  "newsletterUnsubscribe": {
+    "eyebrow": "Newsletter",
+    "title": "Unsubscribe",
+    "confirmDesc": "You will no longer receive new blog articles at:",
+    "confirmButton": "Confirm unsubscription",
+    "doneTitle": "You are unsubscribed",
+    "doneDesc": "You will no longer receive the newsletter. You can subscribe again at any time from the Blog page.",
+    "errorTitle": "Invalid link",
+    "errorDesc": "This unsubscribe link is invalid or incomplete. Write to us and we will unsubscribe you:",
+    "backToBlog": "Back to the blog"
   }
 }

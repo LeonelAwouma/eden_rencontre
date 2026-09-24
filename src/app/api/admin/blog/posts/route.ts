@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { generateBlogSlug, estimateReadingTime } from "@/lib/blog";
+import { schedulePostNewsletter } from "@/lib/newsletter";
 
 // Helper: send blog notifications to all approved users
 async function sendBlogNotifications(db: any, post: any) {
@@ -109,7 +110,11 @@ export async function POST(request: NextRequest) {
       link: `/admin/blog/${post.id}/edit`, metadata: { blog_post_id: post.id, title },
     }); } catch (e) { console.error("Admin notif error:", e); }
 
-    if (isPublished) await sendBlogNotifications(db, post);
+    if (isPublished) {
+      await sendBlogNotifications(db, post);
+      // E-mail aux abonnés (membres + inscrits du blog), après la réponse.
+      schedulePostNewsletter(post.id);
+    }
 
     return NextResponse.json({ ok: true, post });
   } catch (err) {

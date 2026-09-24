@@ -20,6 +20,7 @@ import {
   accountSuspendedEmail,
   verificationApprovedEmail,
   verificationRejectedEmail,
+  newsletterWelcomeEmail,
   type RenderedEmail,
   type MeetInvitationEmailParams,
   type MeetingInvitationEmailParams,
@@ -36,7 +37,8 @@ const DEFAULT_SMTP_USER = "contact@gardenofalliance.com";
 const SMTP_USER = process.env.SMTP_USER || DEFAULT_SMTP_USER;
 
 // Create a reusable transporter
-function getTransporter() {
+// `pool` : une seule connexion SMTP réutilisée pour un envoi groupé (newsletter).
+function getTransporter(pool = false) {
   const smtpPassword = process.env.SMTP_PASSWORD;
   if (!smtpPassword) {
     return null;
@@ -52,7 +54,37 @@ function getTransporter() {
       user: SMTP_USER,
       pass: smtpPassword,
     },
+    ...(pool ? { pool: true, maxConnections: 1 } : {}),
   });
+}
+
+/** Message prêt pour nodemailer, avec le logo joint en ligne. */
+function buildMail(settings: EmailSettings, to: string, email: RenderedEmail, headers?: Record<string, string>) {
+  return {
+    // L'adresse d'envoi reste celle du compte SMTP (exigé par Hostinger) ; seul le nom affiché change.
+    from: { name: settings.platformName, address: SMTP_USER },
+    replyTo: settings.contactEmail,
+    to,
+    subject: email.subject,
+    html: email.html,
+    text: email.text,
+    headers,
+    // Logo joint en ligne : visible même quand les images distantes sont bloquées.
+    attachments: [{
+      filename: "garden-of-alliance.png",
+      content: Buffer.from(EMAIL_LOGO_PNG_BASE64, "base64"),
+      contentType: "image/png",
+      cid: LOGO_CID,
+    }],
+  };
+}
+
+/** En-têtes de désabonnement en un clic (RFC 8058), attendus par Gmail/Yahoo pour les envois groupés. */
+function unsubscribeHeaders(unsubscribeUrl: string): Record<string, string> {
+  return {
+    "List-Unsubscribe": `<${unsubscribeUrl}>`,
+    "List-Unsubscribe-Post": "List-Unsubscribe=One-Click",
+  };
 }
 
 /**
@@ -72,7 +104,12 @@ function applySettings(email: RenderedEmail, settings: EmailSettings): RenderedE
  */
 type EmailKind = "account" | "meeting";
 
-async function sendEmail(to: string, rendered: RenderedEmail, kind: EmailKind = "account"): Promise<boolean> {
+async function sendEmail(
+  to: string,
+  rendered: RenderedEmail,
+  kind: EmailKind = "account",
+  headers?: Record<string, string>
+): Promise<boolean> {
   const settings = await getEmailSettings();
   if (kind === "meeting" && !settings.meetingEmailsEnabled) {
     console.log(`📧 E-mail de réunion non envoyé à ${to} : désactivé dans Admin → Paramètres.`);
@@ -90,22 +127,7 @@ async function sendEmail(to: string, rendered: RenderedEmail, kind: EmailKind = 
         return false;
       }
 
-      await transporter.sendMail({
-        // L'adresse d'envoi reste celle du compte SMTP (exigé par Hostinger) ; seul le nom affiché change.
-        from: { name: settings.platformName, address: SMTP_USER },
-        replyTo: settings.contactEmail,
-        to,
-        subject: email.subject,
-        html: email.html,
-        text: email.text,
-        // Logo joint en ligne : visible même quand les images distantes sont bloquées.
-        attachments: [{
-          filename: "garden-of-alliance.png",
-          content: Buffer.from(EMAIL_LOGO_PNG_BASE64, "base64"),
-          contentType: "image/png",
-          cid: LOGO_CID,
-        }],
-      });
+      await transporter.sendMail(buildMail(settings, to, email, headers));
       console.log(`📧 Email sent to ${to} — Subject: ${email.subject}`);
       return true;
     } catch (err) {
@@ -186,4 +208,51 @@ export async function sendVerificationApprovedEmail(email: string, name: string)
 
 export async function sendVerificationRejectedEmail(email: string, name: string, reason?: string): Promise<boolean> {
   return sendEmail(email, verificationRejectedEmail(name, reason));
+}
+
+// ── Newsletter du blog ───────────────────────────────────────
+export async function sendNewsletterWelcomeEmail(email: string, unsubscribeUrl: string): Promise<boolean> {
+  return sendEmail(email, newsletterWelcomeEmail(unsubscribeUrl), "account", unsubscribeHeaders(unsubscribeUrl));
+}
+
+export interface NewsletterMessage {
+  to: string;
+  rendered: RenderedEmail;
+  unsubscribeUrl: string;
+}
+
+/**
+ * Envoi groupé (un e-mail individuel par abonné, jamais de copie cachée) sur une
+ * seule connexion SMTP. Renvoie le nombre d'e-mails effectivement partis.
+ */
+export async function sendNewsletterEmails(messages: NewsletterMessage[]): Promise<number> {
+  if (messages.length === 0) return 0;
+  const settings = await getEmailSettings();
+  const transporter = getTransporter(true);
+
+  if (!transporter) {
+    // Pas de SMTP_PASSWORD : en développement on journalise, en production rien ne part.
+    console.log(`📧 Newsletter (no SMTP_PASSWORD configured) — ${messages.length} destinataire(s) : ${messages[0].rendered.subject}`);
+    if (process.env.NODE_ENV === "production") {
+      console.error("Newsletter NOT sent: SMTP_PASSWORD is missing in production.");
+      return 0;
+    }
+    return messages.length;
+  }
+
+  let sent = 0;
+  try {
+    for (const m of messages) {
+      try {
+        await transporter.sendMail(buildMail(settings, m.to, applySettings(m.rendered, settings), unsubscribeHeaders(m.unsubscribeUrl)));
+        sent++;
+      } catch (err) {
+        console.error(`Newsletter send error (SMTP) to ${m.to}:`, err);
+      }
+    }
+  } finally {
+    transporter.close();
+  }
+  console.log(`📧 Newsletter sent to ${sent}/${messages.length} recipient(s) — Subject: ${messages[0].rendered.subject}`);
+  return sent;
 }

@@ -150,9 +150,11 @@ interface LayoutOptions {
   preheader: string;
   title: string;
   body: string;
+  /** Raison d'envoi affichée en pied de page (HTML déjà échappé). Par défaut : compte membre. */
+  footer?: string;
 }
 
-function layout({ preheader, title, body }: LayoutOptions): string {
+function layout({ preheader, title, body, footer }: LayoutOptions): string {
   const url = appUrl();
   const year = new Date().getFullYear();
   return `<!DOCTYPE html>
@@ -205,7 +207,7 @@ function layout({ preheader, title, body }: LayoutOptions): string {
             <td class="pad" style="padding:18px 40px 22px;border-top:1px solid ${C.border};">
               <p style="margin:0;font-family:${SANS};font-size:12px;line-height:19px;color:${C.muted};">
                 <a href="${esc(url)}" style="color:${C.muted};text-decoration:underline;">${esc(siteLabel())}</a><br>
-                Vous recevez cet e-mail car vous avez un compte sur Garden of Alliance.<br>
+                ${footer ?? "Vous recevez cet e-mail car vous avez un compte sur Garden of Alliance."}<br>
                 © ${year} Garden of Alliance
               </p>
             </td>
@@ -423,5 +425,50 @@ export function verificationRejectedEmail(name: string, reason?: string): Render
       p("Vous pouvez compléter ou mettre à jour votre profil, puis soumettre une nouvelle demande.") +
       button(`${appUrl()}/dashboard/profile`, "Mettre à jour mon profil") +
       replyLine(),
+  });
+}
+
+/* ─────────────────────────── Newsletter du blog ─────────────────────────── */
+
+const newsletterFooter = (unsubscribeUrl: string) =>
+  `Vous recevez cet e-mail car vous êtes abonné(e) à la newsletter de Garden of Alliance.<br>` +
+  `<a href="${esc(unsubscribeUrl)}" style="color:${C.muted};text-decoration:underline;">Se désabonner</a>`;
+
+export function newsletterWelcomeEmail(unsubscribeUrl: string): RenderedEmail {
+  return render("Bienvenue dans la newsletter — Garden of Alliance", {
+    preheader: "Vous recevrez nos prochains articles directement dans votre boîte mail.",
+    title: "Merci pour votre abonnement",
+    body:
+      greeting() +
+      p("Votre inscription à la newsletter de Garden of Alliance est confirmée. Vous recevrez nos prochains articles, conseils et méditations directement dans votre boîte mail.") +
+      button(`${appUrl()}/blog`, "Découvrir le blog") +
+      p("Si vous n'êtes pas à l'origine de cette inscription, utilisez le lien de désabonnement en bas de cet e-mail."),
+    footer: newsletterFooter(unsubscribeUrl),
+  });
+}
+
+export interface BlogPostNewsletterParams {
+  title: string;
+  excerpt?: string | null;
+  coverImageUrl?: string | null;
+  author?: string | null;
+  postUrl: string;
+  unsubscribeUrl: string;
+}
+
+export function blogPostNewsletterEmail(params: BlogPostNewsletterParams): RenderedEmail {
+  const { title, excerpt, coverImageUrl, author, postUrl, unsubscribeUrl } = params;
+  const cover = coverImageUrl
+    ? `<a href="${esc(postUrl)}" target="_blank"><img src="${esc(coverImageUrl)}" width="520" alt="" style="display:block;width:100%;max-width:520px;height:auto;border:0;margin:0 0 20px;border-radius:6px;"></a>`
+    : "";
+  return render(`${title} — Garden of Alliance`, {
+    preheader: excerpt || "Un nouvel article vient d'être publié sur le blog.",
+    title,
+    body:
+      cover +
+      (author ? fine(`Par ${esc(author)}`) : "") +
+      p(excerpt ? esc(excerpt) : "Un nouvel article vient d'être publié sur le blog de Garden of Alliance.") +
+      button(postUrl, "Lire l'article"),
+    footer: newsletterFooter(unsubscribeUrl),
   });
 }

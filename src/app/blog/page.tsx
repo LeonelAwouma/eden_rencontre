@@ -8,11 +8,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { BookOpen, Calendar, User, ArrowRight, Search, Clock } from "lucide-react";
+import { BookOpen, Calendar, User, ArrowRight, Search, Clock, CheckCircle2, Loader2 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { PageHeader, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
+import { getMyAccountStatus } from "@/lib/auth";
 
 interface BlogPostItem {
   id: string; title: string; slug: string; excerpt: string | null;
@@ -28,6 +29,31 @@ export default function BlogPage() {
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  // Newsletter : les membres approuvés sont abonnés d'office, les visiteurs s'inscrivent avec leur e-mail.
+  const [isMember, setIsMember] = useState(false);
+  const [nlEmail, setNlEmail] = useState("");
+  const [nlTrap, setNlTrap] = useState("");
+  const [nlState, setNlState] = useState<"idle" | "loading" | "done" | "error">("idle");
+  const [nlError, setNlError] = useState("");
+
+  useEffect(() => {
+    getMyAccountStatus().then(s => setIsMember(s?.status === "approved")).catch(() => {});
+  }, []);
+
+  const subscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setNlState("loading"); setNlError("");
+    try {
+      const res = await fetch("/api/blog/newsletter", {
+        method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: nlEmail, website: nlTrap }),
+      });
+      if (res.ok) { setNlState("done"); return; }
+      const d = await res.json().catch(() => ({}));
+      setNlError(t(d.error === "invalid_email" ? "blog.newsletterInvalidEmail" : d.error === "rate_limited" ? "blog.newsletterRateLimited" : "blog.newsletterError"));
+      setNlState("error");
+    } catch { setNlError(t("blog.newsletterError")); setNlState("error"); }
+  };
 
   useEffect(() => {
     const p = new URLSearchParams();
@@ -140,12 +166,27 @@ export default function BlogPage() {
             <p className="text-lg text-foreground/60 mb-10">
               {t("blog.newsletterDesc")}
             </p>
-            <form className="flex flex-col sm:flex-row gap-4">
-              <Input placeholder={t("blog.emailPlaceholder")} className="h-14 bg-background border-foreground/10" required type="email" />
-              <Button size="lg" className="bg-accent text-background font-bold h-14 px-8 shrink-0">
-                {t("blog.subscribe")}
-              </Button>
-            </form>
+            {isMember || nlState === "done" ? (
+              <div className="flex items-start sm:items-center justify-center gap-3 rounded-xl bg-background border border-sage/25 px-6 py-5 text-left sm:text-center" role="status">
+                <CheckCircle2 className="w-5 h-5 text-accent shrink-0 mt-0.5 sm:mt-0" />
+                <p className="text-foreground/80">{t(isMember ? "blog.newsletterMember" : "blog.newsletterSuccess")}</p>
+              </div>
+            ) : (
+              <form onSubmit={subscribe} className="flex flex-col gap-3">
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <Input value={nlEmail} onChange={e => setNlEmail(e.target.value)} placeholder={t("blog.emailPlaceholder")}
+                    aria-label={t("blog.emailPlaceholder")} className="h-14 bg-background border-foreground/10" required type="email" autoComplete="email" />
+                  {/* Champ piège pour les robots, invisible pour les visiteurs. */}
+                  <input type="text" name="website" value={nlTrap} onChange={e => setNlTrap(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
+                  <Button type="submit" size="lg" disabled={nlState === "loading"} className="bg-accent text-background font-bold h-14 px-8 shrink-0">
+                    {nlState === "loading" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                    {t("blog.subscribe")}
+                  </Button>
+                </div>
+                {nlState === "error" && <p className="text-sm text-destructive" role="alert">{nlError}</p>}
+                <p className="text-xs text-foreground/50">{t("blog.newsletterNote")}</p>
+              </form>
+            )}
           </div>
         </section>
       </main>

@@ -372,9 +372,15 @@
     "author": "Auteur",
     "date": "Date",
     "newsletterTitle": "Restez Édifié",
-    "newsletterDesc": "Recevez chaque semaine nos meilleurs conseils et méditations directement dans votre boîte mail.",
+    "newsletterDesc": "Recevez nos nouveaux articles, conseils et méditations directement dans votre boîte mail, dès leur publication.",
     "emailPlaceholder": "votre@email.com",
-    "subscribe": "S'abonner"
+    "subscribe": "S'abonner",
+    "newsletterSuccess": "Merci ! Votre inscription est confirmée : un e-mail de bienvenue vient de vous être envoyé.",
+    "newsletterMember": "En tant que membre, vous êtes déjà abonné(e) : chaque nouvel article vous est envoyé par e-mail.",
+    "newsletterError": "Inscription impossible pour le moment. Veuillez réessayer plus tard.",
+    "newsletterInvalidEmail": "Cette adresse e-mail ne semble pas valide.",
+    "newsletterRateLimited": "Trop de tentatives. Veuillez réessayer dans une heure.",
+    "newsletterNote": "Aucun compte nécessaire. Désabonnement en un clic depuis chaque e-mail."
   },
   "testimonials": {
     "eyebrow": "Témoignages",
@@ -1572,5 +1578,16 @@
     "notFoundTitle": "Article introuvable",
     "backToBlog": "Retour au blog",
     "similarArticles": "Articles similaires"
+  },
+  "newsletterUnsubscribe": {
+    "eyebrow": "Newsletter",
+    "title": "Se désabonner",
+    "confirmDesc": "Vous ne recevrez plus les nouveaux articles du blog à l'adresse :",
+    "confirmButton": "Confirmer le désabonnement",
+    "doneTitle": "Vous êtes désabonné(e)",
+    "doneDesc": "Vous ne recevrez plus la newsletter. Vous pouvez vous réinscrire à tout moment depuis la page Blog.",
+    "errorTitle": "Lien invalide",
+    "errorDesc": "Ce lien de désabonnement est invalide ou incomplet. Écrivez-nous et nous vous désabonnerons :",
+    "backToBlog": "Retour au blog"
   }
 }

@@ -5,18 +5,21 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   BookOpen, Plus, Search, Trash2, Loader2, Edit3, Send, Archive,
-  FileText, ChevronLeft, ChevronRight, Clock, Globe,
+  FileText, ChevronLeft, ChevronRight, Clock, Globe, Mail, MailCheck, RotateCw,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { KPICard } from "@/components/admin/kpi-card";
 import { EmptyState } from "@/components/admin/empty-state";
 import { BLOG_STATUS_CONFIG } from "@/lib/blog";
+import { BlogNewsletterPanel } from "@/components/admin/blog-newsletter-panel";
 
 interface BlogPostItem {
   id: string; title: string; slug: string; excerpt: string | null;
   author: string; status: string; featured: boolean; view_count: number;
   reading_time_minutes: number; published_at: string | null; created_at: string;
   cover_image_url: string | null;
+  // Présents après la migration 20260924_blog_newsletter.sql.
+  newsletter_sent_at?: string | null; newsletter_recipients?: number | null;
   category: { id: string; name: string; slug: string; color: string } | null;
 }
 
@@ -26,6 +29,7 @@ const STATUS_FILTERS = [
 ];
 
 export default function AdminBlogPage() {
+  const [tab, setTab] = useState<"posts" | "newsletter">("posts");
   const [posts, setPosts] = useState<BlogPostItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
@@ -67,6 +71,22 @@ export default function AdminBlogPage() {
     } catch (e) { console.error(e); } finally { setActionLoading(null); }
   };
 
+  const handleNewsletter = async (post: BlogPostItem) => {
+    const resend = !!post.newsletter_sent_at;
+    if (!confirm(resend
+      ? `Renvoyer « ${post.title} » à tous les abonnés ? Ils le recevront une seconde fois.`
+      : `Envoyer « ${post.title} » par e-mail à tous les abonnés ?`)) return;
+    setActionLoading(post.id);
+    try {
+      const res = await fetch("/api/admin/blog/newsletter", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ post_id: post.id, resend }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (!res.ok) alert(d.error || "Envoi impossible.");
+      else setTimeout(fetchPosts, 1500);
+    } catch (e) { console.error(e); } finally { setActionLoading(null); }
+  };
+
   return (
     <>
       
@@ -75,12 +95,22 @@ export default function AdminBlogPage() {
         <div>
           <h1 className="text-[24px] font-bold text-[#1a1a1a] tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans','Inter',sans-serif" }}>Blog</h1>
           <p className="text-[13px] text-[#777777] mt-1">Gérez vos articles et publications</p>
+          <div className="inline-flex mt-4 p-1 bg-white border border-[#E5E7EB] rounded-xl" role="tablist">
+            {([["posts", "Articles", BookOpen], ["newsletter", "Newsletter", Mail]] as const).map(([v, label, Icon]) => (
+              <button key={v} role="tab" aria-selected={tab === v} onClick={() => setTab(v)}
+                className={cn("inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg text-[12px] font-semibold transition-all",
+                  tab === v ? "bg-[#486B46] text-white shadow-sm" : "text-[#56615A] hover:bg-[#F9FAFB]")}>
+                <Icon className="w-3.5 h-3.5" />{label}
+              </button>
+            ))}
+          </div>
         </div>
         <Link href="/admin/blog/new" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#486B46] text-white rounded-xl text-[13px] font-semibold hover:bg-[#3A5A38] transition-all shadow-sm">
           <Plus className="w-4 h-4" /> Nouvel article
         </Link>
       </motion.div>
 
+      {tab === "newsletter" ? <BlogNewsletterPanel /> : <>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <KPICard title="Total articles" value={stats.total || 0} icon={BookOpen} accentColor="green" index={0} />
         <KPICard title="Publiés" value={stats.published || 0} icon={Globe} accentColor="green" index={1} />
@@ -119,6 +149,7 @@ export default function AdminBlogPage() {
                 <th className="text-left px-4 py-3 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-widest hidden md:table-cell">Catégorie</th>
                 <th className="text-left px-4 py-3 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-widest hidden sm:table-cell">Statut</th>
                 <th className="text-left px-4 py-3 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-widest hidden lg:table-cell">Vues</th>
+                <th className="text-left px-4 py-3 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-widest hidden md:table-cell">Newsletter</th>
                 <th className="text-right px-4 py-3 text-[11px] font-bold text-[#9CA3AF] uppercase tracking-widest">Actions</th>
               </tr></thead>
               <tbody>{posts.map((post, i) => {
@@ -141,7 +172,22 @@ export default function AdminBlogPage() {
                     <td className="px-4 py-3 hidden md:table-cell"><span className="text-[12px] font-medium text-[#6B7280]">{post.category?.name || "—"}</span></td>
                     <td className="px-4 py-3 hidden sm:table-cell"><span className={cn("px-2 py-1 rounded-md text-[11px] font-semibold", sc.color)}>{sc.label}</span></td>
                     <td className="px-4 py-3 hidden lg:table-cell"><span className="text-[12px] text-[#6B7280] font-medium">{post.view_count}</span></td>
+                    <td className="px-4 py-3 hidden md:table-cell">
+                      {post.status !== "published" ? <span className="text-[12px] text-[#6B746E]">À la publication</span>
+                        : post.newsletter_sent_at ? (
+                          <span className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#486B46]" title={`Envoyé le ${new Date(post.newsletter_sent_at).toLocaleString("fr-FR")}`}>
+                            <MailCheck className="w-3.5 h-3.5" />
+                            {post.newsletter_recipients == null ? "Envoi en cours…" : `Envoyé · ${post.newsletter_recipients}`}
+                          </span>
+                        ) : post.newsletter_sent_at === null ? (
+                          <button onClick={() => handleNewsletter(post)} disabled={actionLoading === post.id}
+                            className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[12px] font-semibold text-[#486B46] bg-[#EEF5EC] hover:bg-[#E0EEDC] disabled:opacity-50">
+                            <Mail className="w-3.5 h-3.5" /> Envoyer aux abonnés
+                          </button>
+                        ) : <span className="text-[12px] text-[#6B746E]">—</span>}
+                    </td>
                     <td className="px-4 py-3"><div className="flex items-center justify-end gap-1">
+                      {post.status==="published" && post.newsletter_sent_at && post.newsletter_recipients != null && <button onClick={()=>handleNewsletter(post)} disabled={actionLoading===post.id} title="Renvoyer aux abonnés" className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#486B46] hover:bg-[#EEF5EC] disabled:opacity-50"><RotateCw className="w-3.5 h-3.5" /></button>}
                       <Link href={`/admin/blog/${post.id}/edit`} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#486B46] hover:bg-[#EEF5EC] transition-all"><Edit3 className="w-3.5 h-3.5" /></Link>
                       {post.status==="draft" && <button onClick={()=>handleStatusChange(post.id,"published")} disabled={actionLoading===post.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#38C172] hover:bg-[#38C172]/10 disabled:opacity-50"><Send className="w-3.5 h-3.5" /></button>}
                       {post.status==="published" && <button onClick={()=>handleStatusChange(post.id,"archived")} disabled={actionLoading===post.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#F59E0B] hover:bg-[#F59E0B]/10 disabled:opacity-50"><Archive className="w-3.5 h-3.5" /></button>}
@@ -165,6 +211,7 @@ export default function AdminBlogPage() {
           </div>
         </div>
       )}
+      </>}
     </>
   );
 }

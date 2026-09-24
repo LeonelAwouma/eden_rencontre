@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { estimateReadingTime } from "@/lib/blog";
+import { schedulePostNewsletter } from "@/lib/newsletter";
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -71,6 +72,8 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
           for (let i = 0; i < rows.length; i += 500) await db.from("meeting_notifications").insert(rows.slice(i, i + 500));
         }
       } catch (e) { console.error("[Blog] Notif error:", e); }
+      // E-mail aux abonnés (membres + inscrits du blog), une seule fois par article.
+      schedulePostNewsletter(id);
     }
     return NextResponse.json({ ok: true, resource: data });
   } catch (err) {
