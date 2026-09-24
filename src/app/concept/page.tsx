@@ -8,7 +8,7 @@ import { useI18n } from "@/lib/i18n";
 /** Botanical vine ornament for section dividers */
 function VineDivider() {
   return (
-    <div className="flex justify-center py-6" aria-hidden="true">
+    <div className="flex justify-center py-1" aria-hidden="true">
       <svg viewBox="0 0 240 30" fill="none" className="w-48 sm:w-60 h-8 opacity-35">
         <path
           d="M0 15 Q30 5 60 15 Q90 25 120 15 Q150 5 180 15 Q210 25 240 15"
@@ -40,7 +40,7 @@ export default function ConceptPage() {
 
       <main className="flex-1">
         {/* Hero Vision */}
-        <GardenSection variant="garden" className="py-14 sm:py-20 relative overflow-hidden">
+        <GardenSection variant="garden" className="py-10 sm:py-14 relative overflow-hidden">
           <GardenIllustration
             src="/image_three_garden.webp"
             placement="corner"
@@ -64,9 +64,9 @@ export default function ConceptPage() {
         <VineDivider />
 
         {/* Values */}
-        <section className="py-14 sm:py-20 container mx-auto px-4 sm:px-6 relative">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-16 items-center relative">
-            <div className="space-y-12">
+        <section className="py-10 sm:py-14 container mx-auto px-4 sm:px-6 relative">
+          <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-10 lg:gap-14 items-center relative">
+            <div className="space-y-8">
               <div className="space-y-4">
                 <div className="flex items-center gap-4 text-deep-eden">
                   <svg viewBox="0 0 24 24" className="w-8 h-8" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 3v18M3 12h18M7 7l10 10M17 7L7 17"/></svg>
@@ -96,30 +96,8 @@ export default function ConceptPage() {
                   Le mariage est une institution sacrée. Nous facilitons les rencontres entre personnes partageant la même vision du foyer, de l'éducation et de la spiritualité.
                 </p>
               </div>
-            </div>
 
-            <div className="flex flex-col gap-8">
-              <div className="relative rounded-2xl overflow-hidden shadow-botanical-lg border border-sage/10 group">
-                <img
-                  src="/couple-14.webp"
-                  alt="Concept Visual"
-                  className="object-contain w-full h-auto transition-transform duration-700 group-hover:scale-105"
-                />
-                {/* Botanical vignette overlay */}
-                <div
-                  className="absolute inset-0 pointer-events-none"
-                  style={{ boxShadow: "inset 0 0 60px 15px hsl(42 35% 97% / 0.3)" }}
-                />
-                {/* Sage light overlay */}
-                <div
-                  className="absolute inset-0 pointer-events-none mix-blend-soft-light opacity-20"
-                  style={{
-                    background: "radial-gradient(ellipse at 60% 40%, hsl(145 22% 62% / 0.2) 0%, transparent 60%)",
-                  }}
-                />
-              </div>
-
-              <div className="relative eden-leaf-card p-10 text-center overflow-hidden">
+              <div className="relative eden-leaf-card p-6 sm:p-7 text-center overflow-hidden">
                 {/* Decorative botanical corners */}
                 <div className="absolute top-3 left-3 opacity-30 pointer-events-none" aria-hidden="true">
                   <svg viewBox="0 0 40 40" fill="none" className="w-8 h-8">
@@ -136,17 +114,39 @@ export default function ConceptPage() {
 
                 <div className="relative z-10">
                   {/* Olive branch icon */}
-                  <svg viewBox="0 0 32 32" className="w-8 h-8 mx-auto mb-4 opacity-30" fill="none" aria-hidden="true">
+                  <svg viewBox="0 0 32 32" className="w-8 h-8 mx-auto mb-3 opacity-30" fill="none" aria-hidden="true">
                     <path d="M16 28C16 28 8 20 8 14C8 9 12 4 16 4C20 4 24 9 24 14C24 20 16 28 16 28Z" stroke="hsl(155 42% 18%)" strokeWidth="1" />
                     <path d="M16 26V10" stroke="hsl(155 42% 18%)" strokeWidth="0.6" />
                     <ellipse cx="11" cy="14" rx="3" ry="1.5" fill="hsl(145 22% 62% / 0.2)" transform="rotate(-40 11 14)" />
                     <ellipse cx="21" cy="14" rx="3" ry="1.5" fill="hsl(145 22% 62% / 0.2)" transform="rotate(40 21 14)" />
                   </svg>
-                  <h4 className="font-headline text-2xl font-bold text-sage mb-4 italic">
+                  <h4 className="font-headline text-2xl font-bold text-sage mb-2 italic">
                     &ldquo;L'alliance bénie commence par une rencontre vraie.&rdquo;
                   </h4>
                   <p className="text-muted-foreground italic font-body">Fondatrice d'Garden of Alliance</p>
                 </div>
+              </div>
+            </div>
+
+            <div>
+              <div className="relative rounded-2xl overflow-hidden shadow-botanical-lg border border-sage/10 group aspect-[4/5] max-h-[560px] w-full mx-auto">
+                <img
+                  src="/couple-14.webp"
+                  alt="Concept Visual"
+                  className="absolute inset-0 w-full h-full object-cover object-[50%_30%] transition-transform duration-700 group-hover:scale-105"
+                />
+                {/* Botanical vignette overlay */}
+                <div
+                  className="absolute inset-0 pointer-events-none"
+                  style={{ boxShadow: "inset 0 0 60px 15px hsl(42 35% 97% / 0.3)" }}
+                />
+                {/* Sage light overlay */}
+                <div
+                  className="absolute inset-0 pointer-events-none mix-blend-soft-light opacity-20"
+                  style={{
+                    background: "radial-gradient(ellipse at 60% 40%, hsl(145 22% 62% / 0.2) 0%, transparent 60%)",
+                  }}
+                />
               </div>
             </div>
           </div>
@@ -155,10 +155,10 @@ export default function ConceptPage() {
         <VineDivider />
 
         {/* Security / Anti-Brouteur */}
-        <section className="py-14 sm:py-20 eden-undergrowth relative overflow-hidden">
+        <section className="py-10 sm:py-14 eden-undergrowth relative overflow-hidden">
           <div className="container mx-auto px-4 sm:px-6 text-center relative z-10">
-            <div className="max-w-4xl mx-auto space-y-12">
-              <div className="inline-block p-4 bg-deep-eden/5 rounded-full mb-4 ring-1 ring-deep-eden/8">
+            <div className="max-w-4xl mx-auto space-y-8">
+              <div className="inline-block p-4 bg-deep-eden/5 rounded-full ring-1 ring-deep-eden/8">
                 <svg viewBox="0 0 24 24" className="w-12 h-12 text-deep-eden" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M12 2L3 7V12C3 17.5 7.8 22.5 12 24C16.2 22.5 21 17.5 21 12V7L12 2Z"/><path d="M9 12l2 2 4-4"/></svg>
               </div>
               <h2 className="font-headline text-4xl font-bold text-foreground tracking-tight">
