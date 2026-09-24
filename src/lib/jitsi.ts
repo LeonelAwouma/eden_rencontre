@@ -26,10 +26,26 @@ interface JaasConfig {
   privateKey: string;
 }
 
+const stripQuotes = (v: string) => v.trim().replace(/^(["'])([\s\S]*)\1$/, "$2").trim();
+
+/**
+ * Remet la clé privée au format PEM quelle que soit la façon dont elle a été
+ * collée chez l'hébergeur : entre guillemets, avec des « \n » échappés, avec
+ * des retours Windows, ou sur une seule ligne où les sauts sont devenus des espaces.
+ */
+function normalizePem(raw: string): string {
+  const v = stripQuotes(raw).replace(/\\r/g, "").replace(/\\n/g, "\n").replace(/\r/g, "");
+  const m = v.match(/-----BEGIN ([A-Z ]+)-----([\s\S]*?)-----END \1-----/);
+  if (!m) return v;
+  const body = m[2].replace(/\s+/g, "");
+  const lines = body.match(/.{1,64}/g) || [];
+  return `-----BEGIN ${m[1]}-----\n${lines.join("\n")}\n-----END ${m[1]}-----\n`;
+}
+
 function getConfig(): JaasConfig | null {
-  const appId = process.env.JAAS_APP_ID?.trim();
-  const keyId = process.env.JAAS_API_KEY_ID?.trim();
-  const privateKey = process.env.JAAS_PRIVATE_KEY?.replace(/\\n/g, "\n").trim();
+  const appId = stripQuotes(process.env.JAAS_APP_ID || "");
+  const keyId = stripQuotes(process.env.JAAS_API_KEY_ID || "");
+  const privateKey = normalizePem(process.env.JAAS_PRIVATE_KEY || "");
   if (!appId || !keyId || !privateKey) return null;
   return { appId, keyId, privateKey };
 }
@@ -103,7 +119,13 @@ function signJaasToken(cfg: JaasConfig, room: string, user: JitsiParticipant, mo
     },
   };
   const unsigned = `${b64url(JSON.stringify(header))}.${b64url(JSON.stringify(payload))}`;
-  const signature = crypto.sign("RSA-SHA256", Buffer.from(unsigned), cfg.privateKey);
+  let signature: Buffer;
+  try {
+    signature = crypto.sign("RSA-SHA256", Buffer.from(unsigned), cfg.privateKey);
+  } catch (err) {
+    console.error("[Jitsi] JAAS_PRIVATE_KEY illisible : vérifiez la valeur chez l'hébergeur (clé PEM complète, BEGIN/END compris).", err);
+    throw new Error("JAAS_PRIVATE_KEY_INVALID");
+  }
   return `${unsigned}.${b64url(signature)}`;
 }
 
