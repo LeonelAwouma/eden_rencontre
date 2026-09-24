@@ -2,6 +2,7 @@
 
 // Liste des membres réels + demandes d'amitié (Supabase).
 import { supabase } from "./supabase";
+import { ADMIN_SYSTEM_EMAIL } from "./admin-system-shared";
 import type { MemberProfile } from "./chat";
 
 export type RelationStatus = "none" | "pending_out" | "pending_in" | "friends" | "declined";
@@ -80,6 +81,7 @@ export async function listMembers(myId: string): Promise<MemberProfile[]> {
     .from("profiles")
     .select(FULL_PROFILE_COLS)
     .neq("id", myId)
+    .neq("email", ADMIN_SYSTEM_EMAIL) // compte technique de la messagerie, pas un membre
     .order("updated_at", { ascending: false })
     .limit(200);
   if (error) {

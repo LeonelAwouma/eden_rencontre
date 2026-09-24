@@ -54,6 +54,7 @@ import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { Tab, TABS, ComposerType, FeedPost, EDIT_WINDOW_MS, DAILY_VERSES, VERSE_OF_DAY, getDailyVerses } from "@/components/dashboard/dashboard-types";
 import { useI18n } from "@/lib/i18n";
 import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
+import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
 import { AutoSaveIndicator } from "@/components/autosave-indicator";
 
 const TAB_LABEL_KEY: Record<string, string> = {
@@ -78,23 +79,6 @@ function formatTime(iso: string) {
   catch { return ""; }
 }
 
-// ── Emoji picker: group the flat list by category once, in source order ──
-const EMOJI_CATEGORIES: { category: string; emojis: typeof CHAT_EMOJIS }[] = CHAT_EMOJIS.reduce(
-  (groups: { category: string; emojis: typeof CHAT_EMOJIS }[], emoji) => {
-    const group = groups.find((g) => g.category === emoji.category);
-    if (group) group.emojis.push(emoji);
-    else groups.push({ category: emoji.category, emojis: [emoji] });
-    return groups;
-  },
-  []
-);
-
-// ── Fluent Emoji ──
-function FluentEmoji({ char, url, className }: { char: string; url: string; className?: string }) {
-  const [err, setErr] = useState(false);
-  if (err) return <span className={cn("inline-flex items-center justify-center text-lg leading-none", className)}>{char}</span>;
-  return <img src={url} alt={char} loading="lazy" draggable={false} className={className} onError={() => setErr(true)} />;
-}
 
 // ── Post Actions ──
 function PostActions({ likes, comments, onLike, onComment, onPray, onShare }: {

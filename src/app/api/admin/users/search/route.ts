@@ -8,6 +8,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { ADMIN_SYSTEM_EMAIL } from "@/lib/admin-system-shared";
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,8 +16,9 @@ export async function GET(request: NextRequest) {
     const db = getSupabaseAdmin();
 
     const { searchParams } = new URL(request.url);
-    const q = searchParams.get("q") || "";
-    const limit = parseInt(searchParams.get("limit") || "10", 10);
+    // Les caractères , ( ) % * \ ont un sens dans le filtre PostgREST : on les retire.
+    const q = (searchParams.get("q") || "").replace(/[,()%*\\]/g, " ").trim();
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "10", 10) || 10, 1), 50);
 
     if (q.length < 2) {
       return NextResponse.json({ users: [] });
@@ -24,9 +26,10 @@ export async function GET(request: NextRequest) {
 
     const { data: users, error } = await db
       .from("profiles")
-      .select("id, name, email, avatar_url")
-      .or(`name.ilike.%${q}%,email.ilike.%${q}%`)
+      .select("id, name, pseudo, email, avatar_url")
+      .or(`name.ilike.%${q}%,pseudo.ilike.%${q}%,email.ilike.%${q}%`)
       .eq("status", "approved")
+      .neq("email", ADMIN_SYSTEM_EMAIL)
       .order("name", { ascending: true })
       .limit(limit);
 

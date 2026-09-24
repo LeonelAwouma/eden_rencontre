@@ -1,6 +1,7 @@
 "use client";
 
 import { supabase } from "./supabase";
+import { ADMIN_SYSTEM_EMAIL } from "./admin-system-shared";
 import type { EdenUser } from "./auth";
 
 export interface ChatConversation {
@@ -253,6 +254,7 @@ export async function searchUsers(
     .from("profiles")
     .select("id, name, pseudo, email, city, country, avatar_url")
     .or(`name.ilike.*${q}*,pseudo.ilike.*${q}*,email.ilike.*${q}*`)
+    .neq("email", ADMIN_SYSTEM_EMAIL) // l'admin se contacte via l'entrée « Admin » dédiée
     .limit(20);
   if (error) {
     console.error("[Eden] recherche membres échouée:", error.message);

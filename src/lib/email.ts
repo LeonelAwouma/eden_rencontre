@@ -6,6 +6,7 @@
 
 import nodemailer from "nodemailer";
 import {
+  CONTACT_EMAIL,
   LOGO_CID,
   registrationReceivedEmail,
   accountApprovedEmail,
@@ -24,6 +25,7 @@ import {
   type MeetingInvitationEmailParams,
 } from "./email-templates";
 import { EMAIL_LOGO_PNG_BASE64 } from "./email-logo";
+import { getEmailSettings, DEFAULT_PLATFORM_NAME, type EmailSettings } from "./platform-settings";
 
 export type { MeetInvitationEmailParams, MeetingInvitationEmailParams };
 
@@ -32,7 +34,6 @@ const DEFAULT_SMTP_PORT = 465; // SSL — Hostinger's default secure port
 const DEFAULT_SMTP_USER = "contact@gardenofalliance.com";
 
 const SMTP_USER = process.env.SMTP_USER || DEFAULT_SMTP_USER;
-const FROM_EMAIL = `Garden of Alliance <${SMTP_USER}>`;
 
 // Create a reusable transporter
 function getTransporter() {
@@ -54,7 +55,30 @@ function getTransporter() {
   });
 }
 
-async function sendEmail(to: string, email: RenderedEmail): Promise<boolean> {
+/**
+ * Applique les réglages d'Admin → Paramètres au message rendu : nom de la
+ * plateforme et adresse de contact remplacent les valeurs par défaut des gabarits.
+ */
+function applySettings(email: RenderedEmail, settings: EmailSettings): RenderedEmail {
+  const swap = (s: string) =>
+    s.split(DEFAULT_PLATFORM_NAME).join(settings.platformName).split(CONTACT_EMAIL).join(settings.contactEmail);
+  return { ...email, subject: swap(email.subject), html: swap(email.html), text: swap(email.text) };
+}
+
+/**
+ * - "account" : inscription, compte, mot de passe, vérification — part toujours.
+ * - "meeting" : invitations, reports et annulations de réunion — désactivable
+ *   dans Admin → Paramètres → Notifications.
+ */
+type EmailKind = "account" | "meeting";
+
+async function sendEmail(to: string, rendered: RenderedEmail, kind: EmailKind = "account"): Promise<boolean> {
+  const settings = await getEmailSettings();
+  if (kind === "meeting" && !settings.meetingEmailsEnabled) {
+    console.log(`📧 E-mail de réunion non envoyé à ${to} : désactivé dans Admin → Paramètres.`);
+    return false;
+  }
+  const email = applySettings(rendered, settings);
   const smtpPassword = process.env.SMTP_PASSWORD;
 
   if (smtpPassword) {
@@ -67,8 +91,9 @@ async function sendEmail(to: string, email: RenderedEmail): Promise<boolean> {
       }
 
       await transporter.sendMail({
-        from: FROM_EMAIL,
-        replyTo: SMTP_USER,
+        // L'adresse d'envoi reste celle du compte SMTP (exigé par Hostinger) ; seul le nom affiché change.
+        from: { name: settings.platformName, address: SMTP_USER },
+        replyTo: settings.contactEmail,
         to,
         subject: email.subject,
         html: email.html,
@@ -92,7 +117,7 @@ async function sendEmail(to: string, email: RenderedEmail): Promise<boolean> {
   // Fallback: log to console (development — no SMTP_PASSWORD configured)
   console.log("═══════════════════════════════════════════");
   console.log("📧 EMAIL (no SMTP_PASSWORD configured)");
-  console.log(`From: ${FROM_EMAIL}`);
+  console.log(`From: ${settings.platformName} <${SMTP_USER}> (réponse : ${settings.contactEmail})`);
   console.log(`To: ${to}`);
   console.log(`Subject: ${email.subject}`);
   console.log(email.text);
@@ -133,15 +158,15 @@ export async function sendPasswordResetSuccessEmail(email: string, name?: string
 
 // ── Réunions et rendez-vous ──────────────────────────────────
 export async function sendMeetInvitationEmail(params: MeetInvitationEmailParams): Promise<boolean> {
-  return sendEmail(params.to, meetInvitationEmail(params));
+  return sendEmail(params.to, meetInvitationEmail(params), "meeting");
 }
 
 export async function sendMeetingInvitationEmail(params: MeetingInvitationEmailParams): Promise<boolean> {
-  return sendEmail(params.to, meetingInvitationEmail(params));
+  return sendEmail(params.to, meetingInvitationEmail(params), "meeting");
 }
 
 export async function sendMeetingRescheduledEmail(params: MeetingInvitationEmailParams): Promise<boolean> {
-  return sendEmail(params.to, meetingRescheduledEmail(params));
+  return sendEmail(params.to, meetingRescheduledEmail(params), "meeting");
 }
 
 export async function sendMeetingCancelledEmail(
@@ -151,7 +176,7 @@ export async function sendMeetingCancelledEmail(
   otherUserName: string,
   reason?: string
 ): Promise<boolean> {
-  return sendEmail(to, meetingCancelledEmail(userName, meetingTitle, otherUserName, reason));
+  return sendEmail(to, meetingCancelledEmail(userName, meetingTitle, otherUserName, reason), "meeting");
 }
 
 // ── Vérification de profil ───────────────────────────────────
