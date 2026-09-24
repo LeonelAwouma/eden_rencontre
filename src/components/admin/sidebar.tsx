@@ -32,7 +32,7 @@ const NAV_ITEMS = [
   { label: "Chat Monitoring", href: "/admin/chat-monitoring", icon: MessageCircle, section: "content" },
   { label: "Messagerie", href: "/admin/messages", icon: Send, section: "content" },
   { label: "Événements", href: "/admin/events", icon: CalendarDays, section: "content" },
-  { label: "Google Meets", href: "/admin/meets", icon: Video, section: "content" },
+  { label: "Visioconférences", href: "/admin/meets", icon: Video, section: "content" },
   { label: "Médiathèque", href: "/admin/mediatheque", icon: Library, section: "content" },
   { label: "Blog", href: "/admin/blog", icon: BookOpen, section: "content" },
   { label: "Rapports", href: "/admin/reports", icon: ShieldCheck, section: "platform" },

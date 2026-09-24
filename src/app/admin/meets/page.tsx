@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Video,
@@ -23,9 +24,10 @@ import {
   Copy,
   ChevronLeft,
   UserPlus,
-  Unplug,
+  ShieldCheck,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { JITSI_SPACE_PREFIX } from "@/lib/jitsi-shared";
 
 /* ───────────────────────── Types ──────────────────────────── */
 
@@ -34,6 +36,7 @@ interface Profile {
   name: string;
   email: string;
   avatar_url: string | null;
+  status: string | null;
 }
 
 interface MeetSpace {
@@ -123,16 +126,8 @@ export default function AdminMeetsPage() {
   const [successBanner, setSuccessBanner] = useState<string | null>(null);
   const [errorBanner, setErrorBanner] = useState<string | null>(null);
 
-  // Google Meet connection status
-  const [meetStatus, setMeetStatus] = useState<{
-    connected: boolean;
-    hasMeetScope: boolean;
-    tokenExpired: boolean;
-    googleEmail: string | null;
-  } | null>(null);
-  const [meetStatusLoading, setMeetStatusLoading] = useState(true);
-  const [connectingGoogle, setConnectingGoogle] = useState(false);
-  const [disconnectingGoogle, setDisconnectingGoogle] = useState(false);
+  // La visioconférence Jitsi est-elle configurée côté serveur ?
+  const [jitsiConfigured, setJitsiConfigured] = useState<boolean | null>(null);
 
   const fetchMeets = useCallback(async () => {
     setLoading(true);
@@ -143,6 +138,7 @@ export default function AdminMeetsPage() {
       if (res.ok) {
         setMeets(data.meets || []);
         setStats(data.stats);
+        setJitsiConfigured(data.jitsi_configured ?? null);
       }
     } catch (err) {
       console.error("Error fetching meets:", err);
@@ -152,92 +148,6 @@ export default function AdminMeetsPage() {
   }, [activeTab]);
 
   useEffect(() => { fetchMeets(); }, [fetchMeets]);
-
-  // Fetch Google Meet connection status
-  const fetchMeetStatus = useCallback(async () => {
-    setMeetStatusLoading(true);
-    try {
-      const res = await fetch("/api/admin/google-meet/status");
-      if (res.ok) {
-        const data = await res.json();
-        setMeetStatus({
-          connected: data.connected,
-          hasMeetScope: data.hasMeetScope,
-          tokenExpired: data.tokenExpired,
-          googleEmail: data.googleEmail,
-        });
-      } else {
-        setMeetStatus({ connected: false, hasMeetScope: false, tokenExpired: false, googleEmail: null });
-      }
-    } catch {
-      setMeetStatus({ connected: false, hasMeetScope: false, tokenExpired: false, googleEmail: null });
-    } finally {
-      setMeetStatusLoading(false);
-    }
-  }, []);
-
-  useEffect(() => { fetchMeetStatus(); }, [fetchMeetStatus]);
-
-  // Handle OAuth callback URL params (after Google Meet redirect)
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const meetSuccess = params.get("google_meet_success");
-    const meetError = params.get("google_meet_error");
-
-    if (meetSuccess === "1") {
-      setSuccessBanner("Google Meet connecté avec succès ! Vous pouvez maintenant créer des meetings avec lien Google Meet.");
-      window.history.replaceState({}, "", window.location.pathname);
-      // Refresh status and meets
-      setTimeout(() => {
-        fetchMeetStatus();
-        fetchMeets();
-      }, 500);
-    } else if (meetError) {
-      setErrorBanner(decodeURIComponent(meetError));
-      window.history.replaceState({}, "", window.location.pathname);
-    }
-  }, [fetchMeetStatus, fetchMeets]);
-
-  // Initiate Google Meet OAuth connection
-  const handleConnectGoogleMeet = async () => {
-    setConnectingGoogle(true);
-    try {
-      const res = await fetch("/api/admin/google-meet/authorize", { method: "POST" });
-      const data = await res.json();
-      if (res.ok && data.authUrl) {
-        // Redirect to Google OAuth
-        window.location.href = data.authUrl;
-      } else {
-        setErrorBanner(data.error || "Erreur lors de la connexion à Google Meet.");
-      }
-    } catch {
-      setErrorBanner("Erreur réseau lors de la connexion à Google Meet.");
-    } finally {
-      setConnectingGoogle(false);
-    }
-  };
-
-  // Disconnect Google Meet (so admin can reconnect with a different account)
-  const handleDisconnectGoogleMeet = async () => {
-    if (!confirm("Déconnecter ce compte Google Meet ? Vous pourrez ensuite en connecter un autre.")) return;
-    setDisconnectingGoogle(true);
-    try {
-      const res = await fetch("/api/admin/google-meet/disconnect", { method: "POST" });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setSuccessBanner("Google Meet déconnecté. Connectez un autre compte ci-dessous.");
-        await fetchMeetStatus();
-      } else {
-        setErrorBanner(data.error || "Erreur lors de la déconnexion.");
-      }
-    } catch {
-      setErrorBanner("Erreur réseau lors de la déconnexion.");
-    } finally {
-      setDisconnectingGoogle(false);
-    }
-  };
-
-  const googleMeetReady = meetStatus?.connected && meetStatus?.hasMeetScope && !meetStatus?.tokenExpired;
 
   const handleDelete = async (meetId: string) => {
     if (!confirm("Supprimer définitivement ce meeting et toutes ses invitations ?")) return;
@@ -311,96 +221,20 @@ export default function AdminMeetsPage() {
         )}
       </AnimatePresence>
 
-      {/* Google Meet Connection Status Banner */}
-      {!meetStatusLoading && meetStatus && !googleMeetReady && (
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-5 rounded-[20px] border-2 border-dashed p-5"
-          style={{
-            background: "linear-gradient(135deg, #FFF7ED 0%, #FEF3C7 100%)",
-            borderColor: "#F59E0B",
-          }}
-        >
-          <div className="flex items-start gap-4">
-            <div
-              className="w-11 h-11 rounded-xl flex items-center justify-center flex-shrink-0"
-              style={{ background: "#FEF3C7" }}
-            >
-              <Video className="w-5 h-5" style={{ color: "#D97706" }} />
-            </div>
-            <div className="flex-1 min-w-0">
-              <h3 className="text-[15px] font-bold text-[#92400E] mb-1">
-                Google Meet non connecté
-              </h3>
-              <p className="text-[13px] text-[#B45309] mb-3 leading-relaxed">
-                {!meetStatus.connected
-                  ? "Connectez votre compte Google pour créer des meetings avec un lien Google Meet. Les participants pourront rejoindre directement depuis l'invitation."
-                  : meetStatus.tokenExpired
-                  ? "Votre connexion Google a expiré. Veuillez vous reconnecter pour continuer à créer des Google Meets."
-                  : "L'autorisation Google Meet est manquante. Veuillez vous reconnecter en accordant la permission Google Meet."}
+      {/* Visioconférence non configurée : aucune salle ne peut être créée */}
+      {jitsiConfigured === false && (
+        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
+          className="mb-5 rounded-2xl border border-[#E4C98A] bg-[#FBF5E6] p-5">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-[#8A5A00] shrink-0 mt-0.5" />
+            <div className="min-w-0">
+              <h3 className="text-[15px] font-bold text-[#7A5410] mb-1">Visioconférence non configurée</h3>
+              <p className="text-[13px] text-[#7A5410] leading-relaxed">
+                Ajoutez les variables <strong>JAAS_APP_ID</strong>, <strong>JAAS_API_KEY_ID</strong> et <strong>JAAS_PRIVATE_KEY</strong>
+                {" "}(console Jitsi JaaS 8x8) dans l&apos;environnement, puis redéployez. Sans elles, aucune salle ne peut être créée.
               </p>
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={handleConnectGoogleMeet}
-                  disabled={connectingGoogle}
-                  className="flex items-center gap-2 px-5 py-2.5 rounded-xl text-[13px] font-semibold text-white transition-all disabled:opacity-60"
-                  style={{
-                    background: "linear-gradient(135deg, #D97706 0%, #B45309 100%)",
-                    boxShadow: "0 4px 16px rgba(217,119,6,0.3)",
-                  }}
-                >
-                  {connectingGoogle ? (
-                    <>
-                      <Loader2 className="w-4 h-4 animate-spin" /> Connexion en cours…
-                    </>
-                  ) : (
-                    <>
-                      <ExternalLink className="w-4 h-4" /> Connecter Google Meet
-                    </>
-                  )}
-                </button>
-                {meetStatus.googleEmail && (
-                  <span className="text-[12px] text-[#92400E]">
-                    Compte : <span className="font-semibold">{meetStatus.googleEmail}</span>
-                  </span>
-                )}
-              </div>
             </div>
           </div>
-        </motion.div>
-      )}
-
-      {/* Google Meet Connected indicator with change account option */}
-      {!meetStatusLoading && googleMeetReady && (
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          className="mb-4 flex items-center justify-between gap-2 px-4 py-2.5 rounded-xl"
-          style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}
-        >
-          <div className="flex items-center gap-2 min-w-0">
-            <CheckCircle className="w-4 h-4 flex-shrink-0" style={{ color: "#486B46" }} />
-            <p className="text-[12px] font-medium truncate" style={{ color: "#2F5D2E" }}>
-              Google Meet connecté
-              {meetStatus.googleEmail && (
-                <span className="text-[#486B46] font-semibold"> — {meetStatus.googleEmail}</span>
-              )}
-            </p>
-          </div>
-          <button
-            onClick={handleDisconnectGoogleMeet}
-            disabled={disconnectingGoogle}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-semibold transition-all flex-shrink-0 hover:bg-white/60 disabled:opacity-50"
-            style={{ color: "#92400E", border: "1px solid #C6D4C0" }}
-          >
-            {disconnectingGoogle ? (
-              <Loader2 className="w-3 h-3 animate-spin" />
-            ) : (
-              <Unplug className="w-3 h-3" />
-            )}
-            Changer de compte
-          </button>
         </motion.div>
       )}
 
@@ -408,12 +242,12 @@ export default function AdminMeetsPage() {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
         <div>
           <h1 className="text-[24px] font-bold text-[#1a1a1a] tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
-            Google Meets
+            Visioconférences
           </h1>
-          <p className="text-[13px] text-[#9CA3AF] mt-0.5 font-medium">Créez des réunions Google Meet et envoyez des invitations par email</p>
+          <p className="text-[13px] text-[#9CA3AF] mt-0.5 font-medium">Créez des réunions vidéo Jitsi et envoyez les invitations par e-mail</p>
         </div>
         <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2D5016] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(45,80,22,0.3)] hover:shadow-[0_6px_24px_rgba(45,80,22,0.4)] hover:-translate-y-0.5 transition-all">
-          <Plus className="w-4 h-4" /> Créer un Google Meet
+          <Plus className="w-4 h-4" /> Créer une visioconférence
         </button>
       </motion.div>
 
@@ -421,7 +255,7 @@ export default function AdminMeetsPage() {
       {stats && (
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
-            { label: "Total Meets", value: stats.total_meets, color: "#1a1a1a" },
+            { label: "Total réunions", value: stats.total_meets, color: "#1a1a1a" },
             { label: "Actifs", value: stats.active_meets, color: "#38C172" },
             { label: "Emails envoyés", value: stats.sent_invitations, color: "#3B82F6" },
             { label: "Échecs email", value: stats.failed_invitations, color: "#EF4444" },
@@ -459,10 +293,10 @@ export default function AdminMeetsPage() {
       ) : meets.length === 0 ? (
         <div className="bg-white rounded-[20px] border border-[#E5E7EB] p-12 text-center">
           <Video className="w-12 h-12 text-[#E5E7EB] mx-auto mb-4" />
-          <p className="text-[15px] font-semibold text-[#374151]">Aucun Google Meet</p>
-          <p className="text-[13px] text-[#9CA3AF] mt-1">Créez votre premier meeting Google Meet avec invitations automatiques</p>
+          <p className="text-[15px] font-semibold text-[#374151]">Aucune visioconférence</p>
+          <p className="text-[13px] text-[#9CA3AF] mt-1">Créez votre première réunion vidéo : les invitations partent automatiquement par e-mail</p>
           <button onClick={() => setShowCreateModal(true)} className="mt-4 px-5 py-2.5 rounded-xl bg-[#2D5016] text-white text-[13px] font-semibold">
-            <Plus className="w-4 h-4 inline mr-1.5" /> Créer un Google Meet
+            <Plus className="w-4 h-4 inline mr-1.5" /> Créer une visioconférence
           </button>
         </div>
       ) : (
@@ -517,10 +351,16 @@ export default function AdminMeetsPage() {
 
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
-                    {meet.meeting_uri && meet.status === "active" && (
-                      <a href={meet.meeting_uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2D5016] text-white text-[12px] font-semibold hover:bg-[#3D6B1E] transition-all">
-                        <Video className="w-3.5 h-3.5" /> Rejoindre
-                      </a>
+                    {meet.status === "active" && (
+                      meet.space_name?.startsWith(JITSI_SPACE_PREFIX) ? (
+                        <Link href={`/admin/meets/${meet.id}/salle`} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2D5016] text-white text-[12px] font-semibold hover:bg-[#3D6B1E] transition-all">
+                          <Video className="w-3.5 h-3.5" /> Rejoindre
+                        </Link>
+                      ) : meet.meeting_uri ? (
+                        <a href={meet.meeting_uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-xl border border-[#E5E7EB] text-[12px] font-semibold text-[#374151] hover:bg-[#F9FAFB] transition-all">
+                          <ExternalLink className="w-3.5 h-3.5" /> Ancien lien
+                        </a>
+                      ) : null
                     )}
 
                     <button
@@ -551,7 +391,7 @@ export default function AdminMeetsPage() {
                                 onClick={() => { navigator.clipboard.writeText(meet.meeting_uri!); setSuccessBanner("Lien copié !"); setActionMenuId(null); }}
                                 className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-[#374151] hover:bg-[#F9FAFB] transition-all"
                               >
-                                <Copy className="w-3.5 h-3.5 text-[#9CA3AF]" /> Copier le lien
+                                <Copy className="w-3.5 h-3.5 text-[#9CA3AF]" /> Copier le lien d&apos;invitation
                               </button>
                             )}
                             {meet.status === "active" && (
@@ -606,11 +446,7 @@ export default function AdminMeetsPage() {
             onCreated={(result) => {
               setShowCreateModal(false);
               fetchMeets();
-              if (result.google_error) {
-                // Google Meet specific warning takes priority
-                setErrorBanner(result.google_error + " Cliquez sur « Connecter Google Meet » ci-dessus pour autoriser l'accès.");
-                fetchMeetStatus();
-              } else if (result.error) {
+              if (result.error) {
                 setErrorBanner(result.error);
               } else {
                 const parts = [];
@@ -635,9 +471,10 @@ export default function AdminMeetsPage() {
 
 function CreateMeetModal({ onClose, onCreated }: {
   onClose: () => void;
-  onCreated: (result: { emails_sent: number; emails_failed: number; error?: string; google_error?: string }) => void;
+  onCreated: (result: { emails_sent: number; emails_failed: number; error?: string }) => void;
 }) {
   const [users, setUsers] = useState<Profile[]>([]);
+  const [pendingCount, setPendingCount] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   const [selectAll, setSelectAll] = useState(false);
@@ -657,7 +494,13 @@ function CreateMeetModal({ onClose, onCreated }: {
       try {
         const res = await fetch("/api/admin/users?limit=1000");
         const data = await res.json();
-        if (res.ok) setUsers(data.users || []);
+        if (res.ok) {
+          const all: Profile[] = data.users || [];
+          // Un compte non validé ne peut pas se connecter : il ne pourrait donc
+          // pas ouvrir la salle, même en recevant l'invitation.
+          setUsers(all.filter((u) => u.status === "approved"));
+          setPendingCount(all.length - all.filter((u) => u.status === "approved").length);
+        }
       } catch (err) {
         console.error("Error fetching users:", err);
       } finally {
@@ -717,7 +560,6 @@ function CreateMeetModal({ onClose, onCreated }: {
         onCreated({
           emails_sent: data.emails_sent || 0,
           emails_failed: data.emails_failed || 0,
-          google_error: data.google_error || undefined,
         });
       } else {
         onCreated({ emails_sent: 0, emails_failed: 0, error: data.error || "Erreur lors de la création" });
@@ -735,9 +577,9 @@ function CreateMeetModal({ onClose, onCreated }: {
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-5 border-b border-[#F3F4F6]">
           <div>
-            <h2 className="text-[18px] font-bold text-[#1a1a1a]">Créer un Google Meet</h2>
+            <h2 className="text-[18px] font-bold text-[#1a1a1a]">Créer une visioconférence</h2>
             <p className="text-[12px] text-[#9CA3AF] mt-0.5">
-              {step === "details" ? "Étape 1/2 — Détails du meeting" : "Étape 2/2 — Sélectionner les participants"}
+              {step === "details" ? "Étape 1/2 — Détails de la réunion" : "Étape 2/2 — Sélectionner les participants"}
             </p>
           </div>
           <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:bg-[#F3F4F6]"><X className="w-4 h-4" /></button>
@@ -754,7 +596,7 @@ function CreateMeetModal({ onClose, onCreated }: {
           {step === "details" ? (
             <div className="space-y-4">
               <div>
-                <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Titre du meeting *</label>
+                <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Titre de la réunion *</label>
                 <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Ex: Réunion mensuelle communauté" className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#2D5016]/20 focus:border-[#2D5016]" />
               </div>
 
@@ -783,6 +625,9 @@ function CreateMeetModal({ onClose, onCreated }: {
                   <option value={90}>1h30</option>
                   <option value={120}>2 heures</option>
                 </select>
+                <p className="text-[11px] text-[#6B7280] mt-1.5">
+                  Chaque participant choisit micro et caméra en entrant : la réunion peut se tenir en audio seul ou en vidéo.
+                </p>
               </div>
             </div>
           ) : (
@@ -797,6 +642,12 @@ function CreateMeetModal({ onClose, onCreated }: {
                   className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-[13px] text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#2D5016]/20 focus:border-[#2D5016] transition-all font-medium"
                 />
               </div>
+
+              {pendingCount > 0 && (
+                <p className="text-[11px] text-[#92400E] bg-[#FBF5E6] border border-[#E4C98A] rounded-xl px-3 py-2">
+                  {pendingCount} compte{pendingCount > 1 ? "s" : ""} en attente de validation {pendingCount > 1 ? "ne sont pas proposés" : "n'est pas proposé"} : ces membres ne peuvent pas encore se connecter, donc pas rejoindre une réunion.
+                </p>
+              )}
 
               {/* Select All */}
               <button
@@ -817,7 +668,7 @@ function CreateMeetModal({ onClose, onCreated }: {
                 </p>
                 <p className="text-[11px] text-[#6B7280] mt-0.5">
                   {selectedUserIds.length > 0
-                    ? `${selectedUserIds.length} invitation${selectedUserIds.length > 1 ? "s" : ""} sera envoyée${selectedUserIds.length > 1 ? "s" : ""} par email`
+                    ? `${selectedUserIds.length} invitation${selectedUserIds.length > 1 ? "s" : ""} sera envoyée${selectedUserIds.length > 1 ? "s" : ""} par e-mail`
                     : "Sélectionnez au moins un utilisateur"}
                 </p>
               </div>
@@ -943,7 +794,7 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
   const copyLink = () => {
     if (meet?.meeting_uri) {
       navigator.clipboard.writeText(meet.meeting_uri);
-      onResendSuccess("Lien Google Meet copié !");
+      onResendSuccess("Lien d'invitation copié !");
     }
   };
 
@@ -987,7 +838,7 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
       <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
         {/* Back Button */}
         <button onClick={onBack} className="flex items-center gap-2 text-[13px] font-medium text-[#6B7280] hover:text-[#374151] mb-4 transition-colors">
-          <ChevronLeft className="w-4 h-4" /> Retour aux meetings
+          <ChevronLeft className="w-4 h-4" /> Retour aux visioconférences
         </button>
 
         {/* Meet Header */}
@@ -1011,7 +862,7 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
               <p className="text-[13px] text-[#6B7280]">{time} · {meet.duration} min</p>
             </div>
             <div className="bg-[#F9FAFB] rounded-xl p-4">
-              <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-1">Google Meet</p>
+              <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-1">Lien d&apos;invitation</p>
               {meet.meeting_uri ? (
                 <a href={meet.meeting_uri} target="_blank" rel="noopener noreferrer" className="text-[13px] font-medium text-[#2D5016] hover:underline break-all">{meet.meeting_uri}</a>
               ) : (
@@ -1031,10 +882,16 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
           </div>
 
           {meet.meeting_uri && (
-            <div className="flex gap-2">
-              <a href={meet.meeting_uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2D5016] text-white text-[13px] font-semibold hover:bg-[#3D6B1E] transition-all">
-                <Video className="w-4 h-4" /> Rejoindre Google Meet
-              </a>
+            <div className="flex flex-wrap gap-2">
+              {meet.space_name?.startsWith(JITSI_SPACE_PREFIX) ? (
+                <Link href={`/admin/meets/${meet.id}/salle`} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2D5016] text-white text-[13px] font-semibold hover:bg-[#3D6B1E] transition-all">
+                  <ShieldCheck className="w-4 h-4" /> Rejoindre comme modérateur
+                </Link>
+              ) : (
+                <a href={meet.meeting_uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2D5016] text-white text-[13px] font-semibold hover:bg-[#3D6B1E] transition-all">
+                  <Video className="w-4 h-4" /> Ouvrir l&apos;ancien lien
+                </a>
+              )}
               <button onClick={copyLink} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#6B7280] hover:bg-[#F9FAFB] transition-all">
                 <Copy className="w-4 h-4" /> Copier le lien
               </button>

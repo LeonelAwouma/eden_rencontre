@@ -100,12 +100,18 @@ export async function POST(
           weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit",
         });
 
-        await supabase.from("meeting_notifications").insert({
+        const { link, ...notifRow } = {
           user_id: invitation.user_id,
           notification_type: "meet_invitation",
-          title: "Invitation à un Google Meet (rappel)",
-          message: `Rappel : vous êtes invité(e) au Google Meet « ${meet.title} » le ${formattedDate}.${meet.meeting_uri ? " Lien : " + meet.meeting_uri : ""}`,
-        });
+          link: `/reunion/${meet.id}`,
+          title: "Invitation à une visioconférence (rappel)",
+          message: `Rappel : vous êtes invité(e) à la visioconférence « ${meet.title} » le ${formattedDate}.${meet.meeting_uri ? " Lien : " + meet.meeting_uri : ""}`,
+        };
+        const { error: notifError } = await supabase.from("meeting_notifications").insert({ ...notifRow, link });
+        if (notifError) {
+          // Base pas encore migrée (colonne `link` absente) : notification sans lien.
+          await supabase.from("meeting_notifications").insert(notifRow);
+        }
       } catch (notifErr) {
         console.error("[Resend Invitation] Failed to create user notification:", notifErr);
       }

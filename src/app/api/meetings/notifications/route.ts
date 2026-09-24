@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
     const supabase = getSupabaseAdmin();
     const { data, error } = await supabase
       .from("meeting_notifications")
-      .select("id, meeting_id, notification_type, title, message, is_read, created_at")
+      .select("id, meeting_id, notification_type, title, message, link, is_read, created_at")
       .eq("user_id", authUser.id)
       .order("created_at", { ascending: false })
       .limit(50);

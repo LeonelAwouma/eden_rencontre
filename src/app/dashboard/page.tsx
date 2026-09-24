@@ -382,7 +382,7 @@ export default function DashboardPage() {
   const displayName = user?.pseudo || user?.name || "Membre";
 
   // Meeting notifications
-  const [meetingNotifs, setMeetingNotifs] = useState<{ id: string; meeting_id: string; notification_type: string; title: string; message: string; is_read: boolean; created_at: string }[]>([]);
+  const [meetingNotifs, setMeetingNotifs] = useState<{ id: string; meeting_id: string; notification_type: string; title: string; message: string; link?: string | null; is_read: boolean; created_at: string }[]>([]);
 
   // Blog notifications
   const [blogNotifs, setBlogNotifs] = useState<{ id: string; blog_post_id: string | null; title: string; message: string; thumbnail_url: string | null; link: string | null; is_read: boolean; created_at: string }[]>([]);
@@ -2335,20 +2335,35 @@ export default function DashboardPage() {
                       : n.notification_type === "event_notification" ? "#FFFBEB"
                       : "#EEF5EC";
 
-                    return (
-                      <div key={n.id} className="flex items-start gap-4 p-4 transition-colors"
-                        style={{ borderLeft: n.is_read ? "3px solid transparent" : "3px solid #486B46" }}>
+                    // Une invitation à une visioconférence mène directement à la salle.
+                    const body = (
+                      <>
                         <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: typeBg }}>
                           {(() => { const Icon = typeIcon; return <Icon className="w-5 h-5" style={{ color: typeColor }} />; })()}
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold" style={{ color: "#2F2F2F" }}>{n.title}</p>
                           <p className="text-xs mt-1 leading-relaxed" style={{ color: "#4B5563" }}>{n.message}</p>
+                          {n.link && (
+                            <span className="inline-flex items-center gap-1 text-xs font-bold mt-1.5" style={{ color: "#486B46" }}>
+                              <Video className="w-3.5 h-3.5" /> Rejoindre la réunion
+                            </span>
+                          )}
                           <p className="text-[10px] mt-1.5" style={{ color: "#9CA3AF" }}>{formattedDate}</p>
                         </div>
                         {!n.is_read && (
                           <span className="w-2 h-2 rounded-full shrink-0 mt-2" style={{ background: "#486B46" }} />
                         )}
+                      </>
+                    );
+                    const rowStyle = { borderLeft: n.is_read ? "3px solid transparent" : "3px solid #486B46" };
+                    return n.link ? (
+                      <Link key={n.id} href={n.link} className="flex items-start gap-4 p-4 transition-colors hover:bg-[#FAF9F6]" style={rowStyle}>
+                        {body}
+                      </Link>
+                    ) : (
+                      <div key={n.id} className="flex items-start gap-4 p-4 transition-colors" style={rowStyle}>
+                        {body}
                       </div>
                     );
                   })}

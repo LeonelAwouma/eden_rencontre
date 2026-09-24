@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { createMeetSpace } from "@/lib/google-meet";
+import { isJitsiConfigured, newRoomName, memberJoinUrl, JITSI_SPACE_PREFIX } from "@/lib/jitsi";
 import { requireAdmin } from "@/lib/admin-auth";
 import { sendMeetInvitationEmail } from "@/lib/email";
 
@@ -113,6 +113,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({
       meets: meetsWithCounts,
       stats: statsData,
+      jitsi_configured: isJitsiConfigured(),
     });
   } catch (err: any) {
     console.error("[Admin Meets GET]", err);
@@ -120,7 +121,7 @@ export async function GET(req: NextRequest) {
   }
 }
 
-// ── POST — Create a new meet with Google Meet space ───────────
+// ── POST — Create a new meet with a Jitsi (JaaS) room ─────────
 export async function POST(req: NextRequest) {
   try {
     // Verify admin authentication
@@ -161,25 +162,31 @@ export async function POST(req: NextRequest) {
     const cleanTitle = title.trim().substring(0, 255);
     const cleanDescription = description ? description.trim().substring(0, 2000) : null;
 
-    let googleError: string | null = null;
-
-    // Try to create the Google Meet space
-    const meetSpaceResult = await createMeetSpace(admin.adminId);
-
-    if (!meetSpaceResult.success) {
-      googleError = meetSpaceResult.error || "Impossible de créer l'espace Google Meet";
-      console.warn("[Admin Meets POST] Google Meet creation failed:", googleError);
+    // La salle Jitsi ne peut s'ouvrir que si JaaS est configuré : sans lui,
+    // on refuse plutôt que d'envoyer des invitations sans salle.
+    if (!isJitsiConfigured()) {
+      return NextResponse.json(
+        { error: "La visioconférence n'est pas encore configurée (variables JAAS_APP_ID, JAAS_API_KEY_ID et JAAS_PRIVATE_KEY manquantes)." },
+        { status: 503 }
+      );
     }
 
-    // Insert meet into database (even if Google Meet failed)
+    // Salle Jitsi : nom imprévisible, accessible uniquement avec un jeton signé.
+    // Le lien d'invitation pointe vers notre page /reunion/<id>, qui vérifie
+    // que le membre est connecté et invité avant de lui ouvrir la salle.
+    const meetId = crypto.randomUUID();
+    const room = newRoomName(cleanTitle);
+    const joinUrl = memberJoinUrl(meetId);
+
     const { data: meet, error: insertError } = await supabase
       .from("meets")
       .insert({
+        id: meetId,
         title: cleanTitle,
         description: cleanDescription,
-        meeting_uri: meetSpaceResult?.meetingUri || null,
-        meeting_code: meetSpaceResult?.meetingCode || null,
-        space_name: meetSpaceResult?.spaceName || null,
+        meeting_uri: joinUrl,
+        meeting_code: null,
+        space_name: `${JITSI_SPACE_PREFIX}${room}`,
         start_time: new Date(start_time).toISOString(),
         duration,
         created_by: admin.adminId === "env-admin" ? null : admin.adminId,
@@ -227,7 +234,7 @@ export async function POST(req: NextRequest) {
     // Send email invitations asynchronously
     let emailsSent = 0;
     let emailsFailed = 0;
-    const meetLink = meetSpaceResult?.meetingUri || null;
+    const meetLink = joinUrl;
     const meetDate = new Date(start_time);
 
     if (invitations && invitations.length > 0) {
@@ -251,7 +258,7 @@ export async function POST(req: NextRequest) {
           meetingDate: meetDate,
           duration,
           meetLink,
-          meetingCode: meetSpaceResult?.meetingCode || null,
+          meetingCode: null,
           adminMessage: cleanDescription,
         });
 
@@ -282,11 +289,19 @@ export async function POST(req: NextRequest) {
       const userNotifRows = user_ids.map((userId: string) => ({
         user_id: userId,
         notification_type: "meet_invitation",
-        title: "Invitation à un Google Meet",
-        message: `Vous êtes invité(e) au Google Meet « ${cleanTitle} » le ${formattedMeetDate}.${meetLink ? " Lien : " + meetLink : ""}`,
+        link: `/reunion/${meetId}`,
+        title: "Invitation à une visioconférence",
+        message: `Vous êtes invité(e) à la visioconférence « ${cleanTitle} » le ${formattedMeetDate}. Lien : ${meetLink}`,
       }));
 
-      await supabase.from("meeting_notifications").insert(userNotifRows);
+      const { error: notifError } = await supabase.from("meeting_notifications").insert(userNotifRows);
+      if (notifError) {
+        // Base pas encore migrée (colonne `link` absente) : on insère sans le lien
+        // plutôt que de priver les membres de la notification.
+        await supabase.from("meeting_notifications").insert(
+          userNotifRows.map(({ link: _link, ...row }) => row)
+        );
+      }
     } catch (userNotifErr) {
       console.error("[Admin Meets POST] Failed to create user notifications:", userNotifErr);
     }
@@ -295,7 +310,7 @@ export async function POST(req: NextRequest) {
     try {
       await supabase.from("admin_notifications").insert({
         type: "meeting",
-        title: "Nouveau Google Meet créé",
+        title: "Nouvelle visioconférence créée",
         message: `Le meeting "${cleanTitle}" a été créé avec ${user_ids.length} invitation(s). ${emailsSent} email(s) envoyé(s).`,
         link: `/admin/meets`,
         metadata: { meet_id: meet.id, title: cleanTitle, invitations_count: user_ids.length },
@@ -314,10 +329,7 @@ export async function POST(req: NextRequest) {
           pending: 0,
         },
       },
-      google_meet_url: meetLink,
-      google_meet_code: meetSpaceResult?.meetingCode || null,
-      google_configured: meetSpaceResult?.success || false,
-      google_error: googleError,
+      join_url: meetLink,
       emails_sent: emailsSent,
       emails_failed: emailsFailed,
     });

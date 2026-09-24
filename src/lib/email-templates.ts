@@ -329,7 +329,7 @@ export function meetInvitationEmail(params: MeetInvitationEmailParams): Rendered
       details(rows) +
       (adminMessage ? note("Message de l'équipe", esc(adminMessage)) : "") +
       (meetLink
-        ? meetButton(meetLink)
+        ? meetButton(meetLink) + fine("Connectez-vous à votre compte Garden of Alliance pour accéder à la salle.")
         : p("Le lien de la réunion n'a pas pu être généré. Répondez à cet e-mail et nous vous l'enverrons.")),
   });
 }
