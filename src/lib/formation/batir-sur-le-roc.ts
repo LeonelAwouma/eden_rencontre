@@ -716,7 +716,7 @@ export const BATIR_SUR_LE_ROC: Formation = {
   pillars: [pillar1, upcoming(2), upcoming(3), upcoming(4), upcoming(5), upcoming(6)],
 };
 
-export const FORMATION_BASE_PATH = "/dashboard/academie/batir-sur-le-roc";
+export { FORMATION_BASE_PATH, ADMIN_FORMATION_PATH, ADMIN_LESSON_PREVIEW_PATH } from "./paths";
 
 export const ALL_LESSONS = BATIR_SUR_LE_ROC.pillars.flatMap((p) => p.lessons.map((l) => ({ lesson: l, pillar: p })));
 

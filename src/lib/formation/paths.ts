@@ -1,0 +1,7 @@
+// Chemins de la formation, sans le contenu des leçons : importables partout
+// (layout admin compris) sans embarquer tout le texte de la formation.
+
+export const FORMATION_BASE_PATH = "/dashboard/academie/batir-sur-le-roc";
+/** Aperçu des leçons dans l'admin (protégé par la session admin, pas par la connexion membre). */
+export const ADMIN_FORMATION_PATH = "/admin/formation";
+export const ADMIN_LESSON_PREVIEW_PATH = `${ADMIN_FORMATION_PATH}/batir-sur-le-roc`;

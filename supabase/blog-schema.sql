@@ -1,6 +1,7 @@
 -- ============================================================
 --  Garden of Alliance — Blog System Schema
 --  Run in Supabase SQL Editor
+--  Idempotent : peut être ré-exécuté sans risque.
 -- ============================================================
 
 -- ── STORAGE BUCKET ──────────────────────────────────────────
@@ -55,6 +56,12 @@ CREATE TABLE IF NOT EXISTS blog_posts (
   updated_at TIMESTAMPTZ DEFAULT now()
 );
 
+-- Newsletter : date et nombre de destinataires de l'envoi aux abonnés
+-- (voir migrations/20260924_blog_newsletter.sql).
+ALTER TABLE blog_posts
+  ADD COLUMN IF NOT EXISTS newsletter_sent_at TIMESTAMPTZ,
+  ADD COLUMN IF NOT EXISTS newsletter_recipients INTEGER;
+
 CREATE INDEX IF NOT EXISTS idx_blog_posts_slug ON blog_posts(slug);
 CREATE INDEX IF NOT EXISTS idx_blog_posts_status ON blog_posts(status);
 CREATE INDEX IF NOT EXISTS idx_blog_posts_category ON blog_posts(category_id);
@@ -69,39 +76,35 @@ CREATE TABLE IF NOT EXISTS blog_post_tags (
 );
 
 -- ── EXTEND MEETING_NOTIFICATIONS FOR BLOG ──────────────────
+-- Notifications « nouvel article » dans l'espace membre. Ignoré si la table
+-- meeting_notifications n'existe pas encore. La liste des types reprend celle
+-- d'engagement-schema.sql : la raccourcir casserait les notifications
+-- d'alliance et de vérification.
 DO $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'meeting_notifications' AND column_name = 'blog_post_id'
-  ) THEN
-    ALTER TABLE public.meeting_notifications ADD COLUMN blog_post_id UUID;
+  IF to_regclass('public.meeting_notifications') IS NULL THEN
+    RAISE NOTICE 'public.meeting_notifications absente : extension blog ignorée.';
+    RETURN;
   END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'meeting_notifications' AND column_name = 'thumbnail_url'
-  ) THEN
-    ALTER TABLE public.meeting_notifications ADD COLUMN thumbnail_url TEXT;
-  END IF;
-  IF NOT EXISTS (
-    SELECT 1 FROM information_schema.columns
-    WHERE table_name = 'meeting_notifications' AND column_name = 'link'
-  ) THEN
-    ALTER TABLE public.meeting_notifications ADD COLUMN link TEXT;
-  END IF;
+
+  ALTER TABLE public.meeting_notifications ADD COLUMN IF NOT EXISTS blog_post_id UUID;
+  ALTER TABLE public.meeting_notifications ADD COLUMN IF NOT EXISTS thumbnail_url TEXT;
+  ALTER TABLE public.meeting_notifications ADD COLUMN IF NOT EXISTS link TEXT;
+
+  ALTER TABLE public.meeting_notifications
+    DROP CONSTRAINT IF EXISTS meeting_notifications_notification_type_check;
+  ALTER TABLE public.meeting_notifications
+    ADD CONSTRAINT meeting_notifications_notification_type_check
+    CHECK (notification_type IN (
+      'created', 'updated', 'rescheduled', 'cancelled', 'reminder',
+      'meet_invitation', 'event_notification', 'blog_post',
+      'verification_pending', 'verification_approved', 'verification_rejected',
+      'engagement_request', 'engagement_accepted', 'engagement_declined'
+    ));
+
+  CREATE INDEX IF NOT EXISTS idx_meeting_notif_blog
+    ON public.meeting_notifications (blog_post_id) WHERE blog_post_id IS NOT NULL;
 END $$;
-
-ALTER TABLE public.meeting_notifications
-  DROP CONSTRAINT IF EXISTS meeting_notifications_notification_type_check;
-ALTER TABLE public.meeting_notifications
-  ADD CONSTRAINT meeting_notifications_notification_type_check
-  CHECK (notification_type IN (
-    'created','updated','rescheduled','cancelled','reminder',
-    'meet_invitation','event_notification','blog_post'
-  ));
-
-CREATE INDEX IF NOT EXISTS idx_meeting_notif_blog
-  ON public.meeting_notifications (blog_post_id) WHERE blog_post_id IS NOT NULL;
 
 -- ── RLS Policies ────────────────────────────────────────────
 ALTER TABLE blog_categories ENABLE ROW LEVEL SECURITY;
@@ -109,9 +112,13 @@ ALTER TABLE blog_tags ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blog_posts ENABLE ROW LEVEL SECURITY;
 ALTER TABLE blog_post_tags ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Public read blog categories" ON blog_categories;
 CREATE POLICY "Public read blog categories" ON blog_categories FOR SELECT USING (is_active = true);
+DROP POLICY IF EXISTS "Public read blog tags" ON blog_tags;
 CREATE POLICY "Public read blog tags" ON blog_tags FOR SELECT USING (true);
+DROP POLICY IF EXISTS "Public read published blog posts" ON blog_posts;
 CREATE POLICY "Public read published blog posts" ON blog_posts FOR SELECT USING (status = 'published');
+DROP POLICY IF EXISTS "Public read blog post tags" ON blog_post_tags;
 CREATE POLICY "Public read blog post tags" ON blog_post_tags FOR SELECT USING (true);
 
 DROP POLICY IF EXISTS blog_categories_service_only ON blog_categories;

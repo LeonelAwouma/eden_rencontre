@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/admin/sidebar";
 import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { cn } from "@/lib/utils";
+import { ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
 
 interface AdminInfo {
   id: string;
@@ -89,7 +90,11 @@ export default function AdminLayout({
     router.push("/admin/login");
   };
 
-  if (isLoginPage) {
+  // Aperçu d'une leçon : plein écran, comme pour les membres. La session admin
+  // reste exigée par le middleware (vérification côté serveur de /admin/*).
+  const isLessonPreview = pathname?.startsWith(`${ADMIN_LESSON_PREVIEW_PATH}/`) ?? false;
+
+  if (isLoginPage || isLessonPreview) {
     return <>{children}</>;
   }
 

@@ -9,6 +9,7 @@ import {
   CheckCircle2, PencilLine, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -474,7 +475,14 @@ function StatusLabel({ status }: { status: ResourceStatus }) {
   );
 }
 
+/** Leçon de « Bâtir sur le roc » (slug batir-sur-le-roc-1-4-…) → aperçu admin /admin/formation/batir-sur-le-roc/1-4. */
+function lessonPreviewHref(slug: string): string | null {
+  const m = /^batir-sur-le-roc-(\d+)-(\d+)-/.exec(slug);
+  return m ? `${ADMIN_LESSON_PREVIEW_PATH}/${m[1]}-${m[2]}` : null;
+}
+
 function ResourceMenu({ r, busyId, onStatus, onDelete }: { r: ResourceItem } & RowActions) {
+  const preview = lessonPreviewHref(r.slug);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -487,6 +495,11 @@ function ResourceMenu({ r, busyId, onStatus, onDelete }: { r: ResourceItem } & R
         <DropdownMenuItem asChild>
           <Link href={`/admin/mediatheque/${r.id}/edit`}><Edit3 className="w-4 h-4 mr-2" /> Modifier</Link>
         </DropdownMenuItem>
+        {preview && (
+          <DropdownMenuItem asChild>
+            <Link href={preview}><Eye className="w-4 h-4 mr-2" /> Prévisualiser la leçon</Link>
+          </DropdownMenuItem>
+        )}
         {r.status === "published" && (
           <DropdownMenuItem asChild>
             <a href={`/mediatheque/${r.slug}`} target="_blank" rel="noopener noreferrer"><ExternalLink className="w-4 h-4 mr-2" /> Voir sur le site</a>

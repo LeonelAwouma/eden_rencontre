@@ -30,19 +30,28 @@ function write(p: FormationProgress) {
   window.dispatchEvent(new Event(EVENT));
 }
 
-export function useFormationProgress() {
+/**
+ * `persist: false` (aperçu admin) : la progression reste en mémoire, le temps de
+ * la page. Rien n'est lu ni écrit dans le navigateur, pour ne jamais mêler un
+ * essai de l'admin à la progression d'un membre qui utiliserait le même appareil.
+ */
+export function useFormationProgress({ persist = true }: { persist?: boolean } = {}) {
   const [progress, setProgress] = useState<FormationProgress>(EMPTY);
   const [ready, setReady] = useState(false);
 
   useEffect(() => {
+    if (!persist) { setReady(true); return; }
     const sync = () => setProgress(read());
     sync(); setReady(true);
     window.addEventListener(EVENT, sync);
     window.addEventListener("storage", sync);
     return () => { window.removeEventListener(EVENT, sync); window.removeEventListener("storage", sync); };
-  }, []);
+  }, [persist]);
 
-  const update = useCallback((fn: (p: FormationProgress) => FormationProgress) => write(fn(read())), []);
+  const update = useCallback(
+    (fn: (p: FormationProgress) => FormationProgress) => (persist ? write(fn(read())) : setProgress(fn)),
+    [persist]
+  );
 
   const setCompleted = useCallback((slug: string, done: boolean) => update((p) => ({
     ...p, completed: done ? [...new Set([...p.completed, slug])] : p.completed.filter((s) => s !== slug),

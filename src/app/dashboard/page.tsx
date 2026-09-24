@@ -1171,9 +1171,9 @@ export default function DashboardPage() {
         {(activeTab === "Accueil" || activeTab === "Home") ? (
           /* ══ HOME: 3-COLUMN LAYOUT ══ */
           <div className="px-4 sm:px-6 lg:px-8 py-5 sm:py-6 max-w-[1400px] mx-auto">
-            <div className="flex gap-6 items-start">
+            <div className="flex flex-col xl:flex-row gap-5 xl:gap-6 xl:items-start">
               {/* ─── LAYER 2: MAIN FEED (≈65%) ─── */}
-              <div className="flex-1 min-w-0 space-y-5">
+              <div className="flex-1 min-w-0 w-full space-y-5">
                 {/* Section 1: Daily Verse Banner */}
                 <motion.section initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
                   className="relative overflow-hidden rounded-3xl px-6 py-8 sm:py-10 text-center"
@@ -1371,8 +1371,10 @@ export default function DashboardPage() {
                 )}
               </div>
 
-              {/* ─── LAYER 3: INFORMATION PANEL (≈320px) ─── */}
-              <aside className="hidden xl:block w-[320px] shrink-0 space-y-4 sticky top-20">
+              {/* ─── LAYER 3: INFORMATION PANEL (≈320px) ───
+                  Colonne latérale à partir de xl ; en dessous, elle passe sous le fil
+                  (grille 2 colonnes sur tablette) au lieu d'être masquée. */}
+              <aside className="w-full xl:w-[320px] shrink-0 grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-1 gap-4 content-start xl:sticky xl:top-20">
                 {/* Card 1: Profile Completion — hidden when profile is 100% complete */}
                 {profileCompletionPct !== null && profileCompletionPct < 100 && (
                 <div className="rounded-2xl p-5"
@@ -1452,8 +1454,8 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {/* Card 3: Upcoming Events */}
-                <div className="rounded-2xl p-5"
+                {/* Card 3: Upcoming Events — en tête du panneau sur mobile/tablette */}
+                <div className="rounded-2xl p-5 order-first xl:order-none"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
                   <p className="font-headline font-bold text-sm flex items-center gap-2 mb-3" style={{ color: "#2F2F2F" }}>
                     <CalendarDays className="w-4 h-4" style={{ color: "#486B46" }} /> {t("dashboard.upcomingEvents")}
@@ -1461,7 +1463,7 @@ export default function DashboardPage() {
                   <div className="space-y-3">
                     {upcomingEvents.length > 0 ? upcomingEvents.map((e) => {
                       const evDate = new Date(e.event_date);
-                      const formattedEvDate = evDate.toLocaleDateString("en-US", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+                      const formattedEvDate = evDate.toLocaleDateString(locale === "en" ? "en-US" : "fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
                       return (
                         <div key={e.id} className="flex items-center gap-3 group cursor-pointer">
                           <div className="w-9 h-9 rounded-xl flex items-center justify-center shrink-0 overflow-hidden"

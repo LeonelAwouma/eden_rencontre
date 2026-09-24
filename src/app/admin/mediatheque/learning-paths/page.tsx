@@ -3,7 +3,8 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Edit3, Trash2, Save, X, BookOpen, ImagePlus, Loader2 } from "lucide-react";
+import { ArrowLeft, Plus, Edit3, Trash2, Save, X, BookOpen, ImagePlus, Loader2, Eye } from "lucide-react";
+import { ADMIN_FORMATION_PATH } from "@/lib/formation/paths";
 import { cn } from "@/lib/utils";
 import { LEVEL_CONFIG } from "@/lib/mediatheque";
 
@@ -135,6 +136,7 @@ export default function LearningPathsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
+                  {p.slug.startsWith("batir-sur-le-roc") && <Link href={ADMIN_FORMATION_PATH} title="Prévisualiser les leçons" className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#486B46] hover:bg-[#EEF5EC]"><Eye className="w-3.5 h-3.5"/></Link>}
                   <button onClick={()=>startEdit(p)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#486B46] hover:bg-[#EEF5EC]"><Edit3 className="w-3.5 h-3.5"/></button>
                   <button onClick={()=>handleDelete(p.id)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#F56565] hover:bg-[#F56565]/10"><Trash2 className="w-3.5 h-3.5"/></button>
                 </div>

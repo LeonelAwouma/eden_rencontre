@@ -5,13 +5,13 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Compass, Feather, HelpCircle,
-  Lightbulb, RotateCcw, Target, X, BookOpenCheck, Quote,
+  Lightbulb, RotateCcw, Target, X, BookOpenCheck, Quote, Eye,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
 import { RichText, frenchSpacing } from "./rich-text";
 import { useFormationProgress } from "@/lib/formation/progress";
-import { FORMATION_BASE_PATH, BATIR_SUR_LE_ROC } from "@/lib/formation/batir-sur-le-roc";
+import { FORMATION_BASE_PATH, BATIR_SUR_LE_ROC, ADMIN_FORMATION_PATH, ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/batir-sur-le-roc";
 import type { Lesson, LessonBlock, Pillar } from "@/lib/formation/types";
 
 /* ─────────────────────────── Blocs de texte ─────────────────────────── */
@@ -198,10 +198,16 @@ function Reflection({ lesson, value, onSave }: { lesson: Lesson; value: string; 
 
 /* ─────────────────────────── Lecteur ─────────────────────────── */
 
-export function LessonReader({ lesson, pillar, previous, next }: {
-  lesson: Lesson; pillar: Pillar; previous: Lesson | null; next: Lesson | null;
+/**
+ * `preview` : aperçu depuis l'admin. Même rendu que pour les membres, mais les
+ * liens restent dans l'admin et rien n'est enregistré (quiz, réflexion, progression).
+ */
+export function LessonReader({ lesson, pillar, previous, next, preview = false }: {
+  lesson: Lesson; pillar: Pillar; previous: Lesson | null; next: Lesson | null; preview?: boolean;
 }) {
-  const { progress, ready, setCompleted, answer, resetQuiz, saveReflection } = useFormationProgress();
+  const { progress, ready, setCompleted, answer, resetQuiz, saveReflection } = useFormationProgress({ persist: !preview });
+  const basePath = preview ? ADMIN_LESSON_PREVIEW_PATH : FORMATION_BASE_PATH;
+  const homeHref = preview ? ADMIN_FORMATION_PATH : "/dashboard/academie";
   const [scroll, setScroll] = useState(0);
   const isDone = progress.completed.includes(lesson.slug);
   const answers = progress.quiz[lesson.slug] || {};
@@ -228,10 +234,19 @@ export function LessonReader({ lesson, pillar, previous, next }: {
 
   return (
     <div className="eden-public min-h-screen bg-background text-foreground">
+      {preview && (
+        <div className="bg-[#2E4A36] text-white text-[13px]">
+          <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-2">
+            <Eye className="w-4 h-4 shrink-0" />
+            <p className="min-w-0 flex-1"><strong>Aperçu admin</strong><span className="hidden sm:inline"> · la leçon telle que la voient les membres. Réponses et progression ne sont pas enregistrées.</span></p>
+            <Link href={ADMIN_FORMATION_PATH} className="shrink-0 font-semibold underline underline-offset-2 hover:no-underline">Retour à l&apos;admin</Link>
+          </div>
+        </div>
+      )}
       {/* En-tête de lecture */}
       <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-3">
-          <Link href="/dashboard/academie" className="flex items-center gap-2 min-w-0 text-[14px] font-semibold text-foreground hover:text-primary transition-colors">
+          <Link href={homeHref} className="flex items-center gap-2 min-w-0 text-[14px] font-semibold text-foreground hover:text-primary transition-colors">
             <ArrowLeft className="w-4 h-4 shrink-0" />
             <Monogram className="w-7 h-6 text-primary shrink-0 hidden sm:block" />
             <span className="truncate">{BATIR_SUR_LE_ROC.title}</span>
@@ -241,7 +256,7 @@ export function LessonReader({ lesson, pillar, previous, next }: {
               const current = l.slug === lesson.slug;
               const done = progress.completed.includes(l.slug);
               return (
-                <Link key={l.slug} href={`${FORMATION_BASE_PATH}/${l.slug}`} aria-current={current ? "page" : undefined}
+                <Link key={l.slug} href={`${basePath}/${l.slug}`} aria-current={current ? "page" : undefined}
                   title={`Leçon ${l.number} — ${l.title}${done ? " (terminée)" : ""}`}
                   className={cn("h-7 min-w-7 px-1.5 rounded-full text-[12px] font-bold flex items-center justify-center border transition-colors",
                     current ? "bg-primary border-primary text-white"
@@ -375,12 +390,12 @@ export function LessonReader({ lesson, pillar, previous, next }: {
             {/* Navigation entre leçons */}
             <nav aria-label="Leçons voisines" className="mt-8 grid sm:grid-cols-2 gap-3">
               {previous ? (
-                <LessonLink lesson={previous} direction="previous" />
+                <LessonLink lesson={previous} direction="previous" basePath={basePath} />
               ) : <span className="hidden sm:block" />}
               {next ? (
-                <LessonLink lesson={next} direction="next" onNavigate={() => !isDone && setCompleted(lesson.slug, true)} />
+                <LessonLink lesson={next} direction="next" basePath={basePath} onNavigate={() => !isDone && setCompleted(lesson.slug, true)} />
               ) : (
-                <Link href="/dashboard/academie" className="group flex items-center justify-end gap-3 rounded-2xl border border-border bg-card p-4 text-right hover:border-primary/40">
+                <Link href={homeHref} className="group flex items-center justify-end gap-3 rounded-2xl border border-border bg-card p-4 text-right hover:border-primary/40">
                   <span>
                     <span className="block text-[12px] font-semibold text-[#56615A]">Fin du pilier {pillar.number}</span>
                     <span className="block text-[15px] font-semibold text-foreground group-hover:text-primary">Retour à la formation</span>
@@ -412,10 +427,10 @@ export function LessonReader({ lesson, pillar, previous, next }: {
   );
 }
 
-function LessonLink({ lesson, direction, onNavigate }: { lesson: Lesson; direction: "previous" | "next"; onNavigate?: () => void }) {
+function LessonLink({ lesson, direction, basePath, onNavigate }: { lesson: Lesson; direction: "previous" | "next"; basePath: string; onNavigate?: () => void }) {
   const next = direction === "next";
   return (
-    <Link href={`${FORMATION_BASE_PATH}/${lesson.slug}`} onClick={onNavigate}
+    <Link href={`${basePath}/${lesson.slug}`} onClick={onNavigate}
       className={cn("group flex items-center gap-3 rounded-2xl border border-border bg-card p-3 hover:border-primary/40 transition-colors", next && "flex-row-reverse text-right")}>
       <span className="relative w-20 h-14 rounded-xl overflow-hidden shrink-0 bg-muted">
         <Image src={lesson.image.card} alt="" fill sizes="80px" className="object-cover" />
