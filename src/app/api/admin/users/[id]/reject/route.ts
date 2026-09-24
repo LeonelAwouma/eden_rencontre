@@ -48,10 +48,8 @@ export async function POST(
       );
     }
 
-    // Send rejection email
-    if (user.email) {
-      await sendAccountRejectedEmail(user.email, user.name || "Membre", reason);
-    }
+    // Send rejection email — résultat renvoyé à l'admin.
+    const emailSent = user.email ? await sendAccountRejectedEmail(user.email, user.name || "Membre", reason) : false;
 
     // Log the action
     const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
@@ -65,7 +63,7 @@ export async function POST(
       ip
     );
 
-    return NextResponse.json({ ok: true, message: "Utilisateur rejeté." });
+    return NextResponse.json({ ok: true, message: "Utilisateur rejeté.", emailSent });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });

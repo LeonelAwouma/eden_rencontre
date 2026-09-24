@@ -47,10 +47,8 @@ export async function POST(
       );
     }
 
-    // Send suspension email
-    if (user.email) {
-      await sendAccountSuspendedEmail(user.email, user.name || "Membre", reason);
-    }
+    // Send suspension email — résultat renvoyé à l'admin.
+    const emailSent = user.email ? await sendAccountSuspendedEmail(user.email, user.name || "Membre", reason) : false;
 
     // Log the action
     const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
@@ -64,7 +62,7 @@ export async function POST(
       ip
     );
 
-    return NextResponse.json({ ok: true, message: "Utilisateur suspendu." });
+    return NextResponse.json({ ok: true, message: "Utilisateur suspendu.", emailSent });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });

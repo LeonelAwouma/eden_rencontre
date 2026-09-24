@@ -97,6 +97,11 @@ async function sendEmail(to: string, email: RenderedEmail): Promise<boolean> {
   console.log(`Subject: ${email.subject}`);
   console.log(email.text);
   console.log("═══════════════════════════════════════════");
+  // En production, rien n'est parti : on le signale au lieu de faire croire à un envoi.
+  if (process.env.NODE_ENV === "production") {
+    console.error("Email NOT sent: SMTP_PASSWORD is missing in production.");
+    return false;
+  }
   return true;
 }
 

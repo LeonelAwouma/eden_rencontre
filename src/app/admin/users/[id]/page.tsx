@@ -24,6 +24,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { checkQuestionnaireCompletion } from "@/lib/onboarding";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
+import { cn } from "@/lib/utils";
+import { EMAIL_NOT_SENT } from "@/lib/admin-email-warning";
 
 interface UserProfile {
   id: string;
@@ -76,6 +78,7 @@ export default function AdminUserDetailPage() {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [actionNotice, setActionNotice] = useState<{ tone: "warning" | "error"; text: string } | null>(null);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [rejectReason, setRejectReason] = useState("");
   const [showSuspendModal, setShowSuspendModal] = useState(false);
@@ -108,6 +111,7 @@ export default function AdminUserDetailPage() {
 
   const handleAction = async (action: "approve" | "reject" | "suspend", reason?: string) => {
     setActionLoading(action);
+    setActionNotice(null);
     try {
       const body: Record<string, string> = {};
       if (reason) body.reason = reason;
@@ -128,9 +132,15 @@ export default function AdminUserDetailPage() {
         setShowSuspendModal(false);
         setRejectReason("");
         setSuspendReason("");
+        // Action enregistrée, mais le membre n'a pas été prévenu : l'admin doit le savoir.
+        if (data.emailSent === false) setActionNotice({ tone: "warning", text: EMAIL_NOT_SENT[action] });
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setActionNotice({ tone: "error", text: data.error || "L'action n'a pas pu être effectuée. Réessayez." });
       }
     } catch (err) {
       console.error(`Error ${action}ing user:`, err);
+      setActionNotice({ tone: "error", text: "Erreur réseau. Veuillez réessayer." });
     } finally {
       setActionLoading(null);
     }
@@ -189,6 +199,20 @@ export default function AdminUserDetailPage() {
 
   return (
     <div className="space-y-6">
+      {actionNotice && (
+        <div
+          role={actionNotice.tone === "error" ? "alert" : "status"}
+          className={cn(
+            "p-3 rounded-xl border text-[13px] font-medium",
+            actionNotice.tone === "error"
+              ? "bg-red-50 border-red-200 text-red-700"
+              : "bg-amber-50 border-amber-300 text-amber-800",
+          )}
+        >
+          {actionNotice.text}
+        </div>
+      )}
+
       {/* Header */}
       <div className="flex items-center gap-4">
         <button

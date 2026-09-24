@@ -45,10 +45,8 @@ export async function POST(
       );
     }
 
-    // Send approval email
-    if (user.email) {
-      await sendAccountApprovedEmail(user.email, user.name || "Membre");
-    }
+    // Send approval email — le résultat est renvoyé à l'admin, qui doit savoir si le membre a été prévenu.
+    const emailSent = user.email ? await sendAccountApprovedEmail(user.email, user.name || "Membre") : false;
 
     // Log the action
     const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
@@ -62,7 +60,7 @@ export async function POST(
       ip
     );
 
-    return NextResponse.json({ ok: true, message: "Utilisateur approuvé avec succès." });
+    return NextResponse.json({ ok: true, message: "Utilisateur approuvé avec succès.", emailSent });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });

@@ -25,6 +25,7 @@ import {
 import { cn, formatDate } from "@/lib/utils";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { PageHeader } from "@/components/admin/page-header";
+import { EMAIL_NOT_SENT } from "@/lib/admin-email-warning";
 
 interface CharterAcceptance {
   authorize_verification: boolean;
@@ -95,6 +96,7 @@ export default function AdminUsersPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [emailWarning, setEmailWarning] = useState<string | null>(null);
   const [viewingUser, setViewingUser] = useState<UserProfile | null>(null);
 
   const fetchUsers = useCallback(async () => {
@@ -145,7 +147,13 @@ export default function AdminUsersPage() {
       });
 
       if (res.ok) {
+        const data = await res.json().catch(() => ({}));
         fetchUsers();
+        // Action enregistrée, mais le membre n'a pas été prévenu : l'admin doit le savoir.
+        if (data.emailSent === false) {
+          setEmailWarning(EMAIL_NOT_SENT[action]);
+          setTimeout(() => setEmailWarning(null), 10000);
+        }
       } else {
         const data = await res.json().catch(() => ({}));
         setActionError(data.error || `Erreur lors de l'action "${action}".`);
@@ -191,6 +199,16 @@ export default function AdminUsersPage() {
       />
 
       {/* Error banner */}
+      {emailWarning && (
+        <motion.div
+          role="status"
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-4 p-3 rounded-xl bg-amber-50 border border-amber-300 text-[13px] font-medium text-amber-800"
+        >
+          {emailWarning}
+        </motion.div>
+      )}
       {actionError && (
         <motion.div
           initial={{ opacity: 0, y: -8 }}
