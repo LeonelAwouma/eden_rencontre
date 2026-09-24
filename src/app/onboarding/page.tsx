@@ -13,6 +13,7 @@ import { ArrowLeft, ArrowRight, Check, Lock, Loader2, CheckCircle2 } from "lucid
 import { useToast } from "@/hooks/use-toast";
 import { getSession } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
+import { MemberGate } from "@/components/member-gate";
 import { getOnboardingSteps, getMyOnboarding, saveOnboarding, type Field, type SupportedLocale } from "@/lib/onboarding";
 
 const SKIP_KEY = "eden_onboarding_skipped";
@@ -35,7 +36,7 @@ function readStoredStep(userId: string): number | null {
   }
 }
 
-export default function OnboardingPage() {
+function OnboardingPageContent() {
   const router = useRouter();
   const { toast } = useToast();
   const { locale, t } = useI18n();
@@ -447,4 +448,9 @@ function FieldRenderer({ field, value, onChange }: { field: Field; value: any; o
   }
 
   return null;
+}
+
+/** Réservé aux comptes approuvés par l'admin. */
+export default function OnboardingPage() {
+  return <MemberGate><OnboardingPageContent /></MemberGate>;
 }

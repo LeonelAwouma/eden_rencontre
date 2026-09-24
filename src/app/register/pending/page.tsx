@@ -1,16 +1,21 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useEffect } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { Clock, Mail, ArrowLeft } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
+import { logout } from "@/lib/auth";
 
 function PendingContent() {
   const searchParams = useSearchParams();
   const { t } = useI18n();
   const email = searchParams.get("email") || "";
+
+  // Compte pas encore approuvé : aucune session ne doit rester ouverte
+  // (cas de la connexion Google, où Supabase ouvre la session avant la validation).
+  useEffect(() => { void logout(); }, []);
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-5 py-12">

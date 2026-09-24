@@ -36,6 +36,13 @@ export default function LoginPage() {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
+    // Renvoyé par l'espace membre : compte refusé ou suspendu par l'admin.
+    const blocked = params.get("blocked");
+    if (blocked === "rejected" || blocked === "suspended") {
+      setError(t(blocked === "rejected" ? "login.errorRejected" : "login.errorSuspended"));
+      setCheckingSession(false);
+      return;
+    }
     // Si l'utilisateur vient de s'inscrire, il doit se connecter explicitement.
     if (params.get("registered") === "1") {
       setJustRegistered(true);

@@ -193,6 +193,29 @@ export async function getSession(): Promise<EdenUser | null> {
   return readUsers().find((u) => u.email === email) ?? null;
 }
 
+export type AccountStatus = "approved" | "pending" | "rejected" | "suspended";
+
+/**
+ * Statut de validation du compte connecté (profiles.status), fixé par l'admin.
+ * `null` = pas de session. En cas de doute (profil absent, lecture impossible),
+ * on répond "pending" : l'accès n'est jamais accordé par défaut.
+ */
+export async function getMyAccountStatus(): Promise<{ status: AccountStatus; email: string } | null> {
+  const user = await getSession();
+  if (!user) return null;
+  const email = user.email || "";
+  // Repli localStorage (sans Supabase) : pas de validation admin possible.
+  if (!supabase || !user.id) return { status: "approved", email };
+  const { data, error } = await supabase.from("profiles").select("status").eq("id", user.id).maybeSingle();
+  if (error) {
+    console.error("[Eden] lecture du statut du compte impossible:", error.message);
+    return { status: "pending", email };
+  }
+  const s = (data as any)?.status;
+  const status: AccountStatus = s === "approved" || s === "rejected" || s === "suspended" ? s : "pending";
+  return { status, email };
+}
+
 export async function signInWithGoogle(): Promise<{ ok: boolean; error?: string }> {
   if (!supabase) {
     return { ok: false, error: "Connexion Google indisponible (Supabase non configuré)." };

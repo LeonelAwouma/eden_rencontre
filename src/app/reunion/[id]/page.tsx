@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft, CalendarClock, Loader2, Lock, RefreshCw, Video } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Monogram } from "@/components/ornaments";
+import { MemberGate } from "@/components/member-gate";
 import { JitsiRoom, type JitsiJoin } from "@/components/jitsi-room";
 
 interface MeetInfo { id: string; title: string; description: string | null; start_time: string; duration: number }
@@ -22,7 +23,7 @@ const formatWhen = (iso: string) =>
  * Le lien de l'e-mail d'invitation pointe ici ; la salle ne s'ouvre qu'aux
  * membres connectés et invités, dans le créneau de la réunion.
  */
-export default function ReunionPage({ params }: { params: Promise<{ id: string }> }) {
+function ReunionPageContent({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const [state, setState] = useState<RoomState>({ kind: "loading" });
@@ -113,4 +114,9 @@ function Notice({ icon, title, text, children }: { icon: React.ReactNode; title:
       </div>
     </div>
   );
+}
+
+/** Réservé aux comptes approuvés par l'admin. */
+export default function ReunionPage({ params }: { params: Promise<{ id: string }> }) {
+  return <MemberGate><ReunionPageContent params={params} /></MemberGate>;
 }

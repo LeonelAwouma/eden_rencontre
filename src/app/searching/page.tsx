@@ -4,9 +4,10 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSession } from "@/lib/auth";
 import { Monogram } from "@/components/ornaments";
+import { MemberGate } from "@/components/member-gate";
 import { useI18n } from "@/lib/i18n";
 
-export default function SearchingPage() {
+function SearchingPageContent() {
   const router = useRouter();
   const { t } = useI18n();
   const [phase, setPhase] = useState(0);
@@ -112,4 +113,9 @@ export default function SearchingPage() {
       </div>
     </div>
   );
+}
+
+/** Réservé aux comptes approuvés par l'admin. */
+export default function SearchingPage() {
+  return <MemberGate><SearchingPageContent /></MemberGate>;
 }
