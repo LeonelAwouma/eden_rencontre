@@ -156,6 +156,7 @@ const FINANCIAL_STEWARDSHIP_MAP: Record<string, "tithe_first" | "budget_focused"
 const DAILY_RHYTHM_MAP: Record<string, "early_bird" | "night_owl" | "flexible"> = {
   "Personne du matin": "early_bird", "Morning person": "early_bird",
   "Personne du soir": "night_owl", "Night owl": "night_owl",
+  "Entre les deux": "flexible", "Somewhere in between": "flexible",
 };
 
 const ORGANIZATION_MAP: Record<string, "very_structured" | "structured" | "flexible" | "unstructured"> = {

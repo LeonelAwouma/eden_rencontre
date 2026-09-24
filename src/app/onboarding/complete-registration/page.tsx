@@ -28,6 +28,7 @@ import {
   AlertTriangle,
   ArrowRight,
   ChevronLeft,
+  ChevronRight,
   Star,
   CheckCircle2,
   Instagram,
@@ -86,6 +87,8 @@ export default function CompleteRegistrationPage() {
   const { t } = useI18n();
   const { ready: deviceReady, showGate, continueOnDesktop } = useMobileContinueGate();
   const [step, setStep] = useState(0);
+  // Écran « pseudonyme » affiché avant les 12 étapes du profil.
+  const [pseudoDone, setPseudoDone] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingGender, setPendingGender] = useState<string | null>(null);
   const [countrySearch, setCountrySearch] = useState("");
@@ -95,6 +98,7 @@ export default function CompleteRegistrationPage() {
   const [userName, setUserName] = useState("");
 
   const [formData, setFormData] = useState({
+    pseudo: "",
     gender: "",
     discoverySource: "",
     civilStatus: "",
@@ -108,6 +112,7 @@ export default function CompleteRegistrationPage() {
     charterAcceptFull: false,
   });
 
+  const pseudoValid = formData.pseudo.trim().length >= 2 && formData.pseudo.trim().length <= 30 && !/[<>"]/.test(formData.pseudo);
   const age = ageFromBirthDate(formData.birthDate);
   const ageValid = age !== null && age >= MIN_AGE;
 
@@ -158,7 +163,8 @@ export default function CompleteRegistrationPage() {
   const streamRef = useRef<MediaStream | null>(null);
 
   const totalSteps = 12;
-  const progress = ((step + 1) / totalSteps) * 100;
+  const displayStep = pseudoDone ? step + 2 : 1;
+  const progress = (displayStep / (totalSteps + 1)) * 100;
 
   // Verify user is authenticated (came from Google OAuth)
   useEffect(() => {
@@ -168,11 +174,18 @@ export default function CompleteRegistrationPage() {
         router.replace("/login");
         return;
       }
-      // Check if profile is already complete (user already filled this out)
-      if (session.gender && session.region && session.country && session.city && session.birthDate) {
-        router.replace("/onboarding");
-        return;
+      // Profil déjà complété ? On lit la table profiles (source de vérité pour l'admin).
+      let existingPseudo = session.pseudo || "";
+      if (supabase && session.id) {
+        const { data: prof } = await supabase
+          .from("profiles").select("pseudo, gender, country, city, birth_date").eq("id", session.id).maybeSingle();
+        if (prof?.pseudo) existingPseudo = prof.pseudo;
+        if (prof?.pseudo && prof.gender && prof.country && prof.city && prof.birth_date) {
+          router.replace("/onboarding");
+          return;
+        }
       }
+      if (existingPseudo) setFormData((prev) => ({ ...prev, pseudo: existingPseudo }));
       setUserEmail(session.email || "");
       setUserName(session.name || "");
       setLoading(false);
@@ -351,6 +364,7 @@ export default function CompleteRegistrationPage() {
         method: "POST",
         headers,
         body: JSON.stringify({
+          pseudo: formData.pseudo.trim(),
           gender: formData.gender,
           birthDate: formData.birthDate,
           discoverySource: formData.discoverySource,
@@ -375,8 +389,9 @@ export default function CompleteRegistrationPage() {
         return;
       }
 
-      // Redirect to pending approval page (admin must approve before user can access)
-      router.push(`/register/pending?email=${encodeURIComponent(userEmail)}`);
+      // Compte déjà approuvé : direction le questionnaire. Sinon, attente de validation par l'admin.
+      if (data.status === "approved") router.push("/onboarding");
+      else router.push(`/register/pending?email=${encodeURIComponent(userEmail)}`);
     } catch {
       setSaveError(t("completeRegistration.saveErrorServer"));
       setSaving(false);
@@ -508,7 +523,7 @@ export default function CompleteRegistrationPage() {
                 <Progress value={progress} className="h-1.5 bg-foreground/5" />
                 <div className="flex justify-between items-center">
                   <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
-                    {t("completeRegistration.stepOf", { current: step + 1, total: totalSteps })}
+                    {t("completeRegistration.stepOf", { current: displayStep, total: totalSteps + 1 })}
                   </span>
                   <span className="text-[10px] font-bold text-foreground/20 uppercase tracking-widest">
                     {t("completeRegistration.percentComplete", { pct: Math.round(progress) })}
@@ -519,7 +534,7 @@ export default function CompleteRegistrationPage() {
 
             <AnimatePresence mode="wait">
             <motion.div
-              key={step}
+              key={pseudoDone ? step : "pseudo"}
               initial={{ opacity: 0, x: 24 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -24 }}
@@ -527,9 +542,44 @@ export default function CompleteRegistrationPage() {
             >
 
             {/* ============================================================ */}
+            {/* Pseudonyme — nom public du profil (le nom Google reste privé) */}
+            {/* ============================================================ */}
+            {!pseudoDone && (
+              <form
+                className="space-y-8"
+                onSubmit={(e) => { e.preventDefault(); if (pseudoValid) { setFormData((prev) => ({ ...prev, pseudo: prev.pseudo.trim() })); setPseudoDone(true); } }}
+              >
+                <div className="space-y-3">
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.pseudoTitle")}</h1>
+                  <p className="text-foreground/50 text-base">{t("completeRegistration.pseudoSubtitle")}</p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="pseudo" className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.pseudoLabel")}</Label>
+                  <Input
+                    id="pseudo"
+                    autoFocus
+                    maxLength={30}
+                    autoComplete="nickname"
+                    placeholder={t("register.pseudoPlaceholder")}
+                    value={formData.pseudo}
+                    onChange={(e) => setFormData({ ...formData, pseudo: e.target.value })}
+                    className="h-14 rounded-xl bg-card border-foreground/10 text-base"
+                  />
+                  <p className="text-[12px] text-foreground/40">{t("register.pseudoHint")}</p>
+                  {formData.pseudo.trim().length > 0 && !pseudoValid && (
+                    <p className="text-[12px] text-destructive">{t("completeRegistration.pseudoInvalid")}</p>
+                  )}
+                </div>
+                <Button type="submit" disabled={!pseudoValid} className="w-full h-14 rounded-xl font-bold text-base gap-2">
+                  {t("completeRegistration.continue")} <ChevronRight className="w-4 h-4" />
+                </Button>
+              </form>
+            )}
+
+            {/* ============================================================ */}
             {/* Step 0 — Gender Selection */}
             {/* ============================================================ */}
-            {step === 0 && (
+            {pseudoDone && step === 0 && (
               <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step0Title")}</h1>
@@ -562,13 +612,17 @@ export default function CompleteRegistrationPage() {
                     <p className="text-olive/80 text-[10px] font-bold uppercase tracking-widest">{t("completeRegistration.definitiveInfo")}</p>
                   </div>
                 </div>
+
+                <button onClick={() => setPseudoDone(false)} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
+                </button>
               </div>
             )}
 
             {/* ============================================================ */}
             {/* Step 1 — Discovery Source */}
             {/* ============================================================ */}
-            {step === 1 && (
+            {pseudoDone && step === 1 && (
               <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step1Title")}</h1>
@@ -596,7 +650,7 @@ export default function CompleteRegistrationPage() {
             {/* ============================================================ */}
             {/* Step 2 — Civil Status */}
             {/* ============================================================ */}
-            {step === 2 && (
+            {pseudoDone && step === 2 && (
               <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step2Title")}</h1>
@@ -623,7 +677,7 @@ export default function CompleteRegistrationPage() {
             {/* ============================================================ */}
             {/* Step 3 — Region */}
             {/* ============================================================ */}
-            {step === 3 && (
+            {pseudoDone && step === 3 && (
               <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step3Title")}</h1>
@@ -654,7 +708,7 @@ export default function CompleteRegistrationPage() {
             {/* ============================================================ */}
             {/* Step 4 — Country */}
             {/* ============================================================ */}
-            {step === 4 && (
+            {pseudoDone && step === 4 && (
               <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step4Title")}</h1>
@@ -693,7 +747,7 @@ export default function CompleteRegistrationPage() {
             {/* ============================================================ */}
             {/* Step 5 — City */}
             {/* ============================================================ */}
-            {step === 5 && (
+            {pseudoDone && step === 5 && (
               <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step5Title")}</h1>
@@ -740,7 +794,7 @@ export default function CompleteRegistrationPage() {
             {/* ============================================================ */}
             {/* Step 6 — Birth Date */}
             {/* ============================================================ */}
-            {step === 6 && (
+            {pseudoDone && step === 6 && (
               <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step6Title")}</h1>
@@ -789,7 +843,7 @@ export default function CompleteRegistrationPage() {
             {/* ============================================================ */}
             {/* Step 7 — Values Selection */}
             {/* ============================================================ */}
-            {step === 7 && (
+            {pseudoDone && step === 7 && (
               <div className="space-y-8">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step7Title")}</h1>
@@ -831,7 +885,7 @@ export default function CompleteRegistrationPage() {
             {/* ============================================================ */}
             {/* Step 8 — Charter Acceptance */}
             {/* ============================================================ */}
-            {step === 8 && (
+            {pseudoDone && step === 8 && (
               <div className="space-y-6">
                 <div className="space-y-3">
                   <h1 className="text-2xl sm:text-3xl font-headline font-bold text-foreground">{t("completeRegistration.step8Title")}</h1>
@@ -909,7 +963,7 @@ export default function CompleteRegistrationPage() {
             {/* ============================================================ */}
             {/* Step 9 — Photo Upload (Mandatory) */}
             {/* ============================================================ */}
-            {step === 9 && (
+            {pseudoDone && step === 9 && (
               <div className="space-y-8">
                 <input
                   ref={photoInputRef}
@@ -978,7 +1032,7 @@ export default function CompleteRegistrationPage() {
             {/* ============================================================ */}
             {/* Step 10 — Selfie Verification */}
             {/* ============================================================ */}
-            {step === 10 && (
+            {pseudoDone && step === 10 && (
               <div className="space-y-6">
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">

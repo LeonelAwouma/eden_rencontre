@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getSession, updateProfile, logout, EdenUser } from "@/lib/auth";
-import { saveOnboarding, getQuestionnaires, Questionnaire, Section, Field } from "@/lib/onboarding";
+import { completeOnboarding, getQuestionnaires, Questionnaire, Section, Field } from "@/lib/onboarding";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import type { Tab } from "@/components/dashboard/dashboard-types";
 import {
@@ -433,7 +433,7 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
     setSaving(true);
     try {
       await autosave.flush();
-      const result = await saveOnboarding(localAnswers, true);
+      const result = await completeOnboarding(localAnswers);
       if (!result.ok) throw new Error(result.error);
       setEditingQ(null);
       onRefresh();

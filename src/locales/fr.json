@@ -1467,6 +1467,9 @@
     "verifyError": "Erreur lors de la vérification. Veuillez réessayer."
   },
   "completeRegistration": {
+    "pseudoTitle": "Choisissez votre pseudonyme",
+    "pseudoSubtitle": "C'est le nom que verront les autres membres. Votre nom Google reste privé : seule l'équipe y a accès.",
+    "pseudoInvalid": "Entre 2 et 30 caractères, sans < > ni guillemets.",
     "loadingProfile": "Chargement de votre profil…",
     "leftTitle": "Complétez votre",
     "leftTitleHighlight": "profil sacré.",

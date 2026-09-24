@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getEventAudience } from "@/lib/event-audience";
 
 // GET — Get single event
 export async function GET(
@@ -14,7 +15,7 @@ export async function GET(
 
     const { data: event, error } = await db
       .from("meet_events")
-      .select("*")
+      .select("*, event_participants(user_id, user:profiles!event_participants_user_id_fkey(id, name, pseudo, email, avatar_url))")
       .eq("id", id)
       .single();
 
@@ -57,9 +58,27 @@ export async function PUT(
       location,
       event_date,
       participant_limit,
+      participant_ids,
       is_public,
       status,
     } = body;
+
+    if (event_date !== undefined && Number.isNaN(Date.parse(event_date))) {
+      return NextResponse.json({ error: "Date invalide." }, { status: 400 });
+    }
+    if (status !== undefined && !["draft", "published", "cancelled"].includes(status)) {
+      return NextResponse.json({ error: "Statut invalide." }, { status: 400 });
+    }
+
+    // Version précédente : sert à savoir ce qui a vraiment changé (notifications).
+    const { data: previous } = await db
+      .from("meet_events")
+      .select("title, event_date, status")
+      .eq("id", id)
+      .single();
+    if (!previous) {
+      return NextResponse.json({ error: "Événement introuvable." }, { status: 404 });
+    }
 
     const updateData: Record<string, unknown> = {
       updated_at: new Date().toISOString(),
@@ -70,7 +89,9 @@ export async function PUT(
     if (meeting_link !== undefined) updateData.meeting_link = meeting_link;
     if (location !== undefined) updateData.location = location;
     if (event_date !== undefined) updateData.event_date = event_date;
-    if (participant_limit !== undefined) updateData.participant_limit = participant_limit;
+    if (participant_limit !== undefined) {
+      updateData.participant_limit = Number.isInteger(participant_limit) && participant_limit > 0 ? participant_limit : null;
+    }
     if (is_public !== undefined) updateData.is_public = is_public;
     if (status !== undefined) updateData.status = status;
 
@@ -89,6 +110,17 @@ export async function PUT(
       );
     }
 
+    // Membres invités : la liste envoyée remplace l'ancienne.
+    if (Array.isArray(participant_ids)) {
+      const ids = Array.from(new Set(participant_ids.filter((x: unknown): x is string => typeof x === "string")));
+      const { error: delErr } = await db.from("event_participants").delete().eq("event_id", id);
+      if (delErr) console.error("[Admin Events PUT] Failed to reset participants:", delErr);
+      if (ids.length) {
+        const { error: insErr } = await db.from("event_participants").insert(ids.map((userId) => ({ event_id: id, user_id: userId })));
+        if (insErr) console.error("[Admin Events PUT] Failed to insert participants:", insErr);
+      }
+    }
+
     // Log the action
     const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";
     await logAdminAction(
@@ -101,25 +133,23 @@ export async function PUT(
       ip
     );
 
-    // If event is (now) published and significant fields changed, notify all approved users
-    const significantChange = title !== undefined || event_date !== undefined || status === "published";
-    const isPublished = (status === "published") || (status === undefined && event.status === "published");
+    // Notifier les membres seulement si l'événement vient d'être publié, ou si le
+    // titre / la date d'un événement déjà publié ont réellement changé.
+    const justPublished = event.status === "published" && previous.status !== "published";
+    const dateChanged = new Date(previous.event_date).getTime() !== new Date(event.event_date).getTime();
+    const titleChanged = previous.title !== event.title;
+    const updatedWhilePublished = previous.status === "published" && event.status === "published" && (dateChanged || titleChanged);
 
-    if (isPublished && significantChange) {
+    if (justPublished || updatedWhilePublished) {
       try {
-        // Only notify if status just became published, or date/title changed on a published event
-        const justPublished = status === "published" && event.status !== "published";
-        const dateOrTitleChanged = (title !== undefined || event_date !== undefined) && event.status === "published";
+        {
+          // Public de l'événement : tous les membres, ou seulement les invités
+          const audience = await getEventAudience(db, event);
+          const approvedUsers = audience.map((id) => ({ id }));
 
-        if (justPublished || dateOrTitleChanged) {
-          const { data: approvedUsers } = await db
-            .from("profiles")
-            .select("id")
-            .eq("status", "approved");
-
-          if (approvedUsers && approvedUsers.length > 0) {
-            const finalTitle = title || event.title;
-            const finalDate = event_date || event.event_date;
+          if (approvedUsers.length > 0) {
+            const finalTitle = event.title;
+            const finalDate = event.event_date;
             const formattedDate = new Date(finalDate).toLocaleDateString("fr-FR", {
               weekday: "long", day: "numeric", month: "long", year: "numeric",
             });
@@ -127,7 +157,7 @@ export async function PUT(
             const notifTitle = justPublished ? "Nouvel événement" : "Événement mis à jour";
             const notifMessage = justPublished
               ? `Un nouvel événement est disponible : « ${finalTitle} » le ${formattedDate}.${event.meeting_link ? " Lien : " + event.meeting_link : ""}`
-              : `L'événement « ${finalTitle} » a été modifié. Nouvelle date : ${formattedDate}.${event.meeting_link ? " Lien : " + event.meeting_link : ""}`;
+              : `L'événement « ${finalTitle} » a été modifié. ${dateChanged ? `Nouvelle date : ${formattedDate}.` : `Il a lieu le ${formattedDate}.`}${event.meeting_link ? " Lien : " + event.meeting_link : ""}`;
 
             const notifRows = approvedUsers.map((u: { id: string }) => ({
               user_id: u.id,

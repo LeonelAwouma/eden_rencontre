@@ -188,6 +188,8 @@ export async function upsertMyProfile(user: EdenUser): Promise<{ error?: string 
     id: user.id,
     email: user.email,
     name: user.name,
+    // Pseudo choisi dans la fenêtre du tableau de bord (stocké jusqu'ici dans la session seulement).
+    ...(user.pseudo ? { pseudo: user.pseudo } : {}),
     city: user.city ?? null,
     country: user.country ?? null,
     region: user.region ?? null,

@@ -24,8 +24,18 @@ import {
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
+import { checkQuestionnaireCompletion } from "@/lib/onboarding";
 import { PageHeader } from "@/components/admin/page-header";
 import { EMAIL_NOT_SENT } from "@/lib/admin-email-warning";
+
+/** Mêmes conditions que la fiche membre et que l'API /verify : profil ET questionnaire complets. */
+function canGrantBadge(user: { status?: string; onboarding_completed?: boolean; verification_status?: string; questionnaire?: Record<string, unknown> | null } & Record<string, any>) {
+  return user.status === "approved"
+    && !!user.onboarding_completed
+    && user.verification_status !== "verified"
+    && isProfileFullyComplete(user)
+    && checkQuestionnaireCompletion(user.questionnaire || {}, { excludeOptional: true }).percentage === 100;
+}
 
 interface CharterAcceptance {
   authorize_verification: boolean;
@@ -58,6 +68,7 @@ interface UserProfile {
   charter_acceptances?: CharterAcceptance | CharterAcceptance[] | null;
   onboarding_completed?: boolean;
   verification_status?: string;
+  questionnaire?: Record<string, unknown> | null;
 }
 
 const STATUS_OPTIONS = [
@@ -474,7 +485,7 @@ export default function AdminUsersPage() {
                               </button>
                             </>
                           )}
-                          {user.status === "approved" && user.onboarding_completed && isProfileFullyComplete(user) && user.verification_status !== "verified" && (
+                          {canGrantBadge(user) && (
                             <button
                               onClick={() => handleVerifyBadge(user.id)}
                               className="w-9 h-9 rounded-full flex items-center justify-center bg-deep-eden/10 text-deep-eden shadow-sm border border-deep-eden/20 hover:bg-deep-eden/20 hover:text-deep-eden hover:border-deep-eden/35 hover:shadow-md focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#7C3AED] transition-all duration-200"
@@ -612,7 +623,7 @@ export default function AdminUsersPage() {
                         </button>
                       </>
                     )}
-                    {user.status === "approved" && user.onboarding_completed && isProfileFullyComplete(user) && user.verification_status !== "verified" && (
+                    {canGrantBadge(user) && (
                       <button
                         onClick={() => handleVerifyBadge(user.id)}
                         className="flex-1 text-center text-[12px] font-semibold text-deep-eden bg-deep-eden/5 py-2.5 rounded-xl hover:bg-deep-eden/10 transition-colors flex items-center justify-center gap-1.5"

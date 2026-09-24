@@ -168,6 +168,22 @@ export async function updateProfile(updates: EditableProfile): Promise<AuthResul
   if (supabase) {
     const { data, error } = await supabase.auth.updateUser({ data: clean });
     if (error) return { ok: false, error: translateError(error.message) };
+
+    // Les métadonnées ne servent qu'à la session : l'admin et les autres membres
+    // lisent la table profiles. On y reporte donc les mêmes champs.
+    const COLUMNS: Record<string, string> = {
+      name: "name", pseudo: "pseudo", city: "city", country: "country", civilStatus: "civil_status",
+      profession: "profession", bio: "bio", marriageVision: "marriage_vision", avatar_url: "avatar_url",
+    };
+    const row: Record<string, any> = {};
+    for (const [k, v] of Object.entries(clean)) if (COLUMNS[k]) row[COLUMNS[k]] = v;
+    if (data.user?.id && Object.keys(row).length) {
+      const { error: profileError } = await supabase
+        .from("profiles")
+        .update({ ...row, updated_at: new Date().toISOString() })
+        .eq("id", data.user.id);
+      if (profileError) console.error("[Eden] report du profil dans la table échoué:", profileError.message);
+    }
     return { ok: true, user: mapSupabaseUser(data.user) };
   }
 
@@ -200,20 +216,27 @@ export type AccountStatus = "approved" | "pending" | "rejected" | "suspended";
  * `null` = pas de session. En cas de doute (profil absent, lecture impossible),
  * on répond "pending" : l'accès n'est jamais accordé par défaut.
  */
-export async function getMyAccountStatus(): Promise<{ status: AccountStatus; email: string } | null> {
+export async function getMyAccountStatus(): Promise<{ status: AccountStatus; email: string; profileComplete: boolean; pseudo: string | null; sessionPseudo: string | null } | null> {
   const user = await getSession();
   if (!user) return null;
   const email = user.email || "";
   // Repli localStorage (sans Supabase) : pas de validation admin possible.
-  if (!supabase || !user.id) return { status: "approved", email };
-  const { data, error } = await supabase.from("profiles").select("status").eq("id", user.id).maybeSingle();
+  const sessionPseudo = user.pseudo?.trim() || null;
+  if (!supabase || !user.id) return { status: "approved", email, profileComplete: true, pseudo: sessionPseudo, sessionPseudo };
+  const { data, error } = await supabase.from("profiles").select("status, gender, country, city, pseudo").eq("id", user.id).maybeSingle();
   if (error) {
     console.error("[Eden] lecture du statut du compte impossible:", error.message);
-    return { status: "pending", email };
+    return { status: "pending", email, profileComplete: true, pseudo: null, sessionPseudo };
   }
-  const s = (data as any)?.status;
+  const d = data as any;
+  const s = d?.status;
   const status: AccountStatus = s === "approved" || s === "rejected" || s === "suspended" ? s : "pending";
-  return { status, email };
+  // Informations de base demandées à l'inscription. Une inscription Google qui a
+  // quitté la page « Complétez votre profil » arrive ici sans elles.
+  const profileComplete = !!(d?.gender && d?.country && d?.city);
+  // Pseudo public : celui du profil (lu par l'admin et les membres), pas celui de la session.
+  const pseudo = typeof d?.pseudo === "string" && d.pseudo.trim() ? d.pseudo.trim() : null;
+  return { status, email, profileComplete, pseudo, sessionPseudo };
 }
 
 export async function signInWithGoogle(): Promise<{ ok: boolean; error?: string }> {
@@ -251,4 +274,30 @@ export function isProfileComplete(user: EdenUser | null): boolean {
     user.country &&
     user.city
   );
+}
+
+/** Règle commune du pseudonyme public : 2 à 30 caractères, sans < > ni guillemets. */
+export function isValidPseudo(pseudo: string): boolean {
+  const p = pseudo.trim();
+  return p.length >= 2 && p.length <= 30 && !/[<>"]/.test(p);
+}
+
+/**
+ * Enregistre le pseudonyme dans le profil (lu par l'admin et les membres),
+ * puis dans la session. L'échec du profil est remonté : c'est lui qui compte.
+ */
+export async function saveMyPseudo(pseudo: string): Promise<{ ok: boolean; error?: string }> {
+  const p = pseudo.trim();
+  if (!isValidPseudo(p)) return { ok: false, error: "Le pseudonyme doit contenir entre 2 et 30 caractères, sans < > ni guillemets." };
+  if (!supabase) {
+    const res = await updateProfile({ pseudo: p });
+    return res.ok ? { ok: true } : { ok: false, error: res.error };
+  }
+  const { data: auth } = await supabase.auth.getUser();
+  const id = auth.user?.id;
+  if (!id) return { ok: false, error: "Session expirée. Veuillez vous reconnecter." };
+  const { error } = await supabase.from("profiles").update({ pseudo: p, updated_at: new Date().toISOString() }).eq("id", id);
+  if (error) return { ok: false, error: "Impossible d'enregistrer le pseudonyme. Réessayez." };
+  await supabase.auth.updateUser({ data: { pseudo: p } });
+  return { ok: true };
 }

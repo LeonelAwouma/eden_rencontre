@@ -24,14 +24,16 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ users: [] });
     }
 
-    const { data: users, error } = await db
+    // Par défaut : membres approuvés (choix de participants). scope=all : tous les
+    // comptes, quel que soit leur statut (messagerie admin).
+    const allStatuses = searchParams.get("scope") === "all";
+    let query = db
       .from("profiles")
-      .select("id, name, pseudo, email, avatar_url")
+      .select("id, name, pseudo, email, avatar_url, status")
       .or(`name.ilike.%${q}%,pseudo.ilike.%${q}%,email.ilike.%${q}%`)
-      .eq("status", "approved")
-      .neq("email", ADMIN_SYSTEM_EMAIL)
-      .order("name", { ascending: true })
-      .limit(limit);
+      .neq("email", ADMIN_SYSTEM_EMAIL);
+    if (!allStatuses) query = query.eq("status", "approved");
+    const { data: users, error } = await query.order("name", { ascending: true }).limit(limit);
 
     if (error) {
       console.error("[Admin Users Search] Error:", error);

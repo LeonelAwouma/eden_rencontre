@@ -7,6 +7,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
+      pseudo,
       gender,
       birthDate,
       discoverySource,
@@ -32,6 +33,15 @@ export async function POST(request: NextRequest) {
       const result = await verifySelfieServer(selfieImage, (profilePhotos || []).filter(Boolean));
       selfieVerified = result.verified;
       selfieVerificationScore = result.score;
+    }
+
+    // Pseudonyme public (le vrai nom Google reste réservé à l'admin)
+    const cleanPseudo = typeof pseudo === "string" ? pseudo.trim() : "";
+    if (cleanPseudo.length < 2 || cleanPseudo.length > 30 || /[<>"]/.test(cleanPseudo)) {
+      return NextResponse.json(
+        { error: "Le pseudonyme doit contenir entre 2 et 30 caractères." },
+        { status: 400 }
+      );
     }
 
     // Validate required fields
@@ -147,9 +157,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Un compte déjà traité par l'admin (approuvé, refusé, suspendu) garde son
+    // statut : compléter son profil ne doit ni le rétrograder, ni le rouvrir.
+    const { data: existingProfile } = await db.from("profiles").select("status").eq("id", userId).maybeSingle();
+    const currentStatus = existingProfile?.status as string | undefined;
+    const status = currentStatus && currentStatus !== "pending" ? currentStatus : "pending";
+
     // Update the profile with the collected information
     // Note: discovery_source is stored in auth metadata only (column may not exist in profiles table)
+    // onboarding_completed n'est PAS touché : il concerne le questionnaire, rempli ensuite.
     const profileData: Record<string, any> = {
+      pseudo: cleanPseudo,
       gender: gender,
       birth_date: birthDate,
       civil_status: civilStatus,
@@ -157,8 +175,7 @@ export async function POST(request: NextRequest) {
       country: country,
       city: city,
       marriage_vision: marriageVision || [],
-      status: "pending",
-      onboarding_completed: true,
+      status,
       selfie_verified: selfieVerified,
       selfie_verification_score: selfieVerificationScore,
       selfie_url: selfieImage || null,
@@ -176,6 +193,7 @@ export async function POST(request: NextRequest) {
       // Try upsert in case profile doesn't exist yet
       const upsertData: Record<string, any> = {
         id: userId,
+        pseudo: cleanPseudo,
         gender: gender,
         birth_date: birthDate,
         civil_status: civilStatus,
@@ -184,7 +202,7 @@ export async function POST(request: NextRequest) {
         city: city,
         marriage_vision: marriageVision || [],
         status: "pending",
-        onboarding_completed: true,
+        onboarding_completed: false,
         selfie_verified: selfieVerified,
         selfie_verification_score: selfieVerificationScore,
         selfie_url: selfieImage || null,
@@ -210,6 +228,7 @@ export async function POST(request: NextRequest) {
     // Also update user metadata in Supabase Auth so mapSupabaseUser works correctly
     const { error: metaError } = await db.auth.admin.updateUserById(userId, {
       user_metadata: {
+        pseudo: cleanPseudo,
         gender,
         birthDate,
         discoverySource,
@@ -226,8 +245,8 @@ export async function POST(request: NextRequest) {
       // Non-critical: profile is already saved in the profiles table
     }
 
-    // Send confirmation email
-    try {
+    // Send confirmation email (« inscription reçue ») — seulement pour un compte en attente de validation
+    if (status === "pending") try {
       const { data: { user: authUser } } = await db.auth.admin.getUserById(userId);
       const userEmail = authUser?.email || "";
       const userName = authUser?.user_metadata?.name || authUser?.user_metadata?.full_name || userEmail.split("@")[0];
@@ -241,6 +260,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
+      status,
       message: "Profil complété avec succès.",
     });
   } catch (error) {

@@ -1,5 +1,3 @@
-"use client";
-
 // English version of the onboarding questionnaires.
 // Mirrors the structure of the French QUESTIONNAIRES in onboarding.ts.
 
@@ -222,7 +220,7 @@ export const QUESTIONNAIRES_EN: Questionnaire[] = [
         key: "styleDeVie",
         title: "Lifestyle & Compatibility",
         fields: [
-          { id: "rythme", label: "Are you more of a…", type: "single", options: ["Morning person", "Night owl"] },
+          { id: "rythme", label: "What time of day do you have the most energy?", type: "single", options: ["Morning person", "Night owl", "Somewhere in between"], help: "Morning person: you like getting up early and feel your best in the morning. Night owl: you are more active later in the day and go to bed late." },
           { id: "organisation", label: "You are more…", type: "single", options: ["Organized and structured", "Spontaneous and flexible"] },
           { id: "rapportTravail", label: "Your relationship with work (ambition vs. balance)", type: "textarea" },
           { id: "gestionConflits", label: "How do you handle conflicts and disagreements?", type: "textarea" },

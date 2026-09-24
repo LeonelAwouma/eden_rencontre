@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getEventAudience } from "@/lib/event-audience";
 
 // GET — List all events
 export async function GET(request: NextRequest) {
@@ -9,28 +10,51 @@ export async function GET(request: NextRequest) {
     const db = getSupabaseAdmin();
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status");
-    const search = searchParams.get("search");
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    // Onglets de l'écran admin :
+    //   upcoming  à venir (brouillons et publiés), du plus proche au plus lointain
+    //   draft     brouillons, quelle que soit la date
+    //   past      passés (hors annulés), du plus récent au plus ancien
+    //   cancelled annulés
+    //   all       tout
+    const tab = searchParams.get("tab") || searchParams.get("status") || "all";
+    // Les caractères , ( ) % * \ ont un sens dans le filtre PostgREST : on les retire.
+    const search = (searchParams.get("search") || "").replace(/[,()%*\\]/g, " ").trim();
+    const page = Math.max(parseInt(searchParams.get("page") || "1", 10) || 1, 1);
+    const limit = Math.min(Math.max(parseInt(searchParams.get("limit") || "20", 10) || 20, 1), 100);
     const offset = (page - 1) * limit;
+    const now = new Date().toISOString();
 
-    let query = db
-      .from("meet_events")
-      .select("*, event_participants(user_id, user:profiles!event_participants_user_id_fkey(id, name, email, avatar_url))", { count: "exact" })
-      .order("event_date", { ascending: false });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- constructeur de requête Supabase
+    const applyTab = (q: any, t: string) => {
+      if (t === "upcoming") return q.gte("event_date", now).in("status", ["draft", "published"]);
+      if (t === "draft") return q.eq("status", "draft");
+      if (t === "past") return q.lt("event_date", now).neq("status", "cancelled");
+      if (t === "cancelled") return q.eq("status", "cancelled");
+      if (t === "published") return q.eq("status", "published");
+      return q;
+    };
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const applySearch = (q: any) =>
+      search ? q.or(`title.ilike.%${search}%,description.ilike.%${search}%,location.ilike.%${search}%`) : q;
 
-    if (status && status !== "all") {
-      query = query.eq("status", status);
-    }
+    let query = applySearch(applyTab(
+      db.from("meet_events")
+        .select("*, event_participants(user_id, user:profiles!event_participants_user_id_fkey(id, name, pseudo, email, avatar_url))", { count: "exact" }),
+      tab,
+    ));
+    // À venir : le plus proche d'abord. Sinon : le plus récent d'abord.
+    query = query.order("event_date", { ascending: tab === "upcoming" }).range(offset, offset + limit - 1);
 
-    if (search) {
-      query = query.or(`title.ilike.%${search}%,description.ilike.%${search}%,location.ilike.%${search}%`);
-    }
-
-    query = query.range(offset, offset + limit - 1);
-
-    const { data: events, error, count } = await query;
+    // Compteurs des onglets (même recherche appliquée)
+    const countFor = async (t: string) => {
+      const { count } = await applySearch(applyTab(db.from("meet_events").select("id", { count: "exact", head: true }), t));
+      return count || 0;
+    };
+    const [result, upcoming, draft, past, cancelled, all] = await Promise.all([
+      query,
+      countFor("upcoming"), countFor("draft"), countFor("past"), countFor("cancelled"), countFor("all"),
+    ]);
+    const { data: events, error, count } = result as { data: unknown[] | null; error: unknown; count: number | null };
 
     if (error) {
       console.error("Error fetching events:", error);
@@ -46,6 +70,7 @@ export async function GET(request: NextRequest) {
       page,
       limit,
       totalPages: Math.ceil((count || 0) / limit),
+      counts: { upcoming, draft, past, cancelled, all },
     });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
@@ -74,11 +99,12 @@ export async function POST(request: NextRequest) {
       location,
       event_date,
       participant_ids,
+      participant_limit,
       is_public,
       status,
     } = body;
 
-    if (!title || !event_date) {
+    if (!title || !event_date || Number.isNaN(Date.parse(event_date))) {
       return NextResponse.json(
         { error: "Le titre et la date sont obligatoires." },
         { status: 400 }
@@ -94,7 +120,8 @@ export async function POST(request: NextRequest) {
         meeting_link: meeting_link || null,
         location: location || null,
         event_date,
-        participant_limit: Array.isArray(participant_ids) ? participant_ids.length : null,
+        // Nombre de places (facultatif) — distinct des membres invités.
+        participant_limit: Number.isInteger(participant_limit) && participant_limit > 0 ? participant_limit : null,
         is_public: is_public !== false,
         status: status || "draft",
         created_by: admin.adminId === "env-admin" ? null : admin.adminId,
@@ -151,15 +178,13 @@ export async function POST(request: NextRequest) {
       console.error("Failed to create event notification:", notifErr);
     }
 
-    // If event is published, notify all approved users
+    // Événement publié : notifier son public (tous les membres, ou seulement les invités)
     if ((status || "draft") === "published") {
       try {
-        const { data: approvedUsers } = await db
-          .from("profiles")
-          .select("id")
-          .eq("status", "approved");
+        const audience = await getEventAudience(db, event);
+        const approvedUsers = audience.map((id) => ({ id }));
 
-        if (approvedUsers && approvedUsers.length > 0) {
+        if (approvedUsers.length > 0) {
           const formattedDate = new Date(event_date).toLocaleDateString("fr-FR", {
             weekday: "long", day: "numeric", month: "long", year: "numeric",
           });

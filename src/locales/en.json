@@ -1467,6 +1467,9 @@
     "verifyError": "Error during verification. Please try again."
   },
   "completeRegistration": {
+    "pseudoTitle": "Choose your username",
+    "pseudoSubtitle": "This is the name other members will see. Your Google name stays private: only our team can see it.",
+    "pseudoInvalid": "Between 2 and 30 characters, without < > or quotes.",
     "loadingProfile": "Loading your profile…",
     "leftTitle": "Complete your",
     "leftTitleHighlight": "sacred profile.",

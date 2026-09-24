@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getSession } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { MemberGate } from "@/components/member-gate";
-import { getOnboardingSteps, getMyOnboarding, saveOnboarding, type Field, type SupportedLocale } from "@/lib/onboarding";
+import { getOnboardingSteps, getMyOnboarding, saveOnboarding, completeOnboarding, type Field, type SupportedLocale } from "@/lib/onboarding";
 
 const SKIP_KEY = "eden_onboarding_skipped";
 // Étape en cours, par utilisateur, pour reprendre là où on s'est arrêté.
@@ -159,28 +159,14 @@ function OnboardingPageContent() {
   const submit = async (completed: boolean) => {
     setSaving(true);
     if (completed) {
-      // Use the new API that sets verification_status to "under_review" + creates notifications
-      const session = await getSession();
-      if (session?.id) {
-        try {
-          const res = await fetch("/api/onboarding/complete", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ user_id: session.id, answers }),
-          });
-          const data = await res.json();
-          setSaving(false);
-          if (!res.ok) {
-            toast({ title: t("onboarding.saveFailed"), description: data.error || t("onboarding.retry"), variant: "destructive" });
-            return false;
-          }
-          return true;
-        } catch {
-          setSaving(false);
-          toast({ title: t("onboarding.saveFailed"), description: t("onboarding.retry"), variant: "destructive" });
-          return false;
-        }
+      // Le serveur enregistre et crée la demande de badge si tout est rempli.
+      const res = await completeOnboarding(answers);
+      setSaving(false);
+      if (!res.ok) {
+        toast({ title: t("onboarding.saveFailed"), description: res.error || t("onboarding.retry"), variant: "destructive" });
+        return false;
       }
+      return true;
     }
     const res = await saveOnboarding(answers, completed);
     setSaving(false);

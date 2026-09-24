@@ -1,5 +1,3 @@
-"use client";
-
 // Onboarding « Parcours en 3 étapes » — configuration des questionnaires + sauvegarde Supabase.
 // Les questions sont des DONNÉES (rendu générique côté page) pour rester maintenable.
 
@@ -278,7 +276,7 @@ export const QUESTIONNAIRES: Questionnaire[] = [
         key: "styleDeVie",
         title: "Style de vie & compatibilité",
         fields: [
-          { id: "rythme", label: "Êtes-vous plutôt…", type: "single", options: ["Personne du matin", "Personne du soir"] },
+          { id: "rythme", label: "À quel moment de la journée avez-vous le plus d'énergie ?", type: "single", options: ["Personne du matin", "Personne du soir", "Entre les deux"], help: "Personne du matin : vous aimez vous lever tôt et vous êtes en forme dès le matin. Personne du soir : vous êtes plus actif(ve) en fin de journée et vous vous couchez tard." },
           { id: "organisation", label: "Vous êtes plutôt…", type: "single", options: ["Organisé(e) et structuré(e)", "Spontané(e) et flexible"] },
           { id: "rapportTravail", label: "Votre rapport au travail (ambition vs équilibre)", type: "textarea" },
           { id: "gestionConflits", label: "Comment gérez-vous les conflits et désaccords ?", type: "textarea" },
@@ -307,15 +305,26 @@ export const QUESTIONNAIRES: Questionnaire[] = [
  * Returns all field IDs from the questionnaire definitions,
  * organized by section. Optionally excludes optional sections.
  */
-export function getAllQuestionnaireFieldIds(options?: { excludeOptional?: boolean }): string[] {
-  const q = QUESTIONNAIRES[0]; // Single questionnaire
-  if (!q) return [];
+// Questions qui ne s'appliquent que selon une autre réponse (ids identiques en FR et EN).
+// Non requises quand la condition n'est pas remplie : sinon un membre sans enfant
+// ne pourrait jamais atteindre 100 % et recevoir le badge.
+const CONDITIONAL_FIELDS: Record<string, (answers: Record<string, unknown>) => boolean> = {
+  enfantsDetail: (a) => a.enfants === "Oui" || a.enfants === "Yes",
+  denominationAutre: (a) => a.denomination === "Autre" || a.denomination === "Other",
+  handicapDetail: (a) => a.handicap === "Oui" || a.handicap === "Yes",
+  sport: (a) => typeof a.activitePhysique === "string" && /^(Oui|Occasionnellement|Yes|Occasionally)/.test(a.activitePhysique),
+};
 
-  const sections = options?.excludeOptional
-    ? q.sections.filter((s) => !s.private && s.key !== "questionsFinales")
-    : q.sections;
-
-  return sections.flatMap((s) => s.fields.map((f) => f.id));
+/**
+ * Questions attendues pour le badge « Profil vérifié », sur les TROIS questionnaires.
+ * excludeOptional : sans les sections privées (santé) ni « Pour finir » (facultative).
+ * answers : si fourni, les questions conditionnelles non applicables sont retirées.
+ */
+export function getAllQuestionnaireFieldIds(options?: { excludeOptional?: boolean }, answers?: Record<string, unknown>): string[] {
+  return QUESTIONNAIRES.flatMap((q) =>
+    (options?.excludeOptional ? q.sections.filter((s) => !s.private && s.key !== "questionsFinales") : q.sections)
+      .flatMap((s) => s.fields.map((f) => f.id))
+  ).filter((id) => !answers || !CONDITIONAL_FIELDS[id] || CONDITIONAL_FIELDS[id](answers));
 }
 
 /**
@@ -326,7 +335,7 @@ export function checkQuestionnaireCompletion(
   answers: Record<string, unknown>,
   options?: { excludeOptional?: boolean }
 ): { answered: number; total: number; percentage: number; unansweredIds: string[] } {
-  const fieldIds = getAllQuestionnaireFieldIds(options);
+  const fieldIds = getAllQuestionnaireFieldIds(options, answers);
   const unansweredIds: string[] = [];
 
   for (const id of fieldIds) {
@@ -377,7 +386,11 @@ export async function getMyOnboarding(): Promise<{ answers: Record<string, any>;
   const me = auth.user?.id;
   if (!me) return { answers: {}, completed: false };
   const { data } = await supabase.from("profiles").select("questionnaire, onboarding_completed").eq("id", me).maybeSingle();
-  return { answers: (data?.questionnaire as Record<string, any>) || {}, completed: !!(data as any)?.onboarding_completed };
+  const answers = (data?.questionnaire as Record<string, any>) || {};
+  // Des comptes Google ont été marqués « terminé » sans aucune réponse (ancien bug
+  // de /api/auth/google-onboarding) : un questionnaire vide n'est jamais terminé.
+  const completed = !!(data as any)?.onboarding_completed && Object.keys(answers).length > 0;
+  return { answers, completed };
 }
 
 export async function saveOnboarding(answers: Record<string, any>, completed: boolean): Promise<{ ok: boolean; error?: string }> {
@@ -411,4 +424,28 @@ export async function saveQuestionnaireAnswers(answers: Record<string, any>): Pr
     return { ok: false, error: error.message };
   }
   return { ok: true };
+}
+
+/**
+ * Marque le questionnaire comme terminé via le serveur, qui crée la demande de
+ * badge « Profil vérifié » si toutes les questions requises sont remplies.
+ * À utiliser partout où le membre valide son questionnaire (onboarding, espace membre).
+ */
+export async function completeOnboarding(answers: Record<string, any>): Promise<{ ok: boolean; error?: string; verificationRequested?: boolean }> {
+  if (!supabase) return saveOnboarding(answers, true);
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { ok: false, error: "Session expirée. Veuillez vous reconnecter." };
+  try {
+    const res = await fetch("/api/onboarding/complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ answers }),
+    });
+    const body = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: body.error || "Enregistrement impossible." };
+    return { ok: true, verificationRequested: !!body.verification_requested };
+  } catch {
+    return { ok: false, error: "Erreur réseau. Vérifiez votre connexion." };
+  }
 }

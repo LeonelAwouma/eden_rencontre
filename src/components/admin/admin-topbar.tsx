@@ -3,8 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-  Search, Bell, Menu, Check, CheckCheck, Calendar, User,
-  MessageSquare, Star, AlertTriangle, Info, X,
+  Bell, Menu, Check, CheckCheck, Calendar, User,
+  MessageSquare, Star, AlertTriangle, Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRouter } from "next/navigation";
@@ -67,28 +67,9 @@ export function AdminTopbar({ adminName = "Administrateur" }: { adminName?: stri
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [searchOpen, setSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
-  const searchInputRef = useRef<HTMLInputElement>(null);
   const router = useRouter();
   const { setSidebarOpen } = useAdmin();
-
-  const runSearch = useCallback((query: string) => {
-    const q = query.trim();
-    if (q) router.push(`/admin/users?search=${encodeURIComponent(q)}`);
-  }, [router]);
-
-  useEffect(() => {
-    function onKey(e: KeyboardEvent) {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        searchInputRef.current?.focus();
-      }
-    }
-    document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
-  }, []);
 
   const fetchNotifications = useCallback(async (opts?: { showLoading?: boolean }) => {
     if (opts?.showLoading) setLoading(true);
@@ -159,30 +140,6 @@ export function AdminTopbar({ adminName = "Administrateur" }: { adminName?: stri
         </button>
 
         <div className="flex-1" />
-
-        <button
-          onClick={() => setSearchOpen(!searchOpen)}
-          className={cn(iconButton, "md:hidden")}
-          aria-label="Rechercher"
-        >
-          {searchOpen ? <X className="w-4 h-4" /> : <Search className="w-4 h-4" />}
-        </button>
-
-        <div className="hidden md:flex items-center gap-2 bg-card border border-border rounded-lg px-3 h-9 w-56 lg:w-72 focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/10 transition-colors">
-          <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-          <input
-            ref={searchInputRef}
-            type="text"
-            placeholder="Rechercher un utilisateur…"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && runSearch(searchQuery)}
-            className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none w-full"
-          />
-          <kbd className="hidden lg:inline-flex items-center rounded border border-border bg-muted px-1.5 py-0.5 text-[10px] font-mono text-muted-foreground">
-            ⌘K
-          </kbd>
-        </div>
 
         <div className="relative" ref={dropdownRef}>
           <button
@@ -288,31 +245,6 @@ export function AdminTopbar({ adminName = "Administrateur" }: { adminName?: stri
           {adminName.charAt(0).toUpperCase()}
         </div>
       </div>
-
-      <AnimatePresence>
-        {searchOpen && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.18 }}
-            className="md:hidden overflow-hidden border-t border-border"
-          >
-            <div className="flex items-center gap-2 px-3 sm:px-4 py-2.5">
-              <Search className="w-4 h-4 text-muted-foreground shrink-0" />
-              <input
-                type="text"
-                placeholder="Rechercher un utilisateur…"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && runSearch(searchQuery)}
-                className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground/60 outline-none w-full"
-                autoFocus
-              />
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </header>
   );
 }

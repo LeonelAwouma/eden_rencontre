@@ -111,9 +111,7 @@ export default function AdminMessagesPage() {
   const [inboxError, setInboxError] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
 
-  // Nouveau message : recherche d'un membre
-  const [composing, setComposing] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
+  // Recherche de membres (tous statuts) à partir du champ de la liste
   const [searchResults, setSearchResults] = useState<Member[]>([]);
   const [searching, setSearching] = useState(false);
 
@@ -134,6 +132,7 @@ export default function AdminMessagesPage() {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const emojiRef = useRef<HTMLDivElement>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const activeRef = useRef<ActiveChat | null>(null);
   const messagesRef = useRef<ThreadMessage[]>([]);
   activeRef.current = active;
@@ -172,8 +171,7 @@ export default function AdminMessagesPage() {
 
   const openChat = useCallback(async (chat: ActiveChat) => {
     setActive(chat);
-    setComposing(false);
-    setSearchQuery("");
+    setFilter("");
     setSearchResults([]);
     setMessages([]);
     setMemberLastReadAt(null);
@@ -236,15 +234,14 @@ export default function AdminMessagesPage() {
     return () => clearInterval(id);
   }, [active?.conversationId, loadInbox, scrollToBottom]);
 
-  // ── Recherche d'un membre (nouveau message) ──
+  // ── Recherche d'un membre : dès 2 caractères, dans tous les comptes ──
   useEffect(() => {
-    if (!composing) return;
-    const q = searchQuery.trim();
-    if (q.length < 2) { setSearchResults([]); return; }
+    const q = filter.trim();
+    if (q.length < 2) { setSearchResults([]); setSearching(false); return; }
     setSearching(true);
     const timer = setTimeout(async () => {
       try {
-        const res = await fetch(`/api/admin/users/search?q=${encodeURIComponent(q)}&limit=15`);
+        const res = await fetch(`/api/admin/users/search?q=${encodeURIComponent(q)}&limit=15&scope=all`);
         const data = await res.json().catch(() => ({}));
         setSearchResults(
           (data.users || []).map((u: Member) => ({ ...u, name: u.name || u.pseudo || "Membre" }))
@@ -253,7 +250,7 @@ export default function AdminMessagesPage() {
       finally { setSearching(false); }
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchQuery, composing]);
+  }, [filter]);
 
   const startWith = (member: Member) => {
     const existing = threads.find((t) => t.user.id === member.id);
@@ -387,6 +384,39 @@ export default function AdminMessagesPage() {
     );
   }, [threads, filter]);
 
+  const searchMode = filter.trim().length >= 2;
+  const otherMembers = searchResults.filter((u) => !threads.some((t) => t.user.id === u.id));
+
+  const renderThread = (t: InboxThread) => {
+    const isActive = active?.user.id === t.user.id;
+    const preview = t.last_message
+      ? `${t.last_message.from_admin ? "Vous : " : ""}${t.last_message.content || (t.last_message.has_image ? "📷 Photo" : "")}`
+      : "Nouvelle conversation";
+    return (
+      <button key={t.conversation_id} onClick={() => openChat({ conversationId: t.conversation_id, user: t.user })}
+        className={cn("w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-l-2",
+          isActive ? "bg-[#486B46]/[0.06] border-[#486B46]" : "border-transparent hover:bg-[#F9FAFB]")}>
+        <Avatar member={t.user} size={44} />
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center justify-between gap-2">
+            <p className={cn("text-[13px] truncate", t.unread_count ? "font-bold text-[#1a1a1a]" : "font-semibold text-[#374151]")}>
+              {t.user.name}
+            </p>
+            {t.last_message && <span className={cn("text-[11px] shrink-0", t.unread_count ? "text-[#486B46] font-semibold" : "text-[#9CA3AF]")}>{shortTime(t.last_message.created_at)}</span>}
+          </div>
+          <div className="flex items-center justify-between gap-2 mt-0.5">
+            <p className={cn("text-[12px] truncate", t.unread_count ? "text-[#374151] font-medium" : "text-[#9CA3AF]")}>{preview}</p>
+            {t.unread_count > 0 && (
+              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#486B46] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+                {t.unread_count}
+              </span>
+            )}
+          </div>
+        </div>
+      </button>
+    );
+  };
+
   // Dernier message de l'admin lu par le membre → « Vu » sous ce message.
   const lastSeenId = useMemo(() => {
     if (!memberLastReadAt) return null;
@@ -417,109 +447,79 @@ export default function AdminMessagesPage() {
       <div className="flex-1 min-h-0 flex bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
         {/* ═══ Colonne des conversations ═══ */}
         <aside className={cn("w-full md:w-[340px] shrink-0 flex-col border-r border-[#E5E7EB]", active ? "hidden md:flex" : "flex")}>
-          {composing ? (
-            <>
-              <div className="p-3 flex items-center gap-2 border-b border-[#E5E7EB]">
-                <button onClick={() => { setComposing(false); setSearchQuery(""); }} aria-label="Retour aux conversations"
-                  className="w-9 h-9 rounded-lg flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] shrink-0">
-                  <ArrowLeft className="w-5 h-5" />
+          {/* Une seule recherche : conversations existantes + tous les membres */}
+          <div className="p-3 flex items-center gap-2 border-b border-[#E5E7EB]">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+              <input ref={searchInputRef} value={filter} onChange={(e) => setFilter(e.target.value)}
+                aria-label="Rechercher un membre ou une conversation"
+                placeholder="Rechercher un membre (nom, pseudo, e-mail)"
+                className="w-full h-10 pl-9 pr-9 rounded-xl bg-[#F9FAFB] text-[13px] text-[#374151] outline-none focus:ring-2 focus:ring-[#486B46]/15" />
+              {searching ? (
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] animate-spin" />
+              ) : filter && (
+                <button onClick={() => { setFilter(""); searchInputRef.current?.focus(); }} aria-label="Effacer la recherche"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center text-[#9CA3AF] hover:text-[#374151]">
+                  <X className="w-4 h-4" />
                 </button>
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
-                  <input autoFocus value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Nom, pseudo ou e-mail du membre"
-                    className="w-full h-10 pl-9 pr-8 rounded-xl bg-[#F9FAFB] text-[13px] text-[#374151] outline-none focus:ring-2 focus:ring-[#486B46]/15" />
-                  {searching && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] animate-spin" />}
-                </div>
-              </div>
-              <div className="flex-1 overflow-y-auto">
-                {searchQuery.trim().length < 2 ? (
-                  <p className="p-5 text-[13px] text-[#9CA3AF]">Tapez au moins 2 caractères pour trouver un membre approuvé.</p>
-                ) : !searching && searchResults.length === 0 ? (
-                  <p className="p-5 text-[13px] text-[#9CA3AF]">Aucun membre trouvé.</p>
+              )}
+            </div>
+            <button onClick={() => searchInputRef.current?.focus()} title="Écrire à un membre" aria-label="Écrire à un membre"
+              className="w-10 h-10 shrink-0 rounded-xl bg-[#486B46] hover:bg-[#3A5A3A] text-white flex items-center justify-center transition-colors">
+              <PenSquare className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            {searchMode ? (
+              <>
+                <p className="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">Conversations</p>
+                {visibleThreads.length === 0
+                  ? <p className="px-4 pb-3 text-[12px] text-[#9CA3AF]">Aucune conversation ne correspond.</p>
+                  : visibleThreads.map(renderThread)}
+                <p className="px-4 pt-4 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">Autres membres</p>
+                {searching && otherMembers.length === 0 ? (
+                  <p className="px-4 pb-3 text-[12px] text-[#9CA3AF]">Recherche…</p>
+                ) : otherMembers.length === 0 ? (
+                  <p className="px-4 pb-3 text-[12px] text-[#9CA3AF]">Aucun autre membre trouvé.</p>
                 ) : (
-                  searchResults.map((u) => (
+                  otherMembers.map((u) => (
                     <button key={u.id} onClick={() => startWith(u)}
                       className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#F9FAFB] transition-colors">
-                      <Avatar member={u} />
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-semibold text-[#1a1a1a] truncate">
-                          {u.name}{u.pseudo && u.pseudo !== u.name && <span className="font-normal text-[#9CA3AF]"> · {u.pseudo}</span>}
-                        </p>
+                      <Avatar member={u} size={44} />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <p className="text-[13px] font-semibold text-[#1a1a1a] truncate">
+                            {u.name}{u.pseudo && u.pseudo !== u.name && <span className="font-normal text-[#9CA3AF]"> · {u.pseudo}</span>}
+                          </p>
+                          <StatusBadge status={u.status} />
+                        </div>
                         <p className="text-[12px] text-[#9CA3AF] truncate">{u.email}</p>
                       </div>
+                      <PenSquare className="w-4 h-4 text-[#9CA3AF] shrink-0" />
                     </button>
                   ))
                 )}
+              </>
+            ) : inboxLoading ? (
+              <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-[#486B46]" /></div>
+            ) : inboxError ? (
+              <div className="p-5 text-center">
+                <p className="text-[13px] text-red-600 mb-2">{inboxError}</p>
+                <button onClick={() => loadInbox()} className="text-[13px] font-semibold text-[#486B46] hover:underline">Réessayer</button>
               </div>
-            </>
-          ) : (
-            <>
-              <div className="p-3 space-y-2 border-b border-[#E5E7EB]">
-                <button onClick={() => setComposing(true)}
-                  className="w-full h-10 rounded-xl bg-[#486B46] hover:bg-[#3A5A3A] text-white text-[13px] font-semibold flex items-center justify-center gap-2 transition-colors">
-                  <PenSquare className="w-4 h-4" /> Nouveau message
-                </button>
-                {threads.length > 0 && (
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
-                    <input value={filter} onChange={(e) => setFilter(e.target.value)} placeholder="Filtrer les conversations"
-                      className="w-full h-9 pl-9 pr-3 rounded-xl bg-[#F9FAFB] text-[13px] text-[#374151] outline-none focus:ring-2 focus:ring-[#486B46]/15" />
-                  </div>
-                )}
+            ) : threads.length === 0 ? (
+              <div className="flex flex-col items-center text-center px-6 py-12">
+                <div className="w-12 h-12 rounded-2xl bg-[#EEF5EC] flex items-center justify-center mb-3">
+                  <MessageCircle className="w-6 h-6 text-[#486B46]" />
+                </div>
+                <p className="text-[13px] font-semibold text-[#374151]">Aucune conversation pour l'instant</p>
+                <p className="text-[12px] text-[#9CA3AF] mt-1">Les messages des membres arriveront ici. Pour écrire à quelqu'un, recherchez-le ci-dessus.</p>
               </div>
-              <div className="flex-1 overflow-y-auto">
-                {inboxLoading ? (
-                  <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-[#486B46]" /></div>
-                ) : inboxError ? (
-                  <div className="p-5 text-center">
-                    <p className="text-[13px] text-red-600 mb-2">{inboxError}</p>
-                    <button onClick={() => loadInbox()} className="text-[13px] font-semibold text-[#486B46] hover:underline">Réessayer</button>
-                  </div>
-                ) : threads.length === 0 ? (
-                  <div className="flex flex-col items-center text-center px-6 py-12">
-                    <div className="w-12 h-12 rounded-2xl bg-[#EEF5EC] flex items-center justify-center mb-3">
-                      <MessageCircle className="w-6 h-6 text-[#486B46]" />
-                    </div>
-                    <p className="text-[13px] font-semibold text-[#374151]">Aucune conversation pour l'instant</p>
-                    <p className="text-[12px] text-[#9CA3AF] mt-1">Les messages des membres arriveront ici. Vous pouvez aussi écrire le premier.</p>
-                  </div>
-                ) : visibleThreads.length === 0 ? (
-                  <p className="p-5 text-[13px] text-[#9CA3AF]">Aucune conversation ne correspond.</p>
-                ) : (
-                  visibleThreads.map((t) => {
-                    const isActive = active?.user.id === t.user.id;
-                    const preview = t.last_message
-                      ? `${t.last_message.from_admin ? "Vous : " : ""}${t.last_message.content || (t.last_message.has_image ? "📷 Photo" : "")}`
-                      : "Nouvelle conversation";
-                    return (
-                      <button key={t.conversation_id} onClick={() => openChat({ conversationId: t.conversation_id, user: t.user })}
-                        className={cn("w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-l-2",
-                          isActive ? "bg-[#486B46]/[0.06] border-[#486B46]" : "border-transparent hover:bg-[#F9FAFB]")}>
-                        <Avatar member={t.user} size={44} />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-2">
-                            <p className={cn("text-[13px] truncate", t.unread_count ? "font-bold text-[#1a1a1a]" : "font-semibold text-[#374151]")}>
-                              {t.user.name}
-                            </p>
-                            {t.last_message && <span className={cn("text-[11px] shrink-0", t.unread_count ? "text-[#486B46] font-semibold" : "text-[#9CA3AF]")}>{shortTime(t.last_message.created_at)}</span>}
-                          </div>
-                          <div className="flex items-center justify-between gap-2 mt-0.5">
-                            <p className={cn("text-[12px] truncate", t.unread_count ? "text-[#374151] font-medium" : "text-[#9CA3AF]")}>{preview}</p>
-                            {t.unread_count > 0 && (
-                              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#486B46] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
-                                {t.unread_count}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </button>
-                    );
-                  })
-                )}
-              </div>
-            </>
-          )}
+            ) : (
+              threads.map(renderThread)
+            )}
+          </div>
         </aside>
 
         {/* ═══ Conversation ═══ */}
@@ -694,7 +694,7 @@ export default function AdminMessagesPage() {
                 <MessageCircle className="w-8 h-8 text-[#486B46]" />
               </div>
               <h3 className="text-[18px] font-bold text-[#1a1a1a] mb-1">Vos conversations</h3>
-              <p className="text-[13px] text-[#9CA3AF] max-w-xs">Choisissez une conversation à gauche, ou écrivez à n'importe quel membre avec « Nouveau message ».</p>
+              <p className="text-[13px] text-[#9CA3AF] max-w-xs">Choisissez une conversation à gauche, ou recherchez n'importe quel membre pour lui écrire.</p>
             </div>
           )}
         </section>
