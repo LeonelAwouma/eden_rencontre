@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,24 @@ import { useI18n } from "@/lib/i18n";
 import { getOnboardingSteps, getMyOnboarding, saveOnboarding, type Field, type SupportedLocale } from "@/lib/onboarding";
 
 const SKIP_KEY = "eden_onboarding_skipped";
+// Étape en cours, par utilisateur, pour reprendre là où on s'est arrêté.
+const STEP_KEY_PREFIX = "eden_onboarding_step:";
+const AUTOSAVE_DELAY_MS = 800;
+
+type AutoSaveState = "idle" | "saving" | "saved" | "error";
+
+const hasValue = (v: any) =>
+  v !== undefined && v !== null && v !== "" && !(Array.isArray(v) && v.length === 0);
+
+function readStoredStep(userId: string): number | null {
+  try {
+    const raw = localStorage.getItem(STEP_KEY_PREFIX + userId);
+    const n = raw === null ? NaN : Number(raw);
+    return Number.isInteger(n) && n >= 0 ? n : null;
+  } catch {
+    return null;
+  }
+}
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -23,9 +41,19 @@ export default function OnboardingPage() {
   const { locale, t } = useI18n();
 
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
+  const [autoSave, setAutoSave] = useState<AutoSaveState>("idle");
+
+  // Sauvegarde automatique : réponses modifiées non encore envoyées.
+  const answersRef = useRef(answers);
+  const dirtyRef = useRef(false);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Une fois la finalisation lancée, plus d'autosave (il remettrait onboarding_completed à false).
+  const finishingRef = useRef(false);
+  const inflightRef = useRef<Promise<unknown> | null>(null);
 
   const steps = getOnboardingSteps(locale as SupportedLocale);
   const total = steps.length;
@@ -40,15 +68,94 @@ export default function OnboardingPage() {
       const { answers: saved, completed } = await getMyOnboarding();
       if (!active) return;
       if (completed) { router.replace("/dashboard"); return; }
-      setAnswers(saved || {});
+      const initial = saved || {};
+      // Reprise : étape mémorisée, sinon dernière étape contenant une réponse.
+      const allSteps = getOnboardingSteps(locale as SupportedLocale);
+      const uid = session.id ?? null;
+      let resume = uid ? readStoredStep(uid) : null;
+      if (resume === null) {
+        let lastAnswered = 0;
+        allSteps.forEach((s, i) => { if (s.fields.some((f) => hasValue(initial[f.id]))) lastAnswered = i; });
+        resume = lastAnswered;
+      }
+      answersRef.current = initial;
+      setAnswers(initial);
+      setUserId(uid);
+      setStepIndex(Math.min(resume, allSteps.length - 1));
       setLoading(false);
     })();
     return () => { active = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
-  const setField = (id: string, value: any) => setAnswers((prev) => ({ ...prev, [id]: value }));
+  const flush = useCallback(async () => {
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+    if (!dirtyRef.current || finishingRef.current) return;
+    dirtyRef.current = false;
+    setAutoSave("saving");
+    const request = saveOnboarding(answersRef.current, false);
+    inflightRef.current = request;
+    const res = await request;
+    if (inflightRef.current === request) inflightRef.current = null;
+    if (finishingRef.current) return;
+    if (res.ok) {
+      setAutoSave(dirtyRef.current ? "saving" : "saved");
+    } else {
+      dirtyRef.current = true; // renvoyé à la prochaine modification ou au changement d'étape
+      setAutoSave("error");
+    }
+  }, []);
+
+  // Chaque modification déclenche une sauvegarde différée.
+  useEffect(() => {
+    answersRef.current = answers;
+    if (!dirtyRef.current) return;
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => { void flush(); }, AUTOSAVE_DELAY_MS);
+  }, [answers, flush]);
+
+  // Mémorise l'étape courante pour la reprise.
+  useEffect(() => {
+    if (!userId || loading) return;
+    try { localStorage.setItem(STEP_KEY_PREFIX + userId, String(stepIndex)); } catch {}
+  }, [userId, stepIndex, loading]);
+
+  // Onglet masqué / page quittée / démontage : on envoie ce qui reste.
+  useEffect(() => {
+    const onVisibility = () => { if (document.visibilityState === "hidden") void flush(); };
+    const onPageHide = () => { void flush(); };
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+      void flush();
+    };
+  }, [flush]);
+
+  const setField = (id: string, value: any) => {
+    dirtyRef.current = true;
+    setAnswers((prev) => ({ ...prev, [id]: value }));
+  };
 
   const persist = async (completed: boolean) => {
+    if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
+    dirtyRef.current = false;
+    if (completed) finishingRef.current = true;
+    // Un autosave encore en vol ne doit pas arriver après l'envoi final.
+    if (inflightRef.current) await inflightRef.current;
+    const ok = await submit(completed);
+    if (ok) {
+      setAutoSave("saved");
+    } else {
+      // Échec : on garde les réponses à renvoyer et on réactive l'autosave.
+      dirtyRef.current = true;
+      finishingRef.current = false;
+    }
+    return ok;
+  };
+
+  const submit = async (completed: boolean) => {
     setSaving(true);
     if (completed) {
       // Use the new API that sets verification_status to "under_review" + creates notifications
@@ -90,18 +197,23 @@ export default function OnboardingPage() {
       setStepIndex((i) => i + 1);
       window.scrollTo({ top: 0, behavior: "smooth" });
     } else {
-      localStorage.removeItem(SKIP_KEY);
+      try {
+        localStorage.removeItem(SKIP_KEY);
+        if (userId) localStorage.removeItem(STEP_KEY_PREFIX + userId);
+      } catch {}
       toast({ title: t("onboarding.profileCompleted"), description: t("onboarding.profileCompletedDesc") });
       router.push("/dashboard");
     }
   };
 
   const back = () => {
+    void flush();
     if (stepIndex > 0) { setStepIndex((i) => i - 1); window.scrollTo({ top: 0, behavior: "smooth" }); }
   };
 
-  const skip = () => {
-    localStorage.setItem(SKIP_KEY, "1");
+  const skip = async () => {
+    await flush();
+    try { localStorage.setItem(SKIP_KEY, "1"); } catch {}
     router.push("/dashboard");
   };
 
@@ -188,8 +300,17 @@ export default function OnboardingPage() {
           </Button>
         </div>
 
-        <p className="text-center text-foreground/30 text-xs mt-6">
-          {t("onboarding.autoSaveNote")}
+        <p
+          aria-live="polite"
+          className={cn(
+            "text-center text-xs mt-6 inline-flex w-full items-center justify-center gap-1.5",
+            autoSave === "error" ? "text-destructive/80" : "text-foreground/30",
+          )}
+        >
+          {autoSave === "saving" && <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("onboarding.autoSaving")}</>}
+          {autoSave === "saved" && <><Check className="w-3.5 h-3.5 text-secondary" /> {t("onboarding.autoSaved")}</>}
+          {autoSave === "error" && t("onboarding.autoSaveError")}
+          {autoSave === "idle" && t("onboarding.autoSaveNote")}
         </p>
       </main>
     </div>

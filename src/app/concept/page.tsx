@@ -101,7 +101,7 @@ export default function ConceptPage() {
             <div className="flex flex-col gap-8">
               <div className="relative rounded-2xl overflow-hidden shadow-botanical-lg border border-sage/10 group">
                 <img
-                  src="/concept.webp"
+                  src="/couple-14.webp"
                   alt="Concept Visual"
                   className="object-contain w-full h-auto transition-transform duration-700 group-hover:scale-105"
                 />

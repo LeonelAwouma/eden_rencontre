@@ -42,7 +42,8 @@ interface SidebarProps {
   displayLocation: string;
   totalUnread: number;
   incomingRequestCount: number;
-  onLogout: () => void;
+  /** Déconnexion : fournie uniquement sur le profil (jamais pendant un questionnaire). */
+  onLogout?: () => void;
 }
 
 const sidebarNav: { name: Tab; icon: any; badge?: number; dot?: boolean; highlight?: boolean }[] = [
@@ -189,15 +190,17 @@ export function DashboardSidebar({
               {displayLocation}
             </p>
           </button>
-          <button
-            onClick={onLogout}
-            title={t("dashboardSidebar.logout")}
-            className="transition-colors p-1 hover:opacity-70"
-            style={{ color: "#777777" }}
-            aria-label={t("dashboardSidebar.logout")}
-          >
-            <LogOut className="w-5 h-5" />
-          </button>
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              title={t("dashboardSidebar.logout")}
+              className="transition-colors p-1 hover:opacity-70"
+              style={{ color: "#777777" }}
+              aria-label={t("dashboardSidebar.logout")}
+            >
+              <LogOut className="w-5 h-5" />
+            </button>
+          )}
         </div>
       </div>
     </aside>

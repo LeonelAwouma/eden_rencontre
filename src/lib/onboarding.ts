@@ -395,3 +395,20 @@ export async function saveOnboarding(answers: Record<string, any>, completed: bo
   }
   return { ok: true };
 }
+
+/** Sauvegarde automatique : enregistre les réponses sans toucher à onboarding_completed. */
+export async function saveQuestionnaireAnswers(answers: Record<string, any>): Promise<{ ok: boolean; error?: string }> {
+  if (!supabase) return { ok: false, error: "Supabase non configuré." };
+  const { data: auth } = await supabase.auth.getUser();
+  const me = auth.user?.id;
+  if (!me) return { ok: false, error: "Vous devez être connecté." };
+  const { error } = await supabase
+    .from("profiles")
+    .update({ questionnaire: answers, updated_at: new Date().toISOString() })
+    .eq("id", me);
+  if (error) {
+    console.error("[Eden] sauvegarde automatique du questionnaire échouée:", error.message);
+    return { ok: false, error: error.message };
+  }
+  return { ok: true };
+}

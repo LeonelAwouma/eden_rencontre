@@ -15,6 +15,8 @@ import {
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { useI18n } from "@/lib/i18n";
+import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
+import { AutoSaveIndicator } from "@/components/autosave-indicator";
 
 
 /* ─────────────────────────── Types ─────────────────────────── */
@@ -399,11 +401,26 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
   const [editingQ, setEditingQ] = useState<string | null>(null);
   const [localAnswers, setLocalAnswers] = useState<Record<string, any>>(answers || {});
   const [saving, setSaving] = useState(false);
+  const autosave = useQuestionnaireAutosave(localAnswers);
 
   useEffect(() => { setLocalAnswers(answers || {}); }, [answers]);
 
   const handleFieldChange = (fieldId: string, value: any) => {
+    autosave.markDirty();
     setLocalAnswers(prev => ({ ...prev, [fieldId]: value }));
+  };
+
+  const startEditing = async (qKey: string) => {
+    await autosave.flush();
+    autosave.reset();
+    setEditingQ(qKey);
+  };
+
+  // Replier l'accordéon ferme l'édition : on envoie ce qui reste.
+  const toggleExpanded = (qKey: string, isExpanded: boolean) => {
+    void autosave.flush();
+    setExpanded(isExpanded ? null : qKey);
+    setEditingQ(null);
   };
 
   const handleMultiToggle = (fieldId: string, option: string) => {
@@ -411,9 +428,11 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
     handleFieldChange(fieldId, current.includes(option) ? current.filter(x => x !== option) : [...current, option]);
   };
 
+  // « Terminé » : vide la sauvegarde en attente puis marque le questionnaire complété.
   const handleSaveQuestionnaire = async () => {
     setSaving(true);
     try {
+      await autosave.flush();
       const result = await saveOnboarding(localAnswers, true);
       if (!result.ok) throw new Error(result.error);
       setEditingQ(null);
@@ -446,7 +465,7 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
 
           return (
             <div key={q.key} className="border border-[#E0DDD8] rounded-xl overflow-hidden">
-              <button onClick={() => { setExpanded(isExpanded ? null : q.key); setEditingQ(null); }}
+              <button onClick={() => toggleExpanded(q.key, isExpanded)}
                 className="w-full flex items-center justify-between px-5 py-4 hover:bg-[#FAFAF7] transition-colors text-left">
                 <div className="flex-1">
                   <div className="flex items-center gap-3">
@@ -474,14 +493,14 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
                   )}
                   <div className="flex justify-end gap-2 pt-4 mb-4">
                     {!isEditing ? (
-                      <button onClick={() => setEditingQ(q.key)} className="eden-btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5">
+                      <button onClick={() => startEditing(q.key)} className="eden-btn-outline text-xs px-3 py-1.5 flex items-center gap-1.5">
                         <Edit3 size={14} /> {t("dashboard.edit")}
                       </button>
                     ) : (
                       <>
-                        <button onClick={() => { setEditingQ(null); setLocalAnswers(answers || {}); }} className="eden-btn-outline text-xs px-3 py-1.5"><X size={14} /></button>
+                        <AutoSaveIndicator status={autosave.status} />
                         <button onClick={handleSaveQuestionnaire} disabled={saving} className="eden-btn-primary text-xs px-3 py-1.5 flex items-center gap-1.5">
-                          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {t("dashboard.save")}
+                          {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {t("dashboard.questionnaireDone")}
                         </button>
                       </>
                     )}
@@ -736,7 +755,8 @@ export default function ProfilePage() {
     totalUnread: 0,
     incomingRequestCount: 0,
     notifCount: 0,
-    onLogout: handleLogout,
+    // Déconnexion visible sur l'onglet profil uniquement, pas pendant le questionnaire.
+    onLogout: tab === "profile" ? handleLogout : undefined,
   };
 
   return (

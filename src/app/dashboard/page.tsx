@@ -53,6 +53,8 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { Tab, TABS, ComposerType, FeedPost, EDIT_WINDOW_MS, DAILY_VERSES, VERSE_OF_DAY, getDailyVerses } from "@/components/dashboard/dashboard-types";
 import { useI18n } from "@/lib/i18n";
+import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
+import { AutoSaveIndicator } from "@/components/autosave-indicator";
 
 const TAB_LABEL_KEY: Record<string, string> = {
   Home: "dashboardTabs.home", Accueil: "dashboardTabs.home",
@@ -332,6 +334,7 @@ export default function DashboardPage() {
   const [editingQuestionnaire, setEditingQuestionnaire] = useState<string | null>(null);
   const [localQAnswers, setLocalQAnswers] = useState<Record<string, any>>({});
   const [savingQuestionnaire, setSavingQuestionnaire] = useState(false);
+  const qAutosave = useQuestionnaireAutosave(localQAnswers);
   const [expandedQuestionnaire, setExpandedQuestionnaire] = useState<string | null>(null);
   const chatChannelRef = useRef<any>(null);
   const typingTimeoutRef = useRef<any>(null);
@@ -1049,12 +1052,20 @@ export default function DashboardPage() {
   const handleLogout = async () => { await logout(); router.push("/login"); };
 
   // ── Questionnaire handlers ──
-  const startEditQuestionnaire = (qKey: string) => {
-    setLocalQAnswers({ ...questionnaireAnswers });
+  const startEditQuestionnaire = async (qKey: string) => {
+    // Passage d'un questionnaire à un autre : on envoie d'abord ce qui reste.
+    if (editingQuestionnaire) {
+      await qAutosave.flush();
+      setQuestionnaireAnswers(localQAnswers);
+    } else {
+      setLocalQAnswers({ ...questionnaireAnswers });
+    }
+    qAutosave.reset();
     setEditingQuestionnaire(qKey);
   };
 
   const handleQFieldChange = (fieldId: string, value: any) => {
+    qAutosave.markDirty();
     setLocalQAnswers(prev => ({ ...prev, [fieldId]: value }));
   };
 
@@ -1065,9 +1076,12 @@ export default function DashboardPage() {
     handleQFieldChange(fieldId, [...current, option]);
   };
 
+  // « Terminé » : les réponses sont déjà enregistrées au fil de l'eau ; on vide
+  // ce qui reste en attente puis on marque le questionnaire comme complété.
   const handleSaveQuestionnaire = async () => {
     setSavingQuestionnaire(true);
     try {
+      await qAutosave.flush();
       const result = await saveOnboarding(localQAnswers, true);
       if (!result.ok) throw new Error(result.error);
       setQuestionnaireAnswers(localQAnswers);
@@ -1161,7 +1175,6 @@ export default function DashboardPage() {
         displayLocation={displayLocation}
         totalUnread={totalUnread}
         incomingRequestCount={incomingRequests.length}
-        onLogout={handleLogout}
       />
 
       {/* ══ MAIN CONTENT (Layers 2 + 3) ══ */}
@@ -2707,13 +2720,10 @@ export default function DashboardPage() {
                           </button>
                         ) : (
                           <>
-                            <button onClick={() => { setEditingQuestionnaire(null); setLocalQAnswers({}); }}
-                              className="flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-bold" style={{ border: "1px solid #E8E5E0", color: "#777777" }}>
-                              <X className="w-3.5 h-3.5" /> {t("dashboard.cancel")}
-                            </button>
+                            <AutoSaveIndicator status={qAutosave.status} />
                             <button onClick={handleSaveQuestionnaire} disabled={savingQuestionnaire}
                               className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold" style={{ background: "#486B46", color: "#FFFFFF" }}>
-                              {savingQuestionnaire ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} {t("dashboard.save")}
+                              {savingQuestionnaire ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Check className="w-3.5 h-3.5" />} {t("dashboard.questionnaireDone")}
                             </button>
                           </>
                         )}
@@ -2796,8 +2806,8 @@ export default function DashboardPage() {
               );
             })}
 
-            {/* Logout */}
-            {!editingProfile && (
+            {/* Logout — masqué pendant l'édition du profil ou d'un questionnaire */}
+            {!editingProfile && !editingQuestionnaire && (
               <Button onClick={handleLogout} variant="outline"
                 className="w-full h-12 rounded-xl font-bold"
                 style={{ borderColor: "#E8E5E0", color: "#777777" }}>

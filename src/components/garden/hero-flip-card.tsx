@@ -17,6 +17,9 @@ const PHOTOS = [
   "/couple-08.webp",
   "/couple-09.webp",
   "/couple-10.webp",
+  "/couple-11.webp",
+  "/couple-12.webp",
+  "/couple-13.webp",
 ];
 
 const BASE_DELAY = 4200;
