@@ -23,7 +23,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { getSession, logout, updateProfile, ageFromBirthDate, type EdenUser } from "@/lib/auth";
-import { ALL_LESSONS, FORMATION_BASE_PATH } from "@/lib/formation/batir-sur-le-roc";
+import { ALL_LESSONS, FORMATION_BASE_PATH, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
 import { useFormationProgress } from "@/lib/formation/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { PROFILES } from "@/lib/profiles";
@@ -1550,9 +1550,9 @@ export default function DashboardPage() {
                   {user && (() => {
                     const done = ALL_LESSONS.filter(({ lesson }) => formationProgress.completed.includes(lesson.slug)).length;
                     const total = ALL_LESSONS.length;
-                    const next = ALL_LESSONS.find(({ lesson }) => !formationProgress.completed.includes(lesson.slug))?.lesson;
+                    const next = resumeLesson(formationProgress);
                     const href = next ? `${FORMATION_BASE_PATH}/${next.slug}` : "/dashboard/academie";
-                    const cta = !next ? t("dashboard.academyReread") : done > 0 ? t("dashboard.academyContinue") : t("dashboard.academyStart");
+                    const cta = !next ? t("dashboard.academyReread") : done > 0 || formationProgress.lastLesson ? t("dashboard.academyContinue") : t("dashboard.academyStart");
                     return (
                       <Link href={href}
                         className="group mt-4 pt-4 flex items-center gap-3 border-t transition-colors"

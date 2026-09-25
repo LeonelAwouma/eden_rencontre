@@ -10,18 +10,25 @@ export interface FormationProgress {
   completed: string[];
   quiz: Record<string, Record<number, number>>;
   reflections: Record<string, string>;
+  /** Position de lecture par leçon (0 → 1), enregistrée au fil du défilement. */
+  positions: Record<string, number>;
+  /** Dernière leçon ouverte : « Continuer » y ramène. */
+  lastLesson: string | null;
 }
 
 const KEY = "gaa-formation-batir-sur-le-roc-v1";
 const EVENT = "gaa-formation-progress";
-const EMPTY: FormationProgress = { completed: [], quiz: {}, reflections: {} };
+const EMPTY: FormationProgress = { completed: [], quiz: {}, reflections: {}, positions: {}, lastLesson: null };
 
 function read(): FormationProgress {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return EMPTY;
     const p = JSON.parse(raw);
-    return { completed: p.completed || [], quiz: p.quiz || {}, reflections: p.reflections || {} };
+    return {
+      completed: p.completed || [], quiz: p.quiz || {}, reflections: p.reflections || {},
+      positions: p.positions || {}, lastLesson: typeof p.lastLesson === "string" ? p.lastLesson : null,
+    };
   } catch { return EMPTY; }
 }
 
@@ -70,5 +77,10 @@ export function useFormationProgress({ persist = true }: { persist?: boolean } =
     ...p, reflections: { ...p.reflections, [slug]: text },
   })), [update]);
 
-  return { progress, ready, setCompleted, answer, resetQuiz, saveReflection };
+  /** Appelé pendant la lecture : mémorise la position et la leçon en cours. */
+  const savePosition = useCallback((slug: string, ratio: number) => update((p) => ({
+    ...p, lastLesson: slug, positions: { ...p.positions, [slug]: Math.round(Math.min(1, Math.max(0, ratio)) * 1000) / 1000 },
+  })), [update]);
+
+  return { progress, ready, setCompleted, answer, resetQuiz, saveReflection, savePosition };
 }

@@ -10,7 +10,7 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Monogram, Flourish } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
-import { BATIR_SUR_LE_ROC, FORMATION_BASE_PATH, ALL_LESSONS } from "@/lib/formation/batir-sur-le-roc";
+import { BATIR_SUR_LE_ROC, FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
 import { useFormationProgress } from "@/lib/formation/progress";
 
 export default function AcademyIndexPage() {
@@ -20,8 +20,9 @@ export default function AcademyIndexPage() {
   const formation = BATIR_SUR_LE_ROC;
 
   const doneCount = ALL_LESSONS.filter(({ lesson }) => progress.completed.includes(lesson.slug)).length;
-  const nextLesson = ALL_LESSONS.find(({ lesson }) => !progress.completed.includes(lesson.slug))?.lesson ?? null;
-  const started = doneCount > 0;
+  // Leçon en cours de lecture en priorité, sinon la première non terminée.
+  const nextLesson = resumeLesson(progress);
+  const started = doneCount > 0 || progress.lastLesson !== null;
   const available = ALL_LESSONS.length;
 
   // Ressources complémentaires, conservées de l'ancienne Académie.

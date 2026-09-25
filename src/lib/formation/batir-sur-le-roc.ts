@@ -725,3 +725,13 @@ export function findLesson(slug: string) {
   if (i === -1) return null;
   return { ...ALL_LESSONS[i], previous: ALL_LESSONS[i - 1]?.lesson ?? null, next: ALL_LESSONS[i + 1]?.lesson ?? null };
 }
+
+/**
+ * Leçon à rouvrir avec « Continuer » : celle en cours de lecture si elle n'est
+ * pas terminée, sinon la première leçon non terminée (null si tout est lu).
+ */
+export function resumeLesson(progress: { completed: string[]; lastLesson: string | null }) {
+  const last = progress.lastLesson ? findLesson(progress.lastLesson)?.lesson : undefined;
+  if (last && !progress.completed.includes(last.slug)) return last;
+  return ALL_LESSONS.find(({ lesson }) => !progress.completed.includes(lesson.slug))?.lesson ?? null;
+}

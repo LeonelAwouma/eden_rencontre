@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Compass, Feather, HelpCircle,
-  Lightbulb, RotateCcw, Target, X, BookOpenCheck, Quote, Eye,
+  Lightbulb, RotateCcw, Target, X, BookOpenCheck, Quote, Eye, ArrowDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
@@ -205,23 +205,90 @@ function Reflection({ lesson, value, onSave }: { lesson: Lesson; value: string; 
 export function LessonReader({ lesson, pillar, previous, next, preview = false }: {
   lesson: Lesson; pillar: Pillar; previous: Lesson | null; next: Lesson | null; preview?: boolean;
 }) {
-  const { progress, ready, setCompleted, answer, resetQuiz, saveReflection } = useFormationProgress({ persist: !preview });
+  const { progress, ready, setCompleted, answer, resetQuiz, saveReflection, savePosition } = useFormationProgress({ persist: !preview });
   const basePath = preview ? ADMIN_LESSON_PREVIEW_PATH : FORMATION_BASE_PATH;
   const homeHref = preview ? ADMIN_FORMATION_PATH : "/dashboard/academie";
   const [scroll, setScroll] = useState(0);
   const isDone = progress.completed.includes(lesson.slug);
   const answers = progress.quiz[lesson.slug] || {};
 
+  // ── Sauvegarde au fil de la lecture ──────────────────────────
+  // Position de défilement enregistrée régulièrement (et à la sortie de la page) ;
+  // la leçon devient « terminée » dès que le lecteur atteint sa fin.
+  const savePositionRef = useRef(savePosition);
+  savePositionRef.current = savePosition;
+  const lastSaved = useRef({ at: 0, ratio: -1 });
+  const ratioRef = useRef(0);
+  // Rien n'est écrit avant d'avoir lu la position enregistrée : sinon le premier
+  // calcul (haut de page) effacerait l'endroit où reprendre.
+  const canSave = useRef(false);
+  const [resumeAt, setResumeAt] = useState<number | null>(null);
+  const endRef = useRef<HTMLDivElement>(null);
+  // Une seule complétion automatique par visite : si le membre la retire, on la respecte.
+  const autoCompleted = useRef(false);
+
   useEffect(() => {
-    const onScroll = () => {
+    const ratioNow = () => {
       const h = document.documentElement;
       const max = h.scrollHeight - h.clientHeight;
-      setScroll(max > 0 ? Math.min(1, h.scrollTop / max) : 0);
+      return max > 0 ? Math.min(1, h.scrollTop / max) : 0;
     };
+    canSave.current = false;
+    const persistNow = (force = false) => {
+      if (!canSave.current) return;
+      const r = ratioRef.current, last = lastSaved.current, now = Date.now();
+      if (force || (now - last.at > 1500 && Math.abs(r - last.ratio) >= 0.02)) {
+        lastSaved.current = { at: now, ratio: r };
+        savePositionRef.current(lesson.slug, r);
+      }
+    };
+    const onScroll = () => { ratioRef.current = ratioNow(); setScroll(ratioRef.current); persistNow(); };
+    const onLeave = () => persistNow(true);
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    window.addEventListener("pagehide", onLeave);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("pagehide", onLeave);
+      onLeave(); // changement de leçon sans rechargement
+    };
+  }, [lesson.slug]);
+
+  // À l'ouverture : proposer de reprendre là où la lecture s'était arrêtée.
+  useEffect(() => {
+    if (!ready) return;
+    const saved = progress.positions[lesson.slug];
+    setResumeAt(!progress.completed.includes(lesson.slug) && saved > 0.05 && saved < 0.95 ? saved : null);
+    autoCompleted.current = false;
+    lastSaved.current = { at: 0, ratio: -1 };
+    savePositionRef.current(lesson.slug, saved ?? 0); // mémorise la leçon en cours
+    canSave.current = true;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- une fois par leçon, quand la progression est chargée
+  }, [ready, lesson.slug]);
+
+  useEffect(() => {
+    if (resumeAt !== null && scroll >= resumeAt - 0.02) setResumeAt(null);
+  }, [scroll, resumeAt]);
+
+  const resume = () => {
+    if (resumeAt === null) return;
+    const h = document.documentElement;
+    window.scrollTo({ top: resumeAt * (h.scrollHeight - h.clientHeight), behavior: "smooth" });
+    setResumeAt(null);
+  };
+
+  useEffect(() => {
+    const el = endRef.current;
+    if (!el || !ready) return;
+    const obs = new IntersectionObserver(([entry]) => {
+      if (entry.isIntersecting && !autoCompleted.current) {
+        autoCompleted.current = true;
+        if (!isDone) setCompleted(lesson.slug, true);
+      }
+    }, { threshold: 0.6 });
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [ready, lesson.slug, isDone, setCompleted]);
 
   const toc = [
     { id: "introduction", label: "Introduction" },
@@ -369,14 +436,16 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
               <Reflection lesson={lesson} value={progress.reflections[lesson.slug] || ""} onSave={(t) => saveReflection(lesson.slug, t)} />
             </section>
 
-            {/* Fin de leçon */}
-            <div className="mt-14 rounded-3xl border border-border bg-card p-6 sm:p-8 text-center">
+            {/* Fin de leçon — l'atteindre marque la leçon comme terminée */}
+            <div ref={endRef} className="mt-14 rounded-3xl border border-border bg-card p-6 sm:p-8 text-center">
               <BookOpenCheck className="w-8 h-8 text-primary mx-auto" />
               <p className="mt-3 font-headline text-[22px] font-bold text-foreground">
                 {isDone ? "Leçon terminée" : "Tu as parcouru cette leçon"}
               </p>
               <p className="mt-1 text-[15px] text-[#56615A]">
-                {isDone ? "Tu peux la relire quand tu veux ; ta progression est enregistrée." : "Marque-la comme terminée pour suivre ta progression dans le pilier."}
+                {isDone
+                  ? (preview ? "Aperçu : rien n'est enregistré." : "Ta progression est enregistrée automatiquement ; tu peux relire cette leçon quand tu veux.")
+                  : "Marque-la comme terminée pour suivre ta progression dans le pilier."}
               </p>
               <div className="mt-5 flex items-center justify-center">
                 <button type="button" onClick={() => setCompleted(lesson.slug, !isDone)}
@@ -423,6 +492,20 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
           </nav>
         </aside>
       </div>
+
+      {/* Reprendre la lecture là où elle s'était arrêtée */}
+      {resumeAt !== null && (
+        <div className="fixed inset-x-0 bottom-5 z-40 flex justify-center px-4 pointer-events-none">
+          <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-[#2E4A36] text-white shadow-lg pl-1 pr-1.5 py-1">
+            <button type="button" onClick={resume} className="inline-flex items-center gap-2 h-9 px-4 rounded-full text-[14px] font-semibold hover:bg-white/10">
+              <ArrowDown className="w-4 h-4" /> Reprendre la lecture · {Math.round(resumeAt * 100)} %
+            </button>
+            <button type="button" onClick={() => setResumeAt(null)} aria-label="Masquer" className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
