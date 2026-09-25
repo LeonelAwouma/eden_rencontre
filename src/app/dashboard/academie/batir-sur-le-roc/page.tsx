@@ -5,8 +5,9 @@ import Image from "next/image";
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Lock, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
-import { BATIR_SUR_LE_ROC, FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
-import { useFormationProgress } from "@/lib/formation/progress";
+import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
+import { useFormationLocale } from "@/lib/formation/ui";
+import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
 
 /**
  * « Bâtir sur le roc » : liste des leçons (Académie → Bâtir sur le roc → leçon).
@@ -15,11 +16,12 @@ import { useFormationProgress } from "@/lib/formation/progress";
  */
 export default function BatirSurLeRocLessonsPage() {
   const { progress, ready } = useFormationProgress();
-  const formation = BATIR_SUR_LE_ROC;
+  // Formation et textes dans la langue de l'interface (français ou anglais).
+  const { formation, ui, localize } = useFormationLocale();
 
   const doneCount = ALL_LESSONS.filter(({ lesson }) => progress.completed.includes(lesson.slug)).length;
-  const nextLesson = resumeLesson(progress);
-  const started = doneCount > 0 || progress.lastLesson !== null;
+  const nextLesson = localize(resumeLesson(progress));
+  const started = hasStarted(progress);
   const available = ALL_LESSONS.length;
   const pct = available ? Math.round((doneCount / available) * 100) : 0;
 
@@ -30,10 +32,10 @@ export default function BatirSurLeRocLessonsPage() {
           <Link href="/dashboard/academie" className="flex items-center gap-2 min-w-0 text-[14px] font-semibold text-foreground hover:text-primary transition-colors">
             <ArrowLeft className="w-4 h-4 shrink-0" />
             <Monogram className="w-7 h-6 text-primary shrink-0 hidden sm:block" />
-            <span className="truncate">Académie du mariage</span>
+            <span className="truncate">{ui.backToAcademy}</span>
           </Link>
           {ready && (
-            <span className="shrink-0 text-[13px] font-semibold text-[#56615A]">{doneCount} / {available} leçons</span>
+            <span className="shrink-0 text-[13px] font-semibold text-[#56615A]">{ui.lessonsCount(doneCount, available)}</span>
           )}
         </div>
       </header>
@@ -42,38 +44,38 @@ export default function BatirSurLeRocLessonsPage() {
         {/* ───── En-tête de la formation + reprise ───── */}
         <section className="grid lg:grid-cols-[minmax(0,1fr)_360px] gap-8 lg:gap-12 items-start">
           <div>
-            <p className="text-[12px] font-bold uppercase tracking-[0.22em] text-primary">Académie du mariage · Formation</p>
+            <p className="text-[12px] font-bold uppercase tracking-[0.22em] text-primary">{ui.courseEyebrow}</p>
             <h1 className="mt-3 font-headline text-[40px] sm:text-[52px] font-bold leading-[1.02] tracking-tight text-foreground">{formation.title}</h1>
             <p className="mt-4 text-[17px] leading-relaxed text-[#3F4A43] max-w-xl">{formation.tagline}</p>
             <figure className="mt-6 pl-5 border-l-2 border-primary/40 max-w-xl">
-              <blockquote className="font-headline italic text-[18px] leading-snug text-foreground">« {formation.verse.text} »</blockquote>
+              <blockquote className="font-headline italic text-[18px] leading-snug text-foreground">{ui.quote(formation.verse.text)}</blockquote>
               <figcaption className="mt-1.5 text-[13px] font-semibold text-primary">{formation.verse.ref}</figcaption>
             </figure>
           </div>
 
           <div className="rounded-3xl border border-border bg-card p-6 shadow-[0_10px_40px_rgba(38,70,52,0.08)]">
             <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#56615A]">
-              {!ready ? "Ta progression" : started ? (nextLesson ? "Reprendre" : "Pilier 1 terminé") : "Commencer"}
+              {!ready ? ui.progressLabel : started ? (nextLesson ? ui.resume : ui.pillarDone(1)) : ui.start}
             </p>
             <p className="mt-1.5 font-headline text-[21px] font-bold leading-tight text-foreground">
-              {nextLesson ? <>Leçon {nextLesson.number} — {nextLesson.title}</> : "Bravo, toutes les leçons sont terminées."}
+              {nextLesson ? ui.lessonTitle(nextLesson.number, nextLesson.title) : ui.bravo}
             </p>
             <div className="mt-4">
               <div className="flex justify-between text-[12.5px] text-[#56615A] mb-1.5">
-                <span>{doneCount} / {available} leçons terminées</span>
+                <span>{ui.lessonsDone(doneCount, available)}</span>
                 <span>{pct} %</span>
               </div>
-              <div className="h-2 rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={available} aria-valuenow={doneCount} aria-label="Progression dans la formation">
+              <div className="h-2 rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={available} aria-valuenow={doneCount} aria-label={ui.progressLabel}>
                 <div className="h-full bg-primary rounded-full transition-all" style={{ width: `${pct}%` }} />
               </div>
             </div>
             {nextLesson && (
               <Link href={`${FORMATION_BASE_PATH}/${nextLesson.slug}`}
                 className="mt-5 w-full inline-flex items-center justify-center gap-2 h-12 rounded-full bg-primary text-white text-[15px] font-bold hover:bg-primary/90 transition-colors">
-                <Play className="w-4 h-4 fill-current" /> {started ? "Continuer" : "Commencer la première leçon"}
+                <Play className="w-4 h-4 fill-current" /> <span className={ready ? "" : "invisible"}>{started ? ui.continue : ui.start}</span>
               </Link>
             )}
-            <p className="mt-3 text-[12px] text-[#6B746E] text-center">Ta progression est enregistrée automatiquement.</p>
+            <p className="mt-3 text-[12px] text-[#6B746E] text-center">{ui.autosaved}</p>
           </div>
         </section>
 
@@ -84,14 +86,14 @@ export default function BatirSurLeRocLessonsPage() {
             <section key={pillar.slug} aria-labelledby={`pilier-${pillar.number}`} className="space-y-6">
               <div className="flex flex-wrap items-end justify-between gap-4">
                 <div className="max-w-2xl">
-                  <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-primary">Pilier {pillar.number}</p>
+                  <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-primary">{ui.pillarBadge(pillar.number)}</p>
                   <h2 id={`pilier-${pillar.number}`} className="mt-1 font-headline text-[28px] sm:text-[32px] font-bold text-foreground leading-tight">{pillar.title}</h2>
                   {pillar.summary && <p className="mt-2 text-[15px] leading-relaxed text-[#3F4A43]">{pillar.summary}</p>}
                 </div>
                 <span className={cn("inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[13px] font-semibold",
                   done === pillar.lessons.length ? "bg-primary text-white" : "bg-primary/10 text-primary")}>
                   {done === pillar.lessons.length && <CheckCircle2 className="w-4 h-4" />}
-                  {done} / {pillar.lessons.length} leçons
+                  {ui.lessonsCount(done, pillar.lessons.length)}
                 </span>
               </div>
 
@@ -113,7 +115,7 @@ export default function BatirSurLeRocLessonsPage() {
                           </span>
                           {isDone && (
                             <span className="absolute top-3 right-3 h-7 px-2.5 rounded-full bg-primary text-white text-[12px] font-bold flex items-center gap-1 shadow-sm">
-                              <CheckCircle2 className="w-3.5 h-3.5" /> Terminée
+                              <CheckCircle2 className="w-3.5 h-3.5" /> {ui.completed}
                             </span>
                           )}
                           {inProgress && (
@@ -125,9 +127,9 @@ export default function BatirSurLeRocLessonsPage() {
                         <span className="flex flex-col flex-1 p-4">
                           <span className="font-headline text-[19px] font-bold leading-snug text-foreground group-hover:text-primary transition-colors">{l.title}</span>
                           <span className="mt-auto pt-3 flex items-center justify-between text-[12.5px] text-[#56615A]">
-                            <span className="inline-flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {l.readingMinutes} min · {l.quiz.length} questions</span>
+                            <span className="inline-flex items-center gap-1.5"><Clock className="w-3.5 h-3.5" /> {ui.minutesQuestions(l.readingMinutes, l.quiz.length)}</span>
                             <span className="inline-flex items-center gap-1 font-semibold text-primary">
-                              {isDone ? "Relire" : inProgress ? `Reprendre · ${Math.round(position * 100)} %` : "Lire"} <ArrowRight className="w-3.5 h-3.5" />
+                              {isDone ? ui.reread : inProgress ? ui.resumeAt(Math.round(position * 100)) : ui.read} <ArrowRight className="w-3.5 h-3.5" />
                             </span>
                           </span>
                         </span>
@@ -142,14 +144,14 @@ export default function BatirSurLeRocLessonsPage() {
 
         {/* ───── Piliers à venir ───── */}
         <section aria-labelledby="a-venir" className="space-y-4">
-          <h2 id="a-venir" className="font-headline text-[22px] font-bold text-foreground">Prochains piliers</h2>
+          <h2 id="a-venir" className="font-headline text-[22px] font-bold text-foreground">{ui.nextPillars}</h2>
           <ol className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
             {formation.pillars.filter((p) => p.lessons.length === 0).map((p) => (
               <li key={p.slug} className="rounded-2xl border border-dashed border-[#CFC9BE] px-4 py-4">
                 <p className="flex items-center justify-between text-[12px] font-bold uppercase tracking-[0.16em] text-[#56615A]">
-                  Pilier {p.number} <Lock className="w-3.5 h-3.5" />
+                  {ui.pillarBadge(p.number)} <Lock className="w-3.5 h-3.5" />
                 </p>
-                <p className="mt-1.5 text-[14px] text-[#3F4A43]">En préparation</p>
+                <p className="mt-1.5 text-[14px] text-[#3F4A43]">{ui.inPreparation}</p>
               </li>
             ))}
           </ol>

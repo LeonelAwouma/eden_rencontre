@@ -21,12 +21,13 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { canOptimizeImage, avatarSrc } from "@/lib/avatar";
 import { BillingToggle } from "@/components/pricing/billing-toggle";
 import { planPricing, formatFcfa, type BillingPeriod, type PlanId } from "@/lib/pricing";
 import { useToast } from "@/hooks/use-toast";
 import { getSession, logout, updateProfile, ageFromBirthDate, type EdenUser } from "@/lib/auth";
 import { ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
-import { useFormationProgress } from "@/lib/formation/progress";
+import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { PROFILES } from "@/lib/profiles";
 import { MARRIAGE_VALUES, getValue } from "@/lib/values";
@@ -53,7 +54,8 @@ import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import { ChatGuide } from "@/components/dashboard/chat-guide";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
-import { Tab, TABS, ComposerType, FeedPost, EDIT_WINDOW_MS, DAILY_VERSES, VERSE_OF_DAY, getDailyVerses } from "@/components/dashboard/dashboard-types";
+import { Tab, TABS, ComposerType, FeedPost, EDIT_WINDOW_MS } from "@/components/dashboard/dashboard-types";
+import { pickVerse, type Verse } from "@/lib/verses";
 import { useI18n } from "@/lib/i18n";
 import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
 import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
@@ -170,7 +172,7 @@ function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match, framed,
         <div className="p-2.5 sm:p-3 pb-0">
           <div className="relative aspect-square rounded-xl overflow-hidden" style={{ background: "#EEF5EC", border: "1px solid #E8E5E0" }}>
             {m.avatar_url ? (
-              <Image src={m.avatar_url} alt={m.name} fill className="object-contain" unoptimized />
+              <Image src={m.avatar_url} alt={m.name} fill className="object-contain" unoptimized={!canOptimizeImage(m.avatar_url)} sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 28vw, 50vw" />
             ) : (
               <span className="absolute inset-0 flex items-center justify-center font-headline text-5xl font-bold" style={{ color: "#6E8B63" }}>
                 {m.name?.[0]?.toUpperCase() || "?"}
@@ -226,7 +228,7 @@ function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match, framed,
       <div className="relative aspect-[4/5]">
         <button onClick={onOpen} className="absolute inset-0 w-full h-full text-left">
           {m.avatar_url ? (
-            <Image src={m.avatar_url} alt={m.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized />
+            <Image src={m.avatar_url} alt={m.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized={!canOptimizeImage(m.avatar_url)} sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 28vw, 50vw" />
           ) : (
             <span className="absolute inset-0 flex items-center justify-center font-headline text-5xl font-bold"
               style={{ background: "linear-gradient(135deg, #EEF5EC, #FAF9F6)", color: "#6E8B63" }}>
@@ -280,7 +282,6 @@ export default function DashboardPage() {
   const tabLabel = (tab: Tab) => t(TAB_LABEL_KEY[tab] || tab);
   const [activeTab, setActiveTab] = useState<Tab>("Accueil");
   const [showPremiumBanner, setShowPremiumBanner] = useState(true);
-  const [dailyQuote, setDailyQuote] = useState<{ text: string; ref: string } | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [discoverFilter, setDiscoverFilter] = useState("all");
   const [discoverSearch, setDiscoverSearch] = useState("");
@@ -292,6 +293,8 @@ export default function DashboardPage() {
   const [engagement, setEngagement] = useState<Record<string, EngagementStatus>>({});
   const [engagementActing, setEngagementActing] = useState(false);
   const [showEngageConfirm, setShowEngageConfirm] = useState(false);
+  // Parole du jour : un nouveau verset à chaque visite (rafraîchissement, nouvelle session).
+  const [verse, setVerse] = useState<Verse | null>(null);
   const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
   // Signalement de l'interlocuteur depuis la messagerie → Admin → Signalements.
   const [showReport, setShowReport] = useState(false);
@@ -831,12 +834,6 @@ export default function DashboardPage() {
 
   // ── Effects ──
   useEffect(() => {
-    const now = new Date();
-    const start = new Date(now.getFullYear(), 0, 0);
-    const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
-    // Use a temporary placeholder; will be updated once user loads with gender
-    const defaultVerses = getDailyVerses(null);
-    setDailyQuote(defaultVerses[dayOfYear % defaultVerses.length]);
     // Le pseudonyme est exigé en amont par MemberGate (dashboard/layout.tsx).
     getSession().then((u) => setUser(u));
     const params = new URLSearchParams(window.location.search);
@@ -854,16 +851,12 @@ export default function DashboardPage() {
     setPendingConv(null);
   }, [pendingConv, meId]);
 
-  // Update daily verse once user (with gender) is available
-  useEffect(() => {
-    if (!user) return;
-    const now = new Date();
-    const start = new Date(now.getFullYear(), 0, 0);
-    const dayOfYear = Math.floor((now.getTime() - start.getTime()) / 86400000);
-    const genderVerses = getDailyVerses(user.gender);
-    setDailyQuote(genderVerses[dayOfYear % genderVerses.length]);
-  }, [user?.gender]);
 
+
+  // Tirage du verset une fois le profil chargé (le genre oriente le choix), une seule fois par visite.
+  useEffect(() => {
+    if (user && !verse) setVerse(pickVerse(user.gender));
+  }, [user, verse]);
 
   // ── Demande d'engagement (bouton "S'engager" du chat) ──
   const handleSendEngagement = async () => {
@@ -1219,7 +1212,7 @@ export default function DashboardPage() {
             </button>
             <button onClick={() => setActiveTab("Profil")} className="rounded-full">
               <Avatar className="w-9 h-9" style={{ border: "1px solid #E8E5E0" }}>
-                <AvatarImage src={myAvatar} />
+                <AvatarImage src={avatarSrc(myAvatar)} />
                 <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{displayInitial}</AvatarFallback>
               </Avatar>
             </button>
@@ -1267,13 +1260,20 @@ export default function DashboardPage() {
                     <span className="text-[10px] font-bold uppercase tracking-[0.4em] mb-4" style={{ color: "#6E8B63" }}>
                       {t("dashboard.wordOfDay")}
                     </span>
-                    <p key={(dailyQuote ?? VERSE_OF_DAY).ref} className="font-headline text-xl sm:text-2xl lg:text-[1.75rem] italic leading-relaxed max-w-xl animate-in fade-in duration-700"
+                    {(() => {
+                      // Place réservée tant que le verset n'est pas tiré : pas de saut de mise en page.
+                      if (!verse) return <div className="min-h-[7.5rem]" aria-hidden />;
+                      const quote = verse[locale === "en" ? "en" : "fr"];
+                      return (<>
+                    <p key={quote.ref} className="font-headline text-xl sm:text-2xl lg:text-[1.75rem] italic leading-relaxed max-w-xl animate-in fade-in duration-700"
                       style={{ color: "#2F2F2F" }}>
-                      &ldquo;{(dailyQuote ?? VERSE_OF_DAY).text}&rdquo;
+                      {locale === "en" ? <>&ldquo;{quote.text}&rdquo;</> : <>«&nbsp;{quote.text}&nbsp;»</>}
                     </p>
                     <p className="text-xs font-bold tracking-[0.28em] uppercase mt-4" style={{ color: "#6E8B63" }}>
-                      {(dailyQuote ?? VERSE_OF_DAY).ref}
+                      {quote.ref}
                     </p>
+                      </>);
+                    })()}
                     <span style={{ color: "#C6D4C0" }}><Flourish className="w-36 h-3 mt-4" /></span>
                     <p className="text-sm mt-3" style={{ color: "#777777" }}>
                       {t("dashboard.peaceBeWith")} <span className="font-semibold" style={{ color: "#2F2F2F" }}>{displayName}</span>.
@@ -1345,7 +1345,7 @@ export default function DashboardPage() {
                   <input ref={composerImageRef} type="file" accept="image/*" className="hidden" onChange={handleComposerImage} />
                   <div className={cn("flex gap-3", composerOpen ? "items-start" : "items-center")}>
                     <Avatar className="w-10 h-10 shrink-0" style={{ border: "1px solid #E8E5E0" }}>
-                      <AvatarImage src={myAvatar} />
+                      <AvatarImage src={avatarSrc(myAvatar)} />
                       <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{displayInitial}</AvatarFallback>
                     </Avatar>
                     {composerOpen ? (
@@ -1457,7 +1457,7 @@ export default function DashboardPage() {
                       style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
                       <div className="p-5 flex items-center gap-3">
                         <Avatar className="w-11 h-11 shrink-0" style={{ border: "1px solid #E8E5E0" }}>
-                          <AvatarImage src={p.avatar || undefined} />
+                          <AvatarImage src={avatarSrc(p.avatar)} />
                           <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{p.name[0]}</AvatarFallback>
                         </Avatar>
                         <div className="flex-1 min-w-0">
@@ -1692,7 +1692,7 @@ export default function DashboardPage() {
                     const next = resumeLesson(formationProgress);
                     // La carte ouvre la page de l'Académie (présentation de « Bâtir sur le roc »).
                     const href = "/dashboard/academie";
-                    const cta = !next ? t("dashboard.academyReread") : done > 0 || formationProgress.lastLesson ? t("dashboard.academyContinue") : t("dashboard.academyStart");
+                    const cta = !next ? t("dashboard.academyReread") : hasStarted(formationProgress) ? t("dashboard.academyContinue") : t("dashboard.academyStart");
                     return (
                       <Link href={href}
                         className="group mt-4 pt-4 hidden xl:flex items-center gap-3 border-t transition-colors"
@@ -1792,7 +1792,7 @@ export default function DashboardPage() {
             <X className="w-5 h-5" />
           </button>
           <div className="relative w-full h-full max-w-xl max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
-            <Image src={viewingPhoto.url} alt={viewingPhoto.name} fill className="object-contain" unoptimized sizes="100vw" />
+            <Image src={viewingPhoto.url} alt={viewingPhoto.name} fill className="object-contain" unoptimized={!canOptimizeImage(viewingPhoto.url)} sizes="100vw" />
           </div>
           <p className="absolute bottom-6 inset-x-0 text-center font-headline text-lg font-bold text-white">{viewingPhoto.name}</p>
         </div>
@@ -1927,7 +1927,7 @@ export default function DashboardPage() {
                     style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                     <div className="relative aspect-[3/4]">
                       {v.member.avatar_url ? (
-                        <Image src={v.member.avatar_url} alt={v.member.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized />
+                        <Image src={v.member.avatar_url} alt={v.member.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized={!canOptimizeImage(v.member.avatar_url)} sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 28vw, 50vw" />
                       ) : (
                         <span className="absolute inset-0 flex items-center justify-center font-headline text-4xl font-bold"
                           style={{ background: "linear-gradient(135deg, #EEF5EC, #FAF9F6)", color: "#6E8B63" }}>{v.member.name?.[0]?.toUpperCase()}</span>
@@ -2004,7 +2004,7 @@ export default function DashboardPage() {
                         <button onClick={() => router.push(`/dashboard/profile/${m.id}`)}
                           className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 mx-auto sm:mx-0"
                           style={{ border: "2px solid #E8E5E0" }}>
-                          {m.avatar_url ? <Image src={m.avatar_url} alt={m.name} fill className="object-cover" unoptimized /> :
+                          {m.avatar_url ? <Image src={m.avatar_url} alt={m.name} fill className="object-cover" unoptimized={!canOptimizeImage(m.avatar_url)} sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 28vw, 50vw" /> :
                             <span className="absolute inset-0 flex items-center justify-center font-headline text-2xl font-bold" style={{ background: "#EEF5EC", color: "#486B46" }}>{m.name?.[0]?.toUpperCase()}</span>}
                         </button>
                         <div className="flex-1 space-y-3 text-center sm:text-left">
@@ -2067,7 +2067,7 @@ export default function DashboardPage() {
                       <button key={u.id} onClick={() => handleStartConversation(u)} className="w-full flex items-center gap-3 p-3 text-left transition-colors"
                         onMouseEnter={e => e.currentTarget.style.background = "#FAF9F6"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                         <Avatar className="w-10 h-10" style={{ border: "1px solid #E8E5E0" }}>
-                          <AvatarImage src={u.avatar_url || undefined} />
+                          <AvatarImage src={avatarSrc(u.avatar_url)} />
                           <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{u.name?.[0]?.toUpperCase()}</AvatarFallback>
                         </Avatar>
                         <div className="min-w-0">
@@ -2124,7 +2124,7 @@ export default function DashboardPage() {
                           className="w-full flex items-center gap-3 p-3 text-left transition-colors"
                           style={{ background: sel ? "#EEF5EC" : "transparent", borderLeft: sel ? "3px solid #486B46" : "3px solid transparent" }}>
                           <Avatar className="w-11 h-11 shrink-0" style={{ border: "1px solid #E8E5E0" }}>
-                            <AvatarImage src={c.avatar || undefined} />
+                            <AvatarImage src={avatarSrc(c.avatar)} />
                             <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{c.name?.[0]?.toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div className="flex-1 min-w-0">
@@ -2163,7 +2163,7 @@ export default function DashboardPage() {
                           <AvatarFallback style={{ background: "#486B46", color: "#FFFFFF" }}><ShieldCheck className="w-4 h-4" /></AvatarFallback>
                         ) : (
                           <>
-                            <AvatarImage src={displayConv.avatar || undefined} />
+                            <AvatarImage src={avatarSrc(displayConv.avatar)} />
                             <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{displayConv.name?.[0]?.toUpperCase()}</AvatarFallback>
                           </>
                         )}
@@ -2488,7 +2488,7 @@ export default function DashboardPage() {
                       className="w-full flex items-center gap-4 p-4 text-left transition-colors"
                       onMouseEnter={e => e.currentTarget.style.background = "#FAF9F6"} onMouseLeave={e => e.currentTarget.style.background = "transparent"}>
                       <Avatar className="w-11 h-11 shrink-0" style={{ border: "1px solid #E8E5E0" }}>
-                        <AvatarImage src={c.avatar || undefined} />
+                        <AvatarImage src={avatarSrc(c.avatar)} />
                         <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{c.name?.[0]?.toUpperCase()}</AvatarFallback>
                       </Avatar>
                       <div className="flex-1 min-w-0">
@@ -2646,7 +2646,7 @@ export default function DashboardPage() {
                   <div className="flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
                     <div className="relative shrink-0">
                       <Avatar className="w-24 h-24 shadow-lg" style={{ border: "3px solid #E8E5E0" }}>
-                        <AvatarImage src={myAvatar} />
+                        <AvatarImage src={avatarSrc(myAvatar)} />
                         <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{displayInitial}</AvatarFallback>
                       </Avatar>
                       <button onClick={() => avatarInputRef.current?.click()} disabled={uploadingAvatar}

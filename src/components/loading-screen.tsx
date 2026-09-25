@@ -1,11 +1,49 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Écran de chargement commun (espace membre, connexion, inscription, Académie…).
- * Le monogramme — deux alliances et la croix — se dessine trait par trait, un
- * arc tourne autour et une barre indéterminée court dessous. Sans JavaScript :
- * uniquement du SVG et des animations CSS (globals.css, « eden-loader-* »),
+ * Emblème animé des écrans d'attente : le monogramme — deux alliances et la
+ * croix — se dessine trait par trait, un arc tourne autour et un halo respire.
+ * Uniquement du SVG et des animations CSS (globals.css, « eden-loader-* »),
  * figées si l'utilisateur a demandé à réduire les animations.
+ */
+export function LoaderEmblem({ size = "md", className }: { size?: "md" | "lg"; className?: string }) {
+  const box = size === "lg" ? "w-36 h-36" : "w-28 h-28";
+  const mono = size === "lg" ? "w-[4.5rem] h-16" : "w-14 h-12";
+  return (
+    <div aria-hidden className={cn("relative flex items-center justify-center", box, className)}>
+      {/* Halo doux */}
+      <span className="eden-loader-halo absolute inset-2 rounded-full"
+        style={{ background: "radial-gradient(circle, hsl(145 30% 55% / 0.22) 0%, transparent 70%)" }} />
+      {/* Anneau + arc en rotation */}
+      <svg viewBox="0 0 112 112" className="absolute inset-0 w-full h-full">
+        <defs>
+          <linearGradient id="eden-loader-arc" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stopColor="#486B46" stopOpacity="0" />
+            <stop offset="100%" stopColor="#486B46" />
+          </linearGradient>
+        </defs>
+        <circle cx="56" cy="56" r="52" fill="none" stroke="#486B46" strokeOpacity="0.1" strokeWidth="2" />
+        <g className="eden-loader-orbit">
+          <circle cx="56" cy="56" r="52" fill="none" stroke="url(#eden-loader-arc)" strokeWidth="2.5"
+            strokeLinecap="round" strokeDasharray="90 237" />
+        </g>
+      </svg>
+      {/* Monogramme dessiné */}
+      <svg viewBox="0 0 56 48" fill="none" className={cn("relative text-primary", mono)}>
+        <circle cx="22" cy="29" r="13" stroke="currentColor" strokeWidth="1.6"
+          className="eden-loader-stroke" style={{ "--len": 82 } as React.CSSProperties} />
+        <circle cx="34" cy="29" r="13" stroke="currentColor" strokeWidth="1.6"
+          className="eden-loader-stroke" style={{ "--len": 82, animationDelay: "0.18s" } as React.CSSProperties} />
+        <path d="M28 3 V15 M22.5 8 H33.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"
+          className="eden-loader-stroke" style={{ "--len": 23, animationDelay: "0.36s" } as React.CSSProperties} />
+      </svg>
+    </div>
+  );
+}
+
+/**
+ * Écran de chargement commun (espace membre, connexion, inscription, Académie…) :
+ * emblème animé, marque, message et barre indéterminée.
  */
 export function LoadingScreen({ label, fullScreen = true, className }: {
   /** Message sous la marque (ex. « Ouverture de l'Académie… »). */
@@ -19,34 +57,7 @@ export function LoadingScreen({ label, fullScreen = true, className }: {
       className={cn("flex flex-col items-center justify-center bg-background px-6",
         fullScreen ? "min-h-screen" : "py-24", className)}>
       <div className="eden-loader-fade flex flex-col items-center">
-        <div className="relative w-28 h-28 flex items-center justify-center">
-          {/* Halo doux */}
-          <span aria-hidden className="eden-loader-halo absolute inset-2 rounded-full"
-            style={{ background: "radial-gradient(circle, hsl(145 30% 55% / 0.22) 0%, transparent 70%)" }} />
-          {/* Anneau + arc en rotation */}
-          <svg aria-hidden viewBox="0 0 112 112" className="absolute inset-0 w-full h-full">
-            <defs>
-              <linearGradient id="eden-loader-arc" x1="0" y1="0" x2="1" y2="1">
-                <stop offset="0%" stopColor="#486B46" stopOpacity="0" />
-                <stop offset="100%" stopColor="#486B46" />
-              </linearGradient>
-            </defs>
-            <circle cx="56" cy="56" r="52" fill="none" stroke="#486B46" strokeOpacity="0.1" strokeWidth="2" />
-            <g className="eden-loader-orbit">
-              <circle cx="56" cy="56" r="52" fill="none" stroke="url(#eden-loader-arc)" strokeWidth="2.5"
-                strokeLinecap="round" strokeDasharray="90 237" />
-            </g>
-          </svg>
-          {/* Monogramme dessiné */}
-          <svg aria-hidden viewBox="0 0 56 48" fill="none" className="relative w-14 h-12 text-primary">
-            <circle cx="22" cy="29" r="13" stroke="currentColor" strokeWidth="1.6"
-              className="eden-loader-stroke" style={{ "--len": 82 } as React.CSSProperties} />
-            <circle cx="34" cy="29" r="13" stroke="currentColor" strokeWidth="1.6"
-              className="eden-loader-stroke" style={{ "--len": 82, animationDelay: "0.18s" } as React.CSSProperties} />
-            <path d="M28 3 V15 M22.5 8 H33.5" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"
-              className="eden-loader-stroke" style={{ "--len": 23, animationDelay: "0.36s" } as React.CSSProperties} />
-          </svg>
-        </div>
+        <LoaderEmblem />
 
         <p className="mt-6 font-headline text-[19px] font-bold tracking-tight text-foreground">
           Garden <span className="italic font-normal text-primary">of Alliance</span>

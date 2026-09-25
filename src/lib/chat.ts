@@ -430,13 +430,39 @@ export async function markConversationRead(convId: string, myId: string) {
     .eq("user_id", myId);
 }
 
+/**
+ * Réduit une photo avant envoi : 1080 px de côté au plus, en WebP. Une photo de
+ * téléphone de plusieurs Mo passe à ~100–200 Ko et s'affiche bien plus vite
+ * partout où apparaît l'avatar. Si le navigateur ne sait pas la décoder (HEIC…)
+ * ou si le résultat n'est pas plus léger, l'original est envoyé tel quel.
+ */
+async function shrinkImage(file: File, maxSide = 1080, quality = 0.85): Promise<File> {
+  try {
+    if (typeof createImageBitmap !== "function" || file.type === "image/gif" || file.type === "image/svg+xml") return file;
+    const bitmap = await createImageBitmap(file);
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+    const w = Math.round(bitmap.width * scale), h = Math.round(bitmap.height * scale);
+    const canvas = document.createElement("canvas");
+    canvas.width = w; canvas.height = h;
+    canvas.getContext("2d")?.drawImage(bitmap, 0, 0, w, h);
+    bitmap.close();
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/webp", quality));
+    if (!blob || blob.type !== "image/webp" || blob.size >= file.size) return file;
+    return new File([blob], file.name.replace(/\.[^.]+$/, "") + ".webp", { type: "image/webp" });
+  } catch {
+    return file;
+  }
+}
+
 // Upload de la photo de profil (bucket public "chat-images", dossier avatars/).
-export async function uploadAvatar(file: File, userId: string): Promise<{ url?: string; error?: string }> {
+export async function uploadAvatar(original: File, userId: string): Promise<{ url?: string; error?: string }> {
   if (!supabase) return { error: "Supabase non configuré." };
+  const file = await shrinkImage(original);
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase();
   const path = `avatars/${userId}-${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from("chat-images").upload(path, file, {
-    cacheControl: "3600",
+    // Nom unique par envoi : le fichier ne change jamais, il peut rester un an en cache.
+    cacheControl: "31536000",
     // Nom de fichier unique (horodaté) : pas besoin d'écraser. `upsert: true`
     // exige en plus un droit UPDATE sur storage.objects, absent pour ce bucket,
     // et faisait échouer tout changement de photo (« row-level security »).

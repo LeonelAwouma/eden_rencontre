@@ -84,3 +84,14 @@ export function useFormationProgress({ persist = true }: { persist?: boolean } =
 
   return { progress, ready, setCompleted, answer, resetQuiz, saveReflection, savePosition };
 }
+
+/**
+ * La formation est-elle vraiment commencée ? Ouvrir une leçon ne suffit pas :
+ * il faut en avoir terminé une, en avoir lu une partie (plus de 5 %) ou avoir
+ * répondu à une question de quiz. Détermine « Commencer » ou « Continuer ».
+ */
+export function hasStarted(p: FormationProgress): boolean {
+  return p.completed.length > 0
+    || Object.values(p.positions).some((r) => r > 0.05)
+    || Object.values(p.quiz).some((answers) => Object.keys(answers).length > 0);
+}

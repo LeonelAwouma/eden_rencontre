@@ -11,12 +11,14 @@ import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
 import { RichText, frenchSpacing } from "./rich-text";
 import { useFormationProgress } from "@/lib/formation/progress";
-import { FORMATION_BASE_PATH, BATIR_SUR_LE_ROC, ADMIN_FORMATION_PATH, ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/batir-sur-le-roc";
+import { FORMATION_BASE_PATH, ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
 import type { Lesson, LessonBlock, Pillar } from "@/lib/formation/types";
+import { useFormationLocale } from "@/lib/formation/ui";
 
 /* ─────────────────────────── Blocs de texte ─────────────────────────── */
 
 function Blocks({ blocks }: { blocks: LessonBlock[] }) {
+  const { ui } = useFormationLocale();
   return (
     <>
       {blocks.map((b, i) => {
@@ -28,7 +30,7 @@ function Blocks({ blocks }: { blocks: LessonBlock[] }) {
               <figure key={i} className="my-8 relative pl-6 sm:pl-8 border-l-2 border-primary/40">
                 <Quote aria-hidden className="absolute -left-3 -top-1 w-6 h-6 p-1 rounded-full bg-background text-primary/70" />
                 <blockquote className="font-headline italic text-[20px] sm:text-[22px] leading-snug text-foreground">
-                  {frenchSpacing(`« ${b.text} »`)}
+                  {frenchSpacing(ui.quote(b.text))}
                 </blockquote>
                 <figcaption className="mt-2 text-[13px] font-semibold tracking-wide text-primary">{b.ref}</figcaption>
               </figure>
@@ -89,6 +91,7 @@ function Quiz({ lesson, answers, onAnswer, onReset }: {
   lesson: Lesson; answers: Record<number, number>;
   onAnswer: (q: number, o: number) => void; onReset: () => void;
 }) {
+  const { ui } = useFormationLocale();
   const answered = Object.keys(answers).length;
   const correct = lesson.quiz.filter((q, i) => answers[i] === q.answer).length;
   const done = answered === lesson.quiz.length;
@@ -100,12 +103,12 @@ function Quiz({ lesson, answers, onAnswer, onReset }: {
         const isAnswered = chosen !== undefined;
         return (
           <fieldset key={qi} className="rounded-2xl border border-border bg-card p-5 sm:p-6">
-            <legend className="sr-only">Question {qi + 1}</legend>
+            <legend className="sr-only">{ui.question(qi + 1)}</legend>
             <p className="flex gap-3 text-[16px] font-semibold text-foreground leading-snug">
               <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-[13px] font-bold flex items-center justify-center shrink-0">{qi + 1}</span>
               {frenchSpacing(q.question)}
             </p>
-            <div className="mt-4 space-y-2" role="radiogroup" aria-label={`Réponses à la question ${qi + 1}`}>
+            <div className="mt-4 space-y-2" role="radiogroup" aria-label={ui.answersFor(qi + 1)}>
               {q.options.map((opt, oi) => {
                 const isRight = oi === q.answer;
                 const isChosen = chosen === oi;
@@ -138,9 +141,9 @@ function Quiz({ lesson, answers, onAnswer, onReset }: {
                   <Lightbulb className="w-5 h-5 text-[#8A5A00] shrink-0 mt-0.5" />
                   <p className="text-[14.5px] leading-relaxed text-[#3F4A43]">
                     <strong className="text-foreground">
-                      {chosen === q.answer ? "Juste ! " : `Réponse attendue : ${String.fromCharCode(65 + q.answer)}. `}
+                      {chosen === q.answer ? ui.right : ui.expected(String.fromCharCode(65 + q.answer))}
                     </strong>
-                    <span className="font-semibold text-[#8A5A00]">Éclairage — </span>{frenchSpacing(q.explanation)}
+                    <span className="font-semibold text-[#8A5A00]">{ui.insight}</span>{frenchSpacing(q.explanation)}
                   </p>
                 </div>
               )}
@@ -153,11 +156,11 @@ function Quiz({ lesson, answers, onAnswer, onReset }: {
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-primary/5 px-5 py-4">
           <p className="text-[15px] text-foreground">
             {done
-              ? <><strong>{correct} / {lesson.quiz.length}</strong> bonne{correct > 1 ? "s" : ""} réponse{correct > 1 ? "s" : ""}. {correct === lesson.quiz.length ? "La vision est bien ancrée." : "Relis les éclairages, puis réessaie."}</>
-              : <>{answered} question{answered > 1 ? "s" : ""} sur {lesson.quiz.length}</>}
+              ? <><strong>{ui.score(correct, lesson.quiz.length)}</strong> {correct === lesson.quiz.length ? ui.scorePerfect : ui.scoreRetry}</>
+              : <>{ui.answeredOf(answered, lesson.quiz.length)}</>}
           </p>
           <button type="button" onClick={onReset} className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:underline">
-            <RotateCcw className="w-3.5 h-3.5" /> Recommencer
+            <RotateCcw className="w-3.5 h-3.5" /> {ui.restart}
           </button>
         </div>
       )}
@@ -168,6 +171,7 @@ function Quiz({ lesson, answers, onAnswer, onReset }: {
 /* ─────────────────────────── Réflexion ─────────────────────────── */
 
 function Reflection({ lesson, value, onSave }: { lesson: Lesson; value: string; onSave: (t: string) => void }) {
+  const { ui } = useFormationLocale();
   const [text, setText] = useState(value);
   const [saved, setSaved] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -182,15 +186,15 @@ function Reflection({ lesson, value, onSave }: { lesson: Lesson; value: string; 
   return (
     <div className="rounded-2xl border border-border bg-card p-5 sm:p-6">
       <p className="text-[16px] leading-relaxed text-foreground"><RichText text={lesson.reflection.prompt} /></p>
-      <label htmlFor={`reflexion-${lesson.slug}`} className="block mt-5 text-[13px] font-semibold text-foreground">Ce que je retiens de cette leçon</label>
+      <label htmlFor={`reflexion-${lesson.slug}`} className="block mt-5 text-[13px] font-semibold text-foreground">{ui.reflectionLabel}</label>
       <textarea id={`reflexion-${lesson.slug}`} value={text} onChange={(e) => change(e.target.value)} rows={6}
-        placeholder="Écris librement : personne d'autre que toi ne lira ces lignes."
+        placeholder={ui.reflectionPlaceholder}
         data-copyable
         className="mt-2 w-full rounded-xl border border-border bg-background px-4 py-3 text-[15px] leading-relaxed text-foreground placeholder:text-[#7A847D] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 resize-y select-text"
         style={{ WebkitUserSelect: "text" } as React.CSSProperties} />
       <p className="mt-2 text-[12.5px] text-[#56615A] flex items-center gap-1.5">
-        {saved ? <><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> Enregistré</> : <>Enregistrement automatique</>}
-        <span aria-hidden>·</span> gardé uniquement sur cet appareil, jamais partagé.
+        {saved ? <><CheckCircle2 className="w-3.5 h-3.5 text-primary" /> {ui.saved}</> : <>{ui.autosave}</>}
+        <span aria-hidden>·</span> {ui.deviceOnly}
       </p>
     </div>
   );
@@ -202,13 +206,16 @@ function Reflection({ lesson, value, onSave }: { lesson: Lesson; value: string; 
  * `preview` : aperçu depuis l'admin. Même rendu que pour les membres, mais les
  * liens restent dans l'admin et rien n'est enregistré (quiz, réflexion, progression).
  */
-export function LessonReader({ lesson, pillar, previous, next, preview = false }: {
+export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: previousFr, next: nextFr, preview = false }: {
   lesson: Lesson; pillar: Pillar; previous: Lesson | null; next: Lesson | null; preview?: boolean;
 }) {
+  // Même leçon (même slug) dans la langue de l'interface ; progression commune aux deux langues.
+  const { localize, ui, formation } = useFormationLocale();
+  const lesson = localize(lessonFr), pillar = localize(pillarFr), previous = localize(previousFr), next = localize(nextFr);
   const { progress, ready, setCompleted, answer, resetQuiz, saveReflection, savePosition } = useFormationProgress({ persist: !preview });
   const basePath = preview ? ADMIN_LESSON_PREVIEW_PATH : FORMATION_BASE_PATH;
   // Retour : la liste des leçons de la formation (Académie → Bâtir sur le roc → leçon).
-  const homeHref = preview ? ADMIN_FORMATION_PATH : FORMATION_BASE_PATH;
+  const homeHref = preview ? ADMIN_LESSON_PREVIEW_PATH : FORMATION_BASE_PATH;
   const [scroll, setScroll] = useState(0);
   const isDone = progress.completed.includes(lesson.slug);
   const answers = progress.quiz[lesson.slug] || {};
@@ -292,11 +299,11 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
   }, [ready, lesson.slug, isDone, setCompleted]);
 
   const toc = [
-    { id: "introduction", label: "Introduction" },
+    { id: "introduction", label: ui.introduction },
     ...lesson.parts.map((p, i) => ({ id: `partie-${i + 1}`, label: p.heading })),
-    { id: "cas-pratique", label: "Cas pratique" },
+    { id: "cas-pratique", label: ui.caseStudy },
     { id: "boussole", label: lesson.compass.title },
-    { id: "validation", label: "Validation des acquis" },
+    { id: "validation", label: ui.quizEyebrow },
     { id: "reflexion", label: lesson.reflection.title },
   ];
 
@@ -306,8 +313,8 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
         <div className="bg-[#2E4A36] text-white text-[13px]">
           <div className="max-w-6xl mx-auto px-4 sm:px-6 py-2 flex items-center gap-2">
             <Eye className="w-4 h-4 shrink-0" />
-            <p className="min-w-0 flex-1"><strong>Aperçu admin</strong><span className="hidden sm:inline"> · la leçon telle que la voient les membres. Réponses et progression ne sont pas enregistrées.</span></p>
-            <Link href={ADMIN_FORMATION_PATH} className="shrink-0 font-semibold underline underline-offset-2 hover:no-underline">Retour à l&apos;admin</Link>
+            <p className="min-w-0 flex-1"><strong>{ui.previewBanner}</strong><span className="hidden sm:inline">{ui.previewBannerDetail}</span></p>
+            <Link href={ADMIN_LESSON_PREVIEW_PATH} className="shrink-0 font-semibold underline underline-offset-2 hover:no-underline">{ui.backToLessons}</Link>
           </div>
         </div>
       )}
@@ -317,15 +324,15 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
           <Link href={homeHref} className="flex items-center gap-2 min-w-0 text-[14px] font-semibold text-foreground hover:text-primary transition-colors">
             <ArrowLeft className="w-4 h-4 shrink-0" />
             <Monogram className="w-7 h-6 text-primary shrink-0 hidden sm:block" />
-            <span className="truncate">{BATIR_SUR_LE_ROC.title}</span>
+            <span className="truncate">{formation.title}</span>
           </Link>
-          <nav aria-label={`Leçons du pilier ${pillar.number}`} className="ml-auto hidden md:flex items-center gap-1.5">
+          <nav aria-label={ui.pillarNav(pillar.number)} className="ml-auto hidden md:flex items-center gap-1.5">
             {pillar.lessons.map((l) => {
               const current = l.slug === lesson.slug;
               const done = progress.completed.includes(l.slug);
               return (
                 <Link key={l.slug} href={`${basePath}/${l.slug}`} aria-current={current ? "page" : undefined}
-                  title={`Leçon ${l.number} — ${l.title}${done ? " (terminée)" : ""}`}
+                  title={ui.lessonTooltip(l.number, l.title, done)}
                   className={cn("h-7 min-w-7 px-1.5 rounded-full text-[12px] font-bold flex items-center justify-center border transition-colors",
                     current ? "bg-primary border-primary text-white"
                       : done ? "bg-primary/10 border-primary/30 text-primary"
@@ -354,16 +361,16 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
           {/* Titre */}
           <div className="pt-8 sm:pt-10">
             <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-primary">
-              Pilier {pillar.number} · {pillar.title}
+              {ui.pillarEyebrow(pillar.number, pillar.title)}
             </p>
             <h1 className="mt-3 font-headline text-[34px] sm:text-[44px] font-bold leading-[1.08] tracking-tight text-foreground">
-              <span className="block text-[18px] sm:text-[20px] font-semibold text-[#56615A] mb-1.5 tracking-normal">Leçon {lesson.number}</span>
+              <span className="block text-[18px] sm:text-[20px] font-semibold text-[#56615A] mb-1.5 tracking-normal">{ui.lessonLabel(lesson.number)}</span>
               {lesson.title}
             </h1>
             <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13.5px] text-[#56615A]">
-              <span className="inline-flex items-center gap-1.5"><Clock className="w-4 h-4" /> {lesson.readingMinutes} min de lecture</span>
-              <span className="inline-flex items-center gap-1.5"><HelpCircle className="w-4 h-4" /> {lesson.quiz.length} questions</span>
-              {ready && isDone && <span className="inline-flex items-center gap-1.5 font-semibold text-primary"><CheckCircle2 className="w-4 h-4" /> Leçon terminée</span>}
+              <span className="inline-flex items-center gap-1.5"><Clock className="w-4 h-4" /> {ui.readingTime(lesson.readingMinutes)}</span>
+              <span className="inline-flex items-center gap-1.5"><HelpCircle className="w-4 h-4" /> {ui.questionsCount(lesson.quiz.length)}</span>
+              {ready && isDone && <span className="inline-flex items-center gap-1.5 font-semibold text-primary"><CheckCircle2 className="w-4 h-4" /> {ui.lessonCompleted}</span>}
             </div>
           </div>
 
@@ -372,14 +379,14 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
             style={{ WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
             onCopy={preventContentCopy} onCut={preventContentCopy}
           >
-            <SectionTitle id="introduction" eyebrow="Introduction">{lesson.intro.heading}</SectionTitle>
+            <SectionTitle id="introduction" eyebrow={ui.introduction}>{lesson.intro.heading}</SectionTitle>
             <Blocks blocks={lesson.intro.blocks} />
 
             {lesson.objective && (
               <aside className="my-8 flex gap-4 rounded-2xl bg-primary/[0.07] border border-primary/20 px-5 py-4">
                 <Target className="w-5 h-5 text-primary shrink-0 mt-1" />
                 <p className="text-[16px] leading-relaxed">
-                  <strong className="block text-[12px] font-bold uppercase tracking-[0.16em] text-primary mb-1">Objectif de la leçon</strong>
+                  <strong className="block text-[12px] font-bold uppercase tracking-[0.16em] text-primary mb-1">{ui.objective}</strong>
                   {lesson.objective}
                 </p>
               </aside>
@@ -387,14 +394,14 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
 
             {lesson.parts.map((part, i) => (
               <section key={i}>
-                <SectionTitle id={`partie-${i + 1}`} eyebrow={`Partie ${i + 1}`}>{part.heading}</SectionTitle>
+                <SectionTitle id={`partie-${i + 1}`} eyebrow={ui.part(i + 1)}>{part.heading}</SectionTitle>
                 <div className="space-y-5"><Blocks blocks={part.blocks} /></div>
               </section>
             ))}
 
             {/* Cas pratique */}
             <section>
-              <SectionTitle id="cas-pratique" eyebrow="Cas pratique">{lesson.caseStudy.title}</SectionTitle>
+              <SectionTitle id="cas-pratique" eyebrow={ui.caseStudy}>{lesson.caseStudy.title}</SectionTitle>
               <p className="text-[#3F4A43]"><RichText text={lesson.caseStudy.context} /></p>
               <div className="mt-5 grid gap-3">
                 {lesson.caseStudy.responses.map((r, i) => (
@@ -403,7 +410,7 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
                     <p className={cn("flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.14em] mb-1.5",
                       r.right ? "text-primary" : "text-[#6B746E]")}>
                       {r.right ? <CheckCircle2 className="w-4 h-4" /> : <X className="w-4 h-4" />}
-                      {r.label}{r.right && " · la pratique"}
+                      {r.label}{r.right && ` · ${ui.thePractice}`}
                     </p>
                     <p className="text-foreground"><RichText text={r.text} /></p>
                   </div>
@@ -423,7 +430,7 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
 
             {/* Validation des acquis */}
             <section>
-              <SectionTitle id="validation" eyebrow="Validation des acquis">Ancrer la vision</SectionTitle>
+              <SectionTitle id="validation" eyebrow={ui.quizEyebrow}>{ui.quizTitle}</SectionTitle>
               <p className="text-[#3F4A43] mb-6">{lesson.quizIntro}</p>
               <Quiz lesson={lesson} answers={answers}
                 onAnswer={(q, o) => answer(lesson.slug, q, o)} onReset={() => resetQuiz(lesson.slug)} />
@@ -431,7 +438,7 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
 
             {/* Réflexion */}
             <section>
-              <SectionTitle id="reflexion" eyebrow="Pour aller plus loin">
+              <SectionTitle id="reflexion" eyebrow={ui.goFurther}>
                 <span className="inline-flex items-center gap-2.5"><Feather className="w-6 h-6 text-primary" /> {lesson.reflection.title}</span>
               </SectionTitle>
               <Reflection lesson={lesson} value={progress.reflections[lesson.slug] || ""} onSave={(t) => saveReflection(lesson.slug, t)} />
@@ -441,24 +448,24 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
             <div ref={endRef} className="mt-14 rounded-3xl border border-border bg-card p-6 sm:p-8 text-center">
               <BookOpenCheck className="w-8 h-8 text-primary mx-auto" />
               <p className="mt-3 font-headline text-[22px] font-bold text-foreground">
-                {isDone ? "Leçon terminée" : "Tu as parcouru cette leçon"}
+                {isDone ? ui.lessonCompleted : ui.youReadIt}
               </p>
               <p className="mt-1 text-[15px] text-[#56615A]">
                 {isDone
-                  ? (preview ? "Aperçu : rien n'est enregistré." : "Ta progression est enregistrée automatiquement ; tu peux relire cette leçon quand tu veux.")
-                  : "Marque-la comme terminée pour suivre ta progression dans le pilier."}
+                  ? (preview ? ui.previewHint : ui.doneHint)
+                  : ui.markHint}
               </p>
               <div className="mt-5 flex items-center justify-center">
                 <button type="button" onClick={() => setCompleted(lesson.slug, !isDone)}
                   className={cn("inline-flex items-center gap-2 h-11 px-5 rounded-full text-[14px] font-bold transition-colors",
                     isDone ? "border border-border text-foreground hover:bg-muted" : "bg-primary text-white hover:bg-primary/90")}>
-                  {isDone ? <><RotateCcw className="w-4 h-4" /> Marquer comme non terminée</> : <><Check className="w-4 h-4" /> Marquer comme terminée</>}
+                  {isDone ? <><RotateCcw className="w-4 h-4" /> {ui.markUndone}</> : <><Check className="w-4 h-4" /> {ui.markDone}</>}
                 </button>
               </div>
             </div>
 
             {/* Navigation entre leçons */}
-            <nav aria-label="Leçons voisines" className="mt-8 grid sm:grid-cols-2 gap-3">
+            <nav aria-label={ui.neighbours} className="mt-8 grid sm:grid-cols-2 gap-3">
               {previous ? (
                 <LessonLink lesson={previous} direction="previous" basePath={basePath} />
               ) : <span className="hidden sm:block" />}
@@ -467,8 +474,8 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
               ) : (
                 <Link href={homeHref} className="group flex items-center justify-end gap-3 rounded-2xl border border-border bg-card p-4 text-right hover:border-primary/40">
                   <span>
-                    <span className="block text-[12px] font-semibold text-[#56615A]">Fin du pilier {pillar.number}</span>
-                    <span className="block text-[15px] font-semibold text-foreground group-hover:text-primary">Retour à la formation</span>
+                    <span className="block text-[12px] font-semibold text-[#56615A]">{ui.endOfPillar(pillar.number)}</span>
+                    <span className="block text-[15px] font-semibold text-foreground group-hover:text-primary">{ui.backToCourse}</span>
                   </span>
                   <ArrowRight className="w-5 h-5 text-primary" />
                 </Link>
@@ -479,8 +486,8 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
 
         {/* Sommaire (grand écran) */}
         <aside className="hidden lg:block">
-          <nav aria-label="Dans cette leçon" className="sticky top-28 pt-10">
-            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#56615A] mb-3">Dans cette leçon</p>
+          <nav aria-label={ui.onThisPage} className="sticky top-28 pt-10">
+            <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#56615A] mb-3">{ui.onThisPage}</p>
             <ol className="space-y-1 border-l border-border">
               {toc.map((t) => (
                 <li key={t.id}>
@@ -499,9 +506,9 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
         <div className="fixed inset-x-0 bottom-5 z-40 flex justify-center px-4 pointer-events-none">
           <div className="pointer-events-auto flex items-center gap-1 rounded-full bg-[#2E4A36] text-white shadow-lg pl-1 pr-1.5 py-1">
             <button type="button" onClick={resume} className="inline-flex items-center gap-2 h-9 px-4 rounded-full text-[14px] font-semibold hover:bg-white/10">
-              <ArrowDown className="w-4 h-4" /> Reprendre la lecture · {Math.round(resumeAt * 100)} %
+              <ArrowDown className="w-4 h-4" /> {ui.resumeReading(Math.round(resumeAt * 100))}
             </button>
-            <button type="button" onClick={() => setResumeAt(null)} aria-label="Masquer" className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10">
+            <button type="button" onClick={() => setResumeAt(null)} aria-label={ui.hide} className="w-8 h-8 rounded-full flex items-center justify-center hover:bg-white/10">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -512,6 +519,7 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
 }
 
 function LessonLink({ lesson, direction, basePath, onNavigate }: { lesson: Lesson; direction: "previous" | "next"; basePath: string; onNavigate?: () => void }) {
+  const { ui } = useFormationLocale();
   const next = direction === "next";
   return (
     <Link href={`${basePath}/${lesson.slug}`} onClick={onNavigate}
@@ -520,7 +528,7 @@ function LessonLink({ lesson, direction, basePath, onNavigate }: { lesson: Lesso
         <Image src={lesson.image.card} alt="" fill sizes="80px" className="object-cover" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[12px] font-semibold text-[#56615A]">{next ? "Leçon suivante" : "Leçon précédente"} · {lesson.number}</span>
+        <span className="block text-[12px] font-semibold text-[#56615A]">{next ? ui.nextLesson : ui.previousLesson} · {lesson.number}</span>
         <span className="block text-[15px] font-semibold text-foreground leading-snug group-hover:text-primary line-clamp-2">{lesson.title}</span>
       </span>
       {next ? <ArrowRight className="w-5 h-5 text-primary shrink-0" /> : <ArrowLeft className="w-5 h-5 text-primary shrink-0" />}

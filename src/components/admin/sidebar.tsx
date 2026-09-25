@@ -34,7 +34,7 @@ const NAV_ITEMS = [
   { label: "Événements", href: "/admin/events", icon: CalendarDays, section: "content" },
   { label: "Visioconférences", href: "/admin/meets", icon: Video, section: "content" },
   { label: "Médiathèque", href: "/admin/mediatheque", icon: Library, section: "content" },
-  { label: "Formation", href: "/admin/formation", icon: GraduationCap, section: "content" },
+  { label: "Académie", href: "/admin/formation", icon: GraduationCap, section: "content" },
   { label: "Blog", href: "/admin/blog", icon: BookOpen, section: "content" },
   { label: "Rapports", href: "/admin/reports", icon: ShieldCheck, section: "platform" },
   { label: "Paiements", href: "/admin/payments", icon: CreditCard, section: "platform" },

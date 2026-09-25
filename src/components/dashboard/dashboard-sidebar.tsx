@@ -17,6 +17,7 @@ import {
   LogOut, GraduationCap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { avatarSrc } from "@/lib/avatar";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import type { Tab } from "./dashboard-types";
@@ -176,7 +177,7 @@ export function DashboardSidebar({
         {/* User Card */}
         <div className="flex items-center gap-3">
           <Avatar className="w-10 h-10" style={{ border: "1px solid #E8E5E0" }}>
-            <AvatarImage src={myAvatar} />
+            <AvatarImage src={avatarSrc(myAvatar)} />
             <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>
               {displayInitial}
             </AvatarFallback>

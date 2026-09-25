@@ -30,3 +30,25 @@ export function randomAvatarSeed(): string {
   crypto.getRandomValues(bytes);
   return Array.from(bytes, (b) => (b % 36).toString(36)).join("");
 }
+
+// ── Chargement rapide des photos de profil ───────────────────────
+// Les photos téléversées sont servies par Supabase Storage, parfois en pleine
+// résolution (plusieurs Mo). On les fait passer par l'optimiseur d'images de
+// Next.js : redimensionnées à la taille affichée, en WebP, mises en cache.
+// Les avatars DiceBear (SVG vectoriels, déjà légers) restent tels quels.
+
+const SUPABASE_PUBLIC_IMAGE = /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/.+\.(jpe?g|png|webp|avif|heic)(\?.*)?$/i;
+
+/** Vrai pour une photo Supabase que Next.js peut redimensionner (pas les SVG DiceBear). */
+export function canOptimizeImage(url?: string | null): boolean {
+  return !!url && SUPABASE_PUBLIC_IMAGE.test(url);
+}
+
+/**
+ * URL optimisée pour un petit avatar (<img> simple, ex. Radix Avatar).
+ * `width` doit faire partie des tailles de Next.js (images.imageSizes) : 64, 128 ou 256.
+ */
+export function avatarSrc(url?: string | null, width: 64 | 128 | 256 = 128): string | undefined {
+  if (!url) return undefined;
+  return canOptimizeImage(url) ? `/_next/image?url=${encodeURIComponent(url)}&w=${width}&q=75` : url;
+}

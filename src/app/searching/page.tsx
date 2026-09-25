@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { Monogram } from "@/components/ornaments";
+import { LoaderEmblem } from "@/components/loading-screen";
 import { MemberGate } from "@/components/member-gate";
 import { useI18n } from "@/lib/i18n";
 
@@ -32,8 +32,10 @@ function SearchingPageContent() {
     const params = new URLSearchParams(window.location.search);
     if (params.get("returning") === "1") setReturning(true);
 
+    // Pseudonyme public en priorité (nom affiché sur la plateforme), prénom à défaut.
     getSession().then((session) => {
-      if (session?.name) setName(session.name);
+      const display = session?.pseudo?.trim() || session?.name?.trim();
+      if (display) setName(display);
     });
 
     // Progression visuelle
@@ -61,34 +63,25 @@ function SearchingPageContent() {
   const phases = returning ? RETURNING_PHASES : PHASES;
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center px-6 relative overflow-hidden">
-      {/* Halos d'ambiance */}
-      <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse" />
-      <div className="absolute bottom-0 right-0 w-[400px] h-[400px] bg-secondary/5 rounded-full blur-[120px]" />
+    <div role="status" aria-live="polite" aria-busy="true"
+      className="min-h-screen bg-background flex flex-col items-center justify-center px-6 relative overflow-hidden">
+      {/* Halo d'ambiance, fixe (l'animation est portée par l'emblème) */}
+      <div aria-hidden className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[520px] h-[520px] rounded-full blur-[120px] opacity-40"
+        style={{ background: "radial-gradient(circle, hsl(145 30% 55% / 0.35) 0%, transparent 70%)" }} />
 
-      <div className="relative z-10 flex flex-col items-center text-center max-w-md w-full">
-        {/* Logo avec anneaux animés */}
-        <div className="relative mb-12">
-          <span className="absolute inset-0 -m-6 rounded-full border border-primary/20 animate-ping" style={{ animationDuration: "2.5s" }} />
-          <span className="absolute inset-0 -m-12 rounded-full border border-primary/10 animate-ping" style={{ animationDuration: "3.5s" }} />
-          <div className="w-28 h-28 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center shadow-2xl shadow-primary/20">
-            <Monogram
-              className="w-16 h-16 text-primary animate-pulse"
-              style={{ animationDuration: "2s" }}
-            />
-          </div>
-        </div>
+      <div className="eden-loader-fade relative z-10 flex flex-col items-center text-center max-w-md w-full">
+        {/* Emblème animé — même famille que l'écran de chargement */}
+        <LoaderEmblem size="lg" className="mb-8" />
 
         {/* Marque */}
-        <span className="font-headline text-2xl font-bold tracking-tight text-foreground mb-2">
-          Garden <span>of Alliance</span>
+        <span className="font-headline text-2xl font-bold tracking-tight text-foreground">
+          Garden <span className="italic font-normal text-primary">of Alliance</span>
         </span>
 
-        {name && (
-          <p className="text-foreground/40 text-sm mb-10">
-            {returning ? t("searching.welcomeBack") : t("searching.welcome")}<span className="text-primary font-bold">{name}</span>
-          </p>
-        )}
+        {/* Accueil personnalisé avec le pseudo ; la place est réservée pour éviter un saut de mise en page */}
+        <p className="text-[#56615A] text-sm mt-2 mb-10 min-h-[1.25rem]">
+          {name && <>{returning ? t("searching.welcomeBack") : t("searching.welcome")}<span className="text-primary font-bold">{name}</span></>}
+        </p>
 
         {/* Message principal */}
         <h1
@@ -100,13 +93,14 @@ function SearchingPageContent() {
 
         {/* Barre de progression */}
         <div className="w-full max-w-xs mt-8">
-          <div className="h-1.5 w-full bg-foreground/5 rounded-full overflow-hidden">
+          <div className="h-[3px] w-full bg-primary/10 rounded-full overflow-hidden"
+            role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={progress}>
             <div
-              className="h-full bg-primary rounded-full transition-all duration-100 ease-out shadow-[0_0_12px_rgba(198, 166, 79,0.6)]"
+              className="h-full rounded-full transition-all duration-100 ease-out bg-gradient-to-r from-primary/60 to-primary"
               style={{ width: `${progress}%` }}
             />
           </div>
-          <p className="text-[10px] font-black uppercase tracking-[0.3em] text-foreground/30 mt-4">
+          <p className="text-[10px] font-bold uppercase tracking-[0.3em] text-[#6B746E] mt-4 tabular-nums">
             {progress}{t("searching.progressFooter")}
           </p>
         </div>

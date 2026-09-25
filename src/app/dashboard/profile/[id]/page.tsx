@@ -32,6 +32,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { canOptimizeImage } from "@/lib/avatar";
 import { generateMessageIdeas } from "@/ai/flows/generate-message-ideas-flow";
 import { useToast } from "@/hooks/use-toast";
 import { getProfileById, startConversation, type MemberProfile } from "@/lib/chat";
@@ -238,7 +239,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                 className="group/preview absolute inset-0 w-full h-full cursor-zoom-in"
                 aria-label={t("profileDetail.previewPhoto")}
               >
-                <Image src={member.avatar_url} alt={member.name} fill className="object-cover" priority unoptimized />
+                <Image src={member.avatar_url} alt={member.name} fill className="object-cover" priority unoptimized={!canOptimizeImage(member.avatar_url)} sizes="(min-width: 1024px) 40vw, 100vw" />
                 <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
                 <div className="absolute inset-0 bg-black/0 group-hover/preview:bg-black/20 transition-colors flex items-center justify-center">
                   <div className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity">
@@ -432,7 +433,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
             <DialogTitle className="sr-only">{member.name}</DialogTitle>
             <DialogDescription className="sr-only">{t("profileDetail.previewPhoto")}</DialogDescription>
             <div className="relative w-full aspect-[4/5] sm:aspect-[4/3] rounded-[2rem] overflow-hidden shadow-2xl">
-              <Image src={member.avatar_url} alt={member.name} fill className="object-contain bg-card" unoptimized />
+              <Image src={member.avatar_url} alt={member.name} fill className="object-contain bg-card" unoptimized={!canOptimizeImage(member.avatar_url)} sizes="(min-width: 1024px) 40vw, 100vw" />
             </div>
             <div>
               <button

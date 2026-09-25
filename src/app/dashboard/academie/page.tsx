@@ -9,19 +9,21 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Monogram, Flourish } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
-import { BATIR_SUR_LE_ROC, FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
-import { useFormationProgress } from "@/lib/formation/progress";
+import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
+import { useFormationLocale } from "@/lib/formation/ui";
+import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
 
 export default function AcademyIndexPage() {
   const router = useRouter();
   const { t } = useI18n();
   const { progress, ready } = useFormationProgress();
-  const formation = BATIR_SUR_LE_ROC;
+  // Formation et textes dans la langue de l'interface (français ou anglais).
+  const { formation, ui, localize } = useFormationLocale();
 
   const doneCount = ALL_LESSONS.filter(({ lesson }) => progress.completed.includes(lesson.slug)).length;
   // Leçon en cours de lecture en priorité, sinon la première non terminée.
-  const nextLesson = resumeLesson(progress);
-  const started = doneCount > 0 || progress.lastLesson !== null;
+  const nextLesson = localize(resumeLesson(progress));
+  const started = hasStarted(progress);
   const available = ALL_LESSONS.length;
 
   // Ressources complémentaires, conservées de l'ancienne Académie.
@@ -45,7 +47,7 @@ export default function AcademyIndexPage() {
           <Link href="/dashboard" className="flex items-center gap-2.5 group">
             <Monogram className="w-8 h-7 text-primary" />
             <span className="font-headline text-lg sm:text-xl font-bold text-foreground">
-              Garden of Alliance <span className="text-primary italic font-normal">Académie</span>
+              Garden of Alliance <span className="text-primary italic font-normal">{ui.backToAcademy}</span>
             </span>
           </Link>
           <button onClick={() => router.push("/dashboard")}
@@ -58,12 +60,12 @@ export default function AcademyIndexPage() {
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-16">
         {/* ───── Académie du mariage ───── */}
         <section className="max-w-3xl">
-          <p className="text-[12px] font-bold uppercase tracking-[0.22em] text-primary">Préparation au mariage</p>
+          <p className="text-[12px] font-bold uppercase tracking-[0.22em] text-primary">{ui.academyEyebrow}</p>
           <h1 className="mt-3 font-headline text-[42px] sm:text-[56px] font-bold leading-[1.02] tracking-tight text-foreground">
-            Académie du <span className="italic text-primary">mariage</span>
+            {ui.academyTitle} <span className="italic text-primary">{ui.academyTitleHighlight}</span>
           </h1>
           <p className="mt-4 text-[17px] sm:text-[18px] leading-relaxed text-[#3F4A43]">
-            Des parcours pour se préparer à l&apos;alliance, leçon après leçon, à ton rythme. Ta progression est enregistrée au fil de ta lecture.
+            {ui.academyIntro}
           </p>
         </section>
 
@@ -72,40 +74,43 @@ export default function AcademyIndexPage() {
           <Link href={FORMATION_BASE_PATH}
             className="group grid md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] rounded-3xl border border-border bg-card overflow-hidden shadow-[0_10px_40px_rgba(38,70,52,0.08)] hover:shadow-[0_16px_48px_rgba(38,70,52,0.14)] hover:border-primary/40 transition-all">
             <span className="relative block aspect-[4/5] md:aspect-auto md:min-h-[460px] bg-muted overflow-hidden">
-              <Image src="/batir_roc.webp" alt="Des mains posent une pierre au sommet d'un empilement de pierres."
+              <Image src="/batir_roc.webp" alt={ui.coverAlt}
                 fill priority sizes="(min-width: 768px) 42vw, 100vw"
                 className="object-cover object-[center_45%] group-hover:scale-[1.03] transition-transform duration-700" />
               <span className="absolute top-4 left-4 h-8 px-3 rounded-full bg-white/95 text-[12px] font-bold text-foreground flex items-center shadow-sm">
-                Pilier 1
+                {ui.pillarBadge(1)}
               </span>
             </span>
             <span className="flex flex-col p-6 sm:p-8 lg:p-10">
-              <span className="text-[12px] font-bold uppercase tracking-[0.2em] text-primary">Formation · {available} leçons disponibles</span>
+              <span className="text-[12px] font-bold uppercase tracking-[0.2em] text-primary">{ui.lessonsAvailable(available)}</span>
               <span id="batir-sur-le-roc" className="mt-2 font-headline text-[36px] sm:text-[44px] font-bold leading-[1.05] text-foreground group-hover:text-primary transition-colors">
                 {formation.title}
               </span>
               <span className="mt-3 text-[16px] leading-relaxed text-[#3F4A43]">{formation.tagline}</span>
               <span className="mt-5 pl-4 border-l-2 border-primary/40 block">
-                <span className="block font-headline italic text-[17px] leading-snug text-foreground">« {formation.verse.text} »</span>
+                <span className="block font-headline italic text-[17px] leading-snug text-foreground">{ui.quote(formation.verse.text)}</span>
                 <span className="mt-1 block text-[13px] font-semibold text-primary">{formation.verse.ref}</span>
               </span>
 
               <span className="mt-auto pt-8 block">
                 <span className="flex justify-between text-[13px] text-[#56615A] mb-1.5">
-                  <span>{ready ? `${doneCount} / ${available} leçons terminées` : "Ta progression"}</span>
+                  <span>{ready ? ui.lessonsDone(doneCount, available) : ui.progressLabel}</span>
                   {ready && <span>{Math.round((doneCount / available) * 100)} %</span>}
                 </span>
-                <span className="block h-2 rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={available} aria-valuenow={doneCount} aria-label="Progression dans Bâtir sur le roc">
+                <span className="block h-2 rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={available} aria-valuenow={doneCount} aria-label={`${ui.progressLabel} · ${formation.title}`}>
                   <span className="block h-full bg-primary rounded-full transition-all" style={{ width: `${(doneCount / available) * 100}%` }} />
                 </span>
                 {ready && started && nextLesson && (
-                  <span className="mt-3 block text-[13px] text-[#56615A]">En cours : Leçon {nextLesson.number} — {nextLesson.title}</span>
+                  <span className="mt-3 block text-[13px] text-[#56615A]">{ui.inProgress(nextLesson.number, nextLesson.title)}</span>
                 )}
                 {ready && !nextLesson && (
-                  <span className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary"><CheckCircle2 className="w-4 h-4" /> Toutes les leçons sont terminées</span>
+                  <span className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary"><CheckCircle2 className="w-4 h-4" /> {ui.allDone}</span>
                 )}
                 <span className="mt-6 inline-flex items-center gap-2 h-12 px-6 rounded-full bg-primary text-white text-[15px] font-bold group-hover:bg-primary/90 transition-colors">
-                  <BookOpen className="w-4 h-4" /> {started ? "Voir les leçons et continuer" : "Découvrir les leçons"} <ArrowRight className="w-4 h-4" />
+                  <BookOpen className="w-4 h-4" />
+                  {/* Masqué le temps de lire la progression : jamais « Continuer » affiché à tort. */}
+                  <span className={ready ? "" : "invisible"}>{started ? ui.continue : ui.start}</span>
+                  <ArrowRight className="w-4 h-4" />
                 </span>
               </span>
             </span>
@@ -115,8 +120,8 @@ export default function AcademyIndexPage() {
         {/* ───── Pour aller plus loin (ancienne Académie) ───── */}
         <section aria-labelledby="complements" className="space-y-5">
           <div>
-            <h2 id="complements" className="font-headline text-[26px] font-bold text-foreground">Pour aller plus loin</h2>
-            <p className="mt-1 text-[15px] text-[#56615A]">Des lectures courtes sur le discernement et la vie de couple.</p>
+            <h2 id="complements" className="font-headline text-[26px] font-bold text-foreground">{ui.furtherTitle}</h2>
+            <p className="mt-1 text-[15px] text-[#56615A]">{ui.furtherDesc}</p>
           </div>
           <div className="grid md:grid-cols-3 gap-3">
             {discernementLessons.map((l) => (
