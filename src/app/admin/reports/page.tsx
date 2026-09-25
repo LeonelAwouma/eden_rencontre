@@ -17,7 +17,10 @@ import {
   Save,
   Loader2,
   Trash2,
+  MessageCircle,
+  UserRound,
 } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 
 interface Report {
@@ -33,6 +36,9 @@ interface Report {
   created_at: string;
   reporter?: { id: string; name: string; email: string };
   reported_user?: { id: string; name: string; email: string; status: string };
+  /** 'messages' quand le membre a signalé depuis une conversation (migration 20260925). */
+  source?: string | null;
+  conversation_id?: string | null;
 }
 
 const STATUS_OPTIONS = [
@@ -409,6 +415,28 @@ export default function ReportsPage() {
                     <span className={cn("text-[10px] font-bold uppercase px-2.5 py-1 rounded-full", STATUS_CLASSES[selectedReport.status])}>{STATUS_LABELS[selectedReport.status]}</span>
                   </div>
                 </div>
+
+                {(selectedReport.source === "messages" || selectedReport.reported_user_id) && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {selectedReport.source === "messages" && (
+                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#EEF5EC] text-[11px] font-semibold text-[#486B46]">
+                        <MessageCircle className="w-3.5 h-3.5" /> Signalé depuis la messagerie
+                      </span>
+                    )}
+                    {selectedReport.reported_user_id && (
+                      <>
+                        <Link href={`/admin/users/${selectedReport.reported_user_id}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-[12px] font-semibold text-foreground hover:bg-muted">
+                          <UserRound className="w-3.5 h-3.5" /> Profil signalé
+                        </Link>
+                        <Link href={`/admin/chat-monitoring?user=${selectedReport.reported_user_id}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-border text-[12px] font-semibold text-foreground hover:bg-muted">
+                          <MessageCircle className="w-3.5 h-3.5" /> Ses conversations
+                        </Link>
+                      </>
+                    )}
+                  </div>
+                )}
 
                 {selectedReport.description && (
                   <div>

@@ -20,6 +20,9 @@ const PHOTOS = [
   "/couple-11.webp",
   "/couple-12.webp",
   "/couple-13.webp",
+  // Recadrées en 3:4 depuis des paysages 16:9 : 706 × 941, pas d'agrandissement.
+  "/couple-15.webp",
+  "/couple-16.webp",
 ];
 
 const BASE_DELAY = 4200;

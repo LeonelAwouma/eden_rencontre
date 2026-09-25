@@ -1313,7 +1313,29 @@
     "autoSaveError": "Save failed — we will retry with your next answer",
     "notSpecified": "Not specified",
     "logOut": "Log out",
-    "contentUnderDevelopment": "Content under development…"
+    "contentUnderDevelopment": "Content under development…",
+    "reportButton": "Report",
+    "reportTitle": "Report {name}",
+    "reportDesc": "Our moderation team will review this report. The reported person will not be told it was you.",
+    "reportReasonLabel": "What is the problem?",
+    "reportReasons": {
+      "harassment": "Harassment or threats",
+      "inappropriate_content": "Inappropriate messages or photos",
+      "fake_profile": "Fake profile or impersonation",
+      "spam": "Spam, scam or request for money",
+      "other": "Other"
+    },
+    "reportDetailsLabel": "Tell us what happened",
+    "reportOptional": "optional",
+    "reportDetailsPlaceholder": "Briefly describe the situation…",
+    "reportPrivacy": "The team may review this conversation to check the report. If you are in immediate danger, contact the authorities.",
+    "reportSend": "Send report",
+    "reportSent": "Report sent",
+    "reportAlreadySent": "Report already submitted",
+    "reportSentDesc": "Thank you. Our team will review it shortly.",
+    "reportRateLimited": "Too many reports today. Try again tomorrow or write to the team.",
+    "reportDescRequired": "Describe the problem to send it.",
+    "reportError": "The report could not be sent. Please try again."
   },
   "chatGuide": {
     "headerTitle": "Guide to Your First 5 Conversations",
@@ -1589,5 +1611,17 @@
     "errorTitle": "Invalid link",
     "errorDesc": "This unsubscribe link is invalid or incomplete. Write to us and we will unsubscribe you:",
     "backToBlog": "Back to the blog"
+  },
+  "billing": {
+    "monthly": "Monthly",
+    "annual": "Yearly",
+    "discountBadge": "−10%",
+    "toggleLabel": "Billing period",
+    "perMonth": "/ month",
+    "perYear": "/ year",
+    "perMonthEquivalent": "i.e. {amount} F per month",
+    "savings": "You save {amount} F per year",
+    "annualNote": "Pay yearly and get 10% off.",
+    "monthlyNote": "No commitment, cancel anytime."
   }
 }

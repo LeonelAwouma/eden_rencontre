@@ -15,12 +15,14 @@ import {
   Pencil, Filter, ShieldCheck, CheckCircle2, LogOut, Camera,
   HeartHandshake, Hash, Share2, Video, CalendarDays, Church,
   Bookmark, ThumbsUp, Send, ArrowLeft, Smile, ImagePlus, Loader2,
-  Trash2, UserPlus, ChurchIcon, Sparkles, GraduationCap
+  Trash2, UserPlus, ChurchIcon, Sparkles, GraduationCap, Flag
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { BillingToggle } from "@/components/pricing/billing-toggle";
+import { planPricing, formatFcfa, type BillingPeriod, type PlanId } from "@/lib/pricing";
 import { useToast } from "@/hooks/use-toast";
 import { getSession, logout, updateProfile, ageFromBirthDate, type EdenUser } from "@/lib/auth";
 import { ALL_LESSONS, FORMATION_BASE_PATH, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
@@ -290,6 +292,12 @@ export default function DashboardPage() {
   const [engagement, setEngagement] = useState<Record<string, EngagementStatus>>({});
   const [engagementActing, setEngagementActing] = useState(false);
   const [showEngageConfirm, setShowEngageConfirm] = useState(false);
+  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
+  // Signalement de l'interlocuteur depuis la messagerie → Admin → Signalements.
+  const [showReport, setShowReport] = useState(false);
+  const [reportType, setReportType] = useState<string>("");
+  const [reportDesc, setReportDesc] = useState("");
+  const [reportSending, setReportSending] = useState(false);
   const [adminUser, setAdminUser] = useState<{ id: string; name: string } | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [chatInput, setChatInput] = useState("");
@@ -1057,6 +1065,32 @@ export default function DashboardPage() {
     }
   };
 
+  const openReport = () => { setReportType(""); setReportDesc(""); setShowReport(true); };
+
+  const handleSendReport = async () => {
+    if (!displayConv?.otherId || !reportType) return;
+    setReportSending(true);
+    try {
+      const token = supabase ? (await supabase.auth.getSession()).data.session?.access_token : null;
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        body: JSON.stringify({ reported_user_id: displayConv.otherId, report_type: reportType, description: reportDesc, conversation_id: displayConv.id }),
+      });
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        setShowReport(false);
+        toast({ title: t(d.duplicate ? "dashboard.reportAlreadySent" : "dashboard.reportSent"), description: t("dashboard.reportSentDesc") });
+      } else {
+        toast({ title: t(d.error === "rate_limited" ? "dashboard.reportRateLimited" : d.error === "description_required" ? "dashboard.reportDescRequired" : "dashboard.reportError"), variant: "destructive" });
+      }
+    } catch {
+      toast({ title: t("dashboard.reportError"), variant: "destructive" });
+    } finally { setReportSending(false); }
+  };
+
+  const REPORT_REASONS = ["harassment", "inappropriate_content", "fake_profile", "spam", "other"] as const;
+
   // ═══════════════════════════════════════════════════════════
   // RENDER
   // ═══════════════════════════════════════════════════════════
@@ -1078,6 +1112,49 @@ export default function DashboardPage() {
               </Button>
               <Button onClick={handleSendEngagement} disabled={engagementActing} className="flex-1 h-12 bg-primary text-primary-foreground font-bold rounded-xl">
                 {engagementActing ? <Loader2 className="w-4 h-4 animate-spin" /> : t("dashboard.engageConfirmSend")}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showReport && displayConv && (
+        <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-5" role="dialog" aria-modal="true" aria-labelledby="report-title">
+          <div className="w-full max-w-md bg-white rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-2xl flex items-center justify-center shrink-0" style={{ background: "#FEF2F2" }}>
+                <Flag className="w-6 h-6" style={{ color: "#B42318" }} />
+              </div>
+              <div className="min-w-0">
+                <h2 id="report-title" className="text-xl font-bold text-[#2F2F2F]">{t("dashboard.reportTitle", { name: displayConv.name })}</h2>
+                <p className="text-sm text-[#56615A] mt-1">{t("dashboard.reportDesc")}</p>
+              </div>
+            </div>
+            <fieldset className="space-y-2">
+              <legend className="text-[13px] font-semibold text-[#2F2F2F] mb-2">{t("dashboard.reportReasonLabel")}</legend>
+              {REPORT_REASONS.map((r) => (
+                <label key={r} className={cn("flex items-center gap-3 rounded-xl border px-4 py-3 cursor-pointer text-sm transition-colors",
+                  reportType === r ? "border-[#486B46] bg-[#EEF5EC]" : "border-[#E8E5E0] hover:bg-[#FAF9F6]")}>
+                  <input type="radio" name="report-reason" value={r} checked={reportType === r} onChange={() => setReportType(r)} className="accent-[#486B46]" />
+                  <span className="text-[#2F2F2F]">{t(`dashboard.reportReasons.${r}`)}</span>
+                </label>
+              ))}
+            </fieldset>
+            <div>
+              <label htmlFor="report-details" className="text-[13px] font-semibold text-[#2F2F2F]">
+                {t("dashboard.reportDetailsLabel")}{reportType !== "other" && <span className="font-normal text-[#6B746E]"> · {t("dashboard.reportOptional")}</span>}
+              </label>
+              <textarea id="report-details" value={reportDesc} onChange={(e) => setReportDesc(e.target.value.slice(0, 1000))} rows={3}
+                placeholder={t("dashboard.reportDetailsPlaceholder")}
+                className="mt-1.5 w-full rounded-xl border border-[#E8E5E0] px-3.5 py-2.5 text-sm outline-none focus:border-[#486B46] resize-none" />
+            </div>
+            <p className="text-xs text-[#6B746E]">{t("dashboard.reportPrivacy")}</p>
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={() => setShowReport(false)} disabled={reportSending} className="flex-1 h-12 rounded-xl">
+                {t("dashboard.engageCancel")}
+              </Button>
+              <Button onClick={handleSendReport} disabled={reportSending || !reportType || (reportType === "other" && !reportDesc.trim())}
+                className="flex-1 h-12 font-bold rounded-xl text-white" style={{ background: "#B42318" }}>
+                {reportSending ? <Loader2 className="w-4 h-4 animate-spin" /> : t("dashboard.reportSend")}
               </Button>
             </div>
           </div>
@@ -2030,25 +2107,27 @@ export default function DashboardPage() {
                         </p>
                       </div>
                     </button>
-                    {!isAdminThread && (() => {
+                    {!isAdminThread && (
+                    <div className="ml-auto shrink-0 flex items-center gap-2">
+                    {(() => {
                       const eng = engagement[displayConv.id];
                       const status = eng?.status || "none";
                       if (status === "none" || status === "declined") {
                         return (
                           <button onClick={() => setShowEngageConfirm(true)}
-                            className="ml-auto shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-bold transition-colors"
+                            className="shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-bold transition-colors"
                             style={{ background: "#EEF5EC", color: "#486B46" }}>
                             <HeartHandshake className="w-4 h-4" /> <span className="hidden sm:inline">{t("dashboard.engageButton")}</span>
                           </button>
                         );
                       }
                       if (status === "pending" && eng?.requesterId === meId) {
-                        return <span className="ml-auto shrink-0 text-[11px] font-medium px-2" style={{ color: "#777777" }}>{t("dashboard.engagePendingAsRequester")}</span>;
+                        return <span className="shrink-0 text-[11px] font-medium px-2" style={{ color: "#777777" }}>{t("dashboard.engagePendingAsRequester")}</span>;
                       }
                       if (status === "accepted") {
                         return (
                           <button onClick={handleViewEngagementPayment}
-                            className="ml-auto shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-bold transition-colors"
+                            className="shrink-0 flex items-center gap-1.5 h-9 px-3 rounded-xl text-xs font-bold transition-colors"
                             style={{ background: "#486B46", color: "#FFFFFF" }}>
                             💍 <span className="hidden sm:inline">{t("dashboard.viewPayment")}</span>
                           </button>
@@ -2056,6 +2135,14 @@ export default function DashboardPage() {
                       }
                       return null;
                     })()}
+                    {/* Signaler : toujours à portée, à droite de l'en-tête de conversation */}
+                    <button onClick={openReport} title={t("dashboard.reportButton")} aria-label={t("dashboard.reportButton")}
+                      className="shrink-0 flex items-center gap-1.5 h-9 px-2.5 rounded-xl text-xs font-bold transition-colors hover:bg-[#FEF2F2]"
+                      style={{ color: "#B42318", border: "1px solid #F3D5D2" }}>
+                      <Flag className="w-4 h-4" /> <span className="hidden sm:inline">{t("dashboard.reportButton")}</span>
+                    </button>
+                    </div>
+                    )}
                   </div>
                   {!isAdminThread && engagement[displayConv.id]?.status === "pending" && engagement[displayConv.id]?.recipientId === meId && (
                     <div className="p-4 flex items-center gap-3 flex-wrap" style={{ background: "#EEF5EC", borderBottom: "1px solid #E8E5E0" }}>
@@ -2404,30 +2491,57 @@ export default function DashboardPage() {
               <h2 className="font-headline text-3xl sm:text-4xl font-bold" style={{ color: "#2F2F2F" }}>{t("dashboard.elevateYourPath")}</h2>
               <p className="text-base" style={{ color: "#777777" }}>{t("dashboard.accessFullMeasure")}</p>
             </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 max-w-5xl mx-auto">
-              {[
-                { name: t("dashboard.planDiscoveryName"), price: t("dashboard.planFree"), period: "", accent: false, features: [t("dashboard.planFeatureBasicProfile"), t("dashboard.planFeature5Matches"), t("dashboard.planFeatureLimitedMessages"), t("dashboard.planFeaturePublicEvents")], cta: t("dashboard.planCurrentPlan"), current: true },
-                { name: t("dashboard.planGrowthName"), price: "5,000", period: "FCFA/month", accent: true, features: [t("dashboard.planFeatureUnlimitedMatches"), t("dashboard.planFeatureUnlimitedMessages"), t("dashboard.planFeatureVerifiedProfile"), t("dashboard.planFeatureAdvancedFilters"), t("dashboard.planFeaturePrioritySupport")], cta: t("dashboard.planChooseGrowth"), current: false },
-                { name: t("dashboard.planBlessingName"), price: "40,000", period: "FCFA/year", accent: false, badge: t("dashboard.planBadgeBest"), features: [t("dashboard.planFeatureAllPremium"), t("dashboard.planFeatureFreeCounseling"), t("dashboard.planFeatureVipEvents"), t("dashboard.planFeaturePriorityMatching"), t("dashboard.planFeatureSpiritualResources")], cta: t("dashboard.planChooseBlessing"), current: false },
-              ].map((plan) => (
-                <div key={plan.name} className="rounded-2xl p-6 sm:p-8 overflow-hidden relative"
+            {/* Mêmes formules et mêmes prix que la page publique /tarifs (src/lib/pricing.ts) */}
+            <div className="flex flex-col items-center gap-2">
+              <BillingToggle value={billingPeriod} onChange={setBillingPeriod} />
+              <p className="text-sm" style={{ color: "#56615A" }} aria-live="polite">
+                {t(billingPeriod === "annual" ? "billing.annualNote" : "billing.monthlyNote")}
+              </p>
+              <p className="inline-flex items-center gap-2 mt-1 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "#FAF9F6", color: "#56615A", border: "1px solid #E8E5E0" }}>
+                {t("dashboard.planCurrentPlan")} : {t("dashboard.planDiscoveryName")} ({t("dashboard.planFree")})
+              </p>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
+              {([
+                { id: "bronze", name: t("tarifs.bronze.name"), accent: false, features: [t("tarifs.bronze.feature1"), t("tarifs.bronze.feature2"), t("tarifs.bronze.feature3")], cta: t("tarifs.bronze.cta"), current: false },
+                { id: "argent", name: t("tarifs.argent.name"), accent: true, badge: t("tarifs.argent.badge"), features: [t("tarifs.argent.feature1"), t("tarifs.argent.feature2"), t("tarifs.argent.feature3")], cta: t("tarifs.argent.cta"), current: false },
+                { id: "or", name: t("tarifs.or.name"), accent: false, features: [t("tarifs.or.feature1"), t("tarifs.or.feature2"), t("tarifs.or.feature3"), t("tarifs.or.feature4")], cta: t("tarifs.or.cta"), current: false },
+              ] as { id: PlanId; name: string; accent: boolean; badge?: string; features: string[]; cta: string; current: boolean }[]).map((plan) => {
+                const price = planPricing(plan.id, billingPeriod);
+                return (
+                <div key={plan.name} className="rounded-2xl p-6 overflow-hidden relative flex flex-col"
                   style={{ background: plan.accent ? "linear-gradient(135deg, #FFFFFF 0%, #EEF5EC 100%)" : "#FFFFFF", border: `1px solid ${plan.accent ? "#C6D4C0" : "#E8E5E0"}`, boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
-                  <div className="space-y-6">
-                    <div className="flex items-center justify-between">
+                  <div className="space-y-5 flex-1 flex flex-col">
+                    <div className="flex items-center justify-between gap-2">
                       <h3 className="font-headline text-xl font-bold flex items-center gap-2" style={{ color: "#2F2F2F" }}>
                         {plan.accent && <Crown className="w-5 h-5" style={{ color: "#C6A15B" }} />}
                         {plan.name}
                       </h3>
-                      {plan.badge && <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black" style={{ background: "#C6A15B", color: "#FFFFFF" }}>{plan.badge}</span>}
+                      {plan.badge && <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black shrink-0" style={{ background: "#C6A15B", color: "#FFFFFF" }}>{plan.badge}</span>}
                     </div>
-                    <div className="flex items-end gap-1.5">
-                      <span className="font-headline text-4xl font-black" style={{ color: "#2F2F2F" }}>{plan.price}</span>
-                      {plan.period && <span className="mb-2 text-sm" style={{ color: "#777777" }}>{plan.period}</span>}
+                    <div>
+                      {price.fullYear !== null && (
+                        <p className="text-sm font-semibold line-through" style={{ color: "#9CA3AF" }}>{formatFcfa(price.fullYear)} F</p>
+                      )}
+                      <div className="flex items-end gap-1.5 flex-wrap">
+                        <span className="font-headline text-4xl font-black" style={{ color: "#2F2F2F" }}>
+                          {formatFcfa(price.amount)}
+                        </span>
+                        <span className="mb-1.5 text-sm" style={{ color: "#6B746E" }}>F {t(billingPeriod === "annual" ? "billing.perYear" : "billing.perMonth")}</span>
+                      </div>
+                      {price.perMonth !== null && price.savings !== null && (
+                        <div className="mt-1.5 space-y-1">
+                          <p className="text-xs" style={{ color: "#56615A" }}>{t("billing.perMonthEquivalent", { amount: formatFcfa(price.perMonth) })}</p>
+                          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background: "#EEF5EC", color: "#486B46" }}>
+                            {t("billing.savings", { amount: formatFcfa(price.savings) })}
+                          </span>
+                        </div>
+                      )}
                     </div>
-                    <ul className="space-y-3">
+                    <ul className="space-y-3 flex-1">
                       {plan.features.map((f) => (
-                        <li key={f} className="flex items-center gap-2.5 text-sm" style={{ color: "#2F2F2F" }}>
-                          <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0" style={{ background: "#EEF5EC" }}>
+                        <li key={f} className="flex items-start gap-2.5 text-sm" style={{ color: "#2F2F2F" }}>
+                          <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "#EEF5EC" }}>
                             <Check className="w-3 h-3" style={{ color: "#486B46" }} />
                           </span>
                           {f}
@@ -2437,13 +2551,14 @@ export default function DashboardPage() {
                     <Button disabled={plan.current}
                       onClick={() => toast({ title: t("dashboard.toastSecurePaymentSoon") })}
                       className="w-full h-12 rounded-xl font-bold text-sm gap-2"
-                      style={plan.accent ? { background: "#486B46", color: "#FFFFFF" } : { background: "#FAF9F6", color: "#777777" }}>
+                      style={plan.accent ? { background: "#486B46", color: "#FFFFFF" } : { background: "#FAF9F6", color: plan.current ? "#777777" : "#486B46", border: plan.current ? undefined : "1px solid #C6D4C0" }}>
                       {plan.accent && <Crown className="w-4 h-4" />}
                       {plan.cta}
                     </Button>
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
             <div className="flex items-center justify-center gap-2 text-xs" style={{ color: "#777777" }}>
               <ShieldCheck className="w-4 h-4" style={{ color: "#486B46" }} /> {t("dashboard.securePaymentCancel")}

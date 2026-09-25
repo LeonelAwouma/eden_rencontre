@@ -1,10 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { OliveBirdDivider } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
+import { BillingToggle } from "@/components/pricing/billing-toggle";
+import { planPricing, formatFcfa, type BillingPeriod, type PlanId } from "@/lib/pricing";
 import {
   Check,
   Heart,
@@ -20,13 +23,13 @@ import {
 
 export default function PricingPage() {
   const { t } = useI18n();
+  const [period, setPeriod] = useState<BillingPeriod>("monthly");
 
   const plans = [
     {
+      id: "bronze" as PlanId,
       name: t("tarifs.bronze.name"),
       icon: "🥉",
-      price: "2 500",
-      currency: "F",
       description: t("tarifs.bronze.description"),
       badge: t("tarifs.bronze.badge"),
       badgeColor: { bg: "#F5E6D3", text: "#8B6914" },
@@ -41,10 +44,9 @@ export default function PricingPage() {
       gold: false,
     },
     {
+      id: "argent" as PlanId,
       name: t("tarifs.argent.name"),
       icon: "🥈",
-      price: "5 000",
-      currency: "F",
       description: t("tarifs.argent.description"),
       badge: t("tarifs.argent.badge"),
       badgeColor: { bg: "#EEF5EC", text: "#486B46" },
@@ -59,10 +61,9 @@ export default function PricingPage() {
       gold: false,
     },
     {
+      id: "or" as PlanId,
       name: t("tarifs.or.name"),
       icon: "🥇",
-      price: "10 000",
-      currency: "F",
       description: t("tarifs.or.description"),
       badge: t("tarifs.or.badge"),
       badgeColor: { bg: "#FDF6E3", text: "#9B7C15" },
@@ -116,6 +117,13 @@ export default function PricingPage() {
         {/* ══ PRICING CARDS ══ */}
         <section className="pb-12 sm:pb-16 -mt-4">
           <div className="container mx-auto px-4">
+            {/* Mensuel / Annuel (−10 %) */}
+            <div className="flex flex-col items-center gap-2.5 mb-12">
+              <BillingToggle value={period} onChange={setPeriod} />
+              <p className="text-sm text-muted-foreground font-body" aria-live="polite">
+                {t(period === "annual" ? "billing.annualNote" : "billing.monthlyNote")}
+              </p>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8 max-w-6xl mx-auto items-start">
               {plans.map((plan) => (
                 <div
@@ -199,22 +207,42 @@ export default function PricingPage() {
                     )}
 
                     {/* Price */}
-                    <div className="mb-6 pb-6" style={{ borderBottom: "1px solid #F0EDE8" }}>
-                      <div className="flex items-baseline gap-1">
-                        <span
-                          className="font-headline font-black"
-                          style={{
-                            fontSize: plan.popular ? "3.25rem" : "2.75rem",
-                            color: plan.gold ? "#9B7C15" : plan.popular ? "#486B46" : "#2F2F2F",
-                          }}
-                        >
-                          {plan.price}
-                        </span>
-                        <span className="text-base font-medium ml-1" style={{ color: "#9CA3AF" }}>
-                          {plan.currency}
-                        </span>
-                      </div>
-                    </div>
+                    {(() => {
+                      const price = planPricing(plan.id, period);
+                      return (
+                        <div className="mb-6 pb-6" style={{ borderBottom: "1px solid #F0EDE8" }}>
+                          {price.fullYear !== null && (
+                            <p className="text-sm font-semibold line-through" style={{ color: "#9CA3AF" }}>
+                              {formatFcfa(price.fullYear)} F
+                            </p>
+                          )}
+                          <div className="flex items-baseline gap-1 flex-wrap">
+                            <span
+                              className="font-headline font-black"
+                              style={{
+                                fontSize: plan.popular ? "3.25rem" : "2.75rem",
+                                color: plan.gold ? "#9B7C15" : plan.popular ? "#486B46" : "#2F2F2F",
+                              }}
+                            >
+                              {formatFcfa(price.amount)}
+                            </span>
+                            <span className="text-base font-medium ml-1" style={{ color: "#6B746E" }}>
+                              F {t(period === "annual" ? "billing.perYear" : "billing.perMonth")}
+                            </span>
+                          </div>
+                          {price.perMonth !== null && price.savings !== null && (
+                            <div className="mt-2 space-y-1">
+                              <p className="text-sm" style={{ color: "#56615A" }}>
+                                {t("billing.perMonthEquivalent", { amount: formatFcfa(price.perMonth) })}
+                              </p>
+                              <span className="inline-block px-2.5 py-1 rounded-full text-[11px] font-bold" style={{ background: "#EEF5EC", color: "#486B46" }}>
+                                {t("billing.savings", { amount: formatFcfa(price.savings) })}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                     {/* Features */}
                     <ul className="space-y-4 flex-1 mb-8">

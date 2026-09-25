@@ -1313,7 +1313,29 @@
     "autoSaveError": "Échec de l'enregistrement — nouvel essai à la prochaine réponse",
     "notSpecified": "Non renseigné",
     "logOut": "Se déconnecter",
-    "contentUnderDevelopment": "Contenu en cours de préparation…"
+    "contentUnderDevelopment": "Contenu en cours de préparation…",
+    "reportButton": "Signaler",
+    "reportTitle": "Signaler {name}",
+    "reportDesc": "Notre équipe de modération examinera ce signalement. La personne signalée ne sera pas informée que c'est vous.",
+    "reportReasonLabel": "Quel est le problème ?",
+    "reportReasons": {
+      "harassment": "Harcèlement ou menaces",
+      "inappropriate_content": "Messages ou photos inappropriés",
+      "fake_profile": "Faux profil ou usurpation",
+      "spam": "Spam, arnaque ou demande d'argent",
+      "other": "Autre"
+    },
+    "reportDetailsLabel": "Précisez ce qui s'est passé",
+    "reportOptional": "facultatif",
+    "reportDetailsPlaceholder": "Décrivez brièvement la situation…",
+    "reportPrivacy": "L'équipe pourra consulter cette conversation pour vérifier le signalement. En cas de danger immédiat, contactez les autorités.",
+    "reportSend": "Envoyer le signalement",
+    "reportSent": "Signalement envoyé",
+    "reportAlreadySent": "Signalement déjà transmis",
+    "reportSentDesc": "Merci. Notre équipe va l'examiner rapidement.",
+    "reportRateLimited": "Trop de signalements aujourd'hui. Réessayez demain ou écrivez à l'équipe.",
+    "reportDescRequired": "Décrivez le problème pour pouvoir l'envoyer.",
+    "reportError": "Le signalement n'a pas pu être envoyé. Réessayez."
   },
   "chatGuide": {
     "headerTitle": "Guide de vos 5 premières conversations",
@@ -1589,5 +1611,17 @@
     "errorTitle": "Lien invalide",
     "errorDesc": "Ce lien de désabonnement est invalide ou incomplet. Écrivez-nous et nous vous désabonnerons :",
     "backToBlog": "Retour au blog"
+  },
+  "billing": {
+    "monthly": "Mensuel",
+    "annual": "Annuel",
+    "discountBadge": "−10 %",
+    "toggleLabel": "Période de facturation",
+    "perMonth": "/ mois",
+    "perYear": "/ an",
+    "perMonthEquivalent": "soit {amount} F par mois",
+    "savings": "Vous économisez {amount} F par an",
+    "annualNote": "Payez à l'année et profitez de 10 % de remise.",
+    "monthlyNote": "Sans engagement, résiliable à tout moment."
   }
 }
