@@ -6,6 +6,7 @@ import { Loader2 } from "lucide-react";
 import { getMyAccountStatus, logout, saveMyPseudo, isValidPseudo } from "@/lib/auth";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
+import { LoadingScreen } from "@/components/loading-screen";
 
 /**
  * Espace membre réservé aux comptes approuvés par l'admin.
@@ -77,9 +78,7 @@ export function MemberGate({ children }: { children: React.ReactNode }) {
 
   if (!allowed) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <Monogram className="w-12 h-10 text-primary animate-pulse" style={{ animationDuration: "2s" }} />
-      </div>
+      <LoadingScreen />
     );
   }
   return <>{children}</>;

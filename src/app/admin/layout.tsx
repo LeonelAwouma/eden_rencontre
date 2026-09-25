@@ -5,6 +5,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { Sidebar } from "@/components/admin/sidebar";
 import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { cn } from "@/lib/utils";
+import { LoadingScreen } from "@/components/loading-screen";
 import { ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
 
 interface AdminInfo {
@@ -100,15 +101,7 @@ export default function AdminLayout({
 
   if (loading) {
     return (
-      <div className="eden-admin min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-full border-[3px] border-border border-t-primary animate-spin" />
-          <div className="text-center">
-            <p className="font-headline text-base font-bold text-foreground">Garden of Alliance</p>
-            <p className="text-xs text-muted-foreground mt-1">Chargement de l&apos;administration…</p>
-          </div>
-        </div>
-      </div>
+      <LoadingScreen className="eden-admin" label="Chargement de l'administration…" />
     );
   }
 

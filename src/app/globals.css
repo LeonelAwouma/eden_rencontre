@@ -833,3 +833,34 @@ html {
 .blog-content figure { margin: 1.5rem 0; }
 .blog-content figcaption { text-align: center; font-size: 0.85rem; color: #777; margin-top: 0.5rem; font-style: italic; }
 .blog-content hr { border: none; border-top: 1px solid #E8E5E0; margin: 2rem 0; }
+/* ── Écran de chargement (components/loading-screen.tsx) ── */
+@keyframes eden-loader-draw {
+  0%        { stroke-dashoffset: var(--len); opacity: 0.25; }
+  45%, 70%  { stroke-dashoffset: 0; opacity: 1; }
+  100%      { stroke-dashoffset: calc(var(--len) * -1); opacity: 0.25; }
+}
+@keyframes eden-loader-spin { to { transform: rotate(360deg); } }
+@keyframes eden-loader-breathe {
+  0%, 100% { transform: scale(0.92); opacity: 0.55; }
+  50%      { transform: scale(1.06); opacity: 0.9; }
+}
+@keyframes eden-loader-bar {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+@keyframes eden-loader-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: none; }
+}
+.eden-loader-stroke { stroke-dasharray: var(--len); animation: eden-loader-draw 2.8s cubic-bezier(.65,0,.35,1) infinite; }
+.eden-loader-orbit  { animation: eden-loader-spin 1.6s linear infinite; transform-origin: 50% 50%; }
+.eden-loader-halo   { animation: eden-loader-breathe 2.8s ease-in-out infinite; }
+.eden-loader-bar    { animation: eden-loader-bar 1.4s cubic-bezier(.45,0,.25,1) infinite; }
+/* Apparition différée : un chargement très court ne fait pas « flasher » l'écran. */
+.eden-loader-fade   { opacity: 0; animation: eden-loader-in .45s ease-out .15s forwards; }
+
+@media (prefers-reduced-motion: reduce) {
+  .eden-loader-stroke { animation: none; stroke-dasharray: none; opacity: 1; }
+  .eden-loader-orbit, .eden-loader-halo, .eden-loader-bar { animation: none; }
+  .eden-loader-fade { animation: none; opacity: 1; }
+}

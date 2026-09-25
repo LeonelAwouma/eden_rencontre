@@ -3,10 +3,35 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import { AccentColorProvider } from "@/components/accent-color-provider";
 import { LanguageProvider } from "@/lib/i18n";
+import { SITE_URL, SITE_NAME, SITE_DESCRIPTION } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: 'Garden of Alliance — L\'alliance bénie commence par une rencontre vraie.',
-  description: 'Plateforme matrimoniale haut de gamme dédiée aux célibataires chrétiens d\'Afrique et de la diaspora. Un sanctuaire numérique pour bâtir des foyers sur les fondements de la foi.',
+  // Base des URL absolues (canonical, Open Graph…) : le domaine principal.
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: "Garden of Alliance — L'alliance bénie commence par une rencontre vraie.",
+    template: '%s · Garden of Alliance',
+  },
+  description: SITE_DESCRIPTION,
+  applicationName: SITE_NAME,
+  // Pas de canonical ici : défini au layout racine, il serait hérité tel quel par
+  // chaque page et les désignerait toutes comme doublons de l'accueil. Chaque
+  // page publique déclare le sien (voir les layout.tsx de chaque route).
+  openGraph: {
+    type: 'website',
+    siteName: SITE_NAME,
+    locale: 'fr_FR',
+    alternateLocale: ['en_US'],
+    title: "Garden of Alliance — L'alliance bénie commence par une rencontre vraie.",
+    description: SITE_DESCRIPTION,
+    images: [{ url: '/og-image.jpg', width: 1200, height: 630, alt: 'Garden of Alliance — rencontres chrétiennes en vue du mariage.' }],
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Garden of Alliance',
+    description: SITE_DESCRIPTION,
+    images: ['/og-image.jpg'],
+  },
   // Balise <meta name="google-site-verification"> (Google Search Console).
   verification: {
     google: 'blrfvYQPdNNrspes5ZgqqAG1RjHK_o_DuoCajXKv_4o',

@@ -46,6 +46,7 @@ import {
   Camera,
   RotateCcw,
 } from "lucide-react";
+import { LoadingScreen } from "@/components/loading-screen";
 
 // TikTok Logo SVG
 const TikTokIcon = ({ className }: { className?: string }) => (
@@ -423,9 +424,7 @@ export default function RegisterPage() {
 
   if (!deviceReady) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
-        <Monogram className="w-14 h-14 text-primary animate-pulse" style={{ animationDuration: "2s" }} />
-      </div>
+      <LoadingScreen />
     );
   }
 

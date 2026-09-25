@@ -17,6 +17,7 @@ import {
 import { Monogram } from "@/components/ornaments";
 import { ImposingFloralCorners } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
+import { LoadingScreen } from "@/components/loading-screen";
 
 // ── OTP Duration ────────────────────────────────────────────
 const OTP_DURATION = 10 * 60; // 10 minutes in seconds
@@ -450,13 +451,7 @@ export default function VerifyOTPPage() {
   return (
     <Suspense
       fallback={
-        <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
-          <Monogram
-            className="w-14 h-14 text-primary animate-pulse"
-            style={{ animationDuration: "2s" }}
-          />
-          <p className="text-foreground/50 text-sm tracking-wide">{t("verifyOtp.loading")}</p>
-        </div>
+        <LoadingScreen label={t("verifyOtp.loading")} />
       }
     >
       <VerifyOTPContent />

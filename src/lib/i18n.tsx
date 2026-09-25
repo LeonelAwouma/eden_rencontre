@@ -8,6 +8,11 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+// Le français (langue par défaut et de repli) est embarqué dans le bundle : le
+// HTML rendu par le serveur contient ainsi le vrai texte, et non les clés
+// (« hero.headline1 »…). Indispensable pour Google, les aperçus WhatsApp /
+// Facebook et tous les robots qui n'exécutent pas le JavaScript.
+import frMessagesStatic from "@/locales/fr.json";
 
 // ── Supported languages ──
 export type Locale = "fr" | "en";
@@ -47,13 +52,10 @@ function resolveKey(obj: NestedMessages, key: string): string | undefined {
 // ── Provider ──
 export function LanguageProvider({ children }: { children: ReactNode }) {
   const [locale, setLocaleState] = useState<Locale>(DEFAULT_LOCALE);
-  const [messages, setMessages] = useState<NestedMessages>({});
-  const [frMessages, setFrMessages] = useState<NestedMessages>({});
-
-  // Load French (fallback) messages once
-  useEffect(() => {
-    import("@/locales/fr.json").then((mod) => setFrMessages(mod.default));
-  }, []);
+  const frMessages = frMessagesStatic as NestedMessages;
+  // Français disponible dès le premier rendu (serveur compris) ; l'anglais est
+  // chargé à la demande, le français servant de repli pendant ce temps.
+  const [messages, setMessages] = useState<NestedMessages>(frMessages);
 
   // Load locale messages whenever locale changes
   useEffect(() => {
@@ -71,6 +73,7 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     const saved = localStorage.getItem("eden-locale") as Locale | null;
     if (saved && LOCALES.includes(saved)) {
       setLocaleState(saved);
+      document.documentElement.lang = saved;
     }
   }, []);
 

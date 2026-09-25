@@ -12,6 +12,7 @@ import { signInWithGoogle, getSession } from "@/lib/auth";
 import { Monogram } from "@/components/ornaments";
 import { ImposingFloralCorners } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
+import { LoadingScreen } from "@/components/loading-screen";
 
 // Page à rouvrir après connexion (?next=/dashboard/academie). Seuls les chemins
 // internes sont acceptés, pour qu'un lien piégé ne puisse pas rediriger ailleurs.
@@ -126,10 +127,7 @@ export default function LoginPage() {
   // Pendant la vérification de session, on évite de faire clignoter le formulaire.
   if (checkingSession) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-6">
-        <Monogram className="w-14 h-14 text-primary animate-pulse" style={{ animationDuration: "2s" }} />
-        <p className="text-foreground/50 text-sm tracking-wide">{t("login.checkingSession")}</p>
-      </div>
+      <LoadingScreen label={t("login.checkingSession")} />
     );
   }
 

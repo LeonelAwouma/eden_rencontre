@@ -15,6 +15,7 @@ import { getSession } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { MemberGate } from "@/components/member-gate";
 import { getOnboardingSteps, getMyOnboarding, saveOnboarding, completeOnboarding, type Field, type SupportedLocale } from "@/lib/onboarding";
+import { LoadingScreen } from "@/components/loading-screen";
 
 const SKIP_KEY = "eden_onboarding_skipped";
 // Étape en cours, par utilisateur, pour reprendre là où on s'est arrêté.
@@ -206,10 +207,7 @@ function OnboardingPageContent() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
-        <Monogram className="w-12 h-10 text-primary animate-pulse" style={{ animationDuration: "2s" }} />
-        <p className="text-foreground/50 text-sm">{t("onboarding.preparing")}</p>
-      </div>
+      <LoadingScreen label={t("onboarding.preparing")} />
     );
   }
 

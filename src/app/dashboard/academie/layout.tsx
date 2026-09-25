@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { getSession } from "@/lib/auth";
-import { Monogram } from "@/components/ornaments";
+import { LoadingScreen } from "@/components/loading-screen";
 
 /**
  * L'Académie du Mariage est réservée aux membres connectés.
@@ -30,10 +30,7 @@ export default function AcademieLayout({ children }: { children: React.ReactNode
 
   if (!allowed) {
     return (
-      <div className="eden-public min-h-screen bg-background flex flex-col items-center justify-center gap-4" aria-busy="true">
-        <Monogram className="w-12 h-12 text-primary animate-pulse" style={{ animationDuration: "2s" }} />
-        <p className="text-sm text-[#56615A]">Ouverture de l&apos;Académie…</p>
-      </div>
+      <LoadingScreen label={"Ouverture de l'Académie…"} />
     );
   }
 
