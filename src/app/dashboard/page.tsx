@@ -1239,6 +1239,10 @@ export default function DashboardPage() {
                 {tabLabel(name)}
               </button>
             ))}
+            <Link href="/dashboard/academie" onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 text-2xl font-headline font-bold text-foreground/60 transition-colors">
+              <GraduationCap className="w-6 h-6" style={{ color: "#486B46" }} /> {t("dashboard.academyTitle")}
+            </Link>
           </div>
         )}
 
@@ -1276,6 +1280,64 @@ export default function DashboardPage() {
                     </p>
                   </div>
                 </motion.section>
+
+                {/* Mobile first : Académie et événements à portée de pouce, avant le fil.
+                    Sur grand écran (xl), ils restent dans la colonne de droite. */}
+                <section className="xl:hidden grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label={t("dashboard.academyTitle")}>
+                  {user && (() => {
+                    const done = ALL_LESSONS.filter(({ lesson }) => formationProgress.completed.includes(lesson.slug)).length;
+                    const total = ALL_LESSONS.length;
+                    return (
+                      <Link href="/dashboard/academie"
+                        className="group flex items-center gap-3 rounded-2xl p-3 pr-4 bg-white transition-shadow hover:shadow-md"
+                        style={{ border: "1px solid #E8E5E0" }}>
+                        <span className="relative w-16 h-20 rounded-xl overflow-hidden shrink-0" style={{ background: "#EEF5EC" }}>
+                          <Image src="/batir_roc.webp" alt="" fill sizes="64px" className="object-cover" />
+                        </span>
+                        <span className="flex-1 min-w-0">
+                          <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider" style={{ color: "#486B46" }}>
+                            <GraduationCap className="w-3.5 h-3.5" /> {t("dashboard.academyTitle")}
+                          </span>
+                          <span className="block mt-0.5 font-headline text-base font-bold truncate" style={{ color: "#2F2F2F" }}>{t("dashboard.academyFormation")}</span>
+                          <span className="block text-[11px]" style={{ color: "#6B746E" }}>{t("dashboard.academyProgress", { done, total })}</span>
+                          <span className="block mt-1.5 h-1 rounded-full overflow-hidden" style={{ background: "#EFECE6" }}
+                            role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done}>
+                            <span className="block h-full rounded-full" style={{ width: `${(done / total) * 100}%`, background: "#486B46" }} />
+                          </span>
+                        </span>
+                        <ChevronRight className="w-4 h-4 shrink-0" style={{ color: "#486B46" }} />
+                      </Link>
+                    );
+                  })()}
+                  <div className="rounded-2xl p-3 px-4 bg-white" style={{ border: "1px solid #E8E5E0" }}>
+                    <p className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider mb-2" style={{ color: "#486B46" }}>
+                      <CalendarDays className="w-3.5 h-3.5" /> {t("dashboard.upcomingEvents")}
+                    </p>
+                    {upcomingEvents.length > 0 ? (
+                      <ul className="space-y-2">
+                        {upcomingEvents.slice(0, 2).map((e) => (
+                          <li key={e.id} className="flex items-center gap-2.5 min-w-0">
+                            <span className="w-8 h-8 rounded-lg overflow-hidden shrink-0 flex items-center justify-center" style={{ background: "#EEF5EC" }}>
+                              {e.cover_image_url
+                                // eslint-disable-next-line @next/next/no-img-element
+                                ? <img src={e.cover_image_url} alt="" className="w-8 h-8 object-cover" />
+                                : <CalendarDays className="w-4 h-4" style={{ color: "#486B46" }} />}
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block text-sm font-medium truncate" style={{ color: "#2F2F2F" }}>{e.title}</span>
+                              <span className="block text-[11px] truncate" style={{ color: "#6B746E" }}>
+                                {new Date(e.event_date).toLocaleDateString(locale === "en" ? "en-US" : "fr-FR", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
+                                {e.location ? ` · ${e.location}` : ""}
+                              </span>
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-xs py-1" style={{ color: "#6B746E" }}>{t("dashboard.noEventsScheduled")}</p>
+                    )}
+                  </div>
+                </section>
 
                 {/* Section 2: Create Post */}
                 <div className="rounded-2xl p-5"
@@ -1531,8 +1593,8 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {/* Card 3: Upcoming Events — en tête du panneau sur mobile/tablette */}
-                <div className="rounded-2xl p-5 order-first xl:order-none"
+                {/* Card 3: Upcoming Events — sous xl, affichée en tête du fil (bloc mobile first) */}
+                <div className="hidden xl:block rounded-2xl p-5"
                   style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
                   <p className="font-headline font-bold text-sm flex items-center gap-2 mb-3" style={{ color: "#2F2F2F" }}>
                     <CalendarDays className="w-4 h-4" style={{ color: "#486B46" }} /> {t("dashboard.upcomingEvents")}
@@ -1633,7 +1695,7 @@ export default function DashboardPage() {
                     const cta = !next ? t("dashboard.academyReread") : done > 0 || formationProgress.lastLesson ? t("dashboard.academyContinue") : t("dashboard.academyStart");
                     return (
                       <Link href={href}
-                        className="group mt-4 pt-4 flex items-center gap-3 border-t transition-colors"
+                        className="group mt-4 pt-4 hidden xl:flex items-center gap-3 border-t transition-colors"
                         style={{ borderColor: "#EFECE6" }}>
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0" style={{ background: "#EEF5EC" }}>
                           <GraduationCap className="w-4 h-4" style={{ color: "#486B46" }} />
@@ -1694,7 +1756,7 @@ export default function DashboardPage() {
       {/* ══ MOBILE BOTTOM NAV ══ */}
       <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 backdrop-blur-xl h-[76px] flex items-center justify-around px-1 pb-[env(safe-area-inset-bottom)]"
         style={{ background: "rgba(255,255,255,0.95)", borderTop: "1px solid #E8E5E0" }}>
-        {(["Accueil", "Découvrir", "Messages", "Favoris"] as Tab[]).map((name) => {
+        {(["Accueil", "Découvrir", "Messages"] as Tab[]).map((name) => {
           const active = activeTab === name;
           return (
             <button key={name} onClick={() => setActiveTab(name)}
@@ -1703,11 +1765,16 @@ export default function DashboardPage() {
               {name === "Accueil" && <Home className="w-5 h-5" />}
               {name === "Découvrir" && <Search className="w-5 h-5" />}
               {name === "Messages" && <MessageCircle className="w-5 h-5" />}
-              {name === "Favoris" && <Heart className="w-5 h-5" />}
               <span className="text-[9px] font-bold uppercase tracking-wider">{tabLabel(name)}</span>
             </button>
           );
         })}
+        <Link href="/dashboard/academie"
+          className="flex flex-col items-center justify-center gap-1 w-full h-full transition-colors"
+          style={{ color: "#777777" }}>
+          <GraduationCap className="w-5 h-5" />
+          <span className="text-[9px] font-bold uppercase tracking-wider">{t("dashboard.academyShort")}</span>
+        </Link>
         <button onClick={() => setMobileMenuOpen(true)}
           className="flex flex-col items-center justify-center gap-1 w-full h-full transition-colors"
           style={{ color: "#777777" }}>

@@ -1335,7 +1335,8 @@
     "reportSentDesc": "Thank you. Our team will review it shortly.",
     "reportRateLimited": "Too many reports today. Try again tomorrow or write to the team.",
     "reportDescRequired": "Describe the problem to send it.",
-    "reportError": "The report could not be sent. Please try again."
+    "reportError": "The report could not be sent. Please try again.",
+    "academyShort": "Academy"
   },
   "chatGuide": {
     "headerTitle": "Guide to Your First 5 Conversations",

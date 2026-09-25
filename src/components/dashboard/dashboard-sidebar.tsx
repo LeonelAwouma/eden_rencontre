@@ -14,7 +14,7 @@ import {
   Heart,
   Crown,
   UserCircle,
-  LogOut,
+  LogOut, GraduationCap
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
@@ -140,6 +140,11 @@ export function DashboardSidebar({
             </button>
           );
         })}
+        {/* Académie du mariage : une page à part entière (formation « Bâtir sur le roc »). */}
+        <Link href="/dashboard/academie" role="menuitem" className="sidebar-nav-item">
+          <GraduationCap className="w-5 h-5 shrink-0" />
+          <span className="flex-1 text-left">{t("dashboard.academyTitle")}</span>
+        </Link>
       </nav>
 
       {/* Bottom Section */}

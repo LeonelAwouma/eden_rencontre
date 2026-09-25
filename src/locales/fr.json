@@ -1335,7 +1335,8 @@
     "reportSentDesc": "Merci. Notre équipe va l'examiner rapidement.",
     "reportRateLimited": "Trop de signalements aujourd'hui. Réessayez demain ou écrivez à l'équipe.",
     "reportDescRequired": "Décrivez le problème pour pouvoir l'envoyer.",
-    "reportError": "Le signalement n'a pas pu être envoyé. Réessayez."
+    "reportError": "Le signalement n'a pas pu être envoyé. Réessayez.",
+    "academyShort": "Académie"
   },
   "chatGuide": {
     "headerTitle": "Guide de vos 5 premières conversations",
