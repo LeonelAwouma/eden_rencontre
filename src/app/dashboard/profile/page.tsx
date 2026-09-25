@@ -17,6 +17,7 @@ import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { useI18n } from "@/lib/i18n";
 import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
 import { AutoSaveIndicator } from "@/components/autosave-indicator";
+import { ProfilePhotoEditor } from "@/components/profile-photo-editor";
 
 
 /* ─────────────────────────── Types ─────────────────────────── */
@@ -178,8 +179,8 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
       {!editing ? (
         <div className="space-y-5">
           {/* Profile Header */}
-          <div className="flex items-center gap-5 pb-5 border-b border-[#F0EDE8]">
-            <ProfileAvatar name={profile.pseudo || profile.name} avatarUrl={profile.avatar_url} size="lg" />
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-5 border-b border-[#F0EDE8] text-center sm:text-left">
+            <ProfilePhotoEditor userId={profile.id} name={profile.pseudo || profile.name} avatarUrl={profile.avatar_url} onUpdated={onRefresh} />
             <div className="min-w-0">
               <h4 className="text-xl font-bold text-[#2F2F2F] truncate inline-flex items-center gap-2">
                 {profile.pseudo || profile.name || "—"}

@@ -1623,5 +1623,9 @@
     "savings": "You save {amount} F per year",
     "annualNote": "Pay yearly and get 10% off.",
     "monthlyNote": "No commitment, cancel anytime."
+  },
+  "profilePhoto": {
+    "changePhoto": "Change photo",
+    "chooseAvatar": "Choose an avatar"
   }
 }

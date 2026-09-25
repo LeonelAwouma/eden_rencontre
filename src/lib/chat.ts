@@ -437,7 +437,10 @@ export async function uploadAvatar(file: File, userId: string): Promise<{ url?: 
   const path = `avatars/${userId}-${Date.now()}.${ext}`;
   const { error } = await supabase.storage.from("chat-images").upload(path, file, {
     cacheControl: "3600",
-    upsert: true,
+    // Nom de fichier unique (horodaté) : pas besoin d'écraser. `upsert: true`
+    // exige en plus un droit UPDATE sur storage.objects, absent pour ce bucket,
+    // et faisait échouer tout changement de photo (« row-level security »).
+    upsert: false,
     contentType: file.type || undefined,
   });
   if (error) {

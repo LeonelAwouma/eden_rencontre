@@ -1623,5 +1623,9 @@
     "savings": "Vous économisez {amount} F par an",
     "annualNote": "Payez à l'année et profitez de 10 % de remise.",
     "monthlyNote": "Sans engagement, résiliable à tout moment."
+  },
+  "profilePhoto": {
+    "changePhoto": "Changer la photo",
+    "chooseAvatar": "Choisir un avatar"
   }
 }

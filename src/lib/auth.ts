@@ -182,7 +182,12 @@ export async function updateProfile(updates: EditableProfile): Promise<AuthResul
         .from("profiles")
         .update({ ...row, updated_at: new Date().toISOString() })
         .eq("id", data.user.id);
-      if (profileError) console.error("[Eden] report du profil dans la table échoué:", profileError.message);
+      if (profileError) {
+        // Sans ce report, le changement n'apparaît qu'à soi (session) : ni sur
+        // « Mon profil », ni pour les autres membres, ni pour l'admin. On le signale.
+        console.error("[Eden] report du profil dans la table échoué:", profileError.message);
+        return { ok: false, error: translateError(profileError.message) };
+      }
     }
     return { ok: true, user: mapSupabaseUser(data.user) };
   }
