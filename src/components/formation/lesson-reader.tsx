@@ -207,7 +207,8 @@ export function LessonReader({ lesson, pillar, previous, next, preview = false }
 }) {
   const { progress, ready, setCompleted, answer, resetQuiz, saveReflection, savePosition } = useFormationProgress({ persist: !preview });
   const basePath = preview ? ADMIN_LESSON_PREVIEW_PATH : FORMATION_BASE_PATH;
-  const homeHref = preview ? ADMIN_FORMATION_PATH : "/dashboard/academie";
+  // Retour : la liste des leçons de la formation (Académie → Bâtir sur le roc → leçon).
+  const homeHref = preview ? ADMIN_FORMATION_PATH : FORMATION_BASE_PATH;
   const [scroll, setScroll] = useState(0);
   const isDone = progress.completed.includes(lesson.slug);
   const answers = progress.quiz[lesson.slug] || {};

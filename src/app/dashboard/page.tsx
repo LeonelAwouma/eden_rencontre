@@ -25,7 +25,7 @@ import { BillingToggle } from "@/components/pricing/billing-toggle";
 import { planPricing, formatFcfa, type BillingPeriod, type PlanId } from "@/lib/pricing";
 import { useToast } from "@/hooks/use-toast";
 import { getSession, logout, updateProfile, ageFromBirthDate, type EdenUser } from "@/lib/auth";
-import { ALL_LESSONS, FORMATION_BASE_PATH, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
+import { ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
 import { useFormationProgress } from "@/lib/formation/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { PROFILES } from "@/lib/profiles";
@@ -1628,7 +1628,8 @@ export default function DashboardPage() {
                     const done = ALL_LESSONS.filter(({ lesson }) => formationProgress.completed.includes(lesson.slug)).length;
                     const total = ALL_LESSONS.length;
                     const next = resumeLesson(formationProgress);
-                    const href = next ? `${FORMATION_BASE_PATH}/${next.slug}` : "/dashboard/academie";
+                    // La carte ouvre la page de l'Académie (présentation de « Bâtir sur le roc »).
+                    const href = "/dashboard/academie";
                     const cta = !next ? t("dashboard.academyReread") : done > 0 || formationProgress.lastLesson ? t("dashboard.academyContinue") : t("dashboard.academyStart");
                     return (
                       <Link href={href}
