@@ -241,40 +241,34 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
           </Link>
         </Button>
 
-        {/* Profile Header Image / Avatar */}
-        <div className="relative aspect-[4/3] rounded-[2.5rem] overflow-hidden shadow-2xl border border-secondary/15">
-          {member.avatar_url ? (
-            <>
-              <button
-                onClick={() => setShowImagePreview(true)}
-                className="group/preview absolute inset-0 w-full h-full cursor-zoom-in"
-                aria-label={t("profileDetail.previewPhoto")}
-              >
-                <Image src={member.avatar_url} alt={member.name} fill className="object-cover" priority unoptimized={!canOptimizeImage(member.avatar_url)} sizes="(min-width: 1024px) 40vw, 100vw" />
-                <div className="absolute inset-0 bg-gradient-to-t from-background/60 via-transparent to-transparent" />
-                <div className="absolute inset-0 bg-black/0 group-hover/preview:bg-black/20 transition-colors flex items-center justify-center">
-                  <div className="w-14 h-14 rounded-full bg-black/40 backdrop-blur-md flex items-center justify-center opacity-0 group-hover/preview:opacity-100 transition-opacity">
-                    <ZoomIn className="w-6 h-6 text-white" />
-                  </div>
-                </div>
-              </button>
-            </>
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-secondary/15 to-card flex items-center justify-center">
-              <span className="font-headline text-7xl font-bold text-secondary/70">{initial}</span>
-            </div>
-          )}
-        </div>
-
         {/* Main Info Card */}
         <Card className="bg-card border border-secondary/15 rounded-[2.5rem] shadow-2xl overflow-hidden">
           <CardContent className="p-8 sm:p-10 space-y-8">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-4">
-                <h1 className="text-4xl font-black text-foreground font-headline inline-flex items-center gap-2">
-                  {member.name}
-                  {member.verification_status === "verified" && isProfileFullyComplete(member) && <VerifiedBadge size={28} />}
-                </h1>
+                <div className="flex items-center gap-4 sm:gap-5">
+                  {/* Photo en petit format ; un clic l'ouvre en grand (dialogue plus bas). */}
+                  {member.avatar_url ? (
+                    <button
+                      onClick={() => setShowImagePreview(true)}
+                      className="group/preview relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-full overflow-hidden border-2 border-secondary/25 shadow-md cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                      aria-label={t("profileDetail.previewPhoto")}
+                    >
+                      <Image src={member.avatar_url} alt={member.name} fill className="object-cover" priority unoptimized={!canOptimizeImage(member.avatar_url)} sizes="96px" />
+                      <span className="absolute inset-0 bg-black/0 group-hover/preview:bg-black/30 transition-colors flex items-center justify-center">
+                        <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover/preview:opacity-100 transition-opacity" />
+                      </span>
+                    </button>
+                  ) : (
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-full bg-gradient-to-br from-secondary/20 to-card border-2 border-secondary/25 flex items-center justify-center">
+                      <span className="font-headline text-3xl font-bold text-secondary">{initial}</span>
+                    </div>
+                  )}
+                  <h1 className="text-3xl sm:text-4xl font-black text-foreground font-headline inline-flex items-center gap-2 min-w-0 break-words">
+                    {member.name}
+                    {member.verification_status === "verified" && isProfileFullyComplete(member) && <VerifiedBadge size={28} />}
+                  </h1>
+                </div>
 
                 <div className="space-y-1 text-muted-foreground font-medium">
                   {location && (
@@ -446,12 +440,17 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
       {/* Dialog for full-size photo preview */}
       {member.avatar_url && (
         <Dialog open={showImagePreview} onOpenChange={setShowImagePreview}>
-          <DialogContent className="max-w-3xl bg-transparent border-none shadow-none p-0 [&>button]:hidden">
+          <DialogContent className="max-w-3xl w-[calc(100vw-2rem)] bg-transparent border-none shadow-none p-0 [&>button]:hidden">
             <DialogTitle className="sr-only">{member.name}</DialogTitle>
             <DialogDescription className="sr-only">{t("profileDetail.previewPhoto")}</DialogDescription>
-            <div className="relative w-full aspect-[4/5] sm:aspect-[4/3] rounded-[2rem] overflow-hidden shadow-2xl">
-              <Image src={member.avatar_url} alt={member.name} fill className="object-contain bg-card" unoptimized={!canOptimizeImage(member.avatar_url)} sizes="(min-width: 1024px) 40vw, 100vw" />
-            </div>
+            {/* Clic sur la photo (ou croix / Échap) : retour au petit format. */}
+            <button
+              onClick={() => setShowImagePreview(false)}
+              aria-label={t("dashboard.close")}
+              className="relative block w-full h-[80vh] rounded-[2rem] overflow-hidden shadow-2xl bg-card cursor-zoom-out"
+            >
+              <Image src={member.avatar_url} alt={member.name} fill className="object-contain" unoptimized={!canOptimizeImage(member.avatar_url)} sizes="(min-width: 768px) 768px, 100vw" />
+            </button>
             <div>
               <button
                 onClick={() => setShowImagePreview(false)}
