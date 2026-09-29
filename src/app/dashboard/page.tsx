@@ -853,6 +853,30 @@ export default function DashboardPage() {
     toast({ title: t("dashboard.toastEngagementPaymentSoon") });
   };
 
+  // Recalculée au chargement ET après chaque action qui peut la changer (profil, questionnaire terminé).
+  const refreshProfileCompletion = useCallback(async (userId: string) => {
+    if (!supabase) return;
+    const { data } = await supabase.from("profiles")
+      .select("avatar_url, name, bio, city, profession, civil_status, marriage_vision, onboarding_completed")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!data) return;
+    // Chaque élément et sa clé de libellé : la liste des manquants s'affiche dans « Découvrir » et l'accueil.
+    const checks: [boolean, string][] = [
+      [!!data.avatar_url, "missingPhoto"],
+      [!!data.name, "missingName"],
+      [!!data.bio, "missingBio"],
+      [!!data.city, "missingCity"],
+      [!!data.profession, "missingProfession"],
+      [!!data.civil_status, "missingCivilStatus"],
+      [!!(data.marriage_vision && (data.marriage_vision as string[]).length > 0), "missingMarriageVision"],
+      [!!data.onboarding_completed, "missingQuestionnaire"],
+    ];
+    const done = checks.filter(([ok]) => ok).length;
+    setProfileCompletionPct(Math.round((done / checks.length) * 100));
+    setProfileMissing(checks.filter(([ok]) => !ok).map(([, key]) => key));
+  }, []);
+
   useEffect(() => {
     if (!user?.id) return;
     upsertMyProfile(user).then((r) => {
@@ -866,30 +890,7 @@ export default function DashboardPage() {
       if (!completed && !skipped) router.replace("/onboarding");
     });
 
-    // Fetch full profile data to calculate real completion percentage
-    if (supabase) {
-      supabase.from("profiles")
-        .select("avatar_url, name, bio, city, profession, civil_status, marriage_vision, onboarding_completed")
-        .eq("id", user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (!data) return;
-          // Chaque élément et sa clé de libellé : la liste des manquants s'affiche dans « Découvrir ».
-          const checks: [boolean, string][] = [
-            [!!data.avatar_url, "missingPhoto"],
-            [!!data.name, "missingName"],
-            [!!data.bio, "missingBio"],
-            [!!data.city, "missingCity"],
-            [!!data.profession, "missingProfession"],
-            [!!data.civil_status, "missingCivilStatus"],
-            [!!(data.marriage_vision && (data.marriage_vision as string[]).length > 0), "missingMarriageVision"],
-            [!!data.onboarding_completed, "missingQuestionnaire"],
-          ];
-          const done = checks.filter(([ok]) => ok).length;
-          setProfileCompletionPct(Math.round((done / checks.length) * 100));
-          setProfileMissing(checks.filter(([ok]) => !ok).map(([, key]) => key));
-        });
-    }
+    void refreshProfileCompletion(user.id);
   }, [user]);
 
   // Le questionnaire ("me") arrive après le premier classement des profils (loadSocial) : on
@@ -1010,6 +1011,7 @@ export default function DashboardPage() {
       if (!result.ok) throw new Error(result.error);
       setQuestionnaireAnswers(localQAnswers);
       setEditingQuestionnaire(null);
+      if (user?.id) void refreshProfileCompletion(user.id);
       toast({ title: t("dashboard.toastFaithJourneyUpdated") });
     } catch (e: any) {
       toast({ title: t("dashboard.toastError"), description: e.message, variant: "destructive" });
@@ -1486,6 +1488,16 @@ export default function DashboardPage() {
                   <p className="text-xs mt-3 leading-relaxed" style={{ color: "#777777" }}>
                     {t("dashboard.profileCompletedDesc", { pct: 100 - profileCompletionPct })}
                   </p>
+                  {profileMissing.length > 0 && (
+                    <ul className="mt-3 space-y-1.5">
+                      {profileMissing.map((key) => (
+                        <li key={key} className="flex items-center gap-2 text-xs" style={{ color: "#2F2F2F" }}>
+                          <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ border: "2px solid #C6D4C0" }} aria-hidden />
+                          {t(`dashboard.${key}`)}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
                   <Button onClick={() => setActiveTab("Profil")} variant="outline"
                     className="w-full mt-3 h-9 rounded-xl font-bold text-xs"
                     style={{ borderColor: "#C6D4C0", color: "#486B46", background: "transparent" }}>
