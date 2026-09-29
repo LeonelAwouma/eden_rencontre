@@ -352,7 +352,7 @@ const lecon14: Lesson = {
   number: "1.4",
   slug: "1-4",
   title: "Alignement théologique et spirituel",
-  image: { ...img("1-4"), alt: "Des mariés main dans la main devant une église en briques surmontée d'une croix blanche, entourés de leur cortège.", position: "center 45%" },
+  image: { ...img("1-4"), alt: "Deux alliances dorées posées sur une Bible ouverte.", position: "center 30%" },
   pdf: `${BASE}/pdf/lecon-1-4-alignement-theologique-et-spirituel.pdf`,
   readingMinutes: 9,
   intro: {
@@ -464,7 +464,7 @@ const lecon15: Lesson = {
   number: "1.5",
   slug: "1-5",
   title: "Le renoncement et le service mutuel",
-  image: { ...img("1-5"), alt: "Un homme et une femme dos à dos, bras croisés, le visage fermé : l'image du repli sur soi que la leçon invite à dépasser.", position: "center 30%" },
+  image: { ...img("1-5"), alt: "Un homme et une femme préparent un repas ensemble dans leur cuisine, chacun à sa tâche.", position: "center 35%" },
   pdf: `${BASE}/pdf/lecon-1-5-le-renoncement-et-le-service-mutuel.pdf`,
   readingMinutes: 10,
   intro: {

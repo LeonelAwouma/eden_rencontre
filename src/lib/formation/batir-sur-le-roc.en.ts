@@ -360,7 +360,7 @@ const lesson14: Lesson = {
   number: "1.4",
   slug: "1-4",
   title: "Theological and spiritual alignment",
-  image: { ...img("1-4"), alt: "A bride and groom hand in hand in front of a brick church topped with a white cross, surrounded by their wedding party.", position: "center 45%" },
+  image: { ...img("1-4"), alt: "Two gold wedding rings resting on an open Bible.", position: "center 30%" },
   pdf: `${BASE}/pdf/lecon-1-4-alignement-theologique-et-spirituel.pdf`,
   readingMinutes: 9,
   intro: {
@@ -472,7 +472,7 @@ const lesson15: Lesson = {
   number: "1.5",
   slug: "1-5",
   title: "Self-denial and mutual service",
-  image: { ...img("1-5"), alt: "A man and a woman back to back, arms crossed, faces closed: the image of withdrawal into oneself that this lesson invites us to move beyond.", position: "center 30%" },
+  image: { ...img("1-5"), alt: "A man and a woman preparing a meal together in their kitchen, each at their own task.", position: "center 35%" },
   pdf: `${BASE}/pdf/lecon-1-5-le-renoncement-et-le-service-mutuel.pdf`,
   readingMinutes: 10,
   intro: {
