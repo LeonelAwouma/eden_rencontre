@@ -1020,6 +1020,22 @@ export default function DashboardPage() {
     }
   };
 
+  // Validation depuis le bandeau, avec ou sans questionnaire ouvert en édition.
+  const handleValidateQuestionnaire = async () => {
+    if (editingQuestionnaire) return handleSaveQuestionnaire();
+    setSavingQuestionnaire(true);
+    try {
+      const result = await completeOnboarding(questionnaireAnswers);
+      if (!result.ok) throw new Error(result.error);
+      if (user?.id) await refreshProfileCompletion(user.id);
+      toast({ title: t("dashboard.toastFaithJourneyUpdated") });
+    } catch (e: any) {
+      toast({ title: t("dashboard.toastError"), description: e.message, variant: "destructive" });
+    } finally {
+      setSavingQuestionnaire(false);
+    }
+  };
+
   const openReport = () => { setReportType(""); setReportDesc(""); setShowReport(true); };
 
   const handleSendReport = async () => {
@@ -2767,6 +2783,17 @@ export default function DashboardPage() {
                 </div>
               )}
             </div>
+            {/* Questionnaire non validé : réponses autosauvegardées mais pas marquées terminées */}
+            {!editingProfile && profileMissing.includes("missingQuestionnaire") && (
+              <div className="rounded-2xl p-5" style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}>
+                <p className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>{t("dashboard.questionnaireNotValidated")}</p>
+                <p className="text-xs mt-1 leading-relaxed" style={{ color: "#56615A" }}>{t("dashboard.questionnaireNotValidatedDesc")}</p>
+                <button onClick={handleValidateQuestionnaire} disabled={savingQuestionnaire}
+                  className="mt-3 flex items-center gap-1.5 px-4 h-10 rounded-xl text-sm font-bold" style={{ background: "#486B46", color: "#FFFFFF" }}>
+                  {savingQuestionnaire ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {t("dashboard.validateQuestionnaire")}
+                </button>
+              </div>
+            )}
             {/* Questionnaire / Parcours de Foi */}
             {!editingProfile && getQuestionnaires(locale).map((q) => {
               const isExpanded = expandedQuestionnaire === q.key;
@@ -2893,6 +2920,12 @@ export default function DashboardPage() {
                           </div>
                         </div>
                       ))}
+                      {isEditing && (
+                        <button onClick={handleSaveQuestionnaire} disabled={savingQuestionnaire}
+                          className="w-full flex items-center justify-center gap-1.5 h-11 rounded-xl text-sm font-bold" style={{ background: "#486B46", color: "#FFFFFF" }}>
+                          {savingQuestionnaire ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />} {t("dashboard.questionnaireDone")}
+                        </button>
+                      )}
                     </div>
                   )}
                 </div>

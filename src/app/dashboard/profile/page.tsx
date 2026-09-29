@@ -397,7 +397,7 @@ function EditField({ label, value, onChange, type = "text", options, optionLabel
 
 /* ────────────────── Faith Journey Section ─────────────────────── */
 
-function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string; answers: Record<string, any>; onRefresh: () => void }) {
+function FaithJourneyCard({ profileId, answers, completed, onRefresh }: { profileId: string; answers: Record<string, any>; completed: boolean; onRefresh: () => void }) {
   const { t, locale } = useI18n();
   const [expanded, setExpanded] = useState<string | null>(null);
   const [editingQ, setEditingQ] = useState<string | null>(null);
@@ -459,6 +459,16 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
       <h3 className="font-['Playfair_Display'] text-lg font-bold text-[#2F2F2F] flex items-center gap-2 mb-6">
         <BookOpen size={20} className="text-[#486B46]" /> {t("profilePage.myFaithJourney")}
       </h3>
+      {/* Questionnaire non validé : réponses autosauvegardées mais pas marquées terminées */}
+      {!completed && (
+        <div className="rounded-xl p-4 mb-4" style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}>
+          <p className="font-semibold text-sm text-[#2F2F2F]">{t("dashboard.questionnaireNotValidated")}</p>
+          <p className="text-xs mt-1 leading-relaxed text-[#56615A]">{t("dashboard.questionnaireNotValidatedDesc")}</p>
+          <button onClick={handleSaveQuestionnaire} disabled={saving} className="eden-btn-primary text-xs px-4 py-2 mt-3 flex items-center gap-1.5">
+            {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {t("dashboard.validateQuestionnaire")}
+          </button>
+        </div>
+      )}
       <div className="space-y-4">
         {getQuestionnaires(locale).map(q => {
           const { filled, total, pct } = getCompletionCount(q);
@@ -511,6 +521,11 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
                     <SectionBlock key={section.key} section={section} answers={localAnswers} isEditing={isEditing}
                       onFieldChange={handleFieldChange} onMultiToggle={handleMultiToggle} />
                   ))}
+                  {isEditing && (
+                    <button onClick={handleSaveQuestionnaire} disabled={saving} className="eden-btn-primary w-full text-sm py-2.5 flex items-center justify-center gap-1.5">
+                      {saving ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />} {t("dashboard.questionnaireDone")}
+                    </button>
+                  )}
                 </div>
               )}
             </div>
@@ -814,7 +829,7 @@ export default function ProfilePage() {
               <ProfileCompletionCard profile={profile} />
             </>
           ) : (
-            <FaithJourneyCard profileId={profile.id} answers={profile.questionnaire || {}} onRefresh={handleRefresh} />
+            <FaithJourneyCard profileId={profile.id} answers={profile.questionnaire || {}} completed={!!profile.onboarding_completed} onRefresh={handleRefresh} />
           )}
         </div>
       </main>
