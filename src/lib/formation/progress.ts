@@ -1,10 +1,14 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 /**
- * Progression dans « Bâtir sur le roc », conservée dans le navigateur du membre.
- * Les réflexions personnelles sont privées : elles ne quittent jamais l'appareil.
+ * Progression dans « Bâtir sur le roc », conservée dans le navigateur du membre,
+ * par compte. Les leçons terminées sont aussi enregistrées sur sa fiche
+ * (profiles.formation_completed) : elles le suivent d'un appareil à l'autre et
+ * ouvrent l'accès au matching. Les réflexions personnelles sont privées : elles
+ * ne quittent jamais l'appareil.
  */
 export interface FormationProgress {
   completed: string[];
@@ -16,13 +20,16 @@ export interface FormationProgress {
   lastLesson: string | null;
 }
 
-const KEY = "gaa-formation-batir-sur-le-roc-v1";
+// Ancienne clé, commune à tous les comptes de l'appareil : reprise une fois par le
+// premier compte qui s'y connecte, puis supprimée.
+const LEGACY_KEY = "gaa-formation-batir-sur-le-roc-v1";
+const keyFor = (uid: string | null) => (uid ? `${LEGACY_KEY}:${uid}` : LEGACY_KEY);
 const EVENT = "gaa-formation-progress";
 const EMPTY: FormationProgress = { completed: [], quiz: {}, reflections: {}, positions: {}, lastLesson: null };
 
-function read(): FormationProgress {
+function read(key: string): FormationProgress {
   try {
-    const raw = localStorage.getItem(KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return EMPTY;
     const p = JSON.parse(raw);
     return {
@@ -32,9 +39,45 @@ function read(): FormationProgress {
   } catch { return EMPTY; }
 }
 
-function write(p: FormationProgress) {
-  try { localStorage.setItem(KEY, JSON.stringify(p)); } catch { /* stockage indisponible : la session continue sans sauvegarde */ }
+function write(key: string, p: FormationProgress) {
+  try { localStorage.setItem(key, JSON.stringify(p)); } catch { /* stockage indisponible : la session continue sans sauvegarde */ }
   window.dispatchEvent(new Event(EVENT));
+}
+
+async function currentUserId(): Promise<string | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.auth.getSession();
+  return data.session?.user.id ?? null;
+}
+
+/** Clé du compte connecté ; reprend l'ancienne progression commune si le compte n'en a pas. */
+function resolveKey(uid: string | null): string {
+  const key = keyFor(uid);
+  if (!uid) return key;
+  try {
+    const legacy = localStorage.getItem(LEGACY_KEY);
+    if (legacy && !localStorage.getItem(key)) localStorage.setItem(key, legacy);
+    if (legacy) localStorage.removeItem(LEGACY_KEY);
+  } catch { /* stockage indisponible */ }
+  return key;
+}
+
+async function pushCompleted(uid: string, completed: string[]) {
+  if (!supabase) return;
+  const { error } = await supabase.from("profiles").update({ formation_completed: completed }).eq("id", uid);
+  if (error) console.error("[Eden] progression de la formation non enregistrée :", error.message);
+}
+
+/** Réunit les leçons terminées sur cet appareil et sur la fiche du membre. */
+async function syncWithServer(uid: string, key: string) {
+  if (!supabase) return;
+  const { data, error } = await supabase.from("profiles").select("formation_completed").eq("id", uid).maybeSingle();
+  if (error) { console.error("[Eden] progression de la formation illisible :", error.message); return; }
+  const remote: string[] = (data as { formation_completed?: string[] } | null)?.formation_completed ?? [];
+  const local = read(key);
+  const merged = [...new Set([...local.completed, ...remote])];
+  if (merged.length !== local.completed.length) write(key, { ...local, completed: merged });
+  if (merged.length !== remote.length) await pushCompleted(uid, merged);
 }
 
 /**
@@ -45,24 +88,41 @@ function write(p: FormationProgress) {
 export function useFormationProgress({ persist = true }: { persist?: boolean } = {}) {
   const [progress, setProgress] = useState<FormationProgress>(EMPTY);
   const [ready, setReady] = useState(false);
+  // Vrai une fois la progression de la fiche récupérée (ou impossible à récupérer) :
+  // le verrou du matching attend ce moment pour ne pas bloquer à tort.
+  const [synced, setSynced] = useState(false);
+  const keyRef = useRef<string>(LEGACY_KEY);
+  const uidRef = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!persist) { setReady(true); return; }
-    const sync = () => setProgress(read());
-    sync(); setReady(true);
+    if (!persist) { setReady(true); setSynced(true); return; }
+    let active = true;
+    const sync = () => setProgress(read(keyRef.current));
     window.addEventListener(EVENT, sync);
     window.addEventListener("storage", sync);
-    return () => { window.removeEventListener(EVENT, sync); window.removeEventListener("storage", sync); };
+    (async () => {
+      const uid = await currentUserId();
+      if (!active) return;
+      uidRef.current = uid;
+      keyRef.current = resolveKey(uid);
+      sync(); setReady(true);
+      if (uid) await syncWithServer(uid, keyRef.current).catch(() => {});
+      if (active) setSynced(true);
+    })();
+    return () => { active = false; window.removeEventListener(EVENT, sync); window.removeEventListener("storage", sync); };
   }, [persist]);
 
   const update = useCallback(
-    (fn: (p: FormationProgress) => FormationProgress) => (persist ? write(fn(read())) : setProgress(fn)),
+    (fn: (p: FormationProgress) => FormationProgress) => (persist ? write(keyRef.current, fn(read(keyRef.current))) : setProgress(fn)),
     [persist]
   );
 
-  const setCompleted = useCallback((slug: string, done: boolean) => update((p) => ({
-    ...p, completed: done ? [...new Set([...p.completed, slug])] : p.completed.filter((s) => s !== slug),
-  })), [update]);
+  const setCompleted = useCallback((slug: string, done: boolean) => {
+    update((p) => ({
+      ...p, completed: done ? [...new Set([...p.completed, slug])] : p.completed.filter((s) => s !== slug),
+    }));
+    if (persist && uidRef.current) void pushCompleted(uidRef.current, read(keyRef.current).completed);
+  }, [update, persist]);
 
   const answer = useCallback((slug: string, question: number, option: number) => update((p) => ({
     ...p, quiz: { ...p.quiz, [slug]: { ...(p.quiz[slug] || {}), [question]: option } },
@@ -82,7 +142,7 @@ export function useFormationProgress({ persist = true }: { persist?: boolean } =
     ...p, lastLesson: slug, positions: { ...p.positions, [slug]: Math.round(Math.min(1, Math.max(0, ratio)) * 1000) / 1000 },
   })), [update]);
 
-  return { progress, ready, setCompleted, answer, resetQuiz, saveReflection, savePosition };
+  return { progress, ready, synced, setCompleted, answer, resetQuiz, saveReflection, savePosition };
 }
 
 /**

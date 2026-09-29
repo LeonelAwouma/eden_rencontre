@@ -8,7 +8,9 @@
 import { useI18n } from "@/lib/i18n";
 import { BATIR_SUR_LE_ROC } from "./batir-sur-le-roc";
 import { BATIR_SUR_LE_ROC_EN } from "./batir-sur-le-roc.en";
-import type { Formation, Lesson, Pillar } from "./types";
+import { STORIES } from "./stories";
+import { STORIES_EN } from "./stories.en";
+import type { Formation, Lesson, Pillar, Story } from "./types";
 
 const s = (n: number, one: string, many: string) => (n > 1 ? many : one);
 
@@ -97,6 +99,20 @@ const fr = {
   deviceOnly: "gardé uniquement sur cet appareil, jamais partagé.",
   // Guillemets des citations bibliques
   quote: (text: string) => `« ${text} »`,
+  // Histoires
+  storiesTitle: "Histoires",
+  storiesDesc: "Des récits pour voir la vision de l'alliance à l'œuvre dans la vie de celles et ceux qui se préparent au mariage.",
+  storyEyebrow: "Histoire",
+  storySummary: "Résumé du récit",
+  chapterLabel: (n: number) => `Chapitre ${n}`,
+  epilogue: "Épilogue",
+  takeawaysTitle: "Les enseignements clés",
+  relatedLessons: "Pour approfondir dans « Bâtir sur le roc »",
+  readStory: "Lire l'histoire",
+  chaptersCount: (n: number) => `${n} ${s(n, "chapitre", "chapitres")}`,
+  otherStories: "Autres histoires",
+  storyPreviewBannerDetail: " · l'histoire telle que la voient les membres.",
+  backToAcademyPage: "Retour à l'Académie",
 };
 
 type FormationUi = typeof fr;
@@ -180,6 +196,19 @@ const en: FormationUi = {
   autosave: "Saved automatically",
   deviceOnly: "kept only on this device, never shared.",
   quote: (text) => `“${text}”`,
+  storiesTitle: "Stories",
+  storiesDesc: "Stories that show the vision of the covenant at work in the lives of people preparing for marriage.",
+  storyEyebrow: "Story",
+  storySummary: "Story summary",
+  chapterLabel: (n) => `Chapter ${n}`,
+  epilogue: "Epilogue",
+  takeawaysTitle: "Key takeaways",
+  relatedLessons: "Go deeper in “Build on the Rock”",
+  readStory: "Read the story",
+  chaptersCount: (n) => `${n} ${s(n, "chapter", "chapters")}`,
+  otherStories: "More stories",
+  storyPreviewBannerDetail: " · the story as members see it.",
+  backToAcademyPage: "Back to the Academy",
 };
 
 /* ─────────────────────────── Langue courante ─────────────────────────── */
@@ -195,6 +224,12 @@ if (process.env.NODE_ENV !== "production") {
   ])]));
   if (shape(BATIR_SUR_LE_ROC) !== shape(BATIR_SUR_LE_ROC_EN)) {
     console.error("[Académie] Les versions FR et EN de « Bâtir sur le roc » ne correspondent plus (leçons, slugs ou réponses du quiz). Voir batir-sur-le-roc.en.ts.");
+  }
+  const storyShape = (list: Story[]) => JSON.stringify(list.map((st) => [
+    st.slug, st.lessons, st.takeaways.length, st.chapters.map((c) => [!!c.epilogue, c.blocks.map((b) => b.type)]),
+  ]));
+  if (storyShape(STORIES) !== storyShape(STORIES_EN)) {
+    console.error("[Académie] Les versions FR et EN des histoires ne correspondent plus (slugs, chapitres ou blocs). Voir stories.en.ts.");
   }
 }
 
@@ -215,5 +250,8 @@ export function useFormationLocale() {
     if ("lessons" in item) return (formation.pillars.find((p) => p.slug === item.slug) ?? item) as T;
     return (find(item.slug)?.lesson ?? item) as T;
   };
-  return { lang, formation, allLessons, find, localize, ui: lang === "en" ? en : fr };
+  const stories = lang === "en" ? STORIES_EN : STORIES;
+  /** Même histoire (même slug) dans la langue courante. */
+  const localizeStory = (story: Story): Story => stories.find((st) => st.slug === story.slug) ?? story;
+  return { lang, formation, allLessons, find, localize, stories, localizeStory, ui: lang === "en" ? en : fr };
 }

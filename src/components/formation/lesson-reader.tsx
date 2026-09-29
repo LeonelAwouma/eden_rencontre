@@ -17,7 +17,7 @@ import { useFormationLocale } from "@/lib/formation/ui";
 
 /* ─────────────────────────── Blocs de texte ─────────────────────────── */
 
-function Blocks({ blocks }: { blocks: LessonBlock[] }) {
+export function Blocks({ blocks }: { blocks: LessonBlock[] }) {
   const { ui } = useFormationLocale();
   return (
     <>
@@ -71,12 +71,12 @@ function Blocks({ blocks }: { blocks: LessonBlock[] }) {
  * de la page source ou les outils de développement, qui restent hors de portée
  * de toute page web côté client.
  */
-function preventContentCopy(e: React.ClipboardEvent) {
+export function preventContentCopy(e: React.ClipboardEvent) {
   if ((e.target as HTMLElement).closest("[data-copyable]")) return;
   e.preventDefault();
 }
 
-function SectionTitle({ id, eyebrow, children }: { id: string; eyebrow?: string; children: React.ReactNode }) {
+export function SectionTitle({ id, eyebrow, children }: { id: string; eyebrow?: string; children: React.ReactNode }) {
   return (
     <header id={id} className="scroll-mt-28 mt-14 mb-5">
       {eyebrow && <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary mb-2">{eyebrow}</p>}

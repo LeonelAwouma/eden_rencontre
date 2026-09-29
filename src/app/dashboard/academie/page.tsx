@@ -12,13 +12,16 @@ import { useI18n } from "@/lib/i18n";
 import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
 import { useFormationLocale } from "@/lib/formation/ui";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
+import { STORIES_BASE_PATH } from "@/lib/formation/paths";
+import { storyReadingMinutes } from "@/lib/formation/stories";
+import { RichText, frenchSpacing } from "@/components/formation/rich-text";
 
 export default function AcademyIndexPage() {
   const router = useRouter();
   const { t } = useI18n();
   const { progress, ready } = useFormationProgress();
   // Formation et textes dans la langue de l'interface (français ou anglais).
-  const { formation, ui, localize } = useFormationLocale();
+  const { formation, ui, localize, stories } = useFormationLocale();
 
   const doneCount = ALL_LESSONS.filter(({ lesson }) => progress.completed.includes(lesson.slug)).length;
   // Leçon en cours de lecture en priorité, sinon la première non terminée.
@@ -115,6 +118,33 @@ export default function AcademyIndexPage() {
               </span>
             </span>
           </Link>
+        </section>
+
+        {/* ───── Histoires ───── */}
+        <section aria-labelledby="histoires" className="space-y-5">
+          <div>
+            <h2 id="histoires" className="font-headline text-[26px] font-bold text-foreground">{ui.storiesTitle}</h2>
+            <p className="mt-1 text-[15px] text-[#56615A]">{ui.storiesDesc}</p>
+          </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            {stories.map((st) => (
+              <Link key={st.slug} href={`${STORIES_BASE_PATH}/${st.slug}`}
+                className="group flex flex-col rounded-3xl border border-border bg-card p-6 hover:border-primary/40 hover:shadow-[0_10px_32px_rgba(38,70,52,0.10)] transition-all">
+                <span className="inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.18em] text-primary">
+                  <BookOpen className="w-4 h-4" /> {ui.storyEyebrow} · {ui.readingTime(storyReadingMinutes(st))}
+                </span>
+                <span className="mt-2 font-headline text-[24px] font-bold leading-tight text-foreground group-hover:text-primary transition-colors">
+                  {frenchSpacing(st.title)}
+                </span>
+                <span className="mt-2 text-[14.5px] leading-relaxed text-[#3F4A43] line-clamp-3">
+                  <RichText text={st.summary} />
+                </span>
+                <span className="mt-auto pt-5 inline-flex items-center gap-1.5 text-[14px] font-bold text-primary">
+                  {ui.readStory} <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                </span>
+              </Link>
+            ))}
+          </div>
         </section>
 
         {/* ───── Pour aller plus loin (ancienne Académie) ───── */}

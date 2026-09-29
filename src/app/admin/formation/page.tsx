@@ -2,7 +2,8 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, BookOpen, GraduationCap, Library, Clock } from "lucide-react";
 import { BATIR_SUR_LE_ROC, ALL_LESSONS } from "@/lib/formation/batir-sur-le-roc";
-import { ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
+import { ADMIN_LESSON_PREVIEW_PATH, ADMIN_STORY_PREVIEW_PATH } from "@/lib/formation/paths";
+import { STORIES, storyReadingMinutes } from "@/lib/formation/stories";
 import fr from "@/locales/fr.json";
 
 // Admin → Académie du mariage : même organisation que côté membre
@@ -35,7 +36,7 @@ export default function AdminAcademyPage() {
             Académie du mariage
           </h1>
           <p className="text-[13px] text-[#56615A] mt-1 max-w-2xl">
-            Même organisation que pour les membres : l&apos;Académie présente la formation, qui mène à la liste des leçons.
+            Même organisation que pour les membres : l&apos;Académie présente la formation, qui mène à la liste des leçons, puis les histoires.
           </p>
         </div>
         <Link href="/admin/mediatheque/learning-paths"
@@ -85,6 +86,31 @@ export default function AdminAcademyPage() {
           </span>
         </span>
       </Link>
+
+      {/* Histoires — récits affichés aux membres sous la formation */}
+      <section aria-labelledby="histoires" className="space-y-3">
+        <div>
+          <h2 id="histoires" className="text-[16px] font-bold text-[#2F2F2F]">Histoires</h2>
+          <p className="text-[12px] text-[#6B746E] mt-0.5">Récits affichés aux membres sur la page de l&apos;Académie, en français et en anglais. Cliquez pour voir l&apos;aperçu.</p>
+        </div>
+        <div className="grid md:grid-cols-2 gap-3">
+          {STORIES.map((st) => (
+            <Link key={st.slug} href={`${ADMIN_STORY_PREVIEW_PATH}/${st.slug}`}
+              className="group flex flex-col rounded-xl border border-[#E8E5E0] bg-white px-4 py-3.5 hover:border-[#C6D4C0] hover:shadow-[0_4px_16px_rgba(72,107,70,0.08)] transition-all">
+              <span className="flex items-center justify-between gap-3">
+                <span className="text-[14px] font-semibold text-[#2F2F2F] group-hover:text-[#486B46]">{st.title}</span>
+                <ArrowRight className="w-4 h-4 text-[#486B46] shrink-0" />
+              </span>
+              <span className="text-[12.5px] text-[#56615A] mt-1 line-clamp-2">{st.summary.replace(/\*+/g, "")}</span>
+              <span className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[12px] text-[#6B746E]">
+                <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {storyReadingMinutes(st)} min</span>
+                <span>{st.chapters.filter((c) => !c.epilogue).length} chapitres + épilogue</span>
+                <span>Leçons {st.lessons.map((s) => s.replace("-", ".")).join(" · ")}</span>
+              </span>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       {/* Pour aller plus loin — les modules complémentaires affichés aux membres */}
       <section aria-labelledby="plus-loin" className="space-y-3">

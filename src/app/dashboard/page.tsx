@@ -27,7 +27,8 @@ import { BillingToggle } from "@/components/pricing/billing-toggle";
 import { planPricing, formatFcfa, type BillingPeriod, type PlanId } from "@/lib/pricing";
 import { useToast } from "@/hooks/use-toast";
 import { getSession, logout, updateProfile, ageFromBirthDate, type EdenUser } from "@/lib/auth";
-import { ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
+import { ALL_LESSONS, resumeLesson, isPillarOneComplete } from "@/lib/formation/batir-sur-le-roc";
+import { FormationLock } from "@/components/formation-lock";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { PROFILES } from "@/lib/profiles";
@@ -235,7 +236,7 @@ export default function DashboardPage() {
   const [discoverSearch, setDiscoverSearch] = useState("");
   const [discoverCount, setDiscoverCount] = useState(24);
   const [user, setUser] = useState<EdenUser | null>(null);
-  const { progress: formationProgress } = useFormationProgress();
+  const { progress: formationProgress, synced: formationSynced } = useFormationProgress();
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
   const [engagement, setEngagement] = useState<Record<string, EngagementStatus>>({});
@@ -313,8 +314,10 @@ export default function DashboardPage() {
   const [profileCompletionPct, setProfileCompletionPct] = useState<number | null>(null);
   // Éléments du profil encore manquants (clés de libellé dashboard.*).
   const [profileMissing, setProfileMissing] = useState<string[]>([]);
-  // Les profils des autres membres ne sont visibles qu'avec un profil complet à 100 %.
-  const canBrowseProfiles = profileCompletionPct === 100;
+  // Le matching (Découvrir, suggestions, visiteurs, favoris, demandes) s'ouvre après le
+  // pilier 1 de « Bâtir sur le roc » ; les profils des autres membres exigent en plus un profil à 100 %.
+  const formationDone = isPillarOneComplete(formationProgress.completed);
+  const canBrowseProfiles = profileCompletionPct === 100 && formationDone;
   const [viewingPhoto, setViewingPhoto] = useState<{ url: string; name: string } | null>(null);
   const closePhoto = useCallback(() => setViewingPhoto(null), []);
   const viewPhotoOf = (m: { avatar_url?: string | null; name: string }) => () => { if (m.avatar_url) setViewingPhoto({ url: m.avatar_url, name: m.name }); };
@@ -1780,6 +1783,18 @@ export default function DashboardPage() {
   // RENDER OTHER TABS (non-Home)
   // ═══════════════════════════════════════════════════════════
   function renderOtherTabs() {
+    // Onglet de matching verrouillé tant que le pilier 1 de la formation n'est pas terminé.
+    const matchingGate = (header: React.ReactNode) => (
+      <div className="space-y-6">
+        {header}
+        {formationSynced ? <FormationLock completed={formationProgress.completed} /> : (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#486B46" }} />
+            <p className="text-sm" style={{ color: "#777777" }}>{t("dashboard.loading")}</p>
+          </div>
+        )}
+      </div>
+    );
     switch (activeTab) {
       case "Découvrir":
       case "Discover": {
@@ -1804,13 +1819,13 @@ export default function DashboardPage() {
         return (
           <div className="space-y-6">
             <TabHeader icon={Search} title={t("dashboard.discoverTitle")} subtitle={t("dashboard.discoverSubtitle")} />
-            {profileCompletionPct === null ? (
+            {profileCompletionPct === null || !formationSynced ? (
               // Complétude pas encore connue : on n'affiche rien des autres membres en attendant.
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#486B46" }} />
                 <p className="text-sm" style={{ color: "#777777" }}>{t("dashboard.loading")}</p>
               </div>
-            ) : !canBrowseProfiles ? (
+            ) : profileCompletionPct < 100 ? (
               /* Profil incomplet : aucun profil visible, seulement ce qu'il reste à compléter. */
               <div className="max-w-xl mx-auto rounded-3xl p-6 sm:p-8 text-center"
                 style={{ background: "linear-gradient(160deg, #FFFFFF 0%, #EEF5EC 100%)", border: "1px solid #C6D4C0" }}>
@@ -1843,6 +1858,8 @@ export default function DashboardPage() {
                   {t("dashboard.completeMyProfile")}
                 </Button>
               </div>
+            ) : !formationDone ? (
+              <FormationLock completed={formationProgress.completed} />
             ) : (<>
             <div className="relative max-w-xl">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: "#486B46" }} />
@@ -1906,6 +1923,7 @@ export default function DashboardPage() {
 
       case "Visitors":
       case "Visiteurs":
+        if (!formationDone) return matchingGate(<TabHeader icon={Eye} title={t("dashboard.visitorsTitle")} subtitle={t("dashboard.visitorsSubtitle")} />);
         return (
           <div className="space-y-6">
             <TabHeader icon={Eye} title={t("dashboard.visitorsTitle")} subtitle={t("dashboard.visitorsSubtitle")} />
@@ -1941,6 +1959,7 @@ export default function DashboardPage() {
 
       case "Favorites":
       case "Favoris":
+        if (!formationDone) return matchingGate(<TabHeader icon={Heart} title={t("dashboard.favoritesTitle")} subtitle={t("dashboard.favoritesSubtitle")} />);
         return (
           <div className="space-y-6">
             <TabHeader icon={Heart} title={t("dashboard.favoritesTitle")} subtitle={t("dashboard.favoritesSubtitle")} />
@@ -1971,6 +1990,7 @@ export default function DashboardPage() {
 
       case "Requests":
       case "Demandes":
+        if (!formationDone) return matchingGate(<TabHeader icon={Star} title={t("dashboard.requestsTitle")} subtitle={t("dashboard.requestsSubtitle")} />);
         return (
           <div className="space-y-6">
             <TabHeader icon={Star} title={t("dashboard.requestsTitle")} subtitle={t("dashboard.requestsSubtitle")} />

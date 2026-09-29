@@ -45,6 +45,9 @@ import { PROFILES } from "@/lib/profiles";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { useI18n } from "@/lib/i18n";
+import { useFormationProgress } from "@/lib/formation/progress";
+import { isPillarOneComplete } from "@/lib/formation/batir-sur-le-roc";
+import { FormationLock } from "@/components/formation-lock";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -70,8 +73,14 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
   const [showImagePreview, setShowImagePreview] = useState(false);
   // Pourcentage de compatibilité avec ce membre (null : pas calculable, questionnaire non rempli).
   const [compat, setCompat] = useState<number | null>(null);
+  // Fiches des membres : réservées à qui a terminé le pilier 1 de « Bâtir sur le roc ».
+  const { progress: formationProgress, synced: formationSynced } = useFormationProgress();
+  const formationDone = isPillarOneComplete(formationProgress.completed);
+  const matchingOpen = formationSynced && formationDone;
 
   useEffect(() => {
+    // Rien n'est chargé (ni visite enregistrée) tant que le matching est verrouillé.
+    if (!matchingOpen) return;
     let active = true;
     setLoading(true);
     setLoadError(null);
@@ -119,7 +128,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     );
     setLoading(false);
     return () => { active = false; };
-  }, [id]);
+  }, [id, matchingOpen]);
 
   const pronoun = member?.gender === "femme" ? t("profileDetail.pronounShe") : member?.gender === "homme" ? t("profileDetail.pronounHe") : t("profileDetail.pronounThey");
   const genderLabel = member?.gender === "homme" ? t("profilePage.genderMale") : member?.gender === "femme" ? t("profilePage.genderFemale") : null;
@@ -204,6 +213,22 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
   }
 
   // ── Loading / not found states ──
+  if (formationSynced && !formationDone) {
+    return (
+      <div className="min-h-screen bg-background">
+        <div className="container mx-auto px-4 py-8 max-w-2xl space-y-8 pb-24">
+          <Button variant="ghost" asChild className="text-foreground/40 hover:text-primary hover:bg-transparent group pl-0">
+            <Link href="/dashboard">
+              <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+              {t("profileDetail.backToProfiles")}
+            </Link>
+          </Button>
+          <FormationLock completed={formationProgress.completed} />
+        </div>
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
@@ -242,7 +267,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
         </Button>
 
         {/* Main Info Card */}
-        <Card className="bg-card border border-secondary/15 rounded-[2.5rem] shadow-2xl overflow-hidden">
+        <Card className="bg-card border border-primary/15 rounded-[2.5rem] shadow-2xl overflow-hidden">
           <CardContent className="p-8 sm:p-10 space-y-8">
             <div className="flex items-start justify-between gap-4">
               <div className="space-y-4">
@@ -251,7 +276,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                   {member.avatar_url ? (
                     <button
                       onClick={() => setShowImagePreview(true)}
-                      className="group/preview relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-full overflow-hidden border-2 border-secondary/25 shadow-md cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+                      className="group/preview relative w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-full overflow-hidden border-2 border-primary/25 shadow-md cursor-zoom-in focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
                       aria-label={t("profileDetail.previewPhoto")}
                     >
                       <Image src={member.avatar_url} alt={member.name} fill className="object-cover" priority unoptimized={!canOptimizeImage(member.avatar_url)} sizes="96px" />
@@ -260,8 +285,8 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                       </span>
                     </button>
                   ) : (
-                    <div className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-full bg-gradient-to-br from-secondary/20 to-card border-2 border-secondary/25 flex items-center justify-center">
-                      <span className="font-headline text-3xl font-bold text-secondary">{initial}</span>
+                    <div className="w-20 h-20 sm:w-24 sm:h-24 shrink-0 rounded-full bg-gradient-to-br from-primary/20 to-card border-2 border-primary/25 flex items-center justify-center">
+                      <span className="font-headline text-3xl font-bold text-primary">{initial}</span>
                     </div>
                   )}
                   <h1 className="text-3xl sm:text-4xl font-black text-foreground font-headline inline-flex items-center gap-2 min-w-0 break-words">
@@ -296,7 +321,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                     </Badge>
                   )}
                   {genderLabel && (
-                    <Badge className="bg-secondary/10 text-secondary border border-secondary/25 rounded-xl px-4 py-2 font-bold text-sm">
+                    <Badge className="bg-primary/10 text-primary border border-primary/25 rounded-xl px-4 py-2 font-bold text-sm">
                       {genderLabel}
                     </Badge>
                   )}
@@ -339,7 +364,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
             {/* Primary Action Buttons — relation-aware */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {areFriends ? (
-                <Button disabled className="bg-secondary/10 text-secondary border border-secondary/25 font-bold h-16 rounded-2xl gap-3 text-lg disabled:opacity-100">
+                <Button disabled className="bg-primary/10 text-primary border border-primary/25 font-bold h-16 rounded-2xl gap-3 text-lg disabled:opacity-100">
                   <Check className="w-6 h-6" /> {t("profileDetail.friends")}
                 </Button>
               ) : effStatus === "pending_out" ? (
@@ -370,7 +395,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                 className={cn(
                   "font-bold h-16 rounded-2xl gap-3 text-lg disabled:opacity-70",
                   areFriends
-                    ? "border-secondary/30 bg-secondary/5 text-secondary hover:bg-secondary/10 hover:text-secondary"
+                    ? "border-primary/30 bg-primary/5 text-primary hover:bg-primary/10 hover:text-primary"
                     : "border-foreground/10 bg-transparent text-foreground/40 hover:text-foreground/60 hover:bg-foreground/5"
                 )}
               >
@@ -392,13 +417,13 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
         </Card>
 
         {/* Valeurs & croyances */}
-        <Card className="bg-card border border-secondary/15 rounded-[2.5rem] shadow-xl">
+        <Card className="bg-card border border-primary/15 rounded-[2.5rem] shadow-xl">
           <CardHeader className="p-8 pb-0">
             <div className="flex items-center gap-4">
-              <div className="w-12 h-12 bg-secondary/10 border border-secondary/25 rounded-2xl flex items-center justify-center">
-                <Church className="w-6 h-6 text-secondary" />
+              <div className="w-12 h-12 bg-primary/10 border border-primary/25 rounded-2xl flex items-center justify-center">
+                <Church className="w-6 h-6 text-primary" />
               </div>
-              <CardTitle className="text-secondary font-bold text-xl">{t("profileDetail.valuesBeliefs")}</CardTitle>
+              <CardTitle className="text-primary font-bold text-xl">{t("profileDetail.valuesBeliefs")}</CardTitle>
             </div>
           </CardHeader>
           <CardContent className="p-8 pt-6">
@@ -407,7 +432,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                 {member.marriageVision.map((vid) => {
                   const v = getValue(vid);
                   return (
-                    <span key={vid} className="inline-flex items-center gap-1.5 px-4 h-9 rounded-full bg-secondary/10 border border-secondary/25 text-secondary text-sm font-bold">
+                    <span key={vid} className="inline-flex items-center gap-1.5 px-4 h-9 rounded-full bg-primary/10 border border-primary/25 text-primary text-sm font-bold">
                       <span>{v.icon}</span> {v.label}
                     </span>
                   );
@@ -421,7 +446,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
 
         {/* Vision du foyer (bio) */}
         {member.bio && (
-          <Card className="bg-card border border-secondary/15 rounded-[2.5rem] shadow-xl">
+          <Card className="bg-card border border-primary/15 rounded-[2.5rem] shadow-xl">
             <CardHeader className="p-8 pb-0">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-primary/10 rounded-2xl flex items-center justify-center">
@@ -455,7 +480,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
               <button
                 onClick={() => setShowImagePreview(false)}
                 aria-label={t("dashboard.close")}
-                className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-card border border-secondary/15 shadow-xl flex items-center justify-center text-foreground/60 hover:text-foreground transition-colors"
+                className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-card border border-primary/15 shadow-xl flex items-center justify-center text-foreground/60 hover:text-foreground transition-colors"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -466,7 +491,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
 
       {/* Dialog for AI Message Ideas */}
       <Dialog open={showIdeasDialog} onOpenChange={setShowIdeasDialog}>
-        <DialogContent className="max-w-md bg-card text-foreground border border-secondary/15 rounded-[2.5rem] p-8">
+        <DialogContent className="max-w-md bg-card text-foreground border border-primary/15 rounded-[2.5rem] p-8">
           <DialogHeader className="space-y-4">
             <div className="w-12 h-12 bg-primary/20 rounded-2xl flex items-center justify-center mx-auto">
               <Lightbulb className="w-6 h-6 text-primary" />

@@ -214,7 +214,7 @@ function OnboardingPageContent() {
   return (
     <div className="min-h-screen bg-background text-foreground">
       {/* En-tête */}
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-secondary/15 px-4 sm:px-6 h-20 flex items-center justify-between">
+      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-primary/15 px-4 sm:px-6 h-20 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <Monogram className="w-9 h-8 text-primary shrink-0" />
           <span className="font-headline text-xl font-bold text-foreground">Garden <span>of Alliance</span></span>
@@ -229,25 +229,25 @@ function OnboardingPageContent() {
         <div className="space-y-3 mb-8">
           <Progress value={progress} className="h-1.5 bg-foreground/5" />
           <div className="flex justify-between items-center">
-            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-secondary">{step.qSubtitle}</span>
+            <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">{step.qSubtitle}</span>
             <span className="text-[10px] font-bold text-foreground/30 uppercase tracking-widest">{t("onboarding.stepOf", { current: stepIndex + 1, total })}</span>
           </div>
         </div>
 
         {/* En-tête de section */}
         <div className="text-center flex flex-col items-center mb-8">
-          <span className="text-[10px] uppercase tracking-[0.3em] text-secondary/80 font-bold mb-2">{step.qTitle}</span>
+          <span className="text-[10px] uppercase tracking-[0.3em] text-primary/80 font-bold mb-2">{step.qTitle}</span>
           <h1 className="font-headline text-3xl sm:text-4xl font-bold text-foreground">{step.title}</h1>
           {step.intro && <p className="text-muted-foreground text-sm mt-3 max-w-lg">{step.intro}</p>}
           {step.private && (
-            <span className="inline-flex items-center gap-1.5 mt-4 text-[11px] font-bold text-secondary bg-secondary/10 border border-secondary/25 rounded-full px-3 py-1">
+            <span className="inline-flex items-center gap-1.5 mt-4 text-[11px] font-bold text-primary bg-primary/10 border border-primary/25 rounded-full px-3 py-1">
               <Lock className="w-3.5 h-3.5" /> {t("onboarding.privateBadge")}
             </span>
           )}
-          <Flourish className="w-40 h-3 text-secondary/40 mt-5" />
+          <Flourish className="w-40 h-3 text-primary/40 mt-5" />
           {step.note ? (
-            <div className="mt-4 max-w-lg mx-auto bg-secondary/5 border border-secondary/20 rounded-xl px-5 py-3.5 text-center">
-              <p className="text-[12px] text-secondary font-semibold leading-relaxed">
+            <div className="mt-4 max-w-lg mx-auto bg-primary/5 border border-primary/20 rounded-xl px-5 py-3.5 text-center">
+              <p className="text-[12px] text-primary font-semibold leading-relaxed">
                 {step.note}
               </p>
             </div>
@@ -261,19 +261,19 @@ function OnboardingPageContent() {
         {/* Champs */}
         <div className="space-y-7">
           {step.fields.filter((f) => isFieldVisible(f, answers)).map((f) => (
-            <div key={f.id} className={cn(f.showIf && "-mt-3 ml-2 pl-4 border-l-2 border-secondary/25 animate-in fade-in slide-in-from-top-1 duration-300")}>
+            <div key={f.id} className={cn(f.showIf && "-mt-3 ml-2 pl-4 border-l-2 border-primary/25 animate-in fade-in slide-in-from-top-1 duration-300")}>
               <FieldRenderer field={f} value={answers[f.id]} onChange={(v) => setField(f.id, v)} />
             </div>
           ))}
         </div>
 
         {/* Navigation */}
-        <div className="flex items-center justify-between gap-3 mt-10 pt-6 border-t border-secondary/15">
+        <div className="flex items-center justify-between gap-3 mt-10 pt-6 border-t border-primary/15">
           <Button
             onClick={back}
             disabled={stepIndex === 0 || saving}
             variant="outline"
-            className="h-12 px-5 rounded-xl border-secondary/20 text-foreground/60 hover:text-foreground font-bold gap-2 disabled:opacity-40"
+            className="h-12 px-5 rounded-xl border-primary/20 text-foreground/60 hover:text-foreground font-bold gap-2 disabled:opacity-40"
           >
             <ArrowLeft className="w-4 h-4" /> {t("onboarding.previous")}
           </Button>
@@ -295,7 +295,7 @@ function OnboardingPageContent() {
           )}
         >
           {autoSave === "saving" && <><Loader2 className="w-3.5 h-3.5 animate-spin" /> {t("onboarding.autoSaving")}</>}
-          {autoSave === "saved" && <><Check className="w-3.5 h-3.5 text-secondary" /> {t("onboarding.autoSaved")}</>}
+          {autoSave === "saved" && <><Check className="w-3.5 h-3.5 text-primary" /> {t("onboarding.autoSaved")}</>}
           {autoSave === "error" && t("onboarding.autoSaveError")}
           {autoSave === "idle" && t("onboarding.autoSaveNote")}
         </p>
@@ -317,7 +317,7 @@ function FieldRenderer({ field, value, onChange }: { field: Field; value: any; o
     return (
       <div>
         {labelEl}
-        <Input value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} className="h-12 rounded-xl bg-card border-secondary/15 focus-visible:ring-secondary/40" />
+        <Input value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} className="h-12 rounded-xl bg-card border-primary/15 focus-visible:ring-primary/40" />
       </div>
     );
   }
@@ -326,7 +326,7 @@ function FieldRenderer({ field, value, onChange }: { field: Field; value: any; o
     return (
       <div>
         {labelEl}
-        <Textarea value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} rows={4} className="rounded-xl bg-card border-secondary/15 resize-none focus-visible:ring-secondary/40" />
+        <Textarea value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder={field.placeholder} rows={4} className="rounded-xl bg-card border-primary/15 resize-none focus-visible:ring-primary/40" />
       </div>
     );
   }
@@ -343,7 +343,7 @@ function FieldRenderer({ field, value, onChange }: { field: Field; value: any; o
               onClick={() => onChange(opt)}
               className={cn(
                 "px-4 h-11 rounded-xl text-sm font-bold border transition-colors",
-                value === opt ? "bg-secondary/10 border-secondary text-secondary" : "bg-card text-foreground/60 border-secondary/15 hover:border-secondary/40"
+                value === opt ? "bg-primary/10 border-primary text-primary" : "bg-card text-foreground/60 border-primary/15 hover:border-primary/40"
               )}
             >
               {opt}
@@ -373,7 +373,7 @@ function FieldRenderer({ field, value, onChange }: { field: Field; value: any; o
                 onClick={() => toggle(opt)}
                 className={cn(
                   "px-4 h-11 rounded-xl text-sm font-bold border transition-colors flex items-center gap-2",
-                  sel ? "bg-secondary/10 border-secondary text-secondary" : "bg-card text-foreground/60 border-secondary/15 hover:border-secondary/40"
+                  sel ? "bg-primary/10 border-primary text-primary" : "bg-card text-foreground/60 border-primary/15 hover:border-primary/40"
                 )}
               >
                 {sel && <Check className="w-4 h-4" />} {opt}
@@ -400,10 +400,10 @@ function FieldRenderer({ field, value, onChange }: { field: Field; value: any; o
                 onClick={() => onChange(opt)}
                 className={cn(
                   "w-full text-left flex items-start gap-3 p-4 rounded-xl border transition-colors",
-                  sel ? "bg-secondary/10 border-secondary" : "bg-card border-secondary/15 hover:border-secondary/40"
+                  sel ? "bg-primary/10 border-primary" : "bg-card border-primary/15 hover:border-primary/40"
                 )}
               >
-                <span className={cn("shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black", sel ? "bg-secondary text-secondary-foreground" : "bg-foreground/5 text-foreground/50")}>{letter}</span>
+                <span className={cn("shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-black", sel ? "bg-primary text-primary-foreground" : "bg-foreground/5 text-foreground/50")}>{letter}</span>
                 <span className={cn("text-sm leading-relaxed", sel ? "text-foreground font-medium" : "text-foreground/70")}>{opt}</span>
               </button>
             );
@@ -421,11 +421,11 @@ function FieldRenderer({ field, value, onChange }: { field: Field; value: any; o
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span className="text-xs text-foreground/40 uppercase tracking-widest">{locale === "en" ? "From" : "De"}</span>
-            <Input type="number" min={18} max={99} value={range.min ?? ""} onChange={(e) => onChange({ ...range, min: e.target.value })} className="w-20 h-12 rounded-xl bg-card border-secondary/15 text-center" />
+            <Input type="number" min={18} max={99} value={range.min ?? ""} onChange={(e) => onChange({ ...range, min: e.target.value })} className="w-20 h-12 rounded-xl bg-card border-primary/15 text-center" />
           </div>
           <div className="flex items-center gap-2">
             <span className="text-xs text-foreground/40 uppercase tracking-widest">{locale === "en" ? "to" : "à"}</span>
-            <Input type="number" min={18} max={99} value={range.max ?? ""} onChange={(e) => onChange({ ...range, max: e.target.value })} className="w-20 h-12 rounded-xl bg-card border-secondary/15 text-center" />
+            <Input type="number" min={18} max={99} value={range.max ?? ""} onChange={(e) => onChange({ ...range, max: e.target.value })} className="w-20 h-12 rounded-xl bg-card border-primary/15 text-center" />
             <span className="text-xs text-foreground/40 uppercase tracking-widest">{locale === "en" ? "years" : "ans"}</span>
           </div>
         </div>

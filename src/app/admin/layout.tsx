@@ -6,7 +6,7 @@ import { Sidebar } from "@/components/admin/sidebar";
 import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { cn } from "@/lib/utils";
 import { LoadingScreen } from "@/components/loading-screen";
-import { ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
+import { ADMIN_LESSON_PREVIEW_PATH, ADMIN_STORY_PREVIEW_PATH } from "@/lib/formation/paths";
 
 interface AdminInfo {
   id: string;
@@ -93,7 +93,7 @@ export default function AdminLayout({
 
   // Aperçu d'une leçon : plein écran, comme pour les membres. La session admin
   // reste exigée par le middleware (vérification côté serveur de /admin/*).
-  const isLessonPreview = pathname?.startsWith(`${ADMIN_LESSON_PREVIEW_PATH}/`) ?? false;
+  const isLessonPreview = (pathname?.startsWith(`${ADMIN_LESSON_PREVIEW_PATH}/`) || pathname?.startsWith(`${ADMIN_STORY_PREVIEW_PATH}/`)) ?? false;
 
   if (isLoginPage || isLessonPreview) {
     return <>{children}</>;

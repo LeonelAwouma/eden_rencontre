@@ -61,3 +61,24 @@ export interface Formation {
   coverImage: { src: string; card: string; alt: string; position?: string };
   pillars: Pillar[];
 }
+
+/* ─────────────── Histoires de l'Académie (storybooks) ─────────────── */
+
+export type StoryBlock =
+  | LessonBlock
+  /** Réplique d'un personnage, affichée en citation. */
+  | { type: "quote"; text: string }
+  /** Intertitre à l'intérieur d'un chapitre (« Scène A… »). */
+  | { type: "scene"; text: string };
+
+export interface Story {
+  /** Segment d'URL, commun aux deux langues. */
+  slug: string;
+  title: string;
+  summary: string;
+  /** Chapitres dans l'ordre ; le dernier peut être l'épilogue. */
+  chapters: { title: string; epilogue?: boolean; blocks: StoryBlock[] }[];
+  takeaways: { lead: string; text: string }[];
+  /** Leçons de « Bâtir sur le roc » que l'histoire illustre (slugs). */
+  lessons: string[];
+}

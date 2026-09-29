@@ -720,6 +720,13 @@ export { FORMATION_BASE_PATH, ADMIN_FORMATION_PATH, ADMIN_LESSON_PREVIEW_PATH } 
 
 export const ALL_LESSONS = BATIR_SUR_LE_ROC.pillars.flatMap((p) => p.lessons.map((l) => ({ lesson: l, pillar: p })));
 
+/** Leçons à terminer avant d'accéder au matching : tout le pilier 1. */
+export const MATCHING_REQUIRED_LESSONS = pillar1.lessons.map((l) => l.slug);
+
+export function isPillarOneComplete(completed: string[]): boolean {
+  return MATCHING_REQUIRED_LESSONS.every((slug) => completed.includes(slug));
+}
+
 export function findLesson(slug: string) {
   const i = ALL_LESSONS.findIndex((x) => x.lesson.slug === slug);
   if (i === -1) return null;
