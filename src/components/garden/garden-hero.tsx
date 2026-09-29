@@ -128,7 +128,15 @@ export function GardenHero() {
                 </Link>
               </motion.div>
 
-              {/* Repères de confiance */}
+              {/* Repères — présentés comme un objectif, non comme un bilan */}
+              <motion.p
+                initial={reduced ? false : { opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.7, delay: 1.05 }}
+                className="pt-4 -mb-2 text-center text-[10px] sm:text-[11px] uppercase tracking-[0.24em] font-semibold text-primary"
+              >
+                {t("hero.goalLabel")}
+              </motion.p>
               <motion.div
                 initial={reduced ? false : { opacity: 0 }}
                 animate={{ opacity: 1 }}

@@ -20,6 +20,7 @@
     "couples": "2,500+ Couples",
     "countries": "15+ Countries",
     "moderated": "100% Moderated",
+    "goalLabel": "Our goal",
     "imageAlt": "United Christian couples — Garden of Alliance"
   },
   "features": {
@@ -1336,7 +1337,18 @@
     "reportRateLimited": "Too many reports today. Try again tomorrow or write to the team.",
     "reportDescRequired": "Describe the problem to send it.",
     "reportError": "The report could not be sent. Please try again.",
-    "academyShort": "Academy"
+    "academyShort": "Academy",
+    "discoverLockedTitle": "Complete your profile to discover members",
+    "discoverLockedDesc": "Your profile is {pct}% complete. Other members' profiles become visible once it reaches 100%, so everyone discovers people who present themselves as fully as they do.",
+    "discoverLockedMissing": "Still to complete",
+    "missingPhoto": "A profile photo",
+    "missingName": "Your name",
+    "missingBio": "A short introduction (bio)",
+    "missingCity": "Your city",
+    "missingProfession": "Your profession",
+    "missingCivilStatus": "Your civil status",
+    "missingMarriageVision": "Your vision of marriage",
+    "missingQuestionnaire": "The compatibility questionnaire"
   },
   "chatGuide": {
     "headerTitle": "Guide to Your First 5 Conversations",

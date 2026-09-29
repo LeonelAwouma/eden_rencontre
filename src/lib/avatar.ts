@@ -45,10 +45,11 @@ export function canOptimizeImage(url?: string | null): boolean {
 }
 
 /**
- * URL optimisée pour un petit avatar (<img> simple, ex. Radix Avatar).
- * `width` doit faire partie des tailles de Next.js (images.imageSizes) : 64, 128 ou 256.
+ * URL optimisée pour une photo affichée par un <img> simple (avatar, prévisualisation).
+ * `width` doit faire partie des tailles de Next.js (imageSizes / deviceSizes) :
+ * 64, 128, 256 pour les petits avatars ; 1080 pour la prévisualisation agrandie.
  */
-export function avatarSrc(url?: string | null, width: 64 | 128 | 256 = 128): string | undefined {
+export function avatarSrc(url?: string | null, width: 64 | 128 | 256 | 1080 = 128): string | undefined {
   if (!url) return undefined;
   return canOptimizeImage(url) ? `/_next/image?url=${encodeURIComponent(url)}&w=${width}&q=75` : url;
 }

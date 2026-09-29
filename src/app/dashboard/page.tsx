@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -22,6 +22,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { canOptimizeImage, avatarSrc } from "@/lib/avatar";
+import { PhotoLightbox } from "@/components/photo-lightbox";
 import { BillingToggle } from "@/components/pricing/billing-toggle";
 import { planPricing, formatFcfa, type BillingPeriod, type PlanId } from "@/lib/pricing";
 import { useToast } from "@/hooks/use-toast";
@@ -156,118 +157,65 @@ function EmptyState({ icon: Icon, title, text, cta, onClick }: { icon: any; titl
 }
 
 // ── Member Card ──
-function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match, framed, onViewPhoto }: {
+// Affichage épuré : petite photo ronde, nom, une information secondaire.
+// Un clic sur la photo ouvre la prévisualisation agrandie (PhotoLightbox) ;
+// un clic sur le nom ouvre le profil.
+
+/** Petite photo de profil ; cliquable (prévisualisation agrandie) quand une photo existe. */
+function MemberAvatar({ m, size = 56, onViewPhoto }: { m: MemberProfile; size?: number; onViewPhoto?: () => void }) {
+  const { t } = useI18n();
+  const inner = m.avatar_url
+    // eslint-disable-next-line @next/next/no-img-element
+    ? <img src={avatarSrc(m.avatar_url, 128)} alt="" loading="lazy" className="w-full h-full object-cover" />
+    : <span className="font-headline font-bold" style={{ color: "#6E8B63", fontSize: Math.round(size * 0.4) }}>{m.name?.[0]?.toUpperCase() || "?"}</span>;
+  const base = "relative shrink-0 rounded-full overflow-hidden flex items-center justify-center";
+  const style = { width: size, height: size, background: "#EEF5EC", border: "1px solid #E8E5E0" };
+  if (!m.avatar_url || !onViewPhoto) return <span className={base} style={style} aria-hidden>{inner}</span>;
+  return (
+    <button type="button" onClick={(e) => { e.stopPropagation(); onViewPhoto(); }}
+      aria-label={`${t("memberCard.viewPhoto")} — ${m.name}`} title={t("memberCard.viewPhoto")}
+      className={cn(base, "cursor-zoom-in transition-shadow hover:ring-2 hover:ring-[#C6D4C0] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#486B46]")}
+      style={style}>
+      {inner}
+    </button>
+  );
+}
+
+function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match, onViewPhoto }: {
   m: MemberProfile; isFavorite: boolean; onToggleFav: () => void; onOpen: () => void;
-  action?: React.ReactNode; match?: number | null; framed?: boolean; onViewPhoto?: () => void;
+  action?: React.ReactNode; match?: number | null; onViewPhoto?: () => void;
 }) {
   const { t } = useI18n();
-  const loc = [m.city, m.country].filter(Boolean).join(", ");
-
-  if (framed) {
-    return (
-      <div className="group overflow-hidden rounded-2xl flex flex-col transition-all duration-200"
-        style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}
-        onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 24px rgba(72,107,70,0.12)"; e.currentTarget.style.borderColor = "#C6D4C0"; }}
-        onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)"; e.currentTarget.style.borderColor = "#E8E5E0"; }}>
-        <div className="p-2.5 sm:p-3 pb-0">
-          <div className="relative aspect-square rounded-xl overflow-hidden" style={{ background: "#EEF5EC", border: "1px solid #E8E5E0" }}>
-            {m.avatar_url ? (
-              <Image src={m.avatar_url} alt={m.name} fill className="object-contain" unoptimized={!canOptimizeImage(m.avatar_url)} sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 28vw, 50vw" />
-            ) : (
-              <span className="absolute inset-0 flex items-center justify-center font-headline text-5xl font-bold" style={{ color: "#6E8B63" }}>
-                {m.name?.[0]?.toUpperCase() || "?"}
-              </span>
-            )}
-            {typeof match === "number" && (
-              <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1"
-                style={{ background: "#486B46", color: "#FFFFFF" }}>
-                <Heart className="w-3 h-3" style={{ fill: "#FFFFFF" }} /> {match}%
-              </div>
-            )}
-            {m.avatar_url && (
-              <button onClick={onViewPhoto} aria-label={t("memberCard.viewPhoto")} title={t("memberCard.viewPhoto")}
-                className="absolute bottom-2 right-2 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl bg-black/40 text-white hover:bg-black/60 transition-all">
-                <Eye className="w-4 h-4" />
-              </button>
-            )}
-            <button onClick={onToggleFav} aria-label={isFavorite ? t("memberCard.removeFavorite") : t("memberCard.addFavorite")}
-              className={cn("absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center backdrop-blur-xl transition-all",
-                isFavorite ? "text-white" : "bg-black/30 text-white hover:text-white")}
-              style={isFavorite ? { background: "#C6A15B" } : {}}>
-              <Star className={cn("w-4 h-4", isFavorite && "fill-white")} />
-            </button>
-          </div>
-        </div>
-        <button onClick={onOpen} className="p-2.5 sm:p-3 flex flex-col gap-2 text-left">
-          <div>
-            <h4 className="font-headline text-sm sm:text-base font-bold truncate inline-flex items-center gap-1" style={{ color: "#2F2F2F" }}>
-              {m.name}
-              {m.verification_status === "verified" && isProfileFullyComplete(m) && <VerifiedBadge size={14} />}
-            </h4>
-            {loc && <div className="flex items-center gap-1 text-[9px] sm:text-xs font-bold tracking-wide uppercase truncate" style={{ color: "#777777" }}>
-              <MapPin className="w-3 h-3 shrink-0" /> {loc}
-            </div>}
-          </div>
-          {m.profession && (
-            <div className="flex items-center gap-2 text-xs font-medium" style={{ color: "#777777" }}>
-              <Briefcase className="w-3.5 h-3.5 shrink-0" style={{ color: "#6E8B63" }} />
-              <span className="truncate">{m.profession}</span>
-            </div>
-          )}
-        </button>
-        {action && <div className="px-2.5 sm:px-3 pb-2.5 sm:pb-3">{action}</div>}
-      </div>
-    );
-  }
+  const age = ageFromBirthDate(m.birthDate);
+  // Une seule information secondaire : âge · ville, sinon la profession.
+  const secondary = [age ? t("profileDetail.yearsOld", { age }) : null, m.city].filter(Boolean).join(" · ") || m.profession || "";
 
   return (
-    <div className="group overflow-hidden rounded-2xl flex flex-col transition-all duration-200 cursor-pointer"
-      style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}
-      onMouseEnter={e => { e.currentTarget.style.boxShadow = "0 4px 24px rgba(72,107,70,0.12)"; e.currentTarget.style.borderColor = "#C6D4C0"; }}
-      onMouseLeave={e => { e.currentTarget.style.boxShadow = "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)"; e.currentTarget.style.borderColor = "#E8E5E0"; }}>
-      <div className="relative aspect-[4/5]">
-        <button onClick={onOpen} className="absolute inset-0 w-full h-full text-left">
-          {m.avatar_url ? (
-            <Image src={m.avatar_url} alt={m.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized={!canOptimizeImage(m.avatar_url)} sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 28vw, 50vw" />
-          ) : (
-            <span className="absolute inset-0 flex items-center justify-center font-headline text-5xl font-bold"
-              style={{ background: "linear-gradient(135deg, #EEF5EC, #FAF9F6)", color: "#6E8B63" }}>
-              {m.name?.[0]?.toUpperCase() || "?"}
+    <div className="rounded-2xl p-3 flex flex-col gap-3 transition-colors hover:border-[#C6D4C0]"
+      style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
+      <div className="flex items-center gap-3 min-w-0">
+        <MemberAvatar m={m} onViewPhoto={onViewPhoto} />
+        <button type="button" onClick={onOpen} className="group/name flex-1 min-w-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#486B46] rounded-md">
+          <span className="flex items-center gap-1 min-w-0">
+            <span className="font-headline text-[15px] font-bold truncate group-hover/name:underline underline-offset-2" style={{ color: "#2F2F2F" }}>{m.name}</span>
+            {m.verification_status === "verified" && isProfileFullyComplete(m) && <VerifiedBadge size={14} />}
+          </span>
+          {secondary && <span className="block text-xs truncate mt-0.5" style={{ color: "#6B746E" }}>{secondary}</span>}
+        </button>
+        <div className="flex items-center gap-1 shrink-0">
+          {typeof match === "number" && (
+            <span className="px-2 py-0.5 rounded-full text-[11px] font-bold inline-flex items-center gap-1" style={{ background: "#EEF5EC", color: "#486B46" }}>
+              <Heart className="w-3 h-3" style={{ fill: "#486B46" }} /> {match}%
             </span>
           )}
-          {typeof match === "number" && (
-            <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-black flex items-center gap-1"
-              style={{ background: "#486B46", color: "#FFFFFF" }}>
-              <Heart className="w-3 h-3" style={{ fill: "#FFFFFF" }} /> {match}%
-            </div>
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent opacity-60" />
-          <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
-            <h4 className="font-headline text-sm sm:text-lg font-bold text-white truncate group-hover:transition-colors inline-flex items-center gap-1">
-              {m.name}
-              {m.verification_status === "verified" && isProfileFullyComplete(m) && <VerifiedBadge size={14} />}
-            </h4>
-            {loc && <div className="flex items-center gap-1 text-white/80 text-[9px] sm:text-xs font-bold tracking-wide uppercase truncate">
-              <MapPin className="w-3 h-3 shrink-0" /> {loc}
-            </div>}
-          </div>
-        </button>
-        <button onClick={onToggleFav} aria-label={isFavorite ? t("memberCard.removeFavorite") : t("memberCard.addFavorite")}
-          className={cn("absolute top-2.5 right-2.5 w-9 h-9 rounded-full flex items-center justify-center backdrop-blur-xl transition-all",
-            isFavorite ? "text-white" : "bg-black/30 text-white hover:text-white")}
-          style={isFavorite ? { background: "#C6A15B" } : {}}>
-          <Star className={cn("w-4 h-4", isFavorite && "fill-white")} />
-        </button>
+          <button type="button" onClick={onToggleFav} aria-label={isFavorite ? t("memberCard.removeFavorite") : t("memberCard.addFavorite")}
+            className="w-8 h-8 rounded-full flex items-center justify-center transition-colors hover:bg-[#FAF6EC] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#486B46]"
+            style={{ color: isFavorite ? "#C6A15B" : "#9AA39C" }}>
+            <Star className={cn("w-4 h-4", isFavorite && "fill-current")} />
+          </button>
+        </div>
       </div>
-      <div className="p-3 sm:p-4 flex flex-col gap-3" style={{ background: "#FAF9F6", borderTop: "1px solid #E8E5E0" }}>
-        {m.profession && (
-          <div className="flex items-center gap-2 text-xs font-medium" style={{ color: "#777777" }}>
-            <Briefcase className="w-3.5 h-3.5 shrink-0" style={{ color: "#6E8B63" }} />
-            <span className="truncate">{m.profession}</span>
-          </div>
-        )}
-        {action}
-      </div>
+      {action && <div className="[&>*]:w-full">{action}</div>}
     </div>
   );
 }
@@ -363,7 +311,13 @@ export default function DashboardPage() {
   const [favoriteMembers, setFavoriteMembers] = useState<MemberProfile[]>([]);
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [profileCompletionPct, setProfileCompletionPct] = useState<number | null>(null);
+  // Éléments du profil encore manquants (clés de libellé dashboard.*).
+  const [profileMissing, setProfileMissing] = useState<string[]>([]);
+  // Les profils des autres membres ne sont visibles qu'avec un profil complet à 100 %.
+  const canBrowseProfiles = profileCompletionPct === 100;
   const [viewingPhoto, setViewingPhoto] = useState<{ url: string; name: string } | null>(null);
+  const closePhoto = useCallback(() => setViewingPhoto(null), []);
+  const viewPhotoOf = (m: { avatar_url?: string | null; name: string }) => () => { if (m.avatar_url) setViewingPhoto({ url: m.avatar_url, name: m.name }); };
 
   const meId = user?.id || "";
   const totalUnread = conversations.reduce((s, c) => s + c.unread, 0);
@@ -920,18 +874,20 @@ export default function DashboardPage() {
         .maybeSingle()
         .then(({ data }) => {
           if (!data) return;
-          const checks = [
-            !!data.avatar_url,
-            !!data.name,
-            !!data.bio,
-            !!data.city,
-            !!data.profession,
-            !!data.civil_status,
-            !!(data.marriage_vision && (data.marriage_vision as string[]).length > 0),
-            !!data.onboarding_completed,
+          // Chaque élément et sa clé de libellé : la liste des manquants s'affiche dans « Découvrir ».
+          const checks: [boolean, string][] = [
+            [!!data.avatar_url, "missingPhoto"],
+            [!!data.name, "missingName"],
+            [!!data.bio, "missingBio"],
+            [!!data.city, "missingCity"],
+            [!!data.profession, "missingProfession"],
+            [!!data.civil_status, "missingCivilStatus"],
+            [!!(data.marriage_vision && (data.marriage_vision as string[]).length > 0), "missingMarriageVision"],
+            [!!data.onboarding_completed, "missingQuestionnaire"],
           ];
-          const done = checks.filter(Boolean).length;
+          const done = checks.filter(([ok]) => ok).length;
           setProfileCompletionPct(Math.round((done / checks.length) * 100));
+          setProfileMissing(checks.filter(([ok]) => !ok).map(([, key]) => key));
         });
     }
   }, [user]);
@@ -1488,8 +1444,8 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {/* Section 4: Recommended Profiles */}
-                {discoverMembers.length > 0 && (
+                {/* Section 4: Recommended Profiles — uniquement avec un profil complet à 100 % */}
+                {canBrowseProfiles && discoverMembers.length > 0 && (
                   <section className="space-y-4">
                     <div className="flex items-center justify-between">
                       <div>
@@ -1501,9 +1457,9 @@ export default function DashboardPage() {
                         {t("dashboard.seeAll")} <ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <div className="grid grid-cols-2 lg:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {discoverMembers.slice(0, 3).map((m) => (
-                        <MemberCard key={m.id} m={m}
+                        <MemberCard key={m.id} m={m} onViewPhoto={viewPhotoOf(m)}
                           match={user ? computeDisplayMatch({ ...user, questionnaire: questionnaireAnswers }, m).score : null}
                           isFavorite={favoriteIds.has(m.id)}
                           onToggleFav={() => handleToggleFavorite(m)}
@@ -1787,20 +1743,8 @@ export default function DashboardPage() {
         </button>
       </nav>
 
-      {/* ══ PHOTO LIGHTBOX ══ */}
-      {viewingPhoto && (
-        <div className="fixed inset-0 z-[80] bg-black/85 backdrop-blur-sm flex items-center justify-center p-4 sm:p-10"
-          onClick={() => setViewingPhoto(null)}>
-          <button onClick={() => setViewingPhoto(null)} aria-label={t("memberCard.closePhoto")}
-            className="absolute top-4 right-4 sm:top-6 sm:right-6 w-10 h-10 rounded-full flex items-center justify-center bg-white/10 text-white hover:bg-white/20 transition-all">
-            <X className="w-5 h-5" />
-          </button>
-          <div className="relative w-full h-full max-w-xl max-h-[80vh]" onClick={(e) => e.stopPropagation()}>
-            <Image src={viewingPhoto.url} alt={viewingPhoto.name} fill className="object-contain" unoptimized={!canOptimizeImage(viewingPhoto.url)} sizes="100vw" />
-          </div>
-          <p className="absolute bottom-6 inset-x-0 text-center font-headline text-lg font-bold text-white">{viewingPhoto.name}</p>
-        </div>
-      )}
+      {/* ══ PHOTO LIGHTBOX — petite photo cliquée → prévisualisation agrandie ══ */}
+      <PhotoLightbox photo={viewingPhoto} onClose={closePhoto} closeLabel={t("memberCard.closePhoto")} />
     </div>
   );
 
@@ -1832,26 +1776,46 @@ export default function DashboardPage() {
         return (
           <div className="space-y-6">
             <TabHeader icon={Search} title={t("dashboard.discoverTitle")} subtitle={t("dashboard.discoverSubtitle")} />
-            {profileCompletionPct !== null && profileCompletionPct < 100 && (
-              <div className="rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4"
-                style={{ background: "linear-gradient(135deg, #FFFBEB 0%, #FAF9F6 100%)", border: "1px solid #FDE68A" }}>
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "#FFFBEB" }}>
-                  <Lock className="w-5 h-5" style={{ color: "#D97706" }} />
+            {profileCompletionPct === null ? (
+              // Complétude pas encore connue : on n'affiche rien des autres membres en attendant.
+              <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#486B46" }} />
+                <p className="text-sm" style={{ color: "#777777" }}>{t("dashboard.loading")}</p>
+              </div>
+            ) : !canBrowseProfiles ? (
+              /* Profil incomplet : aucun profil visible, seulement ce qu'il reste à compléter. */
+              <div className="max-w-xl mx-auto rounded-3xl p-6 sm:p-8 text-center"
+                style={{ background: "linear-gradient(160deg, #FFFFFF 0%, #EEF5EC 100%)", border: "1px solid #C6D4C0" }}>
+                <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: "#FFFFFF", border: "1px solid #C6D4C0" }}>
+                  <Lock className="w-6 h-6" style={{ color: "#486B46" }} />
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>
-                    {t("dashboard.discoverIncompleteProfileTitle", { pct: profileCompletionPct })}
-                  </p>
-                  <p className="text-xs mt-0.5 leading-relaxed" style={{ color: "#777777" }}>
-                    {t("dashboard.discoverIncompleteProfileDesc")}
-                  </p>
+                <h3 className="font-headline text-xl font-bold" style={{ color: "#2F2F2F" }}>{t("dashboard.discoverLockedTitle")}</h3>
+                <p className="text-sm mt-2 leading-relaxed" style={{ color: "#56615A" }}>
+                  {t("dashboard.discoverLockedDesc", { pct: profileCompletionPct })}
+                </p>
+                <div className="mt-5">
+                  <Progress value={profileCompletionPct} className="h-2" style={{ background: "#E4E9E1" }} />
+                  <p className="text-xs font-bold mt-1.5 text-right" style={{ color: "#486B46" }}>{profileCompletionPct}%</p>
                 </div>
-                <Button onClick={() => setActiveTab("Profil")} className="h-9 shrink-0 rounded-xl font-bold text-xs px-4"
+                {profileMissing.length > 0 && (
+                  <div className="mt-4 text-left rounded-2xl p-4" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
+                    <p className="text-xs font-bold uppercase tracking-wider mb-2.5" style={{ color: "#6B746E" }}>{t("dashboard.discoverLockedMissing")}</p>
+                    <ul className="space-y-2">
+                      {profileMissing.map((key) => (
+                        <li key={key} className="flex items-center gap-2.5 text-sm" style={{ color: "#2F2F2F" }}>
+                          <span className="w-5 h-5 rounded-full shrink-0" style={{ border: "2px solid #C6D4C0" }} aria-hidden />
+                          {t(`dashboard.${key}`)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                <Button onClick={() => setActiveTab("Profil")} className="mt-5 h-11 rounded-xl font-bold text-sm px-6"
                   style={{ background: "#486B46", color: "#FFFFFF" }}>
                   {t("dashboard.completeMyProfile")}
                 </Button>
               </div>
-            )}
+            ) : (<>
             <div className="relative max-w-xl">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5" style={{ color: "#486B46" }} />
               <Input value={discoverSearch} onChange={(e) => { setDiscoverSearch(e.target.value); setDiscoverCount(24); }}
@@ -1879,13 +1843,12 @@ export default function DashboardPage() {
             ) : shown.length === 0 ? (
               <EmptyState icon={Search} title={t("dashboard.noProfilesFound")} text={t("dashboard.inviteLovedOnes")} cta={t("dashboard.explore")} />
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 {shown.map((m) => {
                   const status = relations[m.id]?.status ?? "none";
                   return (
                     <MemberCard key={m.id} m={m} match={scoreOf(m)} isFavorite={favoriteIds.has(m.id)}
-                      framed
-                      onViewPhoto={() => m.avatar_url && setViewingPhoto({ url: m.avatar_url, name: m.name })}
+                      onViewPhoto={viewPhotoOf(m)}
                       onToggleFav={() => handleToggleFavorite(m)}
                       onOpen={() => router.push(`/dashboard/profile/${m.id}`)}
                       action={
@@ -1908,6 +1871,7 @@ export default function DashboardPage() {
                 })}
               </div>
             )}
+            </>)}
           </div>
         );
       }
@@ -1925,29 +1889,21 @@ export default function DashboardPage() {
             ) : visitors.length === 0 ? (
               <EmptyState icon={Eye} title={t("dashboard.noVisitors")} text={t("dashboard.noVisitorsDesc")} cta={t("dashboard.discoverProfiles")} onClick={() => setActiveTab("Discover")} />
             ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 {visitors.map((v) => (
-                  <div key={v.member.id} onClick={() => router.push(`/dashboard/profile/${v.member.id}`)}
-                    className="group overflow-hidden rounded-2xl cursor-pointer transition-all duration-200"
+                  <div key={v.member.id} className="rounded-2xl p-3 flex items-center gap-3 min-w-0 transition-colors hover:border-[#C6D4C0]"
                     style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
-                    <div className="relative aspect-[3/4]">
-                      {v.member.avatar_url ? (
-                        <Image src={v.member.avatar_url} alt={v.member.name} fill className="object-cover group-hover:scale-105 transition-transform duration-500" unoptimized={!canOptimizeImage(v.member.avatar_url)} sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 28vw, 50vw" />
-                      ) : (
-                        <span className="absolute inset-0 flex items-center justify-center font-headline text-4xl font-bold"
-                          style={{ background: "linear-gradient(135deg, #EEF5EC, #FAF9F6)", color: "#6E8B63" }}>{v.member.name?.[0]?.toUpperCase()}</span>
-                      )}
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
-                      <div className="absolute inset-x-0 bottom-0 p-3">
-                        <h4 className="font-headline text-base font-bold text-white truncate inline-flex items-center gap-1">
-                          {v.member.name}
-                          {v.member.verification_status === "verified" && isProfileFullyComplete(v.member) && <VerifiedBadge size={14} />}
-                        </h4>
-                      </div>
-                    </div>
-                    <div className="px-3 py-2 flex items-center gap-1.5 text-[11px]" style={{ background: "#FAF9F6", borderTop: "1px solid #E8E5E0", color: "#777777" }}>
-                      <Clock className="w-3 h-3" /> {v.when}
-                    </div>
+                    <MemberAvatar m={v.member} onViewPhoto={viewPhotoOf(v.member)} />
+                    <button type="button" onClick={() => router.push(`/dashboard/profile/${v.member.id}`)}
+                      className="group/name flex-1 min-w-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#486B46] rounded-md">
+                      <span className="flex items-center gap-1 min-w-0">
+                        <span className="font-headline text-[15px] font-bold truncate group-hover/name:underline underline-offset-2" style={{ color: "#2F2F2F" }}>{v.member.name}</span>
+                        {v.member.verification_status === "verified" && isProfileFullyComplete(v.member) && <VerifiedBadge size={14} />}
+                      </span>
+                      <span className="flex items-center gap-1 text-xs mt-0.5" style={{ color: "#6B746E" }}>
+                        <Clock className="w-3 h-3 shrink-0" /> {v.when}
+                      </span>
+                    </button>
                   </div>
                 ))}
               </div>
@@ -1968,9 +1924,9 @@ export default function DashboardPage() {
             ) : favoriteMembers.length === 0 ? (
               <EmptyState icon={Heart} title={t("dashboard.noFavorites")} text={t("dashboard.noFavoritesDesc")} cta={t("dashboard.discoverProfiles")} onClick={() => setActiveTab("Discover")} />
             ) : (
-              <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
                 {favoriteMembers.map((m) => (
-                  <MemberCard key={m.id} m={m} isFavorite={favoriteIds.has(m.id)}
+                  <MemberCard key={m.id} m={m} isFavorite={favoriteIds.has(m.id)} onViewPhoto={viewPhotoOf(m)}
                     onToggleFav={() => handleToggleFavorite(m)}
                     onOpen={() => router.push(`/dashboard/profile/${m.id}`)}
                     action={
@@ -2006,18 +1962,16 @@ export default function DashboardPage() {
                     <div key={r.id} className="rounded-2xl p-5 sm:p-6"
                       style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
                       <div className="flex flex-col sm:flex-row gap-5">
-                        <button onClick={() => router.push(`/dashboard/profile/${m.id}`)}
-                          className="relative w-20 h-20 rounded-2xl overflow-hidden shrink-0 mx-auto sm:mx-0"
-                          style={{ border: "2px solid #E8E5E0" }}>
-                          {m.avatar_url ? <Image src={m.avatar_url} alt={m.name} fill className="object-cover" unoptimized={!canOptimizeImage(m.avatar_url)} sizes="(min-width: 1280px) 20vw, (min-width: 1024px) 28vw, 50vw" /> :
-                            <span className="absolute inset-0 flex items-center justify-center font-headline text-2xl font-bold" style={{ background: "#EEF5EC", color: "#486B46" }}>{m.name?.[0]?.toUpperCase()}</span>}
-                        </button>
+                        <div className="mx-auto sm:mx-0">
+                          <MemberAvatar m={m} size={64} onViewPhoto={viewPhotoOf(m)} />
+                        </div>
                         <div className="flex-1 space-y-3 text-center sm:text-left">
                           <div>
-                            <h4 className="font-headline text-lg font-bold inline-flex items-center gap-1.5" style={{ color: "#2F2F2F" }}>
+                            <button type="button" onClick={() => router.push(`/dashboard/profile/${m.id}`)}
+                              className="font-headline text-lg font-bold inline-flex items-center gap-1.5 hover:underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#486B46] rounded-md" style={{ color: "#2F2F2F" }}>
                               {m.name}
                               {m.verification_status === "verified" && isProfileFullyComplete(m) && <VerifiedBadge size={16} />}
-                            </h4>
+                            </button>
                             {loc && <p className="text-xs flex items-center gap-1 justify-center sm:justify-start" style={{ color: "#777777" }}>
                               <MapPin className="w-3 h-3" /> {loc}{m.profession ? ` • ${m.profession}` : ""}
                             </p>}
