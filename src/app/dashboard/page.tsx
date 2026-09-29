@@ -33,7 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PROFILES } from "@/lib/profiles";
 import { MARRIAGE_VALUES, getValue } from "@/lib/values";
 import { computeDisplayMatch, filterAndRankByReciprocalMatch } from "@/lib/matching/adapter";
-import { getMyOnboarding, getQuestionnaires, completeOnboarding, type Questionnaire, type Field } from "@/lib/onboarding";
+import { getMyOnboarding, getQuestionnaires, completeOnboarding, applyAnswer, isFieldVisible, type Questionnaire, type Field } from "@/lib/onboarding";
 import { supabase } from "@/lib/supabase";
 import {
   upsertMyProfile, searchUsers, listConversations, getMessages,
@@ -990,7 +990,7 @@ export default function DashboardPage() {
 
   const handleQFieldChange = (fieldId: string, value: any) => {
     qAutosave.markDirty();
-    setLocalQAnswers(prev => ({ ...prev, [fieldId]: value }));
+    setLocalQAnswers(prev => applyAnswer(prev, fieldId, value));
   };
 
   const handleQMultiToggle = (fieldId: string, option: string, max?: number) => {
@@ -2760,7 +2760,7 @@ export default function DashboardPage() {
               const isExpanded = expandedQuestionnaire === q.key;
               const isEditing = editingQuestionnaire === q.key;
               const answers = isEditing ? localQAnswers : questionnaireAnswers;
-              const allFields = q.sections.flatMap(s => s.fields);
+              const allFields = q.sections.flatMap(s => s.fields).filter(f => isFieldVisible(f, answers));
               const filled = allFields.filter(f => {
                 const v = answers[f.id];
                 return v && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "");
@@ -2817,11 +2817,11 @@ export default function DashboardPage() {
                           </h5>
                           {section.intro && <p className="text-[11px] italic mb-3" style={{ color: "#777777" }}>{section.intro}</p>}
                           <div className="space-y-3">
-                            {section.fields.map((field) => {
+                            {section.fields.filter((field) => isFieldVisible(field, answers)).map((field) => {
                               const value = answers[field.id];
                               if (isEditing) {
                                 return (
-                                  <div key={field.id}>
+                                  <div key={field.id} className={cn(field.showIf && "ml-2 pl-3 border-l-2 border-[#C6D4C0]")}>
                                     <label className="text-[11px] font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>{field.label}</label>
                                     {(field.type === "text" || field.type === "agerange") ? (
                                       <Input value={value || ""} onChange={(e) => handleQFieldChange(field.id, e.target.value)}
@@ -2868,7 +2868,7 @@ export default function DashboardPage() {
                               // Display mode
                               const displayVal = Array.isArray(value) ? value.join(", ") : String(value || "");
                               return (
-                                <div key={field.id} className="py-2" style={{ borderBottom: "1px solid #F5F3F0" }}>
+                                <div key={field.id} className={cn("py-2", field.showIf && "ml-2 pl-3 border-l-2 border-[#C6D4C0]")} style={{ borderBottom: "1px solid #F5F3F0" }}>
                                   <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "#777777" }}>{field.label}</p>
                                   {displayVal && displayVal !== "" ? (
                                     <p className="text-sm" style={{ color: "#2F2F2F" }}>{displayVal}</p>

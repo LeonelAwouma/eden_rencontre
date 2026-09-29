@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getSession, updateProfile, logout, EdenUser } from "@/lib/auth";
-import { completeOnboarding, getQuestionnaires, Questionnaire, Section, Field } from "@/lib/onboarding";
+import { completeOnboarding, getQuestionnaires, applyAnswer, isFieldVisible, Questionnaire, Section, Field } from "@/lib/onboarding";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import type { Tab } from "@/components/dashboard/dashboard-types";
 import {
@@ -260,6 +260,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
               <div className="space-y-0">
                 {getQuestionnaires(locale).flatMap(q => q.sections.flatMap(s => s.fields))
                   .filter(f => {
+                    if (!isFieldVisible(f, profile.questionnaire)) return false;
                     const v = profile.questionnaire[f.id];
                     return v && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "");
                   })
@@ -408,7 +409,7 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
 
   const handleFieldChange = (fieldId: string, value: any) => {
     autosave.markDirty();
-    setLocalAnswers(prev => ({ ...prev, [fieldId]: value }));
+    setLocalAnswers(prev => applyAnswer(prev, fieldId, value));
   };
 
   const startEditing = async (qKey: string) => {
@@ -445,7 +446,7 @@ function FaithJourneyCard({ profileId, answers, onRefresh }: { profileId: string
 
   const getCompletionCount = (q: Questionnaire) => {
     let total = 0, filled = 0;
-    q.sections.forEach(s => s.fields.forEach(f => {
+    q.sections.forEach(s => s.fields.filter(f => isFieldVisible(f, localAnswers)).forEach(f => {
       total++;
       const v = localAnswers[f.id];
       if (v && (Array.isArray(v) ? v.length > 0 : String(v).trim() !== "")) filled++;
@@ -532,9 +533,11 @@ function SectionBlock({ section, answers, isEditing, onFieldChange, onMultiToggl
       </h5>
       {section.intro && <p className="text-xs text-[#777777] mb-3 italic">{section.intro}</p>}
       <div className="space-y-3">
-        {section.fields.map(field => (
-          <FieldDisplay key={field.id} field={field} value={answers[field.id]} isEditing={isEditing}
-            onChange={v => onFieldChange(field.id, v)} onMultiToggle={opt => onMultiToggle(field.id, opt)} />
+        {section.fields.filter(field => isFieldVisible(field, answers)).map(field => (
+          <div key={field.id} className={field.showIf ? "ml-2 pl-3 border-l-2 border-[#C6D4C0]" : undefined}>
+            <FieldDisplay field={field} value={answers[field.id]} isEditing={isEditing}
+              onChange={v => onFieldChange(field.id, v)} onMultiToggle={opt => onMultiToggle(field.id, opt)} />
+          </div>
         ))}
       </div>
     </div>

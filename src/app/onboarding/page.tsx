@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getSession } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { MemberGate } from "@/components/member-gate";
-import { getOnboardingSteps, getMyOnboarding, saveOnboarding, completeOnboarding, type Field, type SupportedLocale } from "@/lib/onboarding";
+import { getOnboardingSteps, getMyOnboarding, saveOnboarding, completeOnboarding, applyAnswer, isFieldVisible, type Field, type SupportedLocale } from "@/lib/onboarding";
 import { LoadingScreen } from "@/components/loading-screen";
 
 const SKIP_KEY = "eden_onboarding_skipped";
@@ -137,7 +137,7 @@ function OnboardingPageContent() {
 
   const setField = (id: string, value: any) => {
     dirtyRef.current = true;
-    setAnswers((prev) => ({ ...prev, [id]: value }));
+    setAnswers((prev) => applyAnswer(prev, id, value));
   };
 
   const persist = async (completed: boolean) => {
@@ -260,8 +260,10 @@ function OnboardingPageContent() {
 
         {/* Champs */}
         <div className="space-y-7">
-          {step.fields.map((f) => (
-            <FieldRenderer key={f.id} field={f} value={answers[f.id]} onChange={(v) => setField(f.id, v)} />
+          {step.fields.filter((f) => isFieldVisible(f, answers)).map((f) => (
+            <div key={f.id} className={cn(f.showIf && "-mt-3 ml-2 pl-4 border-l-2 border-secondary/25 animate-in fade-in slide-in-from-top-1 duration-300")}>
+              <FieldRenderer field={f} value={answers[f.id]} onChange={(v) => setField(f.id, v)} />
+            </div>
           ))}
         </div>
 

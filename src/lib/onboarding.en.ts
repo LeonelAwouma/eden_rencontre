@@ -61,7 +61,7 @@ export const QUESTIONNAIRES_EN: Questionnaire[] = [
         title: "Family Situation",
         fields: [
           { id: "enfants", label: "Do you have children?", type: "single", options: ["No", "Yes"] },
-          { id: "enfantsDetail", label: "If yes, how many and what ages?", type: "text", placeholder: "Ex: 1 child, 4 years old" },
+          { id: "enfantsDetail", label: "If yes, how many and what ages?", type: "text", placeholder: "Ex: 1 child, 4 years old", showIf: { field: "enfants", options: [1] } },
           { id: "logement", label: "You currently live…", type: "single", options: ["With family", "Alone", "With roommates"] },
           { id: "familleComposition", label: "Your family of origin composition", type: "textarea", placeholder: "Parents, siblings…" },
           { id: "relationFamille", label: "How would you describe your relationship with your family?", type: "textarea" },
@@ -87,9 +87,9 @@ export const QUESTIONNAIRES_EN: Questionnaire[] = [
         fields: [
           { id: "etatSante", label: "How would you describe your overall health?", type: "single", options: ["Excellent", "Good", "Some concerns", "Prefer not to say"] },
           { id: "handicap", label: "Do you have a disability or chronic condition to disclose?", type: "single", options: ["No", "Yes"] },
-          { id: "handicapDetail", label: "If yes, please briefly describe", type: "textarea" },
+          { id: "handicapDetail", label: "If yes, please briefly describe", type: "textarea", showIf: { field: "handicap", options: [1] } },
           { id: "activitePhysique", label: "Do you engage in regular physical activity?", type: "single", options: ["Yes, regularly", "Occasionally", "Rarely", "No"] },
-          { id: "sport", label: "If yes, what activity?", type: "text", placeholder: "Ex: running, swimming, yoga…" },
+          { id: "sport", label: "If yes, what activity?", type: "text", placeholder: "Ex: running, swimming, yoga…", showIf: { field: "activitePhysique", options: [0, 1] } },
           { id: "alimentation", label: "Any dietary preferences or restrictions?", type: "multi", options: ["No restrictions", "Vegetarian", "Vegan", "Halal", "Gluten-free", "Other"], help: "Multiple choices allowed" },
           { id: "tabacAlcool", label: "Your relationship with tobacco and alcohol", type: "single", options: ["Neither", "Occasional alcohol", "Social smoker", "Both occasionally", "Prefer not to say"] },
         ],
@@ -108,7 +108,7 @@ export const QUESTIONNAIRES_EN: Questionnaire[] = [
         fields: [
           { id: "estChretien", label: "Are you a practicing Christian?", type: "single", options: ["Yes", "No, but seeking", "Other"] },
           { id: "denomination", label: "Your denomination or church tradition", type: "single", options: ["Catholic", "Protestant (Reformed)", "Evangelical", "Pentecostal", "Baptist", "Methodist", "Orthodox", "Non-denominational", "Other"] },
-          { id: "denominationAutre", label: "If other, please specify", type: "text", placeholder: "Ex: Adventist…" },
+          { id: "denominationAutre", label: "If other, please specify", type: "text", placeholder: "Ex: Adventist…", showIf: { field: "denomination", options: [8] } },
           { id: "bapteme", label: "Have you been baptized?", type: "single", options: ["Yes, as an adult", "Yes, as a child", "Not yet, but I desire it", "No"] },
           { id: "converionDate", label: "When did you give your life to Christ?", type: "text", placeholder: "Approximate date or year" },
           { id: "temoignage", label: "Briefly share your testimony or faith journey", type: "textarea", placeholder: "How has God worked in your life?" },

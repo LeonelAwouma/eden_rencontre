@@ -16,6 +16,9 @@ export interface Field {
   placeholder?: string;
   help?: string;
   max?: number; // pour "multi"
+  // Question de suivi (« Si oui… », « Si non… ») : affichée seulement quand le champ parent
+  // a l'une de ces options. Indices dans parent.options — identiques en FR et EN (parité).
+  showIf?: { field: string; options: number[] };
 }
 
 export interface Section {
@@ -96,7 +99,7 @@ export const QUESTIONNAIRES: Questionnaire[] = [
         title: "Situation familiale",
         fields: [
           { id: "enfants", label: "Avez-vous des enfants ?", type: "single", options: ["Non", "Oui"] },
-          { id: "enfantsDetail", label: "Si oui, combien et quels âges ?", type: "text", placeholder: "Ex : 1 enfant de 4 ans" },
+          { id: "enfantsDetail", label: "Si oui, combien et quels âges ?", type: "text", placeholder: "Ex : 1 enfant de 4 ans", showIf: { field: "enfants", options: [1] } },
           { id: "logement", label: "Vous vivez actuellement…", type: "single", options: ["En famille", "Seul(e)", "En colocation"] },
           { id: "familleComposition", label: "Composition de votre famille d'origine", type: "textarea", placeholder: "Parents, frères et sœurs…" },
           { id: "relationFamille", label: "Comment décririez-vous votre relation avec votre famille ?", type: "textarea" },
@@ -122,9 +125,9 @@ export const QUESTIONNAIRES: Questionnaire[] = [
         fields: [
           { id: "etatSante", label: "Comment décririez-vous votre état de santé général ?", type: "single", options: ["Excellent", "Bon", "Quelques soucis de santé", "Je préfère ne pas répondre"] },
           { id: "handicap", label: "Avez-vous un handicap ou une condition chronique à mentionner ?", type: "single", options: ["Non", "Oui"] },
-          { id: "handicapDetail", label: "Si oui, merci de préciser brièvement", type: "textarea" },
+          { id: "handicapDetail", label: "Si oui, merci de préciser brièvement", type: "textarea", showIf: { field: "handicap", options: [1] } },
           { id: "activitePhysique", label: "Pratiquez-vous une activité physique régulière ?", type: "single", options: ["Oui, régulièrement", "Occasionnellement", "Rarement", "Non"] },
-          { id: "sport", label: "Si oui, quelle activité ?", type: "text", placeholder: "Ex : course, natation, yoga…" },
+          { id: "sport", label: "Si oui, quelle activité ?", type: "text", placeholder: "Ex : course, natation, yoga…", showIf: { field: "activitePhysique", options: [0, 1] } },
           { id: "alimentation", label: "Avez-vous des préférences ou restrictions alimentaires ?", type: "multi", options: ["Aucune restriction", "Végétarien(ne)", "Végan(e)", "Halal", "Sans gluten", "Autre"], help: "Plusieurs choix possibles" },
           { id: "tabacAlcool", label: "Votre rapport au tabac et à l'alcool", type: "single", options: ["Ni l'un ni l'autre", "Alcool occasionnel", "Fumeur(se) social(e)", "Les deux occasionnellement", "Je préfère ne pas répondre"] },
         ],
@@ -143,7 +146,7 @@ export const QUESTIONNAIRES: Questionnaire[] = [
         fields: [
           { id: "estChretien", label: "Êtes-vous chrétien(ne) pratiquant(e) ?", type: "single", options: ["Oui", "Non, mais en recherche", "Autre"] },
           { id: "denomination", label: "Votre dénomination ou tradition ecclésiale", type: "single", options: ["Catholique", "Protestant(e) (Réformé)", "Évangélique", "Pentecôtiste", "Baptiste", "Méthodiste", "Orthodoxe", "Sans dénomination", "Autre"] },
-          { id: "denominationAutre", label: "Si autre, merci de préciser", type: "text", placeholder: "Ex : Adventiste…" },
+          { id: "denominationAutre", label: "Si autre, merci de préciser", type: "text", placeholder: "Ex : Adventiste…", showIf: { field: "denomination", options: [8] } },
           { id: "bapteme", label: "Avez-vous été baptisé(e) ?", type: "single", options: ["Oui, à l'âge adulte", "Oui, enfant", "Pas encore, mais je le désire", "Non"] },
           { id: "converionDate", label: "Quand avez-vous donné votre vie à Christ ?", type: "text", placeholder: "Date ou année approximative" },
           { id: "temoignage", label: "Partagez brièvement votre témoignage ou votre parcours de foi", type: "textarea", placeholder: "Comment Dieu a-t-il agi dans votre vie ?" },
@@ -305,15 +308,30 @@ export const QUESTIONNAIRES: Questionnaire[] = [
  * Returns all field IDs from the questionnaire definitions,
  * organized by section. Optionally excludes optional sections.
  */
-// Questions qui ne s'appliquent que selon une autre réponse (ids identiques en FR et EN).
-// Non requises quand la condition n'est pas remplie : sinon un membre sans enfant
-// ne pourrait jamais atteindre 100 % et recevoir le badge.
-const CONDITIONAL_FIELDS: Record<string, (answers: Record<string, unknown>) => boolean> = {
-  enfantsDetail: (a) => a.enfants === "Oui" || a.enfants === "Yes",
-  denominationAutre: (a) => a.denomination === "Autre" || a.denomination === "Other",
-  handicapDetail: (a) => a.handicap === "Oui" || a.handicap === "Yes",
-  sport: (a) => typeof a.activitePhysique === "string" && /^(Oui|Occasionnellement|Yes|Occasionally)/.test(a.activitePhysique),
-};
+// Une question de suivi (showIf) n'est affichée — et requise pour le badge — que si sa
+// condition est remplie : sinon un membre sans enfant ne pourrait jamais atteindre 100 %.
+// La réponse du parent a pu être saisie dans l'autre langue : on compare aux options FR et EN.
+function parentOptions(parentId: string): string[][] {
+  return [QUESTIONNAIRES, QUESTIONNAIRES_EN].map((qs) =>
+    qs.flatMap((q) => q.sections.flatMap((s) => s.fields)).find((f) => f.id === parentId)?.options ?? []
+  );
+}
+
+export function isFieldVisible(field: Field, answers: Record<string, unknown>): boolean {
+  if (!field.showIf) return true;
+  const { field: parentId, options } = field.showIf;
+  const value = answers[parentId];
+  return parentOptions(parentId).some((opts) => options.some((i) => opts[i] === value));
+}
+
+/** Enregistre une réponse et efface les questions de suivi qui ne s'appliquent plus. */
+export function applyAnswer(answers: Record<string, any>, id: string, value: any): Record<string, any> {
+  const next = { ...answers, [id]: value };
+  for (const f of QUESTIONNAIRES.flatMap((q) => q.sections.flatMap((s) => s.fields))) {
+    if (f.showIf?.field === id && !isFieldVisible(f, next)) delete next[f.id];
+  }
+  return next;
+}
 
 /**
  * Questions attendues pour le badge « Profil vérifié », sur les TROIS questionnaires.
@@ -323,8 +341,8 @@ const CONDITIONAL_FIELDS: Record<string, (answers: Record<string, unknown>) => b
 export function getAllQuestionnaireFieldIds(options?: { excludeOptional?: boolean }, answers?: Record<string, unknown>): string[] {
   return QUESTIONNAIRES.flatMap((q) =>
     (options?.excludeOptional ? q.sections.filter((s) => !s.private && s.key !== "questionsFinales") : q.sections)
-      .flatMap((s) => s.fields.map((f) => f.id))
-  ).filter((id) => !answers || !CONDITIONAL_FIELDS[id] || CONDITIONAL_FIELDS[id](answers));
+      .flatMap((s) => s.fields.filter((f) => !answers || isFieldVisible(f, answers)).map((f) => f.id))
+  );
 }
 
 /**
