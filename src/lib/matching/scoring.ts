@@ -23,6 +23,7 @@ import {
   scoreToMatchLevel,
   scoreToMatchStatus,
   CHURCH_INVOLVEMENT_SCALE,
+  denominationAffinity,
   FREQUENCY_SCALE,
   SOCIAL_MEDIA_SCALE,
   ORGANIZATION_SCALE,
@@ -132,6 +133,14 @@ function scoreSpiritual(
   const details: ScoreDetail[] = [];
   let totalPoints = 0;
   let maxPoints = 0;
+
+  // Denomination affinity — a score, no longer an elimination: two Christians
+  // of different traditions can still build a covenant, just with more to discuss.
+  const denomPoints = denominationAffinity(a.denomination, b.denomination);
+  addDetail(details, "denomination", a.denomination, b.denomination, denomPoints, 100,
+    denomPoints >= 85 ? "compatible" : denomPoints >= 60 ? "neutral" : "tension");
+  totalPoints += denomPoints * 0.12;
+  maxPoints += 100 * 0.12;
 
   // Faith importance (1-5 scale, closer = better)
   const faithDiff = Math.abs(a.faith_importance - b.faith_importance);
@@ -830,19 +839,23 @@ function clamp(score: number): number {
 }
 
 /**
- * Calculate set overlap: Jaccard-like similarity
- * Returns 0-1 (0 = no overlap, 1 = identical sets)
+ * Calculate set overlap for multi-choice answers. Returns 0-1.
+ *
+ * Measured against the SMALLER set (overlap coefficient), not the union
+ * (Jaccard): two members who pick 3 values each and share 2 have a lot in
+ * common — Jaccard would give them 0.5, this gives 0.67. Nothing in common
+ * stays mildly positive (0.3): different choices are not incompatible ones.
+ * A missing answer is neutral (0.5), never worse than a real one.
  */
 function calculateSetOverlap(setA: string[], setB: string[]): number {
-  if (setA.length === 0 && setB.length === 0) return 0.5; // Both empty = neutral
-  if (setA.length === 0 || setB.length === 0) return 0.2; // One empty = slight positive (no conflict)
+  if (setA.length === 0 || setB.length === 0) return 0.5; // Missing answer = neutral
 
-  const normA = setA.map(s => s.toLowerCase().trim());
-  const normB = setB.map(s => s.toLowerCase().trim());
-  const intersection = normA.filter(s => normB.includes(s));
-  const union = new Set([...normA, ...normB]);
+  const normA = [...new Set(setA.map(s => s.toLowerCase().trim()))];
+  const normB = [...new Set(setB.map(s => s.toLowerCase().trim()))];
+  const shared = normA.filter(s => normB.includes(s)).length;
+  const overlap = shared / Math.min(normA.length, normB.length);
 
-  return intersection.length / union.size;
+  return 0.3 + 0.7 * overlap;
 }
 
 /**
@@ -879,13 +892,14 @@ function calculateTextKeywordOverlap(textA: string, textB: string): number {
   const kwA = extractKeywords(textA);
   const kwB = extractKeywords(textB);
 
-  if (kwA.size === 0 && kwB.size === 0) return 0.5;
-  if (kwA.size === 0 || kwB.size === 0) return 0.3;
+  if (kwA.size === 0 || kwB.size === 0) return 0.5;
 
-  const intersection = [...kwA].filter(w => kwB.has(w));
-  const union = new Set([...kwA, ...kwB]);
-
-  return intersection.length / union.size;
+  // Two people describing the same thing in their own words rarely share many
+  // exact words: raw Jaccard stays near 0 and used to score LOWER than leaving
+  // the answer blank (0.5). Different wording is not a disagreement, so text
+  // starts from the neutral 0.5 and shared keywords raise it (4+ shared → 1).
+  const shared = [...kwA].filter(w => kwB.has(w)).length;
+  return 0.5 + 0.5 * Math.min(1, shared / 4);
 }
 
 function truncate(text: string, maxLen = 50): string {

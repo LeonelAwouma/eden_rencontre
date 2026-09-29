@@ -353,6 +353,9 @@ export default function DashboardPage() {
 
   // Social
   const [discoverMembers, setDiscoverMembers] = useState<MemberProfile[]>([]);
+  // Liste complète (sexe opposé) avant classement : on reclasse toujours à partir
+  // d'elle, jamais de la liste déjà filtrée — sinon un profil écarté une fois ne revenait plus.
+  const discoverBaseRef = useRef<MemberProfile[]>([]);
   const [relations, setRelations] = useState<Record<string, { status: RelationStatus; requestId: string }>>({});
   const [incomingRequests, setIncomingRequests] = useState<FriendRequest[]>([]);
   const [socialLoading, setSocialLoading] = useState(false);
@@ -703,6 +706,7 @@ export default function DashboardPage() {
     ]);
     const opposite = user?.gender === "homme" ? "femme" : user?.gender === "femme" ? "homme" : null;
     const filtered = opposite ? members.filter((m) => m.gender === opposite) : members;
+    discoverBaseRef.current = filtered;
     setDiscoverMembers(user ? filterAndRankByReciprocalMatch({ ...user, questionnaire: questionnaireAnswers }, filtered) : filtered);
     setRelations(buildRelationMap(meId, friendships));
     setIncomingRequests(incoming);
@@ -935,8 +939,8 @@ export default function DashboardPage() {
   // Le questionnaire ("me") arrive après le premier classement des profils (loadSocial) : on
   // reclasse la liste déjà chargée dès que les réponses sont disponibles, sans tout recharger.
   useEffect(() => {
-    if (!user || discoverMembers.length === 0) return;
-    setDiscoverMembers((prev) => filterAndRankByReciprocalMatch({ ...user, questionnaire: questionnaireAnswers }, prev));
+    if (!user || discoverBaseRef.current.length === 0) return;
+    setDiscoverMembers(filterAndRankByReciprocalMatch({ ...user, questionnaire: questionnaireAnswers }, discoverBaseRef.current));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questionnaireAnswers]);
 
@@ -1808,11 +1812,12 @@ export default function DashboardPage() {
       case "Découvrir":
       case "Discover": {
         const q = discoverSearch.trim().toLowerCase();
-        const scoreOf = (m: MemberProfile) => (user ? computeDisplayMatch({ ...user, questionnaire: questionnaireAnswers }, m).score : 0);
+        // Pourcentage de compatibilité, ou null tant qu'il ne peut pas être calculé (questionnaire non rempli).
+        const scoreOf = (m: MemberProfile) => (user ? computeDisplayMatch({ ...user, questionnaire: questionnaireAnswers }, m).score : null);
         const discoverResults = discoverMembers.filter((m) => {
           if (q && !((m.name || "").toLowerCase().includes(q) || (m.city || "").toLowerCase().includes(q) || (m.country || "").toLowerCase().includes(q) || (m.profession || "").toLowerCase().includes(q))) return false;
           if (discoverFilter === "nearMe" && !(user?.country && m.country && user.country.toLowerCase() === m.country.toLowerCase())) return false;
-          if (discoverFilter === "highAffinity" && scoreOf(m) < 75) return false;
+          if (discoverFilter === "highAffinity" && (scoreOf(m) ?? 0) < 75) return false;
           if (discoverFilter === "verified" && !m.avatar_url) return false;
           return true;
         });

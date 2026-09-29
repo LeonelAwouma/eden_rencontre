@@ -78,8 +78,9 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Block non-admin API routes
-  if (pathname.startsWith("/api/admin/auth/login")) {
+  // Routes publiques de l'authentification admin : connexion et changement du
+  // mot de passe depuis la page de connexion (le mot de passe actuel fait foi).
+  if (pathname === "/api/admin/auth/login" || pathname === "/api/admin/auth/change-password") {
     return NextResponse.next();
   }
 

@@ -102,19 +102,119 @@ function getEnvAdminCredentials(): { email: string; password: string; name: stri
   };
 }
 
+// ── Credential check (shared by login and password change) ───
+// For a given email, an admin_users row is AUTHORITATIVE: once a password has
+// been set (or changed) in the database, the ADMIN_PASSWORD environment value
+// no longer opens that account. Without a row, the environment credentials
+// act as the initial password — which is how contact@gardenofalliance.com
+// first signs in, then changes its password from the login page.
+
+type AdminDbRow = {
+  id: string; email: string; password_hash: string; name: string; role: string;
+  is_active: boolean; created_at: string; last_login: string | null;
+};
+
+type CredentialCheck =
+  | { ok: true; source: "db"; row: AdminDbRow }
+  | { ok: true; source: "env"; name: string }
+  | { ok: false };
+
+async function findAdminRow(email: string): Promise<AdminDbRow | null> {
+  try {
+    const { data, error } = await getSupabaseAdmin()
+      .from("admin_users").select("*").eq("email", email).maybeSingle();
+    if (error) {
+      // Table absente (schéma admin non appliqué) : seul le mode variables d'environnement reste possible.
+      if (error.code !== "42P01" && error.code !== "PGRST205") console.error("[admin-auth] lecture admin_users :", error.message);
+      return null;
+    }
+    return (data as AdminDbRow) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+async function checkAdminCredentials(email: string, password: string): Promise<CredentialCheck> {
+  const row = await findAdminRow(email);
+  if (row) {
+    if (!row.is_active) return { ok: false };
+    return (await verifyPassword(password, row.password_hash)) ? { ok: true, source: "db", row } : { ok: false };
+  }
+  const envAdmin = getEnvAdminCredentials();
+  if (envAdmin && email === envAdmin.email && safeEqual(password, envAdmin.password)) {
+    return { ok: true, source: "env", name: envAdmin.name };
+  }
+  return { ok: false };
+}
+
+/** Comparaison en temps constant (évite de deviner le mot de passe à la durée de la réponse). */
+function safeEqual(a: string, b: string): boolean {
+  const ha = crypto.createHash("sha256").update(a).digest();
+  const hb = crypto.createHash("sha256").update(b).digest();
+  return crypto.timingSafeEqual(ha, hb);
+}
+
+// ── Password policy & change ─────────────────────────────────
+export const ADMIN_PASSWORD_MIN_LENGTH = 10;
+
+/** null si le nouveau mot de passe est acceptable, sinon le message à afficher. */
+export function validateNewAdminPassword(next: string, current: string): string | null {
+  if (next.length < ADMIN_PASSWORD_MIN_LENGTH) return `Le nouveau mot de passe doit contenir au moins ${ADMIN_PASSWORD_MIN_LENGTH} caractères.`;
+  if (!/[A-Za-zÀ-ÿ]/.test(next) || !/\d/.test(next)) return "Le nouveau mot de passe doit contenir des lettres et des chiffres.";
+  if (next === current) return "Le nouveau mot de passe doit être différent de l'actuel.";
+  return null;
+}
+
+/**
+ * Change le mot de passe d'un administrateur après vérification de l'actuel.
+ * Le mot de passe est enregistré haché (PBKDF2) dans admin_users ; pour le
+ * compte défini par variables d'environnement, la ligne est créée à ce moment-là
+ * et l'ancien mot de passe cesse aussitôt de fonctionner.
+ */
+export async function changeAdminPassword(
+  email: string,
+  currentPassword: string,
+  newPassword: string
+): Promise<{ ok: true; adminId: string } | { ok: false; error: string; badCredentials?: boolean }> {
+  const cleanEmail = email.toLowerCase().trim();
+  const check = await checkAdminCredentials(cleanEmail, currentPassword);
+  if (!check.ok) return { ok: false, error: "Adresse email ou mot de passe actuel incorrect.", badCredentials: true };
+
+  const policyError = validateNewAdminPassword(newPassword, currentPassword);
+  if (policyError) return { ok: false, error: policyError };
+
+  const db = getSupabaseAdmin();
+  const password_hash = await hashPassword(newPassword);
+  if (check.source === "db") {
+    const { error } = await db.from("admin_users").update({ password_hash }).eq("id", check.row.id);
+    if (error) return { ok: false, error: "Le mot de passe n'a pas pu être enregistré." };
+    return { ok: true, adminId: check.row.id };
+  }
+  const { data, error } = await db.from("admin_users")
+    .insert({ email: cleanEmail, password_hash, name: check.name, role: "super_admin", is_active: true })
+    .select("id").single();
+  if (error || !data) {
+    console.error("[admin-auth] création du compte admin :", error?.message);
+    return { ok: false, error: "Le mot de passe n'a pas pu être enregistré (table admin_users indisponible)." };
+  }
+  return { ok: true, adminId: data.id };
+}
+
 // ── Admin Login ──────────────────────────────────────────────
 // Supports TWO modes:
-// 1. Environment variables (ADMIN_EMAIL + ADMIN_PASSWORD) — simplest setup
-// 2. Database (admin_users table) — for multiple admins
+// 1. Database (admin_users table) — authoritative when a row exists for the email
+// 2. Environment variables (ADMIN_EMAIL + ADMIN_PASSWORD) — initial password
 export async function loginAdmin(
   email: string,
   password: string
 ): Promise<AdminAuthResult> {
   const cleanEmail = email.toLowerCase().trim();
+  const check = await checkAdminCredentials(cleanEmail, password);
+  if (!check.ok) return { ok: false, error: "Identifiants incorrects." };
 
-  // ── Mode 1: Check environment variable credentials first ──
+  // ── Mode 2: environment credentials (no database row yet for this email) ──
   const envAdmin = getEnvAdminCredentials();
-  if (envAdmin && cleanEmail === envAdmin.email && password === envAdmin.password) {
+  if (check.source === "env" && envAdmin) {
     const session: AdminSession = {
       adminId: "env-admin",
       email: envAdmin.email,
@@ -147,24 +247,10 @@ export async function loginAdmin(
     };
   }
 
-  // ── Mode 2: Check database admin_users table ──
+  // ── Mode 1: database account (password already verified above) ──
+  if (check.source !== "db") return { ok: false, error: "Identifiants incorrects." };
   const db = getSupabaseAdmin();
-
-  const { data: admin, error } = await db
-    .from("admin_users")
-    .select("*")
-    .eq("email", cleanEmail)
-    .eq("is_active", true)
-    .single();
-
-  if (error || !admin) {
-    return { ok: false, error: "Identifiants incorrects." };
-  }
-
-  const valid = await verifyPassword(password, admin.password_hash);
-  if (!valid) {
-    return { ok: false, error: "Identifiants incorrects." };
-  }
+  const admin = check.row;
 
   // Update last_login
   await db

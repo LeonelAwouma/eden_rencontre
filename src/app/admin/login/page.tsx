@@ -7,6 +7,8 @@ import { motion } from "framer-motion";
 import {
   AlertCircle,
   ArrowLeft,
+  CheckCircle2,
+  KeyRound,
   Eye,
   EyeOff,
   Loader2,
@@ -29,6 +31,9 @@ export default function AdminLoginPage() {
   const [capsLock, setCapsLock] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  // « login » : connexion ; « change » : modification du mot de passe sur la même carte.
+  const [mode, setMode] = useState<"login" | "change">("login");
+  const [notice, setNotice] = useState("");
   const errorRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
@@ -115,9 +120,33 @@ export default function AdminLoginPage() {
             </h1>
 
             <p className="text-[13.5px] text-[#6B746E] mt-2 leading-relaxed max-w-[300px]">
-              Identifiez-vous pour accéder à la console de modération et de gestion.
+              {mode === "login"
+                ? "Identifiez-vous pour accéder à la console de modération et de gestion."
+                : "Confirmez votre mot de passe actuel, puis choisissez le nouveau."}
             </p>
           </div>
+
+          {mode === "change" ? (
+            <ChangePasswordForm
+              initialEmail={email}
+              fieldClass={fieldClass}
+              onCancel={() => { setMode("login"); setError(""); }}
+              onDone={(changedEmail) => {
+                setMode("login");
+                setEmail(changedEmail);
+                setPassword("");
+                setError("");
+                setNotice("Mot de passe modifié. Connectez-vous avec le nouveau mot de passe.");
+              }}
+            />
+          ) : (
+          <>
+          {notice && (
+            <div role="status" className="flex items-start gap-2.5 mb-5 px-4 py-3 rounded-xl bg-[#486B46]/[0.07] border border-[#486B46]/25 text-[13px] text-[#2E4A36] font-medium">
+              <CheckCircle2 className="w-[17px] h-[17px] shrink-0 mt-px text-[#486B46]" aria-hidden="true" />
+              <span>{notice}</span>
+            </div>
+          )}
 
           {/* ── Formulaire ── */}
           <form onSubmit={handleSubmit}>
@@ -148,7 +177,7 @@ export default function AdminLoginPage() {
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="admin@gardenofalliance.com"
+                    placeholder="contact@gardenofalliance.com"
                     aria-invalid={error ? true : undefined}
                     aria-describedby={error ? "admin-login-error" : undefined}
                     className={fieldClass}
@@ -249,8 +278,19 @@ export default function AdminLoginPage() {
                   "Se connecter"
                 )}
               </button>
+
+              <button
+                type="button"
+                onClick={() => { setMode("change"); setError(""); setNotice(""); }}
+                className="w-full inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#486B46] hover:text-[#2E4A36] hover:underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#486B46] rounded-md py-1"
+              >
+                <KeyRound className="w-3.5 h-3.5" aria-hidden="true" />
+                Modifier le mot de passe
+              </button>
             </fieldset>
           </form>
+          </>
+          )}
 
           {/* ── Pied de carte ── */}
           <div className="mt-7 pt-5 border-t border-[#EFEDE8]">
@@ -273,5 +313,134 @@ export default function AdminLoginPage() {
         </div>
       </motion.div>
     </div>
+  );
+}
+
+/* ─────────────────────────── Modification du mot de passe ─────────────────────────── */
+
+const MIN_LENGTH = 10; // aligné sur ADMIN_PASSWORD_MIN_LENGTH (src/lib/admin-auth.ts)
+
+function ChangePasswordForm({ initialEmail, fieldClass, onCancel, onDone }: {
+  initialEmail: string;
+  fieldClass: string;
+  onCancel: () => void;
+  onDone: (email: string) => void;
+}) {
+  const [email, setEmail] = useState(initialEmail || "contact@gardenofalliance.com");
+  const [current, setCurrent] = useState("");
+  const [next, setNext] = useState("");
+  const [confirm, setConfirm] = useState("");
+  const [show, setShow] = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const errorRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (error) errorRef.current?.focus();
+  }, [error]);
+
+  // Règles affichées en direct ; le serveur les revérifie.
+  const rules = [
+    { ok: next.length >= MIN_LENGTH, label: `Au moins ${MIN_LENGTH} caractères` },
+    { ok: /[A-Za-zÀ-ÿ]/.test(next) && /\d/.test(next), label: "Des lettres et des chiffres" },
+    { ok: next.length > 0 && next !== current, label: "Différent du mot de passe actuel" },
+  ];
+  const mismatch = confirm.length > 0 && confirm !== next;
+
+  const submit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    if (rules.some((r) => !r.ok)) { setError("Le nouveau mot de passe ne respecte pas toutes les règles."); return; }
+    if (next !== confirm) { setError("La confirmation ne correspond pas au nouveau mot de passe."); return; }
+    setLoading(true);
+    try {
+      const res = await fetch("/api/admin/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, currentPassword: current, newPassword: next }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setError(data.error || "Le mot de passe n'a pas pu être modifié."); setLoading(false); return; }
+      onDone(email.trim().toLowerCase());
+    } catch {
+      setError("Connexion au serveur impossible. Réessayez dans un instant.");
+      setLoading(false);
+    }
+  };
+
+  const passwordField = (id: string, label: string, value: string, set: (v: string) => void, autoComplete: string, extra?: string) => (
+    <div>
+      <label htmlFor={id} className="block text-[12px] font-semibold text-[#2F2F2F] mb-2">{label}</label>
+      <div className="relative">
+        <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-[#6B746E]" aria-hidden="true" />
+        <input id={id} type={show ? "text" : "password"} autoComplete={autoComplete} required value={value}
+          onChange={(e) => set(e.target.value)} aria-describedby={extra}
+          aria-invalid={id === "admin-new-confirm" && mismatch ? true : undefined}
+          className={`${fieldClass} pr-4`} />
+      </div>
+    </div>
+  );
+
+  return (
+    <form onSubmit={submit}>
+      <fieldset disabled={loading} className="border-0 p-0 m-0 space-y-5">
+        <legend className="sr-only">Modifier le mot de passe administrateur</legend>
+
+        <div>
+          <label htmlFor="admin-change-email" className="block text-[12px] font-semibold text-[#2F2F2F] mb-2">Adresse email</label>
+          <div className="relative">
+            <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-[#6B746E]" aria-hidden="true" />
+            <input id="admin-change-email" type="email" inputMode="email" autoComplete="username" required
+              value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass} />
+          </div>
+        </div>
+
+        {passwordField("admin-current", "Mot de passe actuel", current, setCurrent, "current-password")}
+        {passwordField("admin-new", "Nouveau mot de passe", next, setNext, "new-password", "admin-new-rules")}
+
+        <ul id="admin-new-rules" className="-mt-2 space-y-1">
+          {rules.map((r) => (
+            <li key={r.label} className={`flex items-center gap-1.5 text-[12px] ${r.ok ? "text-[#486B46]" : "text-[#6B746E]"}`}>
+              <CheckCircle2 className={`w-3.5 h-3.5 shrink-0 ${r.ok ? "" : "opacity-35"}`} aria-hidden="true" />
+              {r.label}
+              <span className="sr-only">{r.ok ? " : respecté" : " : pas encore respecté"}</span>
+            </li>
+          ))}
+        </ul>
+
+        {passwordField("admin-new-confirm", "Confirmer le nouveau mot de passe", confirm, setConfirm, "new-password", mismatch ? "admin-mismatch" : undefined)}
+        {mismatch && (
+          <p id="admin-mismatch" className="-mt-3 flex items-center gap-1.5 text-[12px] font-medium text-[#B42318]">
+            <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /> Les deux saisies ne correspondent pas.
+          </p>
+        )}
+
+        <button type="button" onClick={() => setShow((v) => !v)} aria-pressed={show}
+          className="inline-flex items-center gap-1.5 text-[12px] font-medium text-[#6B746E] hover:text-[#2F2F2F] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#486B46] rounded-md">
+          {show ? <EyeOff className="w-3.5 h-3.5" aria-hidden="true" /> : <Eye className="w-3.5 h-3.5" aria-hidden="true" />}
+          {show ? "Masquer les mots de passe" : "Afficher les mots de passe"}
+        </button>
+
+        {error && (
+          <div ref={errorRef} tabIndex={-1} role="alert"
+            className="flex items-start gap-2.5 px-4 py-3 rounded-xl bg-[#B42318]/[0.06] border border-[#B42318]/25 text-[13px] text-[#B42318] font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-[#B42318]/40">
+            <AlertCircle className="w-[17px] h-[17px] shrink-0 mt-px" aria-hidden="true" />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <button type="submit" aria-busy={loading}
+          className="w-full h-12 rounded-xl bg-[#486B46] text-white text-[14.5px] font-semibold shadow-[0_4px_14px_-4px_rgba(72,107,70,0.45)] hover:bg-[#3D5C3C] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#486B46]/30 disabled:opacity-70 disabled:cursor-not-allowed transition-colors">
+          {loading
+            ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Enregistrement…</span>
+            : "Enregistrer le nouveau mot de passe"}
+        </button>
+
+        <button type="button" onClick={onCancel}
+          className="w-full inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#6B746E] hover:text-[#2F2F2F] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#486B46] rounded-md py-1">
+          <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" /> Retour à la connexion
+        </button>
+      </fieldset>
+    </form>
   );
 }

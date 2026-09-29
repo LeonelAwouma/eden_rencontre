@@ -11,7 +11,7 @@ import type {
   HardFilterResult,
   HardFilterFailure,
 } from "./types";
-import { COMPATIBLE_DENOMINATIONS, MIN_MATCH_AGE } from "./config";
+import { MIN_MATCH_AGE } from "./config";
 
 // ── MAIN HARD FILTER FUNCTION ────────────────────────────────────────────────
 
@@ -82,22 +82,11 @@ export function applyHardFilters(
     });
   }
 
-  // ── 3. DENOMINATION COMPATIBILITY ──────────────────────────────────────────
-  // Check if denominations are compatible (both directions)
-  const denomA = qa.spiritual.denomination.toLowerCase().trim();
-  const denomB = qb.spiritual.denomination.toLowerCase().trim();
-  const aCompatibleWithB = COMPATIBLE_DENOMINATIONS[denomA]?.includes(denomB) ?? false;
-  const bCompatibleWithA = COMPATIBLE_DENOMINATIONS[denomB]?.includes(denomA) ?? false;
-
-  if (!aCompatibleWithB && !bCompatibleWithA) {
-    failures.push({
-      field: "denomination",
-      reason: "Dénominations incompatibles",
-      user_a_value: qa.spiritual.denomination,
-      user_b_value: qb.spiritual.denomination,
-      severity: "critical",
-    });
-  }
+  // ── 3. DENOMINATION ────────────────────────────────────────────────────────
+  // No longer an elimination: it weighs on the spiritual score instead
+  // (denominationAffinity in config.ts). Before, a Pentecostal never saw a
+  // Baptist and a Catholic only saw Catholics — far too strict for a
+  // platform open to every Christian tradition.
 
   // ── 4. MARRIAGE DESIRE ─────────────────────────────────────────────────────
   // Both must want marriage (score >= 2 on a 1-5 scale)

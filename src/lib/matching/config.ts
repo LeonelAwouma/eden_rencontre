@@ -68,6 +68,27 @@ export const COMPATIBLE_DENOMINATIONS: Record<string, string[]> = {
   "other": ["other"],
 };
 
+// ── DENOMINATION AFFINITY (score, not a hard filter) ─────────────────────────
+// Denomination used to eliminate a candidate outright (a Pentecostal never saw
+// a Baptist, a Catholic only saw Catholics). It now weighs on the spiritual
+// score instead: closeness of tradition matters, but does not forbid a match.
+// Explicit spiritual non-negotiables still apply as hard filters.
+
+const PROTESTANT_FAMILY = new Set([
+  "pentecostal", "charismatic", "assembly_of_god", "evangelical", "baptist", "methodist", "adventist", "other",
+]);
+
+/** 0-100: same tradition 100, related 85, same Protestant/Evangelical family 65, otherwise 40. */
+export function denominationAffinity(a: string, b: string): number {
+  const x = (a || "").toLowerCase().trim();
+  const y = (b || "").toLowerCase().trim();
+  if (!x || !y) return 70; // not answered: neutral-positive
+  if (x === y) return 100;
+  if (COMPATIBLE_DENOMINATIONS[x]?.includes(y) || COMPATIBLE_DENOMINATIONS[y]?.includes(x)) return 85;
+  if (PROTESTANT_FAMILY.has(x) && PROTESTANT_FAMILY.has(y)) return 65;
+  return 40;
+}
+
 // ── MARRIAGE TIMELINE COMPATIBILITY ──────────────────────────────────────────
 // How compatible are different marriage timelines
 

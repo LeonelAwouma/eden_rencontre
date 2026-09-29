@@ -50,8 +50,7 @@ USER A + USER B
        ▼
 ┌──────────────────┐
 │  HARD FILTERS    │  ← Eliminates fundamental incompatibilities
-│  (Before scoring)│     - Christian identity
-│                  │     - Denomination compatibility
+│  (Before scoring)│     - Christian identity (explicit "no" only)
 │                  │     - Children preference
 │                  │     - Marriage desire
 │                  │     - Behavioral deal-breakers
@@ -71,12 +70,13 @@ USER A + USER B
          └────────┬─────────┘
                   │
          ┌────────┴─────────┐
-         │  MUTUAL SCORE    │  ← MIN(score_A→B, score_B→A)
-         │  = MIN(A,B)      │     Prevents one-sided compatibility
+         │  MUTUAL SCORE    │  ← 0.6 × weaker + 0.4 × stronger direction
+         │                  │     A one-sided match still costs, without capping everything
          └────────┬─────────┘
                   │
          ┌────────┴─────────┐
-         │  THRESHOLD CHECK │  ← Default: 70/100
+         │  RANK BY SCORE   │  ← "Découvrir" shows every non-excluded profile
+         │                  │     with its %, highest first (no 70 % cut-off)
          └────────┬─────────┘
                   │
          ┌────────┴─────────┐
@@ -123,8 +123,8 @@ Weights are stored in the database (`matching_config` table) and can be changed 
 
 These filters prevent matching even if everything else aligns:
 
-1. **Christian identity** — Both must be born-again Christians
-2. **Denomination compatibility** — Must be in compatible denomination groups
+1. **Christian identity** — Excluded only on an explicit "Non, mais en recherche" / "Autre" (an unanswered question never excludes)
+2. **Denomination** — *No longer a hard filter* (2026-09-28): it weighs 12 % of the spiritual score via `denominationAffinity` (same 100, related 85, same Protestant/Evangelical family 65, otherwise 40)
 3. **Children preference** — If one requires children and the other doesn't want them → NO MATCH
 4. **Marriage desire** — Both must desire marriage (score ≥ 2/5)
 5. **Gender** — Must be seeking opposite gender
@@ -143,8 +143,16 @@ The engine computes **two directional scores**:
 score_A_to_B = How well B matches A's expectations
 score_B_to_A = How well A matches B's expectations
 
-mutual_score = MIN(score_A_to_B, score_B_to_A)
+mutual_score = round(0.6 × min(A→B, B→A) + 0.4 × max(A→B, B→A))
 ```
+
+(Pure MIN until 2026-09-28: a single gap in one direction capped the whole score.)
+
+**Data sent to the browser.** The "Découvrir" list only receives, for each other
+member, the questionnaire fields the adapter reads (`MATCH_QUESTIONNAIRE_COLS` in
+`src/lib/social.ts`) — never the private "Santé" section nor debts. That list must
+cover every field `adapter.ts` reads: when it didn't (estChretien missing), every
+other member looked "not Christian" and the list was empty.
 
 This prevents scenarios where:
 - A highly spiritual user matches with a casual believer (one direction may score high, the other low)

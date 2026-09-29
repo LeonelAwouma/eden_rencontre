@@ -36,9 +36,11 @@ import { canOptimizeImage } from "@/lib/avatar";
 import { generateMessageIdeas } from "@/ai/flows/generate-message-ideas-flow";
 import { useToast } from "@/hooks/use-toast";
 import { getProfileById, startConversation, type MemberProfile } from "@/lib/chat";
-import { sendFriendRequest, getRelationStatus, recordProfileView, isFavorited, setFavorite, type RelationStatus } from "@/lib/social";
+import { sendFriendRequest, getRelationStatus, recordProfileView, isFavorited, setFavorite, getMemberForMatch, type RelationStatus } from "@/lib/social";
 import { getValue } from "@/lib/values";
-import { ageFromBirthDate } from "@/lib/auth";
+import { ageFromBirthDate, getSession } from "@/lib/auth";
+import { getMyOnboarding } from "@/lib/onboarding";
+import { computeDisplayMatch } from "@/lib/matching/adapter";
 import { PROFILES } from "@/lib/profiles";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
@@ -66,6 +68,8 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
   const [relation, setRelation] = useState<RelationStatus>("none");
   const [favorite, setFavoriteState] = useState(false);
   const [showImagePreview, setShowImagePreview] = useState(false);
+  // Pourcentage de compatibilité avec ce membre (null : pas calculable, questionnaire non rempli).
+  const [compat, setCompat] = useState<number | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -83,6 +87,13 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
       getRelationStatus(id).then((s) => { if (active) setRelation(s); });
       isFavorited(id).then((f) => { if (active) setFavoriteState(f); });
       recordProfileView(id); // records the visit (feeds the Visitors tab)
+      // Même calcul que la liste « Découvrir » : mes réponses + les siennes (champs non privés).
+      Promise.all([getSession(), getMyOnboarding(), getMemberForMatch(id)])
+        .then(([me, mine, other]) => {
+          if (!active || !me || !other) return;
+          setCompat(computeDisplayMatch({ ...me, questionnaire: mine.answers }, other).score);
+        })
+        .catch(() => {});
       return () => { active = false; };
     }
 
@@ -275,6 +286,12 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
                 </div>
 
                 <div className="flex flex-wrap gap-3 pt-2">
+                  {compat !== null && (
+                    <Badge className="bg-primary text-primary-foreground border-none rounded-xl px-4 py-2 font-bold text-sm inline-flex items-center gap-1.5"
+                      title={t("profileDetail.compatibilityHint")}>
+                      <Heart className="w-3.5 h-3.5 fill-current" /> {t("profileDetail.compatibility", { pct: compat })}
+                    </Badge>
+                  )}
                   {memberAge && (
                     <Badge className="bg-primary/15 text-primary border-none rounded-xl px-4 py-2 font-bold text-sm">{t("profileDetail.yearsOld", { age: memberAge })}</Badge>
                   )}

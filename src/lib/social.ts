@@ -24,13 +24,25 @@ export interface Friendship {
 const PROFILE_COLS =
   "id, name, pseudo, email, city, country, region, gender, birth_date, civil_status, profession, bio, marriage_vision, avatar_url, verification_status";
 
-// Champs du questionnaire utilisés par l'algorithme de matching (src/lib/matching.ts).
-// On ne sélectionne jamais les sections privées (santé, appréhensions) d'un AUTRE membre :
-// seuls ces champs précis sont extraits du JSONB `questionnaire`. Les 3 derniers sont les questions
-// "non négociables" de fin de questionnaire (choix structurés) — non marquées privées dans
-// onboarding.ts, donc destinées à être visibles par un partenaire potentiel.
-const MATCH_QUESTIONNAIRE_COLS =
-  "trancheAge:questionnaire->trancheAge, langues:questionnaire->langues, relationDieu:questionnaire->>relationDieu, roleDieu:questionnaire->>roleDieu, rythme:questionnaire->>rythme, organisation:questionnaire->>organisation, budget:questionnaire->>budget, enfants:questionnaire->>enfants, limitesSpirituelles:questionnaire->limitesSpirituelles, limitesComportementales:questionnaire->limitesComportementales, limitesRelationnelles:questionnaire->>limitesRelationnelles";
+// Champs du questionnaire d'un AUTRE membre lus par l'algorithme de matching
+// (src/lib/matching/adapter.ts) — et uniquement ceux-là : jamais la section privée
+// « Santé », ni les réponses libres que le calcul n'utilise pas, ni les dettes
+// (réponse sensible, traitée comme neutre pour tout le monde).
+//
+// Cette liste DOIT couvrir chaque champ lu par l'adaptateur. Auparavant il en
+// manquait la plupart (estChretien, denomination, priere, nbEnfants…) : chaque
+// autre membre était vu comme « non chrétien pratiquant » et éliminé, ce qui
+// rendait le matching beaucoup trop strict.
+const MATCH_TEXT_FIELDS = [
+  "estChretien", "denomination", "bapteme", "priere", "implication", "membreActif", "role",
+  "relationDieu", "roleDieu", "limitesRelationnelles", "rythmeRelation", "nbEnfants",
+  "educationEnfants", "femmeTravail", "dime", "rythme", "organisation", "hobbies",
+] as const;
+const MATCH_JSON_FIELDS = ["trancheAge", "langues", "attentes", "limitesSpirituelles", "limitesComportementales"] as const;
+const MATCH_QUESTIONNAIRE_COLS = [
+  ...MATCH_TEXT_FIELDS.map((f) => `${f}:questionnaire->>${f}`),
+  ...MATCH_JSON_FIELDS.map((f) => `${f}:questionnaire->${f}`),
+].join(", ");
 
 const FULL_PROFILE_COLS = `${PROFILE_COLS}, ${MATCH_QUESTIONNAIRE_COLS}`;
 
@@ -50,19 +62,13 @@ function mapRow(d: any): MemberProfile {
     marriageVision: d.marriage_vision,
     avatar_url: d.avatar_url,
     verification_status: d.verification_status,
-    questionnaire: {
-      trancheAge: d.trancheAge,
-      langues: d.langues,
-      relationDieu: d.relationDieu,
-      roleDieu: d.roleDieu,
-      rythme: d.rythme,
-      organisation: d.organisation,
-      budget: d.budget,
-      enfants: d.enfants,
-      limitesSpirituelles: d.limitesSpirituelles,
-      limitesComportementales: d.limitesComportementales,
-      limitesRelationnelles: d.limitesRelationnelles,
-    },
+    // Seules les réponses présentes : un questionnaire vide reste vide (le matching
+    // le reconnaît alors comme « pas encore rempli » au lieu d'inventer des réponses).
+    questionnaire: Object.fromEntries(
+      [...MATCH_TEXT_FIELDS, ...MATCH_JSON_FIELDS]
+        .map((f) => [f, d[f]] as const)
+        .filter(([, v]) => v !== null && v !== undefined && v !== "")
+    ),
   };
 }
 
@@ -72,6 +78,18 @@ function whenLabel(iso: string): string {
   } catch {
     return "";
   }
+}
+
+/**
+ * Un membre avec les réponses utilisées par le matching — mêmes champs, mêmes
+ * exclusions (santé, dettes) que la liste « Découvrir ». Sert au pourcentage de
+ * compatibilité affiché sur la page profil.
+ */
+export async function getMemberForMatch(id: string): Promise<MemberProfile | null> {
+  if (!supabase || !id) return null;
+  const { data, error } = await supabase.from("profiles").select(FULL_PROFILE_COLS).eq("id", id).maybeSingle();
+  if (error || !data) return null;
+  return mapRow(data);
 }
 
 // Tous les membres (hors soi-même).

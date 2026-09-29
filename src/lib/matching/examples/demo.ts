@@ -407,7 +407,7 @@ function runDemo() {
   console.log(`Samuel ↔ Grace:`);
   console.log(`  Score A→B: ${matchSG.score_a_to_b}`);
   console.log(`  Score B→A: ${matchSG.score_b_to_a}`);
-  console.log(`  Mutual:    ${matchSG.mutual_score} (MIN of both)`);
+  console.log(`  Mutual:    ${matchSG.mutual_score} (60 % weaker + 40 % stronger direction)`);
   console.log(`  Status:    ${matchSG.match_status}`);
   console.log(`  Level:     ${matchSG.match_level}`);
   console.log(`  Strengths: ${matchSG.combined_strengths.join(", ")}`);

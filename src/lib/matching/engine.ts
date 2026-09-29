@@ -115,7 +115,7 @@ export function findMatches(
  * This ensures that BOTH users' expectations are met:
  * - score_a_to_b: How well B matches A's expectations
  * - score_b_to_a: How well A matches B's expectations
- * - mutual_score: MIN of both (prevents one-sided compatibility)
+ * - mutual_score: 60 % the weaker direction + 40 % the stronger (a one-sided match still costs)
  */
 export function computeReciprocalMatch(
   userA: EdenUserProfile,
@@ -171,10 +171,10 @@ export function computeReciprocalMatch(
   const scoreAToB = compatAToB.overall_score;
   const scoreBToA = compatBToA.overall_score;
   
-  // Mutual score: MIN ensures both users' expectations are met
-  // We use MIN as the primary strategy, but also compute a weighted average
-  // for display purposes
-  const mutualScore = Math.min(scoreAToB, scoreBToA);
+  // Mutual score: weighted towards the weaker direction (60 % the lower score,
+  // 40 % the higher). A one-sided match still counts against the pair, but a
+  // single gap in one direction no longer caps the whole score as a pure MIN did.
+  const mutualScore = Math.round(0.6 * Math.min(scoreAToB, scoreBToA) + 0.4 * Math.max(scoreAToB, scoreBToA));
   
   // Determine match status based on mutual score
   const matchLevel = scoreToMatchLevel(mutualScore, config);

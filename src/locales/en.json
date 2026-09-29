@@ -1453,6 +1453,8 @@
     "profileNotFoundDesc": "This member does not exist or is no longer available.",
     "backToProfiles": "Back to profiles",
     "yearsOld": "{age} years old",
+    "compatibility": "{pct}% compatible",
+    "compatibilityHint": "Calculated from your questionnaire answers and theirs.",
     "demoProfileTitle": "Demo profile",
     "demoProfileFavDesc": "Favorites are only possible between real members.",
     "demoProfileFriendDesc": "Friend requests are only possible between real members.",

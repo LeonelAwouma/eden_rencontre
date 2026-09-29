@@ -141,11 +141,6 @@ const FEMME_TRAVAIL_MAP: Record<string, "career_focused" | "balanced" | "family_
   "Nous déciderons ensemble": "balanced", "We will decide together": "balanced",
 };
 
-const DETTES_MAP: Record<string, number> = {
-  "Non": 4, "No": 4,
-  "Je préfère ne pas répondre": 3, "Prefer not to answer": 3,
-};
-
 const FINANCIAL_STEWARDSHIP_MAP: Record<string, "tithe_first" | "budget_focused" | "generous_giving" | "saving_priority"> = {
   "Oui, fidèlement": "tithe_first", "Yes, faithfully": "tithe_first",
   "Occasionnellement": "generous_giving", "Occasionally": "generous_giving",
@@ -242,12 +237,17 @@ export function toEdenProfile(input: AdapterInput): EdenUserProfile {
     relationalBoundary == null;
 
   const nbEnfants = mapChoice(q.nbEnfants, NB_ENFANTS_MAP, { wants: true, count: null });
-  const financial_readiness = mapChoice(q.dettes, DETTES_MAP, NOT_COLLECTED.spiritual_readiness);
+  // Debts (q.dettes) are sensitive: they are never sent to other members'
+  // browsers (see MATCH_QUESTIONNAIRE_COLS in social.ts), so the same neutral
+  // value is used for everyone instead of comparing one real answer to a default.
+  const financial_readiness = NOT_COLLECTED.spiritual_readiness;
 
   const questionnaire: QuestionnaireResponse = {
     spiritual: {
-      is_christian: YES_VALUES.has(q.estChretien),
-      denomination: mapChoice(q.denomination, DENOMINATION_MAP, "pentecostal"),
+      // Unanswered = not excluded: only an explicit "Non, mais en recherche" / "Autre" rules someone out.
+      is_christian: q.estChretien == null || q.estChretien === "" || YES_VALUES.has(q.estChretien),
+      // Unanswered denomination stays empty → neutral affinity (see denominationAffinity), never a guess.
+      denomination: mapChoice(q.denomination, DENOMINATION_MAP, ""),
       faith_importance: prayer.n, // proxy: prayer frequency ≈ importance of faith
       church_involvement: churchInvolvement,
       prayer_frequency: prayer.freq,
@@ -368,10 +368,29 @@ export function toEdenProfile(input: AdapterInput): EdenUserProfile {
 
 // ── UI-FACING HELPERS ────────────────────────────────────────────────────────
 // These wrap the reciprocal engine (hard filters → two directional scores →
-// MIN → 70% threshold) behind the same shape the dashboard previously used.
+// mutual score) behind the same shape the dashboard previously used.
+
+/** Hard-filter failures that only mean "not enough data yet", not incompatibility. */
+const MISSING_DATA_FIELDS = new Set(["questionnaire", "onboarding"]);
+
+type MatchOutcome =
+  | { kind: "scored"; score: number; result: ReturnType<typeof checkMatch> }
+  | { kind: "unknown" }      // one of the two hasn't filled in the questionnaire yet
+  | { kind: "excluded" };    // a real deal-breaker (gender, faith, children, non-negotiables, age)
+
+function evaluate(meProfile: EdenUserProfile, other: AdapterInput): MatchOutcome {
+  const result = checkMatch(meProfile, toEdenProfile(other), DEFAULT_CONFIG);
+  const failures = [
+    ...result.compatibility_a_to_b.hard_filter_failures,
+    ...result.compatibility_b_to_a.hard_filter_failures,
+  ];
+  if (failures.length === 0) return { kind: "scored", score: result.mutual_score, result };
+  return failures.every((f) => MISSING_DATA_FIELDS.has(f.field)) ? { kind: "unknown" } : { kind: "excluded" };
+}
 
 export interface DisplayMatch {
-  score: number;
+  /** Compatibility percentage (0-100), or null when it cannot be computed yet (questionnaire not filled in). */
+  score: number | null;
   reasons: string[];
   discuss: string[];
   status: MatchStatus;
@@ -379,29 +398,35 @@ export interface DisplayMatch {
 
 /** Reciprocal, hard-filtered compatibility between the current user and one member. */
 export function computeDisplayMatch(me: AdapterInput, other: AdapterInput): DisplayMatch {
-  const result = checkMatch(toEdenProfile(me), toEdenProfile(other), DEFAULT_CONFIG);
-  const summary = generateMatchSummary(result);
+  const outcome = evaluate(toEdenProfile(me), other);
+  if (outcome.kind !== "scored") {
+    return { score: outcome.kind === "unknown" ? null : 0, reasons: [], discuss: [], status: "NOT_COMPATIBLE" };
+  }
+  const summary = generateMatchSummary(outcome.result);
   return { score: summary.score, reasons: summary.why, discuss: summary.discuss, status: summary.status as MatchStatus };
 }
 
 /**
- * Keeps only members who pass the engine's hard filters AND clear the
- * compatibility threshold (70% by default), sorted by mutual score descending.
- * This is what makes "Découvrir" show only profiles worth considering, instead
- * of every opposite-gender member tagged with a score.
+ * "Découvrir" list: every member who passes the real deal-breakers, sorted by
+ * compatibility percentage (highest first) — no longer only those above 70 %,
+ * which left many members with very few profiles, sometimes none. Members whose
+ * percentage can't be computed yet (questionnaire not filled in, on either side)
+ * are kept at the end instead of being hidden. `minScore` still allows a stricter
+ * list if needed.
  */
 export function filterAndRankByReciprocalMatch<T extends AdapterInput>(
   me: AdapterInput,
   members: T[],
-  minScore: number = DEFAULT_CONFIG.match_threshold
+  minScore = 0
 ): T[] {
   const meProfile = toEdenProfile(me);
-  const scored = members
-    .map((m) => {
-      const result = checkMatch(meProfile, toEdenProfile(m), DEFAULT_CONFIG);
-      return { m, score: result.mutual_score, status: result.match_status };
-    })
-    .filter((s) => s.status !== "NOT_COMPATIBLE" && s.score >= minScore);
+  const scored: { m: T; score: number }[] = [];
+  const unknown: T[] = [];
+  for (const m of members) {
+    const outcome = evaluate(meProfile, m);
+    if (outcome.kind === "scored" && outcome.score >= minScore) scored.push({ m, score: outcome.score });
+    else if (outcome.kind === "unknown") unknown.push(m);
+  }
   scored.sort((a, b) => b.score - a.score);
-  return scored.map((s) => s.m);
+  return [...scored.map((s) => s.m), ...unknown];
 }
