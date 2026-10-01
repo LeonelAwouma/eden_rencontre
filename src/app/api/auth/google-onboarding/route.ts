@@ -20,6 +20,7 @@ export async function POST(request: NextRequest) {
       charterCommitRespectful,
       charterAcceptFull,
       selfieImage,
+      livenessFrames,
       profilePhotos,
     } = body;
 
@@ -29,8 +30,14 @@ export async function POST(request: NextRequest) {
     // avatar is deliberately never used as a reference photo.
     let selfieVerified = false;
     let selfieVerificationScore = 0;
+    let selfieDetails: Record<string, unknown> | null = null;
     if (typeof selfieImage === "string" && selfieImage.startsWith("data:")) {
-      const result = await verifySelfieServer(selfieImage, (profilePhotos || []).filter(Boolean));
+      // Rafale de la preuve de présence : 10 petites images au plus. Absente ⇒ contrôle échoué.
+      const frames = Array.isArray(livenessFrames)
+        ? livenessFrames.filter((f: unknown): f is string => typeof f === "string" && f.startsWith("data:image/") && f.length < 400_000).slice(0, 10)
+        : [];
+      const result = await verifySelfieServer(selfieImage, (profilePhotos || []).filter(Boolean), frames);
+      selfieDetails = { photos: result.photos, liveness: result.liveness, reason: result.reason, checked_at: new Date().toISOString() };
       selfieVerified = result.verified;
       selfieVerificationScore = result.score;
     }
@@ -223,6 +230,13 @@ export async function POST(request: NextRequest) {
           { status: 500 }
         );
       }
+    }
+
+    // Détail de la vérification du selfie pour l'admin (photo par photo, présence).
+    // Colonne ajoutée par 20261002_selfie_verification.sql : sans elle, on continue.
+    if (selfieDetails) {
+      const { error: detailsError } = await db.from("profiles").update({ selfie_verification_details: selfieDetails }).eq("id", userId);
+      if (detailsError) console.warn("[selfie] détail non enregistré:", detailsError.message);
     }
 
     // Also update user metadata in Supabase Auth so mapSupabaseUser works correctly

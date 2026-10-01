@@ -1520,7 +1520,8 @@
     "error": "Unable to access the camera. Please try again.",
     "verifyError": "Error during verification. Please try again.",
     "photoUnsupported": "This photo format could not be read. Please choose a JPEG or PNG photo (for example a screenshot of the photo).",
-    "photosTooLarge": "Your photos are too large to be sent. Please replace them with other photos and try again."
+    "photosTooLarge": "Your photos are too large to be sent. Please replace them with other photos and try again.",
+    "livenessInstruction": "Slowly turn your head to the left, then to the right…"
   },
   "completeRegistration": {
     "pseudoTitle": "Choose your username",

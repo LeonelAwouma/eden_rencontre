@@ -23,7 +23,7 @@ import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
 import { cameraErrorKey } from "@/lib/camera-error";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
-import { fileToCompressedDataUrl, videoFrameToDataUrl, MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
+import { fileToCompressedDataUrl, videoFrameToDataUrl, captureLivenessBurst, MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
 import { useMobileContinueGate, MobileContinueGate } from "@/components/mobile-continue-gate";
 import {
   AlertTriangle,
@@ -159,6 +159,9 @@ export default function CompleteRegistrationPage() {
 
   // Selfie verification state
   const [selfieDataUri, setSelfieDataUri] = useState<string | null>(null);
+  // Preuve de présence : images prises pendant que la personne tourne la tête (jugées par le serveur).
+  const [livenessFrames, setLivenessFrames] = useState<string[]>([]);
+  const [burstProgress, setBurstProgress] = useState<number | null>(null);
   const [selfieVerifying, setSelfieVerifying] = useState(false);
   const [selfieResult, setSelfieResult] = useState<{ score: number; verified: boolean; reason: string } | null>(null);
   const [selfieError, setSelfieError] = useState<string | null>(null);
@@ -279,19 +282,25 @@ export default function CompleteRegistrationPage() {
     setCameraActive(false);
   };
 
-  const captureSelfie = () => {
-    if (!videoRef.current) return;
+  const captureSelfie = async () => {
+    if (!videoRef.current || burstProgress !== null) return;
     const video = videoRef.current;
-    // Tant que la vidéo n'a pas démarré, videoWidth vaut 0 : le canvas serait
-    // vide et toDataURL renverrait "data:," — une image invalide.
+    // Tant que la vidéo n'a pas démarré, videoWidth vaut 0 : image invalide.
     const dataUri = videoFrameToDataUrl(video);
     if (!dataUri) return;
+    // La personne tourne lentement la tête : une photo IA ou un écran tenus
+    // devant la caméra ne pivotent pas, le serveur le détecte.
+    setBurstProgress(0);
+    const frames = await captureLivenessBurst(video, { onProgress: (done, total) => setBurstProgress(done / total) });
+    setBurstProgress(null);
+    setLivenessFrames(frames);
     setSelfieDataUri(dataUri);
     stopCamera();
   };
 
   const retakeSelfie = () => {
     setSelfieDataUri(null);
+    setLivenessFrames([]);
     setSelfieResult(null);
     setSelfieError(null);
     startCamera();
@@ -372,6 +381,7 @@ export default function CompleteRegistrationPage() {
           charterCommitRespectful: formData.charterCommitRespectful,
           charterAcceptFull: formData.charterAcceptFull,
           selfieImage: selfieDataUri,
+          livenessFrames,
           profilePhotos: photos.filter(Boolean),
         });
       // Garde-fou : au-delà de 4,5 Mo, Vercel refuse la requête (413) sans réponse lisible.
@@ -1078,8 +1088,16 @@ export default function CompleteRegistrationPage() {
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="w-48 h-48 border-2 border-primary/50 rounded-full" />
                       </div>
+                      {burstProgress !== null && (
+                        <div className="absolute top-4 inset-x-4 rounded-2xl bg-black/65 backdrop-blur-md px-4 py-3 text-center text-white">
+                          <p className="text-sm font-bold">{t("camera.livenessInstruction")}</p>
+                          <div className="mt-2 h-1.5 rounded-full bg-white/25 overflow-hidden">
+                            <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.round(burstProgress * 100)}%` }} />
+                          </div>
+                        </div>
+                      )}
                       <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                        <Button onClick={captureSelfie} disabled={!videoPlaying}
+                        <Button onClick={captureSelfie} disabled={!videoPlaying || burstProgress !== null}
                           className="bg-primary text-primary-foreground font-bold rounded-full w-16 h-16 p-0 shadow-lg disabled:opacity-40">
                           <Camera className="w-6 h-6" />
                         </Button>

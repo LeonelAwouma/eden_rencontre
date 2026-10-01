@@ -1520,7 +1520,8 @@
     "error": "Impossible d'accéder à la caméra. Veuillez réessayer.",
     "verifyError": "Erreur lors de la vérification. Veuillez réessayer.",
     "photoUnsupported": "Ce format de photo n’a pas pu être lu. Choisissez une photo en JPEG ou PNG (par exemple une capture d’écran de la photo).",
-    "photosTooLarge": "Vos photos sont trop lourdes pour être envoyées. Remplacez-les par d’autres photos puis réessayez."
+    "photosTooLarge": "Vos photos sont trop lourdes pour être envoyées. Remplacez-les par d’autres photos puis réessayez.",
+    "livenessInstruction": "Tournez lentement la tête vers la gauche, puis vers la droite…"
   },
   "completeRegistration": {
     "pseudoTitle": "Choisissez votre pseudonyme",

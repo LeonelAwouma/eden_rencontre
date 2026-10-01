@@ -16,11 +16,15 @@
  * its bundled tfjs runtime touches browser-only globals that break Next.js's
  * server-side render pass if evaluated eagerly, and deferring the load also
  * keeps its ~1.3MB bundle out of the initial page load.
+ *
+ * Règles communes avec le serveur : src/lib/face-rules.ts (chaque photo doit
+ * correspondre au selfie). La preuve de présence (rafale tête qui tourne) est
+ * jugée par le serveur, qui seul fait foi.
  */
+import { PHOTO_MATCH_THRESHOLD, decide, distanceToScore, type PhotoCheck } from "./face-rules";
 type FaceApi = typeof import("@vladmandic/face-api/dist/face-api.esm.js");
 
 const MODEL_URL = "/models";
-const MATCH_THRESHOLD = 0.6; // face-api.js / dlib convention: distance < 0.6 ⇒ same person
 
 let loadPromise: Promise<FaceApi> | null = null;
 
@@ -49,16 +53,25 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
+const detectorOptions = (faceapi: FaceApi) => new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.5 });
+
 async function detectFace(faceapi: FaceApi, src: string) {
   const img = await loadImage(src);
   return faceapi
-    .detectSingleFace(img, new faceapi.TinyFaceDetectorOptions())
+    .detectSingleFace(img, detectorOptions(faceapi))
     .withFaceLandmarks()
     .withFaceDescriptor();
 }
 
-function distanceToScore(distance: number): number {
-  return Math.max(0, Math.min(100, Math.round((1 - distance / 1.2) * 100)));
+/** Visages significatifs de l'image (les visages minuscules à l'arrière-plan sont ignorés). */
+async function detectMainFaces(faceapi: FaceApi, src: string) {
+  const img = await loadImage(src);
+  const faces = await faceapi.detectAllFaces(img, detectorOptions(faceapi)).withFaceLandmarks().withFaceDescriptors();
+  const area = (f: (typeof faces)[number]) => f.detection.box.width * f.detection.box.height;
+  const sorted = [...faces].sort((a, b) => area(b) - area(a));
+  if (!sorted.length) return sorted;
+  const biggest = area(sorted[0]);
+  return sorted.filter((f) => area(f) >= biggest * 0.2);
 }
 
 export interface VerificationResult {
@@ -88,46 +101,35 @@ export async function verifySelfie(
   try {
     const faceapi = await ensureLoaded();
 
-    const selfieDetection = await detectFace(faceapi, selfieDataUri);
-    if (!selfieDetection) {
+    const selfieFaces = await detectMainFaces(faceapi, selfieDataUri);
+    if (selfieFaces.length === 0) {
       return { score: 0, verified: false, photoScores: [], reason: "Aucun visage détecté sur le selfie." };
     }
+    if (selfieFaces.length > 1) {
+      return { score: 0, verified: false, photoScores: [], reason: "Plusieurs visages sur le selfie : il doit vous montrer seul(e)." };
+    }
+    const selfie = selfieFaces[0];
 
-    const photoScores: number[] = [];
-    let bestDistance = Infinity;
-    let anyFaceFound = false;
-
-    for (const photoUrl of profilePhotoUrls) {
-      if (!photoUrl) continue;
+    // Chaque photo de profil doit vous montrer, seul(e), et correspondre au selfie.
+    const photos: PhotoCheck[] = [];
+    for (const photoUrl of profilePhotoUrls.filter(Boolean)) {
       try {
-        const photoDetection = await detectFace(faceapi, photoUrl);
-        if (!photoDetection) {
-          photoScores.push(0);
+        const faces = await detectMainFaces(faceapi, photoUrl);
+        if (faces.length === 0) { photos.push({ score: 0, issue: "no_face" }); continue; }
+        if (faces.length > 1) {
+          const best = Math.min(...faces.map((f) => faceapi.euclideanDistance(selfie.descriptor, f.descriptor)));
+          photos.push({ score: distanceToScore(best), issue: "several_faces" });
           continue;
         }
-        anyFaceFound = true;
-        const distance = faceapi.euclideanDistance(selfieDetection.descriptor, photoDetection.descriptor);
-        bestDistance = Math.min(bestDistance, distance);
-        photoScores.push(distanceToScore(distance));
+        const distance = faceapi.euclideanDistance(selfie.descriptor, faces[0].descriptor);
+        photos.push({ score: distanceToScore(distance), issue: distance <= PHOTO_MATCH_THRESHOLD ? null : "mismatch" });
       } catch {
-        photoScores.push(0);
+        photos.push({ score: 0, issue: "unreadable" });
       }
     }
 
-    if (photoScores.length === 0) {
-      return { score: 0, verified: false, photoScores: [], reason: "Aucune photo de profil disponible pour la comparaison." };
-    }
-    if (!anyFaceFound) {
-      return { score: 0, verified: false, photoScores, reason: "Aucun visage détecté sur les photos de profil." };
-    }
-
-    const verified = bestDistance <= MATCH_THRESHOLD;
-    const score = distanceToScore(bestDistance);
-    const reason = verified
-      ? "Vérification réussie."
-      : "Le visage du selfie ne correspond à aucune des photos de profil.";
-
-    return { score, verified, photoScores, reason };
+    const verdict = decide(photos, null);
+    return { ...verdict, photoScores: photos.map((p) => p.score) };
   } catch (error) {
     return {
       score: 0, verified: false, photoScores: [],

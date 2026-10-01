@@ -95,3 +95,23 @@ export function videoFrameToDataUrl(video: HTMLVideoElement, maxSide = PHOTO_MAX
   ctx.drawImage(video, 0, 0, w, h);
   return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
 }
+
+/**
+ * Preuve de présence : rafale d'images pendant que la personne tourne la tête.
+ * Le serveur vérifie sur ces images que c'est bien le même visage, sous des
+ * angles différents (src/lib/face-rules.ts). Petites images (480 px) : la
+ * rafale entière pèse ~300 Ko.
+ */
+export async function captureLivenessBurst(
+  video: HTMLVideoElement,
+  { frames = 8, intervalMs = 380, maxSide = 480, onProgress }: { frames?: number; intervalMs?: number; maxSide?: number; onProgress?: (done: number, total: number) => void } = {}
+): Promise<string[]> {
+  const out: string[] = [];
+  for (let i = 0; i < frames; i++) {
+    await new Promise((r) => setTimeout(r, intervalMs));
+    const frame = videoFrameToDataUrl(video, maxSide);
+    if (frame) out.push(frame);
+    onProgress?.(i + 1, frames);
+  }
+  return out;
+}

@@ -26,6 +26,7 @@ import { checkQuestionnaireCompletion } from "@/lib/onboarding";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { cn } from "@/lib/utils";
 import { EMAIL_NOT_SENT } from "@/lib/admin-email-warning";
+import { SelfieCheckPanel, type SelfieDetails } from "@/components/admin/selfie-check-panel";
 
 interface UserProfile {
   id: string;
@@ -52,6 +53,8 @@ interface UserProfile {
   selfie_verified: boolean;
   selfie_verification_score: number;
   selfie_url: string | null;
+  profile_photos?: string[] | null;
+  selfie_verification_details?: SelfieDetails | null;
   verification_status: string;
   verification_rejection_reason: string | null;
 }
@@ -312,6 +315,17 @@ export default function AdminUserDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main info */}
         <div className="lg:col-span-2 space-y-6">
+          {/* Vérification du selfie : le selfie face à chaque photo de profil */}
+          <SelfieCheckPanel
+            userId={user.id}
+            selfieUrl={user.selfie_url}
+            photos={(user.profile_photos || []).filter(Boolean)}
+            verified={user.selfie_verified}
+            score={user.selfie_verification_score}
+            details={user.selfie_verification_details ?? null}
+            onUpdated={(patch) => setUser((u) => (u ? { ...u, ...patch } : u))}
+          />
+
           {/* Profile card */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">
             <h2 className="text-sm font-bold text-gray-900 uppercase tracking-widest mb-5">
@@ -447,13 +461,22 @@ export default function AdminUserDetailPage() {
                     : `⏳ Non vérifié${user.selfie_url ? ` (Score : ${user.selfie_verification_score || 0}%)` : ""}`}
                 </p>
                 {user.selfie_url ? (
-                  <button
-                    onClick={() => setShowSelfieModal(true)}
-                    className="mt-2 w-20 h-20 rounded-lg overflow-hidden border border-gray-200 hover:border-[#2D5016] transition-colors"
-                    title="Voir le selfie pris à l'inscription"
-                  >
-                    <img src={user.selfie_url} alt="Selfie" className="w-full h-full object-cover" />
-                  </button>
+                  <div className="mt-2 flex flex-wrap gap-1.5">
+                    <button
+                      onClick={() => setShowSelfieModal(true)}
+                      className="w-16 h-16 rounded-lg overflow-hidden border-2 border-[#2D5016]"
+                      title="Voir le selfie pris à l'inscription"
+                    >
+                      <img src={user.selfie_url} alt="Selfie" className="w-full h-full object-cover" />
+                    </button>
+                    {/* Les 3 photos de profil, pour comparer d'un coup d'œil (comparaison détaillée dans le panneau « Vérification du selfie ») */}
+                    {(user.profile_photos || []).filter(Boolean).map((src, i) => (
+                      <a key={i} href={src} target="_blank" rel="noopener noreferrer" title={`Photo de profil ${i + 1}`}
+                        className="w-16 h-16 rounded-lg overflow-hidden border border-gray-200 hover:border-[#2D5016] transition-colors">
+                        <img src={src} alt={`Photo ${i + 1}`} className="w-full h-full object-cover" />
+                      </a>
+                    ))}
+                  </div>
                 ) : (
                   <p className="text-xs text-gray-400 mt-1">Aucun selfie enregistré.</p>
                 )}
