@@ -9,7 +9,7 @@ import {
   CheckCircle2, PencilLine, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
+import { ADMIN_FORMATION_PATH, ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -190,17 +190,12 @@ export default function AdminMediathequePage() {
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-4 mb-5">
         <div className="min-w-0">
           <h1 className="font-headline text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">Médiathèque</h1>
-          <p className="text-sm text-[#56615A] mt-1">Gérez les ressources de préparation au mariage</p>
+          <p className="text-sm text-[#56615A] mt-1">
+            Ressources de préparation au mariage. La formation « Bâtir sur le roc » est dans l&apos;onglet{" "}
+            <Link href={ADMIN_FORMATION_PATH} className="font-semibold text-primary hover:underline">Académie du mariage</Link>.
+          </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          <Link href="/admin/mediatheque/categories"
-            className="inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-border bg-white text-[13px] font-semibold text-foreground hover:bg-muted transition-colors">
-            <FolderTree className="w-4 h-4 text-primary" /> Catégories
-          </Link>
-          <Link href="/admin/mediatheque/learning-paths"
-            className="inline-flex items-center gap-2 h-10 px-3.5 rounded-xl border border-border bg-white text-[13px] font-semibold text-foreground hover:bg-muted transition-colors">
-            <GraduationCap className="w-4 h-4 text-primary" /> Parcours
-          </Link>
           <Link href="/admin/mediatheque/new"
             className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-white text-[13px] font-bold hover:bg-[#3A5A38] transition-colors shadow-sm">
             <Plus className="w-4 h-4" /> Ajouter une ressource
@@ -475,7 +470,7 @@ function StatusLabel({ status }: { status: ResourceStatus }) {
   );
 }
 
-/** Leçon de « Bâtir sur le roc » (slug batir-sur-le-roc-1-4-…) → aperçu admin /admin/formation/batir-sur-le-roc/1-4. */
+/** Leçon de « Bâtir sur le roc » (slug batir-sur-le-roc-1-4-…) → aperçu admin /admin/mediatheque/academie/batir-sur-le-roc/1-4. */
 function lessonPreviewHref(slug: string): string | null {
   const m = /^batir-sur-le-roc-(\d+)-(\d+)-/.exec(slug);
   return m ? `${ADMIN_LESSON_PREVIEW_PATH}/${m[1]}-${m[2]}` : null;

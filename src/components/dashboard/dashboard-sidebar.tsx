@@ -14,7 +14,7 @@ import {
   Heart,
   Crown,
   UserCircle,
-  LogOut, GraduationCap
+  LogOut, GraduationCap, MessagesSquare
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { avatarSrc } from "@/lib/avatar";
@@ -141,6 +141,11 @@ export function DashboardSidebar({
             </button>
           );
         })}
+        {/* Forum : échanges entre tous les membres sur les thèmes de l'Académie. */}
+        <Link href="/dashboard/forum" role="menuitem" className="sidebar-nav-item">
+          <MessagesSquare className="w-5 h-5 shrink-0" />
+          <span className="flex-1 text-left">{t("forum.title")}</span>
+        </Link>
         {/* Académie du mariage : une page à part entière (formation « Bâtir sur le roc »). */}
         <Link href="/dashboard/academie" role="menuitem" className="sidebar-nav-item">
           <GraduationCap className="w-5 h-5 shrink-0" />

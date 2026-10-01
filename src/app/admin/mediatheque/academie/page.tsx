@@ -1,16 +1,16 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, BookOpen, GraduationCap, Library, Clock } from "lucide-react";
+import { ArrowRight, BookOpen, GraduationCap, MessagesSquare, Clock } from "lucide-react";
 import { BATIR_SUR_LE_ROC, ALL_LESSONS } from "@/lib/formation/batir-sur-le-roc";
 import { ADMIN_LESSON_PREVIEW_PATH, ADMIN_STORY_PREVIEW_PATH } from "@/lib/formation/paths";
 import { STORIES, storyReadingMinutes } from "@/lib/formation/stories";
 import fr from "@/locales/fr.json";
 
-// Admin → Académie du mariage : même organisation que côté membre
+// Admin → Médiathèque → Académie du mariage : même organisation que côté membre
 // (/dashboard/academie) — la page de l'Académie présente « Bâtir sur le roc »,
 // qui mène à la liste des leçons, puis à l'aperçu de chaque leçon.
 
-export const metadata = { title: "Académie du mariage · Admin" };
+export const metadata = { title: "Académie du mariage · Médiathèque · Admin" };
 
 const PLUS_LOIN = [
   fr.academie.lessons.criteresEssentiels,
@@ -39,9 +39,9 @@ export default function AdminAcademyPage() {
             Même organisation que pour les membres : l&apos;Académie présente la formation, qui mène à la liste des leçons, puis les histoires.
           </p>
         </div>
-        <Link href="/admin/mediatheque/learning-paths"
+        <Link href="/admin/forum"
           className="inline-flex items-center gap-2 px-3.5 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-semibold text-[#56615A] hover:bg-[#F9FAFB] shrink-0">
-          <Library className="w-4 h-4" /> Parcours de la médiathèque
+          <MessagesSquare className="w-4 h-4" /> Discussions du forum
         </Link>
       </div>
 

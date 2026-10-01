@@ -13,6 +13,13 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // L'Académie admin vit désormais dans la médiathèque.
+  async redirects() {
+    return [
+      { source: '/admin/formation', destination: '/admin/mediatheque/academie', permanent: true },
+      { source: '/admin/formation/:path*', destination: '/admin/mediatheque/academie/:path*', permanent: true },
+    ];
+  },
   images: {
     remotePatterns: [
       {

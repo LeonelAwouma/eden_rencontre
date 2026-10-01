@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { ArrowLeft, Plus, Edit3, Trash2, Save, X, BookOpen, ImagePlus, Loader2, Eye } from "lucide-react";
+import { Plus, Edit3, Trash2, Save, X, BookOpen, ImagePlus, Loader2, Eye } from "lucide-react";
 import { ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
 import { cn } from "@/lib/utils";
 import { LEVEL_CONFIG } from "@/lib/mediatheque";
@@ -58,7 +58,6 @@ export default function LearningPathsPage() {
   return (<>
     
     <div className="max-w-4xl mx-auto">
-      <Link href="/admin/mediatheque" className="flex items-center gap-2 text-[13px] text-[#6B7280] hover:text-[#2F2F2F] mb-6 font-medium"><ArrowLeft className="w-4 h-4" /> Retour</Link>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[24px] font-bold text-[#1a1a1a]">Parcours de formation</h1>
         <button onClick={startNew} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#3A5A38]"><Plus className="w-4 h-4" /> Ajouter</button>

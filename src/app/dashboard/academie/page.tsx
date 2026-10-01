@@ -2,7 +2,7 @@
 
 import {
   Heart, MessageSquare, Wallet, Users, Flame, Briefcase, Church, Baby, Clock, Star, ScrollText,
-  ArrowLeft, ArrowRight, Mountain, Sprout, HeartHandshake, CheckCircle2, BookOpen,
+  ArrowLeft, ArrowRight, Mountain, Sprout, HeartHandshake, CheckCircle2, BookOpen, MessagesSquare,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -146,6 +146,17 @@ export default function AcademyIndexPage() {
             ))}
           </div>
         </section>
+
+        {/* ───── Forum ───── */}
+        <Link href="/dashboard/forum"
+          className="group flex items-center gap-4 rounded-3xl border border-border bg-card px-6 py-5 hover:border-primary/40 hover:shadow-[0_10px_32px_rgba(38,70,52,0.10)] transition-all">
+          <span className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0"><MessagesSquare className="w-6 h-6" /></span>
+          <span className="min-w-0 flex-1">
+            <span className="block font-headline text-[22px] font-bold text-foreground group-hover:text-primary transition-colors">{ui.forumTitle}</span>
+            <span className="block text-[14.5px] text-[#56615A]">{ui.forumAcademyDesc}</span>
+          </span>
+          <ArrowRight className="w-5 h-5 text-primary shrink-0 group-hover:translate-x-0.5 transition-transform" />
+        </Link>
 
         {/* ───── Pour aller plus loin (ancienne Académie) ───── */}
         <section aria-labelledby="complements" className="space-y-5">

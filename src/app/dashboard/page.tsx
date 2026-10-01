@@ -15,7 +15,7 @@ import {
   Pencil, Filter, ShieldCheck, CheckCircle2, LogOut, Camera,
   HeartHandshake, Hash, Share2, Video, CalendarDays, Church,
   Bookmark, ThumbsUp, Send, ArrowLeft, Smile, ImagePlus, Loader2,
-  Trash2, UserPlus, ChurchIcon, Sparkles, GraduationCap, Flag
+  Trash2, UserPlus, ChurchIcon, Sparkles, GraduationCap, Flag, MessagesSquare
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -1217,6 +1217,10 @@ export default function DashboardPage() {
                 {tabLabel(name)}
               </button>
             ))}
+            <Link href="/dashboard/forum" onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 text-2xl font-headline font-bold text-foreground/60 transition-colors">
+              <MessagesSquare className="w-6 h-6" style={{ color: "#486B46" }} /> {t("forum.title")}
+            </Link>
             <Link href="/dashboard/academie" onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 text-2xl font-headline font-bold text-foreground/60 transition-colors">
               <GraduationCap className="w-6 h-6" style={{ color: "#486B46" }} /> {t("dashboard.academyTitle")}
@@ -1764,11 +1768,12 @@ export default function DashboardPage() {
             </button>
           );
         })}
-        <Link href="/dashboard/academie"
+        {/* Forum en accès prioritaire ; l'Académie reste dans le menu et sur l'accueil. */}
+        <Link href="/dashboard/forum"
           className="flex flex-col items-center justify-center gap-1 w-full h-full transition-colors"
           style={{ color: "#777777" }}>
-          <GraduationCap className="w-5 h-5" />
-          <span className="text-[9px] font-bold uppercase tracking-wider">{t("dashboard.academyShort")}</span>
+          <MessagesSquare className="w-5 h-5" />
+          <span className="text-[9px] font-bold uppercase tracking-wider">{t("forum.title")}</span>
         </Link>
         <button onClick={() => setMobileMenuOpen(true)}
           className="flex flex-col items-center justify-center gap-1 w-full h-full transition-colors"

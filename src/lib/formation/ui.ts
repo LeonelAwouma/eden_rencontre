@@ -32,6 +32,10 @@ const fr = {
   continue: "Continuer",
   furtherTitle: "Pour aller plus loin",
   furtherDesc: "Des lectures courtes sur le discernement et la vie de couple.",
+  // Forum
+  forumTitle: "Échanger au forum",
+  forumAcademyDesc: "Partagez vos questions et vos découvertes avec les autres membres, thème par thème.",
+  forumLessonDesc: (number: string) => `Les membres en discutent : posez vos questions sur la leçon ${number} ou partagez ce qu'elle vous inspire.`,
   // Liste des leçons
   backToAcademy: "Académie du mariage",
   courseEyebrow: "Académie du mariage · Formation",
@@ -134,6 +138,10 @@ const en: FormationUi = {
   continue: "Continue",
   furtherTitle: "Going further",
   furtherDesc: "Short readings on discernment and life as a couple.",
+  // Forum
+  forumTitle: "Join the forum",
+  forumAcademyDesc: "Share your questions and insights with other members, theme by theme.",
+  forumLessonDesc: (number: string) => `Members are discussing it: ask your questions about lesson ${number} or share what it inspires in you.`,
   backToAcademy: "Marriage Academy",
   courseEyebrow: "Marriage Academy · Course",
   resume: "Resume",

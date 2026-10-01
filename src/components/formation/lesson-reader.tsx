@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Compass, Feather, HelpCircle,
-  Lightbulb, RotateCcw, Target, X, BookOpenCheck, Quote, Eye, ArrowDown,
+  Lightbulb, RotateCcw, Target, X, BookOpenCheck, Quote, Eye, ArrowDown, MessagesSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
@@ -443,6 +443,19 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
               </SectionTitle>
               <Reflection lesson={lesson} value={progress.reflections[lesson.slug] || ""} onSave={(t) => saveReflection(lesson.slug, t)} />
             </section>
+
+            {/* Forum : les discussions des membres sur cette leçon */}
+            {!preview && (
+              <Link href={`/dashboard/forum?lecon=${lesson.slug}`}
+                className="group flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 hover:border-primary/40 transition-colors">
+                <span className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0"><MessagesSquare className="w-5 h-5" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[15px] font-semibold text-foreground group-hover:text-primary">{ui.forumTitle}</span>
+                  <span className="block text-[13.5px] text-[#56615A]">{ui.forumLessonDesc(lesson.number)}</span>
+                </span>
+                <ArrowRight className="w-4 h-4 text-primary shrink-0" />
+              </Link>
+            )}
 
             {/* Fin de leçon — l'atteindre marque la leçon comme terminée */}
             <div ref={endRef} className="mt-14 rounded-3xl border border-border bg-card p-6 sm:p-8 text-center">

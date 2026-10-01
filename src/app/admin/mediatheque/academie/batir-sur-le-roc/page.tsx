@@ -23,6 +23,8 @@ export default function AdminBatirSurLeRocPage() {
       <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4 mb-6">
         <div>
           <nav aria-label="Fil d'Ariane" className="flex items-center gap-1 text-[12px] font-semibold text-[#56615A]">
+            <Link href="/admin/mediatheque" className="hover:text-[#486B46] hover:underline">Médiathèque</Link>
+            <ChevronRight className="w-3.5 h-3.5" />
             <Link href={ADMIN_FORMATION_PATH} className="hover:text-[#486B46] hover:underline">Académie du mariage</Link>
             <ChevronRight className="w-3.5 h-3.5" />
             <span className="text-[#486B46]">{f.title}</span>

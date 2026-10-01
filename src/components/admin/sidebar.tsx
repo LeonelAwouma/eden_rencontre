@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Users, CalendarDays, ShieldCheck, BarChart3,
   CreditCard, Settings, LogOut, X, Heart, MessageSquare,
   MessageCircle, PanelLeftClose, PanelLeftOpen, Video, Library,
-  BookOpen, Send, Keyboard, GraduationCap,
+  BookOpen, Send, Keyboard, MessagesSquare,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -34,7 +34,7 @@ const NAV_ITEMS = [
   { label: "Événements", href: "/admin/events", icon: CalendarDays, section: "content" },
   { label: "Visioconférences", href: "/admin/meets", icon: Video, section: "content" },
   { label: "Médiathèque", href: "/admin/mediatheque", icon: Library, section: "content" },
-  { label: "Académie", href: "/admin/formation", icon: GraduationCap, section: "content" },
+  { label: "Forum", href: "/admin/forum", icon: MessagesSquare, section: "content" },
   { label: "Blog", href: "/admin/blog", icon: BookOpen, section: "content" },
   { label: "Rapports", href: "/admin/reports", icon: ShieldCheck, section: "platform" },
   { label: "Paiements", href: "/admin/payments", icon: CreditCard, section: "platform" },
