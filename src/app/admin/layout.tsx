@@ -69,6 +69,30 @@ export default function AdminLayout({
       .finally(() => setLoading(false));
   }, [isLoginPage]);
 
+  // Session expirée pendant que la page reste ouverte : toute API admin répond
+  // 401. Plutôt que d'afficher des pages vides (et de relancer les
+  // notifications en boucle), on renvoie vers la connexion, puis ici.
+  useEffect(() => {
+    if (isLoginPage) return;
+    const originalFetch = window.fetch;
+    let redirecting = false;
+    window.fetch = async (...args) => {
+      const res = await originalFetch(...args);
+      if (res.status === 401 && !redirecting) {
+        const input = args[0];
+        const url = typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+        const path = new URL(url, window.location.origin).pathname;
+        if (path.startsWith("/api/admin/") && !path.startsWith("/api/admin/auth/")) {
+          redirecting = true;
+          const next = window.location.pathname + window.location.search;
+          window.location.assign(`/admin/login?expired=1&next=${encodeURIComponent(next)}`);
+        }
+      }
+      return res;
+    };
+    return () => { window.fetch = originalFetch; };
+  }, [isLoginPage]);
+
   // Close sidebar on route change (mobile)
   useEffect(() => {
     setSidebarOpen(false);

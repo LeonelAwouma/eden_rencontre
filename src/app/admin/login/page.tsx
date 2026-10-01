@@ -36,6 +36,16 @@ export default function AdminLoginPage() {
   const [notice, setNotice] = useState("");
   const errorRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
+  // Page à rouvrir après la connexion (session expirée en cours de travail).
+  const [nextPath, setNextPath] = useState("/admin/dashboard");
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const next = params.get("next") || "";
+    // Uniquement une page de l'admin, jamais un autre site (« //exemple.com »).
+    if (next.startsWith("/admin") && !next.startsWith("//") && !next.startsWith("/admin/login")) setNextPath(next);
+    if (params.get("expired") === "1") setNotice("Votre session a expiré. Reconnectez-vous pour reprendre là où vous en étiez.");
+  }, []);
 
   // Une erreur qui apparaît sous le formulaire passe inaperçue :
   // on y amène le focus pour que lecteurs d'écran et clavier la reçoivent.
@@ -67,7 +77,7 @@ export default function AdminLoginPage() {
         return;
       }
 
-      router.push("/admin/dashboard");
+      router.push(nextPath);
     } catch {
       setError("Connexion au serveur impossible. Réessayez dans un instant.");
       setLoading(false);
