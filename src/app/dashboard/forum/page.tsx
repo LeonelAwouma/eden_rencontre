@@ -1,323 +1,529 @@
 "use client";
 
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useSearchParams } from "next/navigation";
 import {
-  MessagesSquare, Plus, Search, X, Pin, Lock, MessageCircle, Loader2, GraduationCap, ArrowRight, Send,
+  ArrowLeft, Send, Smile, Sticker as StickerIcon, X, Pin, Lock, VolumeX, MoreVertical, Reply, Copy, Flag, Trash2,
+  ChevronDown, Loader2, MessagesSquare, GraduationCap, Info,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import { Monogram } from "@/components/ornaments";
 import { useFormationLocale } from "@/lib/formation/ui";
-import { SageLeaf } from "@/components/garden/botanical-svgs";
-import { ForumHeader, CategoryChip, AuthorLine } from "@/components/forum/forum-ui";
+import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
+import { ForumBubble, StickerPicker, QuoteBlock, DaySeparator } from "@/components/forum/forum-ui";
 import {
-  FORUM_CATEGORIES, FORUM_LIMITS, FORUM_UNAVAILABLE, listTopics, createTopic, type ForumTopic,
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
+  FORUM_CANNOT_POST, FORUM_LIMITS, FORUM_UNAVAILABLE, DEFAULT_FORUM_SETTINGS,
+  dayKey, dayLabel, timeLabel, messagePreview,
+  getForumSettings, getMemberCount, getMessage, getMyId, getMyMute, listMessages, sendForumMessage,
+  deleteForumMessage, reportForumMessage, subscribeForum,
+  type ForumMessage, type ForumSettings,
 } from "@/lib/forum";
-
-const PAGE_SIZE = 20;
 
 export default function ForumPage() {
   return (
     <Suspense fallback={null}>
-      <ForumIndex />
+      <ForumGroup />
     </Suspense>
   );
 }
 
-function ForumIndex() {
-  const { t } = useI18n();
-  const router = useRouter();
+function ForumGroup() {
+  const { t, locale } = useI18n();
+  const { toast } = useToast();
   const params = useSearchParams();
   const { find } = useFormationLocale();
 
-  // Filtres dans l'URL : une leçon peut renvoyer vers « ses » discussions
-  // (/dashboard/forum?lecon=1-3), et le lien se partage.
-  const category = params.get("categorie");
-  const lesson = params.get("lecon");
-  const [search, setSearch] = useState("");
-  const [debounced, setDebounced] = useState("");
-  const [topics, setTopics] = useState<ForumTopic[]>([]);
+  const [me, setMe] = useState<string | null>(null);
+  const [settings, setSettings] = useState<ForumSettings>(DEFAULT_FORUM_SETTINGS);
+  const [members, setMembers] = useState<number | null>(null);
+  const [mute, setMute] = useState<{ until: string | null } | null>(null);
+  const [messages, setMessages] = useState<ForumMessage[]>([]);
+  const [pinned, setPinned] = useState<ForumMessage | null>(null);
   const [hasMore, setHasMore] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [composing, setComposing] = useState(false);
+  const [state, setState] = useState<"loading" | "ready" | "unavailable" | "error">("loading");
+  const [loadingOlder, setLoadingOlder] = useState(false);
+
+  const [draft, setDraft] = useState("");
+  const [replyTo, setReplyTo] = useState<ForumMessage | null>(null);
+  const [panel, setPanel] = useState<"none" | "emoji" | "sticker">("none");
+  const [sending, setSending] = useState(false);
+  const [showInfo, setShowInfo] = useState(false);
+  const [unseen, setUnseen] = useState(0);
+  const [highlight, setHighlight] = useState<string | null>(null);
+  const [toDelete, setToDelete] = useState<ForumMessage | null>(null);
+  const [toReport, setToReport] = useState<ForumMessage | null>(null);
+  const [reportReason, setReportReason] = useState("");
+
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const atBottom = useRef(true);
+  const keepOffset = useRef<number | null>(null);
+
+  const stickerLabel = useCallback((id: string) => t(`forum.stickers.${id}`), [t]);
+  const nameOf = useCallback((m: { is_staff: boolean; author: { pseudo: string | null } | null }) =>
+    m.is_staff ? t("forum.staff") : m.author?.pseudo || t("forum.member"), [t]);
+
+  /* ── Chargement ── */
+  const loadPinned = useCallback(async (id: string | null) => {
+    setPinned(id ? await getMessage(id) : null);
+  }, []);
+
+  const refreshSettings = useCallback(async () => {
+    const res = await getForumSettings();
+    if (res.data) { setSettings(res.data); loadPinned(res.data.pinned_message_id); }
+  }, [loadPinned]);
 
   useEffect(() => {
-    const id = setTimeout(() => setDebounced(search.trim()), 300);
-    return () => clearTimeout(id);
-  }, [search]);
+    let cancelled = false;
+    (async () => {
+      const [myId, settingsRes, list] = await Promise.all([getMyId(), getForumSettings(), listMessages()]);
+      if (cancelled) return;
+      if (list.error || settingsRes.error) {
+        setState((list.error || settingsRes.error) === FORUM_UNAVAILABLE ? "unavailable" : "error");
+        return;
+      }
+      setMe(myId);
+      setSettings(settingsRes.data!);
+      setMessages(list.data!.messages);
+      setHasMore(list.data!.hasMore);
+      setState("ready");
+      loadPinned(settingsRes.data!.pinned_message_id);
+      getMemberCount().then((n) => !cancelled && setMembers(n));
+      if (myId) getMyMute(myId).then((m) => !cancelled && setMute(m));
+    })();
+    return () => { cancelled = true; };
+  }, [loadPinned]);
 
-  const setFilter = (key: "categorie" | "lecon", value: string | null) => {
-    const next = new URLSearchParams(params.toString());
-    if (value) next.set(key, value); else next.delete(key);
-    const qs = next.toString();
-    router.replace(qs ? `/dashboard/forum?${qs}` : "/dashboard/forum", { scroll: false });
-  };
-
-  const load = useCallback(async (offset: number) => {
-    const res = await listTopics({ category, lesson, search: debounced, offset, limit: PAGE_SIZE });
-    if (res.error) { setError(res.error); return; }
-    setError(null);
-    setTopics((prev) => (offset === 0 ? res.data!.topics : [...prev, ...res.data!.topics]));
-    setHasMore(res.data!.hasMore);
-  }, [category, lesson, debounced]);
-
+  // Arrivée depuis une leçon (/dashboard/forum?lecon=1-3) : message prérempli.
+  const lessonSlug = params.get("lecon");
   useEffect(() => {
-    setLoading(true);
-    load(0).finally(() => setLoading(false));
-  }, [load]);
+    if (!lessonSlug) return;
+    const l = find(lessonSlug)?.lesson;
+    if (l) setDraft((d) => d || t("forum.lessonPrefill", { number: l.number, title: l.title }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lessonSlug]);
 
-  const loadMore = async () => {
-    setLoadingMore(true);
-    await load(topics.length);
-    setLoadingMore(false);
+  /* ── Temps réel ── */
+  useEffect(() => {
+    if (state !== "ready") return;
+    return subscribeForum({
+      onInsert: async (id) => {
+        const m = await getMessage(id);
+        if (!m) return;
+        setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
+        if (!atBottom.current && m.author_id !== me) setUnseen((n) => n + 1);
+      },
+      onDelete: (id) => {
+        setMessages((prev) => prev.filter((x) => x.id !== id));
+        setPinned((p) => (p?.id === id ? null : p));
+      },
+      onSettings: refreshSettings,
+    });
+  }, [state, me, refreshSettings]);
+
+  /* ── Défilement ── */
+  const scrollToBottom = (smooth = false) => {
+    const el = scrollRef.current;
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: smooth ? "smooth" : "auto" });
+    setUnseen(0);
   };
 
-  const lessonInfo = lesson ? find(lesson) : null;
-  const filtered = !!(category || lesson || debounced);
+  useLayoutEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (keepOffset.current !== null) {
+      // Messages plus anciens ajoutés en haut : on garde la position de lecture.
+      el.scrollTop = el.scrollHeight - keepOffset.current;
+      keepOffset.current = null;
+    } else if (atBottom.current) {
+      el.scrollTop = el.scrollHeight;
+    }
+  }, [messages]);
+
+  const onScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    atBottom.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    if (atBottom.current) setUnseen(0);
+  };
+
+  const loadOlder = async () => {
+    if (!messages.length) return;
+    setLoadingOlder(true);
+    const res = await listMessages(messages[0].created_at);
+    setLoadingOlder(false);
+    if (!res.data) return;
+    const el = scrollRef.current;
+    if (el) keepOffset.current = el.scrollHeight - el.scrollTop;
+    setMessages((prev) => [...res.data!.messages, ...prev]);
+    setHasMore(res.data.hasMore);
+  };
+
+  const jumpTo = (id: string) => {
+    const node = document.getElementById(`msg-${id}`);
+    if (!node) { toast({ title: t("forum.quoteNotLoaded") }); return; }
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+    setHighlight(id);
+    setTimeout(() => setHighlight(null), 1600);
+  };
+
+  /* ── Envoi ── */
+  const canPost = !settings.admins_only && !mute;
+
+  const send = async (sticker?: string) => {
+    const body = sticker ? "" : draft;
+    if (!sticker && !body.trim()) return;
+    setSending(true);
+    const res = await sendForumMessage({ body, sticker: sticker || null, replyTo: replyTo?.id ?? null });
+    setSending(false);
+    if (res.error || !res.data) {
+      if (res.error === FORUM_CANNOT_POST) {
+        toast({ title: t("forum.cannotPostTitle"), description: t("forum.cannotPostDesc"), variant: "destructive" });
+        if (me) getMyMute(me).then(setMute);
+        refreshSettings();
+      } else {
+        toast({ title: t("forum.sendError"), variant: "destructive" });
+      }
+      return;
+    }
+    if (!sticker) setDraft("");
+    setReplyTo(null);
+    setPanel("none");
+    atBottom.current = true;
+    setMessages((prev) => (prev.some((x) => x.id === res.data!.id) ? prev : [...prev, res.data!]));
+  };
+
+  const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Entrée envoie, Maj+Entrée va à la ligne (comme WhatsApp Web).
+    if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
+      e.preventDefault();
+      if (!sending) send();
+    }
+  };
+
+  // Hauteur du champ ajustée au texte (jusqu'à 6 lignes environ).
+  useLayoutEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 148)}px`;
+  }, [draft]);
+
+  const insertEmoji = (char: string) => {
+    const el = inputRef.current;
+    if (!el) { setDraft((d) => d + char); return; }
+    const start = el.selectionStart ?? draft.length;
+    const end = el.selectionEnd ?? draft.length;
+    setDraft(draft.slice(0, start) + char + draft.slice(end));
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(start + char.length, start + char.length); });
+  };
+
+  /* ── Actions sur un message ── */
+  const startReply = (m: ForumMessage) => { setReplyTo(m); setPanel("none"); inputRef.current?.focus(); };
+
+  const copy = async (m: ForumMessage) => {
+    try { await navigator.clipboard.writeText(m.body); toast({ title: t("forum.copied") }); } catch { /* presse-papiers indisponible */ }
+  };
+
+  const confirmDelete = async () => {
+    const m = toDelete;
+    setToDelete(null);
+    if (!m) return;
+    const res = await deleteForumMessage(m.id);
+    if (res.error) { toast({ title: t("forum.deleteError"), variant: "destructive" }); return; }
+    setMessages((prev) => prev.filter((x) => x.id !== m.id));
+  };
+
+  const confirmReport = async () => {
+    const m = toReport;
+    setToReport(null);
+    if (!m) return;
+    const res = await reportForumMessage(m.id, reportReason);
+    setReportReason("");
+    if (res.error) { toast({ title: t("forum.reportError"), variant: "destructive" }); return; }
+    toast({ title: res.data === "already" ? t("forum.reportAlready") : t("forum.reportSent"), description: t("forum.reportSentDesc") });
+  };
+
+  /* ── Rendu ── */
+  const rows = useMemo(() => messages.map((m, i) => {
+    const prev = messages[i - 1];
+    const newDay = !prev || dayKey(prev.created_at) !== dayKey(m.created_at);
+    const sameAuthor = !!prev && !newDay && prev.author_id === m.author_id &&
+      new Date(m.created_at).getTime() - new Date(prev.created_at).getTime() < 5 * 60 * 1000;
+    return { m, newDay, showAuthor: !sameAuthor };
+  }), [messages]);
 
   return (
-    <div className="eden-public min-h-screen bg-background text-foreground">
-      <ForumHeader />
-
-      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-8 sm:py-12">
-        {/* Présentation */}
-        <section className="relative flex flex-col sm:flex-row sm:items-end sm:justify-between gap-5">
-          <span aria-hidden className="absolute -top-4 right-0 w-24 h-24 text-primary opacity-[0.10] pointer-events-none hidden sm:block">
-            <SageLeaf className="w-full h-full" />
-          </span>
-          <div className="max-w-2xl">
-            <p className="text-[12px] font-bold uppercase tracking-[0.22em] text-primary flex items-center gap-1.5">
-              <GraduationCap className="w-4 h-4" /> {t("forum.eyebrow")}
-            </p>
-            <h1 className="mt-2 font-headline text-[38px] sm:text-[48px] font-bold leading-[1.05] tracking-tight">{t("forum.title")}</h1>
-            <p className="mt-3 text-[16px] leading-relaxed text-[#3F4A43]">{t("forum.intro")}</p>
-          </div>
-          <button onClick={() => setComposing(true)}
-            className="relative inline-flex items-center justify-center gap-2 h-12 px-6 rounded-full bg-primary text-white text-[15px] font-bold hover:bg-primary/90 transition-colors shrink-0">
-            <Plus className="w-4 h-4" /> {t("forum.newTopic")}
+    <div className="eden-public h-[100dvh] flex flex-col bg-background text-foreground">
+      {/* En-tête du groupe */}
+      <header className="shrink-0 z-30 bg-background/95 backdrop-blur-xl border-b border-border">
+        <div className="max-w-4xl mx-auto px-2 sm:px-4 h-16 flex items-center gap-2">
+          <Link href="/dashboard" aria-label={t("academie.backToDashboard")}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-[#3F4A43] hover:bg-muted shrink-0">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <button onClick={() => setShowInfo((v) => !v)} className="flex items-center gap-3 min-w-0 flex-1 text-left rounded-xl px-1.5 py-1 hover:bg-muted/60">
+            <span className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+              <Monogram className="w-6 h-5" />
+            </span>
+            <span className="min-w-0">
+              <span className="block font-headline text-[17px] font-bold leading-tight truncate">{settings.name}</span>
+              <span className="block text-[12px] text-[#6B746E] truncate">
+                {members !== null ? t("forum.membersCount", { count: members }) : t("forum.groupSubtitle")}
+              </span>
+            </span>
           </button>
-        </section>
+          <button onClick={() => setShowInfo((v) => !v)} aria-label={t("forum.groupInfo")} aria-expanded={showInfo}
+            className="w-10 h-10 rounded-full flex items-center justify-center text-[#3F4A43] hover:bg-muted shrink-0">
+            <Info className="w-5 h-5" />
+          </button>
+        </div>
 
-        {composing && (
-          <NewTopicForm
-            defaultCategory={category}
-            defaultLesson={lesson}
-            onCancel={() => setComposing(false)}
-            onCreated={(id) => router.push(`/dashboard/forum/${id}`)}
-          />
+        {showInfo && (
+          <div className="max-w-4xl mx-auto px-4 pb-4">
+            <div className="rounded-2xl border border-border bg-card p-4 text-[14px] leading-relaxed text-[#3F4A43]">
+              {settings.description && <p>{settings.description}</p>}
+              <p className={cn("text-[13px] text-[#56615A]", settings.description && "mt-2")}>{t("forum.rules")}</p>
+              <Link href="/dashboard/academie" className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-primary hover:underline">
+                <GraduationCap className="w-4 h-4" /> {t("dashboard.academyTitle")}
+              </Link>
+            </div>
+          </div>
         )}
 
-        {/* Thématiques */}
-        <nav aria-label={t("forum.themes")} className="mt-8 -mx-4 px-4 sm:mx-0 sm:px-0 overflow-x-auto">
-          <div className="flex gap-2 pb-1 w-max sm:w-auto sm:flex-wrap">
-            <ThemeButton active={!category} onClick={() => setFilter("categorie", null)} label={t("forum.allThemes")} />
-            {FORUM_CATEGORIES.map((c) => (
-              <ThemeButton key={c.key} active={category === c.key} onClick={() => setFilter("categorie", c.key)}
-                label={t(c.labelKey)} icon={c.icon} />
-            ))}
-          </div>
-        </nav>
-
-        {/* Recherche + filtre leçon */}
-        <div className="mt-4 flex flex-col sm:flex-row gap-2.5 sm:items-center">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B746E]" />
-            <input type="search" value={search} onChange={(e) => setSearch(e.target.value)}
-              placeholder={t("forum.searchPlaceholder")} aria-label={t("forum.searchPlaceholder")}
-              className="w-full h-11 pl-10 pr-4 rounded-xl border border-border bg-card text-[14px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15" />
-          </div>
-          {lessonInfo && (
-            <span className="inline-flex items-center gap-2 h-11 pl-3.5 pr-2 rounded-xl border border-primary/30 bg-primary/5 text-[13px] font-semibold text-primary min-w-0">
-              <GraduationCap className="w-4 h-4 shrink-0" />
-              <span className="truncate">{t("forum.lessonFilter", { number: lessonInfo.lesson.number })}</span>
-              <button onClick={() => setFilter("lecon", null)} aria-label={t("forum.clearFilter")}
-                className="w-7 h-7 rounded-lg flex items-center justify-center hover:bg-primary/10"><X className="w-3.5 h-3.5" /></button>
+        {/* Message épinglé par l'équipe */}
+        {pinned && (
+          <button onClick={() => jumpTo(pinned.id)}
+            className="w-full border-t border-border bg-card/80 hover:bg-card transition-colors">
+            <span className="max-w-4xl mx-auto px-4 py-2 flex items-center gap-3 text-left">
+              <Pin className="w-4 h-4 text-primary shrink-0" />
+              <span className="min-w-0">
+                <span className="block text-[11.5px] font-bold text-primary">{t("forum.pinnedMessage")}</span>
+                <span className="block text-[13px] text-[#3F4A43] truncate">{messagePreview(pinned, pinned.sticker ? stickerLabel(pinned.sticker) : "")}</span>
+              </span>
             </span>
+          </button>
+        )}
+      </header>
+
+      {/* Fil des messages */}
+      <div ref={scrollRef} onScroll={onScroll}
+        className="relative flex-1 overflow-y-auto bg-[#F4F1EA] [background-image:radial-gradient(rgba(72,107,70,0.06)_1px,transparent_1px)] [background-size:18px_18px]">
+        <div className="max-w-4xl mx-auto px-3 sm:px-5 py-4">
+          {state === "loading" && (
+            <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>
+          )}
+
+          {(state === "unavailable" || state === "error") && (
+            <div className="mx-auto max-w-md mt-16 rounded-2xl border border-border bg-card px-6 py-10 text-center">
+              <MessagesSquare className="w-8 h-8 text-primary/60 mx-auto mb-3" />
+              <p className="text-[15px] font-semibold">{state === "unavailable" ? t("forum.unavailableTitle") : t("forum.loadError")}</p>
+              {state === "unavailable" && <p className="mt-1 text-[13.5px] text-[#56615A]">{t("forum.unavailableDesc")}</p>}
+            </div>
+          )}
+
+          {state === "ready" && (
+            <>
+              {hasMore ? (
+                <div className="flex justify-center mb-2">
+                  <button onClick={loadOlder} disabled={loadingOlder}
+                    className="inline-flex items-center gap-2 h-8 px-3.5 rounded-full bg-white border border-border text-[12.5px] font-semibold text-[#3F4A43] shadow-sm hover:border-primary/40 disabled:opacity-60">
+                    {loadingOlder && <Loader2 className="w-3.5 h-3.5 animate-spin" />} {t("forum.olderMessages")}
+                  </button>
+                </div>
+              ) : (
+                <div className="mx-auto max-w-sm text-center rounded-2xl bg-[#FFF8E6] border border-[#F0E2B6] px-4 py-3 text-[12.5px] text-[#6B5A2E] mb-2">
+                  {t("forum.welcomeNotice")}
+                </div>
+              )}
+
+              {messages.length === 0 && (
+                <div className="text-center py-14">
+                  <p className="font-headline text-[20px] font-bold">{t("forum.emptyTitle")}</p>
+                  <p className="mt-1 text-[14px] text-[#56615A]">{t("forum.emptyDesc")}</p>
+                </div>
+              )}
+
+              {rows.map(({ m, newDay, showAuthor }) => (
+                <div key={m.id}>
+                  {newDay && <DaySeparator label={dayLabel(m.created_at, locale, t("forum.today"), t("forum.yesterday"))} />}
+                  <ForumBubble
+                    m={m}
+                    mine={m.author_id === me}
+                    showAuthor={showAuthor || newDay}
+                    authorName={nameOf(m)}
+                    staffBadge={t("forum.staffBadge")}
+                    stickerLabel={stickerLabel}
+                    quoteAuthor={(q) => (q.is_staff ? t("forum.staff") : q.author?.pseudo || t("forum.member"))}
+                    unavailableQuote={t("forum.quoteUnavailable")}
+                    time={timeLabel(m.created_at, locale)}
+                    highlight={highlight === m.id}
+                    onQuoteClick={jumpTo}
+                    actions={
+                      <MessageMenu
+                        mine={m.author_id === me}
+                        canReply={canPost}
+                        hasText={!!m.body.trim()}
+                        onReply={() => startReply(m)}
+                        onCopy={() => copy(m)}
+                        onReport={() => setToReport(m)}
+                        onDelete={() => setToDelete(m)}
+                      />
+                    }
+                  />
+                </div>
+              ))}
+            </>
           )}
         </div>
 
-        {/* Sujets */}
-        <section className="mt-6" aria-live="polite">
-          {loading ? (
-            <div className="space-y-3" aria-busy="true">
-              {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="h-[120px] rounded-2xl border border-border bg-card animate-pulse" />
-              ))}
-            </div>
-          ) : error ? (
-            <div className="rounded-2xl border border-border bg-card px-6 py-12 text-center">
-              <MessagesSquare className="w-8 h-8 text-primary/60 mx-auto mb-3" />
-              <p className="text-[15px] font-semibold">{error === FORUM_UNAVAILABLE ? t("forum.unavailableTitle") : t("forum.loadError")}</p>
-              {error === FORUM_UNAVAILABLE && <p className="mt-1 text-[13.5px] text-[#56615A]">{t("forum.unavailableDesc")}</p>}
-            </div>
-          ) : topics.length === 0 ? (
-            <div className="relative rounded-3xl border border-border bg-card px-6 py-14 text-center overflow-hidden">
-              <MessagesSquare className="w-9 h-9 text-primary mx-auto mb-4" />
-              <p className="font-headline text-[22px] font-bold">{filtered ? t("forum.emptyFilteredTitle") : t("forum.emptyTitle")}</p>
-              <p className="mt-2 text-[14.5px] text-[#56615A] max-w-md mx-auto">{filtered ? t("forum.emptyFilteredDesc") : t("forum.emptyDesc")}</p>
-              <button onClick={() => setComposing(true)}
-                className="mt-6 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-primary text-white text-[14px] font-bold hover:bg-primary/90">
-                <Plus className="w-4 h-4" /> {t("forum.startDiscussion")}
-              </button>
-            </div>
-          ) : (
-            <>
-              <ul className="space-y-3">
-                {topics.map((topic) => <TopicCard key={topic.id} topic={topic} />)}
-              </ul>
-              {hasMore && (
-                <div className="mt-6 flex justify-center">
-                  <button onClick={loadMore} disabled={loadingMore}
-                    className="inline-flex items-center gap-2 h-11 px-5 rounded-full border border-border bg-card text-[14px] font-semibold hover:border-primary/40 disabled:opacity-60">
-                    {loadingMore && <Loader2 className="w-4 h-4 animate-spin" />} {t("forum.loadMore")}
-                  </button>
-                </div>
-              )}
-            </>
-          )}
-        </section>
+        {unseen > 0 && (
+          <button onClick={() => scrollToBottom(true)}
+            className="sticky bottom-3 left-full mr-4 float-right inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full bg-primary text-white text-[12.5px] font-bold shadow-lg">
+            <ChevronDown className="w-4 h-4" /> {t("forum.newMessages", { count: unseen })}
+          </button>
+        )}
+      </div>
 
-        {/* Lien vers l'Académie */}
-        <Link href="/dashboard/academie"
-          className="mt-12 group flex items-center gap-4 rounded-2xl border border-border bg-card px-5 py-4 hover:border-primary/40 transition-colors">
-          <span className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0"><GraduationCap className="w-5 h-5" /></span>
-          <span className="min-w-0 flex-1">
-            <span className="block text-[15px] font-semibold group-hover:text-primary">{t("dashboard.academyTitle")}</span>
-            <span className="block text-[13px] text-[#56615A]">{t("forum.academyLinkDesc")}</span>
-          </span>
-          <ArrowRight className="w-4 h-4 text-primary shrink-0" />
-        </Link>
-      </main>
+      {/* Compositeur */}
+      {state === "ready" && (
+        <footer className="shrink-0 border-t border-border bg-background pb-[env(safe-area-inset-bottom)]">
+          <div className="max-w-4xl mx-auto px-2 sm:px-4 py-2">
+            {!canPost ? (
+              <p className="flex items-center justify-center gap-2 py-3 text-center text-[13.5px] text-[#56615A]">
+                {settings.admins_only ? <Lock className="w-4 h-4 shrink-0" /> : <VolumeX className="w-4 h-4 shrink-0" />}
+                {settings.admins_only
+                  ? t("forum.adminsOnly")
+                  : mute?.until
+                    ? t("forum.mutedUntil", { date: new Date(mute.until).toLocaleString(locale, { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" }) })
+                    : t("forum.muted")}
+              </p>
+            ) : (
+              <>
+                {replyTo && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <Reply className="w-4 h-4 text-primary shrink-0" />
+                    <QuoteBlock className="flex-1 min-w-0" name={nameOf(replyTo)}
+                      text={messagePreview(replyTo, replyTo.sticker ? stickerLabel(replyTo.sticker) : "")} />
+                    <button onClick={() => setReplyTo(null)} aria-label={t("forum.cancelReply")}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B746E] hover:bg-muted shrink-0"><X className="w-4 h-4" /></button>
+                  </div>
+                )}
+
+                {panel !== "none" && (
+                  <div className="mb-2 rounded-2xl border border-border bg-card max-h-[240px] overflow-y-auto custom-scrollbar">
+                    {panel === "sticker" ? (
+                      <StickerPicker labelFor={stickerLabel} onPick={(id) => send(id)} />
+                    ) : (
+                      <div className="p-2 space-y-2">
+                        {EMOJI_CATEGORIES.map((g) => (
+                          <div key={g.category} className="flex flex-wrap gap-0.5">
+                            {g.emojis.map((e) => (
+                              <button key={e.char} type="button" onClick={() => insertEmoji(e.char)}
+                                className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-muted">
+                                <FluentEmoji char={e.char} url={e.url} className="w-6 h-6" />
+                              </button>
+                            ))}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <form onSubmit={(e) => { e.preventDefault(); send(); }} className="flex items-end gap-1.5">
+                  <button type="button" onClick={() => setPanel((p) => (p === "emoji" ? "none" : "emoji"))}
+                    aria-label={t("forum.emojis")} aria-pressed={panel === "emoji"}
+                    className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                      panel === "emoji" ? "bg-primary/10 text-primary" : "text-[#56615A] hover:bg-muted")}>
+                    <Smile className="w-5 h-5" />
+                  </button>
+                  <button type="button" onClick={() => setPanel((p) => (p === "sticker" ? "none" : "sticker"))}
+                    aria-label={t("forum.stickersLabel")} aria-pressed={panel === "sticker"}
+                    className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors",
+                      panel === "sticker" ? "bg-primary/10 text-primary" : "text-[#56615A] hover:bg-muted")}>
+                    <StickerIcon className="w-5 h-5" />
+                  </button>
+                  <textarea ref={inputRef} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKeyDown}
+                    rows={1} maxLength={FORUM_LIMITS.bodyMax} placeholder={t("forum.composerPlaceholder")} aria-label={t("forum.composerPlaceholder")}
+                    className="flex-1 min-w-0 resize-none rounded-[22px] border border-border bg-card px-4 py-2.5 text-[15px] leading-snug outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 max-h-[148px]" />
+                  <button type="submit" disabled={!draft.trim() || sending} aria-label={t("forum.send")}
+                    className="w-11 h-11 rounded-full bg-primary text-white flex items-center justify-center shrink-0 hover:bg-primary/90 disabled:opacity-40 transition-colors">
+                    {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                  </button>
+                </form>
+              </>
+            )}
+          </div>
+        </footer>
+      )}
+
+      <AlertDialog open={!!toDelete} onOpenChange={(o) => { if (!o) setToDelete(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("forum.deleteTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("forum.deleteDesc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("forum.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-white hover:bg-destructive/90">{t("forum.delete")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!toReport} onOpenChange={(o) => { if (!o) { setToReport(null); setReportReason(""); } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{t("forum.reportTitle")}</AlertDialogTitle>
+            <AlertDialogDescription>{t("forum.reportDesc")}</AlertDialogDescription>
+          </AlertDialogHeader>
+          <textarea value={reportReason} onChange={(e) => setReportReason(e.target.value)} rows={3} maxLength={FORUM_LIMITS.reportMax}
+            placeholder={t("forum.reportPlaceholder")} aria-label={t("forum.reportPlaceholder")}
+            className="w-full rounded-xl border border-border bg-background px-3.5 py-3 text-[14px] outline-none focus:border-primary resize-none" />
+          <AlertDialogFooter>
+            <AlertDialogCancel>{t("forum.cancel")}</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmReport}>{t("forum.report")}</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
 
-function ThemeButton({ active, onClick, label, icon: Icon }: {
-  active: boolean; onClick: () => void; label: string; icon?: typeof MessagesSquare;
-}) {
-  return (
-    <button onClick={onClick} aria-pressed={active}
-      className={cn(
-        "inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full border text-[13px] font-semibold whitespace-nowrap transition-colors",
-        active ? "bg-primary text-white border-primary" : "bg-card text-[#3F4A43] border-border hover:border-primary/40"
-      )}>
-      {Icon && <Icon className="w-3.5 h-3.5" />} {label}
-    </button>
-  );
-}
-
-function TopicCard({ topic }: { topic: ForumTopic }) {
-  const { t } = useI18n();
-  const { find } = useFormationLocale();
-  const lesson = topic.lesson_slug ? find(topic.lesson_slug)?.lesson : null;
-  return (
-    <li>
-      <Link href={`/dashboard/forum/${topic.id}`}
-        className={cn(
-          "group block rounded-2xl border bg-card px-5 py-4 hover:shadow-[0_8px_28px_rgba(38,70,52,0.08)] hover:border-primary/40 transition-all",
-          topic.is_pinned ? "border-primary/30" : "border-border"
-        )}>
-        <span className="flex flex-wrap items-center gap-1.5">
-          {topic.is_pinned && (
-            <span className="inline-flex items-center gap-1 h-6 px-2 rounded-full bg-primary text-white text-[11px] font-bold"><Pin className="w-3 h-3" /> {t("forum.pinned")}</span>
-          )}
-          <CategoryChip category={topic.category} />
-          {lesson && (
-            <span className="inline-flex items-center gap-1 h-6 px-2.5 rounded-full border border-border text-[11.5px] font-semibold text-[#3F4A43]">
-              <GraduationCap className="w-3.5 h-3.5 text-primary" /> {t("forum.lessonShort", { number: lesson.number })}
-            </span>
-          )}
-          {topic.is_locked && <Lock className="w-3.5 h-3.5 text-[#6B746E]" aria-label={t("forum.locked")} />}
-        </span>
-        <span className="mt-2 block font-headline text-[19px] sm:text-[20px] font-bold leading-snug group-hover:text-primary transition-colors">{topic.title}</span>
-        <span className="mt-1 block text-[14px] text-[#56615A] line-clamp-2">{topic.body}</span>
-        <span className="mt-3 flex items-center justify-between gap-3">
-          <AuthorLine author={topic.author} isStaff={topic.is_staff} date={topic.created_at} size="sm" />
-          <span className="inline-flex items-center gap-1.5 text-[13px] font-semibold text-[#3F4A43] shrink-0">
-            <MessageCircle className="w-4 h-4 text-primary" /> {topic.reply_count}
-            <span className="hidden sm:inline font-normal text-[#6B746E]">{t(topic.reply_count > 1 ? "forum.repliesMany" : "forum.repliesOne")}</span>
-          </span>
-        </span>
-      </Link>
-    </li>
-  );
-}
-
-function NewTopicForm({ defaultCategory, defaultLesson, onCancel, onCreated }: {
-  defaultCategory: string | null; defaultLesson: string | null; onCancel: () => void; onCreated: (id: string) => void;
+function MessageMenu({ mine, canReply, hasText, onReply, onCopy, onReport, onDelete }: {
+  mine: boolean; canReply: boolean; hasText: boolean;
+  onReply: () => void; onCopy: () => void; onReport: () => void; onDelete: () => void;
 }) {
   const { t } = useI18n();
-  const { allLessons } = useFormationLocale();
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
-  const [category, setCategory] = useState(defaultCategory || (defaultLesson ? "batir-sur-le-roc" : "general"));
-  const [lesson, setLesson] = useState(defaultLesson || "");
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const valid = title.trim().length >= FORUM_LIMITS.titleMin && body.trim().length > 0;
-
-  const submit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!valid) return;
-    setSaving(true);
-    setError(null);
-    const res = await createTopic({ category, lesson_slug: lesson || null, title, body });
-    setSaving(false);
-    if (res.error) {
-      setError(res.error === FORUM_UNAVAILABLE ? t("forum.unavailableTitle") : t("forum.publishError"));
-      return;
-    }
-    onCreated(res.data!);
-  };
-
-  const field = "w-full rounded-xl border border-border bg-background px-3.5 text-[14px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/15";
-
   return (
-    <form onSubmit={submit} className="mt-6 rounded-2xl border border-primary/30 bg-card p-5 sm:p-6 space-y-4 shadow-[0_8px_28px_rgba(38,70,52,0.08)]">
-      <div className="flex items-center justify-between">
-        <h2 className="font-headline text-[20px] font-bold">{t("forum.newTopic")}</h2>
-        <button type="button" onClick={onCancel} aria-label={t("forum.cancel")} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#6B746E] hover:bg-muted"><X className="w-4 h-4" /></button>
-      </div>
-      <div>
-        <label htmlFor="forum-title" className="block text-[13px] font-semibold mb-1.5">{t("forum.fieldTitle")}</label>
-        <input id="forum-title" value={title} onChange={(e) => setTitle(e.target.value)} maxLength={FORUM_LIMITS.titleMax}
-          placeholder={t("forum.fieldTitlePlaceholder")} className={cn(field, "h-11")} autoFocus />
-      </div>
-      <div className="grid sm:grid-cols-2 gap-3">
-        <div>
-          <label htmlFor="forum-category" className="block text-[13px] font-semibold mb-1.5">{t("forum.fieldTheme")}</label>
-          <select id="forum-category" value={category} onChange={(e) => setCategory(e.target.value)} className={cn(field, "h-11")}>
-            {FORUM_CATEGORIES.map((c) => <option key={c.key} value={c.key}>{t(c.labelKey)}</option>)}
-          </select>
-        </div>
-        <div>
-          <label htmlFor="forum-lesson" className="block text-[13px] font-semibold mb-1.5">{t("forum.fieldLesson")}</label>
-          <select id="forum-lesson" value={lesson} onChange={(e) => setLesson(e.target.value)} className={cn(field, "h-11")}>
-            <option value="">{t("forum.noLesson")}</option>
-            {allLessons.map(({ lesson: l }) => (
-              <option key={l.slug} value={l.slug}>{t("forum.lessonOption", { number: l.number, title: l.title })}</option>
-            ))}
-          </select>
-        </div>
-      </div>
-      <div>
-        <label htmlFor="forum-body" className="block text-[13px] font-semibold mb-1.5">{t("forum.fieldBody")}</label>
-        <textarea id="forum-body" value={body} onChange={(e) => setBody(e.target.value)} maxLength={FORUM_LIMITS.bodyMax} rows={6}
-          placeholder={t("forum.fieldBodyPlaceholder")} className={cn(field, "py-3 resize-y min-h-[140px]")} />
-        <p className="mt-1.5 text-[12px] text-[#6B746E]">{t("forum.charter")}</p>
-      </div>
-      {error && <p role="alert" className="text-[13px] font-medium text-destructive">{error}</p>}
-      <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2">
-        <button type="button" onClick={onCancel} className="h-11 px-5 rounded-full text-[14px] font-semibold text-[#3F4A43] hover:bg-muted">{t("forum.cancel")}</button>
-        <button type="submit" disabled={!valid || saving}
-          className="inline-flex items-center justify-center gap-2 h-11 px-6 rounded-full bg-primary text-white text-[14px] font-bold hover:bg-primary/90 disabled:opacity-50">
-          {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />} {t("forum.publish")}
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <button aria-label={t("forum.messageActions")}
+          className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B746E] hover:bg-white/80 hover:text-foreground">
+          <MoreVertical className="w-4 h-4" />
         </button>
-      </div>
-    </form>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align={mine ? "end" : "start"} className="w-44">
+        {canReply && <DropdownMenuItem onSelect={onReply}><Reply className="w-4 h-4 mr-2" /> {t("forum.reply")}</DropdownMenuItem>}
+        {hasText && <DropdownMenuItem onSelect={onCopy}><Copy className="w-4 h-4 mr-2" /> {t("forum.copy")}</DropdownMenuItem>}
+        {mine ? (
+          <DropdownMenuItem onSelect={onDelete} className="text-destructive focus:text-destructive">
+            <Trash2 className="w-4 h-4 mr-2" /> {t("forum.delete")}
+          </DropdownMenuItem>
+        ) : (
+          <DropdownMenuItem onSelect={onReport}><Flag className="w-4 h-4 mr-2" /> {t("forum.report")}</DropdownMenuItem>
+        )}
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

@@ -1,45 +1,54 @@
-// Forum de l'Académie du mariage — définitions communes à l'espace membre
-// (/dashboard/forum) et à l'admin (/admin/forum). Aucune dépendance au client
-// Supabase : importable côté serveur comme côté navigateur.
+// Forum de l'Académie — un groupe de discussion unique (façon groupe WhatsApp).
+// Définitions communes à l'espace membre (/dashboard/forum) et à l'admin
+// (/admin/forum). Aucune dépendance au client Supabase : importable côté
+// serveur comme côté navigateur.
 
-import {
-  Mountain, BookOpen, Church, MessageSquare, Wallet, Users, Flame, Briefcase, Heart, Baby, Clock,
-  Sprout, HeartHandshake, MessagesSquare, type LucideIcon,
-} from "lucide-react";
+/* ─────────────────────────────── Stickers ─────────────────────────────── */
 
-/**
- * Thématiques du forum : la formation « Bâtir sur le roc », les histoires,
- * puis les thèmes de l'Académie (mêmes slugs que academie.themes.* dans les
- * fichiers de langue), et un espace général.
- * `labelKey` : clé i18n du libellé.
- */
-export const FORUM_CATEGORIES: { key: string; icon: LucideIcon; labelKey: string }[] = [
-  { key: "batir-sur-le-roc", icon: Mountain, labelKey: "forum.categories.batirSurLeRoc" },
-  { key: "histoires", icon: BookOpen, labelKey: "forum.categories.histoires" },
-  { key: "vision-biblique", icon: Church, labelKey: "academie.themes.vision-biblique.title" },
-  { key: "communication", icon: MessageSquare, labelKey: "academie.themes.communication.title" },
-  { key: "finances", icon: Wallet, labelKey: "academie.themes.finances.title" },
-  { key: "belle-famille", icon: Users, labelKey: "academie.themes.belle-famille.title" },
-  { key: "intimite", icon: Flame, labelKey: "academie.themes.intimite.title" },
-  { key: "roles", icon: Briefcase, labelKey: "academie.themes.roles.title" },
-  { key: "vie-spirituelle", icon: Heart, labelKey: "academie.themes.vie-spirituelle.title" },
-  { key: "enfants", icon: Baby, labelKey: "academie.themes.enfants.title" },
-  { key: "temps-loisirs", icon: Clock, labelKey: "academie.themes.temps-loisirs.title" },
-  { key: "celibat-foi", icon: Sprout, labelKey: "academie.themes.celibat-foi.title" },
-  { key: "conflits-bibliques", icon: HeartHandshake, labelKey: "academie.themes.conflits-bibliques.title" },
-  { key: "general", icon: MessagesSquare, labelKey: "forum.categories.general" },
-];
+const FLUENT_BASE = "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets";
 
-export const FORUM_CATEGORY_KEYS = new Set(FORUM_CATEGORIES.map((c) => c.key));
-
-export function forumCategory(key: string | null | undefined) {
-  return FORUM_CATEGORIES.find((c) => c.key === key) ?? FORUM_CATEGORIES[FORUM_CATEGORIES.length - 1];
+function fluentStickerUrl(name: string, tone = false) {
+  const snake = name.toLowerCase().replace(/\s+/g, "_");
+  const folder = encodeURIComponent(name);
+  return tone
+    ? `${FLUENT_BASE}/${folder}/Default/3D/${snake}_3d_default.png`
+    : `${FLUENT_BASE}/${folder}/3D/${snake}_3d.png`;
 }
 
-/** Limites, identiques aux contraintes SQL (20261001_forum.sql). */
-export const FORUM_LIMITS = { titleMin: 3, titleMax: 160, bodyMax: 8000, replyMax: 5000, reportMax: 500 };
+/**
+ * Stickers du groupe : un grand emoji 3D (Fluent, comme dans la messagerie)
+ * et une légende traduite (forum.stickers.<id>). Seul l'identifiant est
+ * stocké : chacun lit la légende dans sa langue.
+ * Ajouter un sticker = une ligne ici + la légende en FR et en EN.
+ */
+export const FORUM_STICKERS: { id: string; char: string; url: string }[] = (
+  [
+    ["bonjour", "☀️", "Sun"],
+    ["bienvenue", "💐", "Bouquet"],
+    ["amen", "🙏", "Folded hands", true],
+    ["alleluia", "🙌", "Raising hands", true],
+    ["gloire", "✨", "Sparkles"],
+    ["je-prie", "🕯️", "Candle"],
+    ["parole", "📖", "Open book"],
+    ["merci", "🌹", "Rose"],
+    ["avec-amour", "💚", "Green heart"],
+    ["bravo", "👏", "Clapping hands", true],
+    ["courage", "💪", "Flexed biceps", true],
+    ["fete", "🎉", "Party popper"],
+    ["alliance", "💍", "Ring"],
+    ["rire", "😂", "Face with tears of joy"],
+    ["touche", "🥺", "Pleading face"],
+    ["bonne-nuit", "🌙", "Crescent moon"],
+  ] as [string, string, string, boolean?][]
+).map(([id, char, name, tone]) => ({ id, char, url: fluentStickerUrl(name, tone) }));
 
-export type ForumStatus = "visible" | "hidden";
+export const findSticker = (id: string | null | undefined) => FORUM_STICKERS.find((s) => s.id === id) ?? null;
+
+/* ─────────────────────────────── Données ─────────────────────────────── */
+
+/** Limites, identiques aux contraintes SQL (20261001_forum.sql). */
+export const FORUM_LIMITS = { bodyMax: 2000, reportMax: 500 };
+export const FORUM_PAGE_SIZE = 50;
 
 export interface ForumAuthor {
   id: string;
@@ -47,51 +56,79 @@ export interface ForumAuthor {
   avatar_url: string | null;
 }
 
-export interface ForumTopic {
+/** Message cité (réponse à un message). */
+export interface ForumQuote {
   id: string;
-  author_id: string;
-  category: string;
-  lesson_slug: string | null;
-  title: string;
   body: string;
-  status: ForumStatus;
-  is_pinned: boolean;
-  is_locked: boolean;
+  sticker: string | null;
   is_staff: boolean;
-  reply_count: number;
-  last_activity_at: string;
-  created_at: string;
-  updated_at: string | null;
-  author: ForumAuthor | null;
+  author: { pseudo: string | null } | null;
 }
 
-export interface ForumReply {
+export interface ForumMessage {
   id: string;
-  topic_id: string;
   author_id: string;
   body: string;
-  status: ForumStatus;
+  sticker: string | null;
+  reply_to_id: string | null;
   is_staff: boolean;
   created_at: string;
-  updated_at: string | null;
   author: ForumAuthor | null;
+  reply_to: ForumQuote | null;
+}
+
+export interface ForumSettings {
+  name: string;
+  description: string;
+  admins_only: boolean;
+  pinned_message_id: string | null;
+}
+
+export const DEFAULT_FORUM_SETTINGS: ForumSettings = {
+  name: "Forum de l'Académie",
+  description: "",
+  admins_only: false,
+  pinned_message_id: null,
+};
+
+/** Colonnes PostgREST d'un message, avec auteur et message cité. */
+export function forumMessageColumns(authorColumns = "id, pseudo, avatar_url") {
+  return (
+    "id, author_id, body, sticker, reply_to_id, is_staff, created_at, " +
+    `author:profiles!forum_messages_author_id_fkey(${authorColumns}), ` +
+    "reply_to:reply_to_id(id, body, sticker, is_staff, author:profiles!forum_messages_author_id_fkey(pseudo))"
+  );
 }
 
 /** Table absente (migration non exécutée) : le forum n'est pas encore disponible. */
 export function isForumMissing(error: { code?: string; message?: string } | null | undefined): boolean {
   if (!error) return false;
-  return error.code === "42P01" || error.code === "PGRST205" ||
-    /relation .*forum_.* does not exist|could not find the table/i.test(error.message || "");
+  return error.code === "42P01" || error.code === "PGRST205" || error.code === "PGRST200" ||
+    /relation .*forum_.* does not exist|could not find the table|could not find a relationship/i.test(error.message || "");
 }
 
-/** « il y a 3 h », « 2 days ago »… */
-export function forumRelativeTime(iso: string, locale: string): string {
-  const diff = (new Date(iso).getTime() - Date.now()) / 1000;
-  const rtf = new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-  const abs = Math.abs(diff);
-  if (abs < 60) return rtf.format(Math.round(diff), "second");
-  if (abs < 3600) return rtf.format(Math.round(diff / 60), "minute");
-  if (abs < 86400) return rtf.format(Math.round(diff / 3600), "hour");
-  if (abs < 86400 * 30) return rtf.format(Math.round(diff / 86400), "day");
-  return new Date(iso).toLocaleDateString(locale, { day: "numeric", month: "short", year: "numeric" });
+/** Aperçu court d'un message (citation, message épinglé). */
+export function messagePreview(m: { body: string; sticker: string | null }, stickerLabel: string): string {
+  if (m.body.trim()) return m.body.trim();
+  const s = findSticker(m.sticker);
+  return s ? `${s.char} ${stickerLabel}` : "";
 }
+
+/** Clé de jour (AAAA-MM-JJ, heure locale) pour les séparateurs « Aujourd'hui », « Hier »… */
+export function dayKey(iso: string): string {
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+export function dayLabel(iso: string, locale: string, today: string, yesterday: string): string {
+  const key = dayKey(iso);
+  const now = new Date();
+  if (key === dayKey(now.toISOString())) return today;
+  const y = new Date(now);
+  y.setDate(now.getDate() - 1);
+  if (key === dayKey(y.toISOString())) return yesterday;
+  return new Date(iso).toLocaleDateString(locale, { weekday: "long", day: "numeric", month: "long" });
+}
+
+export const timeLabel = (iso: string, locale: string) =>
+  new Date(iso).toLocaleTimeString(locale, { hour: "2-digit", minute: "2-digit" });

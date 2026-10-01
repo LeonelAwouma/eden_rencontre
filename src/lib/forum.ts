@@ -1,30 +1,31 @@
 "use client";
 
-// Forum — accès membre, directement via Supabase (la RLS de
-// supabase/migrations/20261001_forum.sql réserve le forum aux membres
-// approuvés et fixe ce que chacun peut écrire).
+// Forum (groupe de discussion) — accès membre, directement via Supabase.
+// La RLS de supabase/migrations/20261001_forum.sql réserve le groupe aux
+// membres approuvés, et refuse l'envoi en mode « admins seulement » ou
+// quand le membre est en sourdine.
 
 import { supabase } from "@/lib/supabase";
 import {
-  FORUM_CATEGORY_KEYS, isForumMissing, type ForumReply, type ForumTopic,
+  DEFAULT_FORUM_SETTINGS, FORUM_PAGE_SIZE, forumMessageColumns, isForumMissing,
+  type ForumMessage, type ForumSettings,
 } from "@/lib/forum-shared";
 
 export * from "@/lib/forum-shared";
 
-const AUTHOR = "author:profiles!%s_author_id_fkey(id, pseudo, avatar_url)";
-const TOPIC_COLUMNS =
-  "id, author_id, category, lesson_slug, title, body, status, is_pinned, is_locked, is_staff, reply_count, last_activity_at, created_at, updated_at, " +
-  AUTHOR.replace("%s", "forum_topics");
-const REPLY_COLUMNS =
-  "id, topic_id, author_id, body, status, is_staff, created_at, updated_at, " + AUTHOR.replace("%s", "forum_replies");
-
 /** Erreur renvoyée quand les tables du forum n'existent pas encore. */
 export const FORUM_UNAVAILABLE = "forum_unavailable";
+/** Envoi refusé : groupe réservé aux admins, ou membre en sourdine. */
+export const FORUM_CANNOT_POST = "forum_cannot_post";
+
+const COLUMNS = forumMessageColumns();
 
 type Result<T> = { data?: T; error?: string };
 
 function fail(error: { code?: string; message?: string }): { error: string } {
-  return { error: isForumMissing(error) ? FORUM_UNAVAILABLE : error.message || "error" };
+  if (isForumMissing(error)) return { error: FORUM_UNAVAILABLE };
+  if (/row-level|policy|permission/i.test(error.message || "")) return { error: FORUM_CANNOT_POST };
+  return { error: error.message || "error" };
 }
 
 export async function getMyId(): Promise<string | null> {
@@ -33,92 +34,89 @@ export async function getMyId(): Promise<string | null> {
   return data.user?.id ?? null;
 }
 
-export async function listTopics(opts: {
-  category?: string | null;
-  lesson?: string | null;
-  search?: string;
-  offset?: number;
-  limit?: number;
-}): Promise<Result<{ topics: ForumTopic[]; hasMore: boolean }>> {
+export async function getForumSettings(): Promise<Result<ForumSettings>> {
   if (!supabase) return { error: FORUM_UNAVAILABLE };
-  const limit = opts.limit ?? 20;
-  const offset = opts.offset ?? 0;
-  let q = supabase
-    .from("forum_topics")
-    .select(TOPIC_COLUMNS)
-    .eq("status", "visible")
-    .order("is_pinned", { ascending: false })
-    .order("last_activity_at", { ascending: false })
-    .range(offset, offset + limit); // un de plus pour savoir s'il en reste
-  if (opts.category && FORUM_CATEGORY_KEYS.has(opts.category)) q = q.eq("category", opts.category);
-  if (opts.lesson) q = q.eq("lesson_slug", opts.lesson);
-  // Caractères réservés de la syntaxe de filtre PostgREST retirés de la recherche.
-  const term = (opts.search || "").replace(/[,()%*\\]/g, " ").trim();
-  if (term) q = q.or(`title.ilike.%${term}%,body.ilike.%${term}%`);
+  const { data, error } = await supabase
+    .from("forum_settings").select("name, description, admins_only, pinned_message_id").eq("id", 1).maybeSingle();
+  if (error) return fail(error);
+  return { data: (data as ForumSettings) ?? DEFAULT_FORUM_SETTINGS };
+}
+
+/** Ma mise en sourdine en cours, s'il y en a une (until = null : jusqu'à nouvel ordre). */
+export async function getMyMute(myId: string): Promise<{ until: string | null } | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.from("forum_mutes").select("until").eq("user_id", myId).maybeSingle();
+  if (!data) return null;
+  if (data.until && new Date(data.until).getTime() <= Date.now()) return null;
+  return { until: data.until };
+}
+
+/** Nombre de membres du groupe (= membres approuvés de la plateforme). */
+export async function getMemberCount(): Promise<number | null> {
+  if (!supabase) return null;
+  const { count } = await supabase.from("profiles").select("id", { count: "exact", head: true }).eq("status", "approved");
+  return count ?? null;
+}
+
+/** Derniers messages (du plus ancien au plus récent), ou ceux d'avant `before`. */
+export async function listMessages(before?: string): Promise<Result<{ messages: ForumMessage[]; hasMore: boolean }>> {
+  if (!supabase) return { error: FORUM_UNAVAILABLE };
+  let q = supabase.from("forum_messages").select(COLUMNS)
+    .order("created_at", { ascending: false }).limit(FORUM_PAGE_SIZE + 1);
+  if (before) q = q.lt("created_at", before);
   const { data, error } = await q;
   if (error) return fail(error);
-  const rows = (data || []) as unknown as ForumTopic[];
-  return { data: { topics: rows.slice(0, limit), hasMore: rows.length > limit } };
+  const rows = (data || []) as unknown as ForumMessage[];
+  return { data: { messages: rows.slice(0, FORUM_PAGE_SIZE).reverse(), hasMore: rows.length > FORUM_PAGE_SIZE } };
 }
 
-export async function getTopic(id: string): Promise<Result<ForumTopic | null>> {
-  if (!supabase) return { error: FORUM_UNAVAILABLE };
-  const { data, error } = await supabase.from("forum_topics").select(TOPIC_COLUMNS).eq("id", id).maybeSingle();
-  if (error) return fail(error);
-  return { data: (data as unknown as ForumTopic) ?? null };
+export async function getMessage(id: string): Promise<ForumMessage | null> {
+  if (!supabase) return null;
+  const { data } = await supabase.from("forum_messages").select(COLUMNS).eq("id", id).maybeSingle();
+  return (data as unknown as ForumMessage) ?? null;
 }
 
-export async function listReplies(topicId: string): Promise<Result<ForumReply[]>> {
-  if (!supabase) return { error: FORUM_UNAVAILABLE };
-  const { data, error } = await supabase
-    .from("forum_replies").select(REPLY_COLUMNS).eq("topic_id", topicId).order("created_at", { ascending: true });
-  if (error) return fail(error);
-  return { data: (data || []) as unknown as ForumReply[] };
-}
-
-export async function createTopic(input: {
-  category: string; lesson_slug: string | null; title: string; body: string;
-}): Promise<Result<string>> {
+export async function sendForumMessage(input: { body?: string; sticker?: string | null; replyTo?: string | null }): Promise<Result<ForumMessage>> {
   if (!supabase) return { error: FORUM_UNAVAILABLE };
   const { data, error } = await supabase
-    .from("forum_topics")
-    .insert({
-      category: FORUM_CATEGORY_KEYS.has(input.category) ? input.category : "general",
-      lesson_slug: input.lesson_slug || null,
-      title: input.title.trim(),
-      body: input.body.trim(),
-    })
-    .select("id")
+    .from("forum_messages")
+    .insert({ body: (input.body || "").trim(), sticker: input.sticker || null, reply_to_id: input.replyTo || null })
+    .select(COLUMNS)
     .single();
   if (error) return fail(error);
-  return { data: data.id as string };
+  return { data: data as unknown as ForumMessage };
 }
 
-export async function createReply(topicId: string, body: string): Promise<Result<ForumReply>> {
+export async function deleteForumMessage(id: string): Promise<Result<true>> {
   if (!supabase) return { error: FORUM_UNAVAILABLE };
-  const { data, error } = await supabase
-    .from("forum_replies").insert({ topic_id: topicId, body: body.trim() }).select(REPLY_COLUMNS).single();
-  if (error) return fail(error);
-  return { data: data as unknown as ForumReply };
-}
-
-export async function deleteTopic(id: string): Promise<Result<true>> {
-  if (!supabase) return { error: FORUM_UNAVAILABLE };
-  const { error } = await supabase.from("forum_topics").delete().eq("id", id);
+  const { error } = await supabase.from("forum_messages").delete().eq("id", id);
   return error ? fail(error) : { data: true };
 }
 
-export async function deleteReply(id: string): Promise<Result<true>> {
+/** « already » : ce membre a déjà signalé ce message. */
+export async function reportForumMessage(messageId: string, reason: string): Promise<Result<"ok" | "already">> {
   if (!supabase) return { error: FORUM_UNAVAILABLE };
-  const { error } = await supabase.from("forum_replies").delete().eq("id", id);
-  return error ? fail(error) : { data: true };
-}
-
-/** Signaler un sujet (replyId absent) ou une réponse. « already » : déjà signalé par ce membre. */
-export async function reportPost(topicId: string, replyId: string | null, reason: string): Promise<Result<"ok" | "already">> {
-  if (!supabase) return { error: FORUM_UNAVAILABLE };
-  const { error } = await supabase
-    .from("forum_reports").insert({ topic_id: topicId, reply_id: replyId, reason: reason.trim() || null });
+  const { error } = await supabase.from("forum_reports").insert({ message_id: messageId, reason: reason.trim() || null });
   if (error?.code === "23505") return { data: "already" };
   return error ? fail(error) : { data: "ok" };
+}
+
+/**
+ * Temps réel : nouveaux messages, suppressions, changement des réglages
+ * (mode admins seulement, message épinglé…). Renvoie la fonction de désabonnement.
+ */
+export function subscribeForum(handlers: {
+  onInsert: (id: string) => void;
+  onDelete: (id: string) => void;
+  onSettings: () => void;
+}): () => void {
+  if (!supabase) return () => {};
+  const client = supabase;
+  const channel = client
+    .channel("forum-group")
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "forum_messages" }, (p) => handlers.onInsert((p.new as { id: string }).id))
+    .on("postgres_changes", { event: "DELETE", schema: "public", table: "forum_messages" }, (p) => handlers.onDelete((p.old as { id: string }).id))
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "forum_settings" }, () => handlers.onSettings())
+    .subscribe();
+  return () => { client.removeChannel(channel); };
 }

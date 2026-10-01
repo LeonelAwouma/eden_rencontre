@@ -1,67 +1,143 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft, ShieldCheck } from "lucide-react";
-import { Monogram } from "@/components/ornaments";
-import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { avatarSrc } from "@/lib/avatar";
-import { useI18n } from "@/lib/i18n";
+import { useState } from "react";
+import { ShieldCheck } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { forumCategory, forumRelativeTime, type ForumAuthor } from "@/lib/forum-shared";
+import { avatarSrc } from "@/lib/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { FORUM_STICKERS, findSticker, messagePreview, type ForumMessage } from "@/lib/forum-shared";
 
-/** En-tête des pages du forum, sur le modèle de l'Académie. */
-export function ForumHeader({ backHref = "/dashboard", backLabel }: { backHref?: string; backLabel?: string }) {
-  const { t } = useI18n();
+/** Un sticker : grand emoji 3D détouré et sa légende (dans la langue du lecteur). */
+export function Sticker({ id, label, size = "md" }: { id: string; label: string; size?: "sm" | "md" }) {
+  const s = findSticker(id);
+  const [err, setErr] = useState(false);
+  if (!s) return null;
+  const dim = size === "sm" ? "w-14 h-14" : "w-[104px] h-[104px]";
   return (
-    <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border">
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-        <Link href="/dashboard/forum" className="flex items-center gap-2.5 min-w-0">
-          <Monogram className="w-8 h-7 text-primary shrink-0" />
-          <span className="font-headline text-lg sm:text-xl font-bold text-foreground truncate">
-            Garden of Alliance <span className="text-primary italic font-normal">{t("forum.title")}</span>
-          </span>
-        </Link>
-        <Link href={backHref}
-          className="inline-flex items-center gap-2 h-9 px-3 rounded-full text-[13px] font-semibold text-[#3F4A43] hover:bg-muted transition-colors shrink-0">
-          <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">{backLabel || t("academie.backToDashboard")}</span>
-        </Link>
-      </div>
-    </header>
-  );
-}
-
-export function CategoryChip({ category, className }: { category: string; className?: string }) {
-  const { t } = useI18n();
-  const c = forumCategory(category);
-  return (
-    <span className={cn("inline-flex items-center gap-1.5 h-6 px-2.5 rounded-full bg-primary/10 text-primary text-[11.5px] font-semibold max-w-full", className)}>
-      <c.icon className="w-3.5 h-3.5 shrink-0" />
-      <span className="truncate">{t(c.labelKey)}</span>
-    </span>
-  );
-}
-
-/** Auteur d'un message : pseudo public uniquement, ou « l'équipe » pour l'admin. */
-export function AuthorLine({ author, isStaff, date, size = "md" }: {
-  author: ForumAuthor | null; isStaff: boolean; date: string; size?: "sm" | "md";
-}) {
-  const { t, locale } = useI18n();
-  const name = isStaff ? t("forum.staff") : author?.pseudo || t("forum.member");
-  return (
-    <span className="flex items-center gap-2.5 min-w-0">
-      <Avatar className={cn("shrink-0 border border-border", size === "sm" ? "w-7 h-7" : "w-9 h-9")}>
-        {!isStaff && <AvatarImage src={avatarSrc(author?.avatar_url ?? undefined)} />}
-        <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
-          {isStaff ? <ShieldCheck className="w-4 h-4" /> : name.charAt(0).toUpperCase()}
-        </AvatarFallback>
-      </Avatar>
-      <span className="min-w-0 leading-tight">
-        <span className="flex items-center gap-1.5 text-[13.5px] font-semibold text-foreground truncate">
-          {name}
-          {isStaff && <span className="px-1.5 py-px rounded bg-primary text-white text-[10px] font-bold uppercase tracking-wide">{t("forum.staffBadge")}</span>}
-        </span>
-        <span className="block text-[12px] text-[#6B746E]">{forumRelativeTime(date, locale)}</span>
+    <span className="inline-flex flex-col items-center select-none" role="img" aria-label={label}>
+      {err ? (
+        <span className={cn(dim, "flex items-center justify-center", size === "sm" ? "text-4xl" : "text-[72px]")}>{s.char}</span>
+      ) : (
+        // Contour blanc + ombre : l'effet « autocollant » de WhatsApp.
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={s.url} alt="" draggable={false} loading="lazy" onError={() => setErr(true)}
+          className={cn(dim, "object-contain [filter:drop-shadow(0_0_1.5px_#fff)_drop-shadow(0_0_1.5px_#fff)_drop-shadow(0_3px_6px_rgba(38,70,52,0.22))]")} />
+      )}
+      <span className={cn("-mt-1.5 px-2.5 py-0.5 rounded-full bg-white border border-border font-headline font-bold text-primary shadow-sm whitespace-nowrap",
+        size === "sm" ? "text-[10px]" : "text-[12.5px]")}>
+        {label}
       </span>
     </span>
+  );
+}
+
+/** Planche de stickers du compositeur. */
+export function StickerPicker({ onPick, labelFor }: { onPick: (id: string) => void; labelFor: (id: string) => string }) {
+  return (
+    <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 p-2">
+      {FORUM_STICKERS.map((s) => (
+        <button key={s.id} type="button" onClick={() => onPick(s.id)} title={labelFor(s.id)}
+          className="rounded-xl p-1.5 hover:bg-primary/10 focus-visible:bg-primary/10 outline-none transition-colors flex justify-center">
+          <Sticker id={s.id} label={labelFor(s.id)} size="sm" />
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/** Citation d'un message (réponse), dans la bulle ou au-dessus du compositeur. */
+export function QuoteBlock({ name, text, mine, className }: { name: string; text: string; mine?: boolean; className?: string }) {
+  return (
+    <span className={cn("block border-l-[3px] rounded-md px-2.5 py-1.5 text-[12.5px] leading-snug",
+      mine ? "bg-white/15 border-white/70" : "bg-primary/[0.06] border-primary/60", className)}>
+      <span className={cn("block font-semibold truncate", mine ? "text-white" : "text-primary")}>{name}</span>
+      <span className={cn("block line-clamp-2 break-words", mine ? "text-white/85" : "text-[#56615A]")}>{text}</span>
+    </span>
+  );
+}
+
+/**
+ * Bulle de message du groupe. `mine` : à droite, en vert. Les messages de
+ * l'équipe portent un badge. `actions` : menu propre à chaque espace.
+ */
+export function ForumBubble({
+  m, mine, showAuthor, authorName, staffBadge, stickerLabel, quoteAuthor, unavailableQuote, time, actions, highlight, onQuoteClick,
+}: {
+  m: ForumMessage;
+  mine: boolean;
+  /** Premier message d'une suite du même auteur : nom + avatar affichés. */
+  showAuthor: boolean;
+  authorName: string;
+  staffBadge: string;
+  stickerLabel: (id: string) => string;
+  quoteAuthor: (q: NonNullable<ForumMessage["reply_to"]>) => string;
+  unavailableQuote: string;
+  time: string;
+  actions?: React.ReactNode;
+  highlight?: boolean;
+  onQuoteClick?: (id: string) => void;
+}) {
+  const sticker = m.sticker ? findSticker(m.sticker) : null;
+  const stickerOnly = !!sticker && !m.body.trim() && !m.reply_to_id;
+  const quote = m.reply_to;
+
+  return (
+    <div id={`msg-${m.id}`} className={cn("group flex items-end gap-2", mine ? "justify-end" : "justify-start", showAuthor ? "mt-3" : "mt-0.5")}>
+      {!mine && (
+        <span className="w-8 shrink-0">
+          {showAuthor && (
+            <Avatar className="w-8 h-8 border border-border">
+              {!m.is_staff && <AvatarImage src={avatarSrc(m.author?.avatar_url ?? undefined, 64)} />}
+              <AvatarFallback className="bg-primary/10 text-primary text-xs font-bold">
+                {m.is_staff ? <ShieldCheck className="w-4 h-4" /> : authorName.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
+          )}
+        </span>
+      )}
+
+      {mine && actions && <span className="self-center sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">{actions}</span>}
+
+      <div className={cn("max-w-[78%] sm:max-w-[68%] min-w-0 rounded-2xl transition-shadow",
+        highlight && "ring-2 ring-primary/50 ring-offset-2 ring-offset-[#F4F1EA]",
+        stickerOnly ? "" : mine
+          ? "bg-primary text-white px-3 py-2 rounded-br-md"
+          : cn("bg-white border px-3 py-2 rounded-bl-md text-[#2E3A33]", m.is_staff ? "border-primary/40" : "border-[#E8E5E0]"))}>
+        {!mine && showAuthor && !stickerOnly && (
+          <span className="flex items-center gap-1.5 mb-0.5">
+            <span className={cn("text-[12.5px] font-bold truncate", m.is_staff ? "text-primary" : "text-[#8A5A00]")}>{authorName}</span>
+            {m.is_staff && <span className="px-1.5 py-px rounded bg-primary text-white text-[9.5px] font-bold uppercase tracking-wide">{staffBadge}</span>}
+          </span>
+        )}
+        {!mine && showAuthor && stickerOnly && (
+          <span className="block text-[12px] font-bold text-[#56615A] mb-1">{authorName}</span>
+        )}
+
+        {m.reply_to_id && (
+          <button type="button" onClick={() => quote && onQuoteClick?.(quote.id)} className="block w-full text-left mb-1.5" disabled={!quote}>
+            <QuoteBlock mine={mine}
+              name={quote ? quoteAuthor(quote) : "—"}
+              text={quote ? messagePreview(quote, quote.sticker ? stickerLabel(quote.sticker) : "") : unavailableQuote} />
+          </button>
+        )}
+
+        {sticker && <span className="block py-1"><Sticker id={sticker.id} label={stickerLabel(sticker.id)} /></span>}
+        {m.body.trim() && <p className="text-[14.5px] leading-relaxed whitespace-pre-wrap break-words">{m.body}</p>}
+
+        <span className={cn("block text-right text-[10.5px] mt-0.5 tabular-nums",
+          stickerOnly ? "text-[#6B746E]" : mine ? "text-white/70" : "text-[#8A938C]")}>{time}</span>
+      </div>
+
+      {!mine && actions && <span className="self-center sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">{actions}</span>}
+    </div>
+  );
+}
+
+/** Séparateur de jour (« Aujourd'hui », « Hier », « lundi 28 septembre »). */
+export function DaySeparator({ label }: { label: string }) {
+  return (
+    <div className="flex justify-center my-4">
+      <span className="px-3 py-1 rounded-lg bg-white/90 border border-[#E8E5E0] text-[11.5px] font-semibold text-[#56615A] shadow-sm first-letter:uppercase">{label}</span>
+    </div>
   );
 }
