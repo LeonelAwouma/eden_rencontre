@@ -51,6 +51,12 @@ export async function POST(request: NextRequest) {
 
     const status = profile?.status || "pending";
 
+    // Connexion refusée (403) : le motif apparaît dans les logs Vercel, pour savoir
+    // tout de suite s'il s'agit d'un compte en attente, refusé ou suspendu.
+    if (status !== "approved") {
+      console.info(`[login] accès refusé (${profile ? status : "profil introuvable"}) pour le compte ${userId}`);
+    }
+
     if (status === "pending") {
       // Sign out immediately
       await db.auth.admin.signOut(authData.session?.access_token || "");
