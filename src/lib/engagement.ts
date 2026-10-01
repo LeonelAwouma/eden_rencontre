@@ -3,6 +3,16 @@
 // Demande d'engagement envoyée depuis une conversation de chat — voir
 // supabase/engagement-schema.sql et src/app/api/engagement/*.
 
+import { supabase } from "@/lib/supabase";
+
+/** Jeton de session : les routes d'engagement vérifient qui agit. */
+async function authHeaders(json = false): Promise<Record<string, string>> {
+  const headers: Record<string, string> = json ? { "Content-Type": "application/json" } : {};
+  const { data } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+  if (data.session?.access_token) headers.Authorization = `Bearer ${data.session.access_token}`;
+  return headers;
+}
+
 export type EngagementRequestStatus = "none" | "pending" | "accepted" | "declined";
 
 export interface EngagementStatus {
@@ -15,7 +25,9 @@ export interface EngagementStatus {
 export async function getEngagementStatus(conversationId: string, userId: string): Promise<EngagementStatus> {
   if (!conversationId || !userId) return { status: "none" };
   try {
-    const res = await fetch(`/api/engagement/status?conversationId=${encodeURIComponent(conversationId)}&userId=${encodeURIComponent(userId)}`);
+    const res = await fetch(`/api/engagement/status?conversationId=${encodeURIComponent(conversationId)}&userId=${encodeURIComponent(userId)}`, {
+      headers: await authHeaders(),
+    });
     if (!res.ok) return { status: "none" };
     return await res.json();
   } catch {
@@ -31,7 +43,7 @@ export async function sendEngagementRequest(
   try {
     const res = await fetch("/api/engagement/request", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await authHeaders(true),
       body: JSON.stringify({ conversationId, requesterId, recipientId }),
     });
     const data = await res.json();
@@ -50,7 +62,7 @@ export async function respondToEngagementRequest(
   try {
     const res = await fetch("/api/engagement/respond", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: await authHeaders(true),
       body: JSON.stringify({ requestId, responderId, accept }),
     });
     const data = await res.json();

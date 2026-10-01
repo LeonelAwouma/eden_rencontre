@@ -61,6 +61,7 @@ import { pickVerse, type Verse } from "@/lib/verses";
 import { useI18n } from "@/lib/i18n";
 import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
 import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
+import { PushOptIn } from "@/components/push-opt-in";
 import { AutoSaveIndicator } from "@/components/autosave-indicator";
 
 const TAB_LABEL_KEY: Record<string, string> = {
@@ -1270,6 +1271,9 @@ export default function DashboardPage() {
                   </div>
                 </motion.section>
 
+                {/* Notifications sur le téléphone : invitation masquable */}
+                <PushOptIn variant="banner" />
+
                 {/* Mobile first : Académie et événements à portée de pouce, avant le fil.
                     Sur grand écran (xl), ils restent dans la colonne de droite. */}
                 <section className="xl:hidden grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label={t("dashboard.academyTitle")}>
@@ -2371,6 +2375,9 @@ export default function DashboardPage() {
         return (
           <div className="space-y-6">
             <TabHeader icon={Bell} title={t("dashboard.notificationsTitle")} subtitle={t("dashboard.notificationsSubtitle")} />
+
+            {/* Notifications sur le téléphone (activer / désactiver sur cet appareil) */}
+            <PushOptIn variant="settings" />
 
             {/* Verification status notifications */}
             {verificationNotifs.length > 0 && (

@@ -1733,5 +1733,24 @@
     "editError": "La modification n’a pas pu être enregistrée.",
     "editExpiredTitle": "Délai de modification dépassé",
     "editExpiredDesc": "Un message peut être modifié pendant 5 minutes après son envoi. Vous pouvez toujours le supprimer."
+  },
+  "push": {
+    "bannerTitle": "Recevez vos notifications sur votre téléphone",
+    "bannerDesc": "Nouveaux messages, demandes d’alliance, engagement, événements : soyez prévenu(e) même quand le site est fermé.",
+    "enable": "Activer les notifications",
+    "later": "Plus tard",
+    "disable": "Désactiver",
+    "settingsTitle": "Notifications sur cet appareil",
+    "onLabel": "Activées sur cet appareil",
+    "onDesc": "Vous recevez les notifications de Garden of Alliance sur cet appareil, même site fermé, dès qu’il est connecté à Internet.",
+    "enabledTitle": "Notifications activées",
+    "enabledDesc": "Une notification de confirmation vient d’être envoyée sur cet appareil.",
+    "deniedTitle": "Notifications bloquées",
+    "deniedDesc": "Les notifications sont bloquées pour ce site. Autorisez-les dans les réglages de votre navigateur (icône du cadenas à côté de l’adresse), puis réessayez.",
+    "unsupportedDesc": "Ce navigateur ne permet pas les notifications. Essayez avec Chrome sur Android, ou Safari sur iPhone après avoir ajouté le site à l’écran d’accueil.",
+    "errorTitle": "Activation impossible",
+    "iosStep1": "Dans Safari, touchez Partager",
+    "iosStep2": "Choisissez « Sur l’écran d’accueil »",
+    "iosStep3": "Ouvrez Garden of Alliance depuis l’écran d’accueil, puis activez les notifications ici."
   }
 }

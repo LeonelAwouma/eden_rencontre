@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getAuthenticatedUser } from "@/lib/api-auth";
 
 // GET — Latest engagement request status for a conversation
 export async function GET(req: NextRequest) {
@@ -11,6 +12,12 @@ export async function GET(req: NextRequest) {
     if (!conversationId) {
       return NextResponse.json({ error: "conversationId requis" }, { status: 400 });
     }
+    const user = await getAuthenticatedUser(req);
+    if (!user) return NextResponse.json({ status: "none" }, { status: 401 });
+    const { data: member } = await db
+      .from("conversation_members").select("user_id")
+      .eq("conversation_id", conversationId).eq("user_id", user.id).maybeSingle();
+    if (!member) return NextResponse.json({ status: "none" }, { status: 403 });
 
     const { data, error } = await db
       .from("engagement_requests")

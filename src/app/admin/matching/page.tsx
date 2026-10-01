@@ -1,459 +1,321 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
-import {
-  Search,
-  Heart,
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Ban,
-  AlertTriangle,
-  ChevronLeft,
-  ChevronRight,
-  Eye,
-  MessageSquare,
-  Loader2,
-  ArrowUpDown,
-} from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import {
+  Heart, HeartHandshake, Gem, Clock, XCircle, Search, X, ChevronLeft, ChevronRight, MessageCircle, UserRound,
+  Sparkles, CalendarHeart, Users, Gauge,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
+import { avatarSrc } from "@/lib/avatar";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { computeDisplayMatch, type AdapterInput } from "@/lib/matching/adapter";
+import { pickMatchFields } from "@/lib/social";
 
-interface MatchProfile {
-  id: string;
-  name: string;
-  email: string;
-  gender: string;
-  city: string;
-  country: string;
-  avatar_url: string | null;
-  subscription_plan: string;
+/**
+ * Admin → Matching : chaque couple et son parcours.
+ * Un VRAI match : un membre clique sur « S'engager » et l'autre valide.
+ * Avant cela : demande d'alliance, puis « en relation » (alliance acceptée).
+ * Données : /api/admin/matching/couples.
+ */
+
+type Stage = "alliance_pending" | "relation" | "engagement_pending" | "match" | "engagement_declined" | "declined";
+
+interface CoupleProfile {
+  id: string; name?: string | null; pseudo?: string | null; email?: string | null; gender?: string | null;
+  birth_date?: string | null; city?: string | null; country?: string | null; region?: string | null;
+  civil_status?: string | null; profession?: string | null; avatar_url?: string | null;
+  verification_status?: string | null; status?: string | null; questionnaire?: Record<string, unknown> | null;
 }
-
-interface Match {
-  id: string;
-  user_a_id: string;
-  user_b_id: string;
-  status: string;
-  match_score: number | null;
-  initiated_by: string;
-  admin_notes: string | null;
-  mentor_id: string | null;
-  responded_at: string | null;
-  expires_at: string | null;
-  created_at: string;
-  user_a: MatchProfile;
-  user_b: MatchProfile;
-  mentor: { id: string; name: string; email: string } | null;
+interface Couple {
+  id: string; stage: Stage; requested_at: string; relation_at: string | null; matched_at: string | null; updated_at: string;
+  requester: CoupleProfile; addressee: CoupleProfile;
+  engagement: { status: string; requested_at: string; responded_at: string | null; requester_id: string } | null;
+  conversation: { id: string | null; message_count: number; last_message_at: string | null };
 }
+interface Stats { match: number; matchThisWeek: number; engagement_pending: number; relation: number; alliance_pending: number; declined: number; all: number }
+type TabKey = "match" | "engagement_pending" | "relation" | "alliance_pending" | "declined" | "all";
 
-const STATUS_OPTIONS = [
-  { value: "all", label: "Tous", icon: Heart },
-  { value: "pending", label: "En attente", icon: Clock },
-  { value: "accepted", label: "Acceptés", icon: CheckCircle2 },
+const TABS: { value: TabKey; label: string; icon: typeof Heart }[] = [
+  { value: "match", label: "Matchs", icon: Gem },
+  { value: "engagement_pending", label: "Engagement à valider", icon: HeartHandshake },
+  { value: "relation", label: "En relation", icon: MessageCircle },
+  { value: "alliance_pending", label: "Demandes d'alliance", icon: Clock },
   { value: "declined", label: "Refusés", icon: XCircle },
-  { value: "expired", label: "Expirés", icon: AlertTriangle },
-  { value: "blocked", label: "Bloqués", icon: Ban },
+  { value: "all", label: "Tout", icon: Users },
 ];
 
-const STATUS_CLASSES: Record<string, string> = {
-  pending: "bg-[#FF9E45]/10 text-[#FF9E45]",
-  accepted: "bg-[#38C172]/10 text-[#38C172]",
-  declined: "bg-[#F56565]/10 text-[#F56565]",
-  expired: "bg-[#9CA3AF]/10 text-[#9CA3AF]",
-  blocked: "bg-[#F56565]/10 text-[#F56565]",
+const STAGE: Record<Stage, { label: string; className: string; icon: typeof Heart }> = {
+  alliance_pending: { label: "Demande d'alliance", className: "bg-[#F4F1EA] text-[#6B5A2E]", icon: Clock },
+  relation: { label: "En relation", className: "bg-primary/10 text-primary", icon: MessageCircle },
+  engagement_pending: { label: "Engagement à valider", className: "bg-primary/15 text-primary", icon: HeartHandshake },
+  match: { label: "Match", className: "bg-primary text-white", icon: Gem },
+  engagement_declined: { label: "Engagement refusé", className: "bg-muted text-[#6B746E]", icon: XCircle },
+  declined: { label: "Alliance refusée", className: "bg-muted text-[#6B746E]", icon: XCircle },
 };
 
-const STATUS_LABELS: Record<string, string> = {
-  pending: "En attente",
-  accepted: "Accepté",
-  declined: "Refusé",
-  expired: "Expiré",
-  blocked: "Bloqué",
-};
+const formatDate = (iso: string | null) =>
+  iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "—";
 
-const INITIATOR_LABELS: Record<string, string> = {
-  system: "Système",
-  user_a: "Utilisateur A",
-  user_b: "Utilisateur B",
-  admin: "Admin",
-  mentor: "Mentor",
-};
+function relative(iso: string | null): string {
+  if (!iso) return "—";
+  const s = (Date.now() - new Date(iso).getTime()) / 1000;
+  if (s < 3600) return `il y a ${Math.max(1, Math.floor(s / 60))} min`;
+  if (s < 86400) return `il y a ${Math.floor(s / 3600)} h`;
+  if (s < 86400 * 30) return `il y a ${Math.floor(s / 86400)} j`;
+  return formatDate(iso);
+}
 
-export default function MatchingPage() {
-  const [matches, setMatches] = useState<Match[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [statusFilter, setStatusFilter] = useState("all");
+function age(birth: string | null | undefined): number | null {
+  if (!birth) return null;
+  const b = new Date(birth);
+  if (isNaN(b.getTime())) return null;
+  const n = new Date();
+  let a = n.getFullYear() - b.getFullYear();
+  if (n.getMonth() < b.getMonth() || (n.getMonth() === b.getMonth() && n.getDate() < b.getDate())) a--;
+  return a;
+}
+
+const toInput = (p: CoupleProfile, questionnaire: Record<string, unknown> | null | undefined): AdapterInput => ({
+  id: p.id, name: p.pseudo || p.name, email: p.email, gender: p.gender, birthDate: p.birth_date, city: p.city,
+  country: p.country, region: p.region, civilStatus: p.civil_status, profession: p.profession,
+  avatar_url: p.avatar_url, verification_status: p.verification_status, questionnaire: (questionnaire || {}) as Record<string, any>,
+});
+
+/** Même calcul que celui affiché aux membres (questionnaire complet d'un côté, champs « matching » de l'autre). */
+function compatibility(c: Couple): number | null {
+  if (!c.requester.questionnaire && !c.addressee.questionnaire) return null;
+  try {
+    return computeDisplayMatch(toInput(c.requester, c.requester.questionnaire), toInput(c.addressee, pickMatchFields(c.addressee.questionnaire))).score;
+  } catch {
+    return null;
+  }
+}
+
+export default function AdminMatchingPage() {
+  const [couples, setCouples] = useState<Couple[]>([]);
+  const [stats, setStats] = useState<Stats>({ match: 0, matchThisWeek: 0, engagement_pending: 0, relation: 0, alliance_pending: 0, declined: 0, all: 0 });
+  const [stage, setStage] = useState<TabKey>("match");
   const [search, setSearch] = useState("");
+  const [debounced, setDebounced] = useState("");
   const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
-  const [stats, setStats] = useState({ total: 0, pending: 0, accepted: 0, declined: 0, expired: 0, blocked: 0 });
-  const [actionLoading, setActionLoading] = useState<string | null>(null);
-  const [selectedMatch, setSelectedMatch] = useState<Match | null>(null);
-  const [noteText, setNoteText] = useState("");
-  const limit = 20;
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const fetchMatches = useCallback(async () => {
+  useEffect(() => {
+    const id = setTimeout(() => setDebounced(search.trim()), 350);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({
-        status: statusFilter,
-        search,
-        page: page.toString(),
-        limit: limit.toString(),
-      });
-      const res = await fetch(`/api/admin/matching?${params}`);
-      if (res.ok) {
-        const data = await res.json();
-        setMatches(data.matches || []);
-        setTotal(data.total || 0);
-        if (data.stats) setStats(data.stats);
-      }
-    } catch (e) {
-      console.error("Failed to fetch matches:", e);
+      const params = new URLSearchParams({ stage, page: String(page), limit: "20" });
+      if (debounced) params.set("search", debounced);
+      const res = await fetch(`/api/admin/matching/couples?${params}`);
+      const data = await res.json();
+      if (!res.ok) { setError(data.error || "Impossible de charger les couples."); return; }
+      setError(null);
+      setCouples(data.couples || []);
+      setStats(data.stats);
+      setTotal(data.total || 0);
+      setTotalPages(data.totalPages || 1);
+    } catch {
+      setError("Impossible de charger les couples.");
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, search, page]);
+  }, [stage, page, debounced]);
 
-  useEffect(() => { fetchMatches(); }, [fetchMatches]);
+  useEffect(() => { load(); }, [load]);
 
-  const handleAction = async (matchId: string, status: string) => {
-    setActionLoading(matchId);
-    try {
-      const res = await fetch("/api/admin/matching", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: matchId, status, admin_notes: noteText || undefined }),
-      });
-      if (res.ok) {
-        await fetchMatches();
-        setSelectedMatch(null);
-        setNoteText("");
-      }
-    } catch (e) {
-      console.error("Failed to update match:", e);
-    } finally {
-      setActionLoading(null);
-    }
-  };
-
-  const totalPages = Math.ceil(total / limit);
+  const scores = useMemo(() => new Map(couples.map((c) => [c.id, compatibility(c)])), [couples]);
+  const tabCount = (v: TabKey) => stats[v];
 
   return (
-    <div className="max-w-7xl mx-auto">
-      
+    <div className="max-w-6xl">
+      <div className="mb-5">
+        <h1 className="font-headline text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">Matching</h1>
+        <p className="text-sm text-[#56615A] mt-1 max-w-2xl">
+          Un match, c&apos;est quand un membre clique sur « S&apos;engager » et que l&apos;autre valide. Suivez ici chaque couple, de la demande d&apos;alliance jusqu&apos;au match.
+        </p>
+      </div>
 
-      {/* Page Title */}
-      <div className="flex items-center justify-between mb-6">
-        <div>
-          <h2 className="text-2xl font-bold text-[#1a1a1a] tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Gestion du Matching
-          </h2>
-          <p className="text-sm text-[#9CA3AF] mt-1">Suivez et gérez tous les appariements de la plateforme</p>
+      {/* Statistiques compactes, monochromes */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+        <StatTile label="Matchs" value={stats.match} icon={Gem} hint={`${stats.matchThisWeek} cette semaine · engagement validé`} />
+        <StatTile label="Engagements à valider" value={stats.engagement_pending} icon={HeartHandshake} hint="« S'engager » envoyé, en attente" />
+        <StatTile label="En relation" value={stats.relation} icon={MessageCircle} hint="alliance acceptée, sans engagement" />
+        <StatTile label="Demandes d'alliance" value={stats.alliance_pending} icon={Clock} hint="pas encore de réponse" />
+      </div>
+
+      {/* Étapes + recherche sur une ligne */}
+      <div className="flex flex-col lg:flex-row lg:items-center gap-2.5 mb-5">
+        <div className="flex gap-1.5 overflow-x-auto pb-1 lg:pb-0" role="tablist" aria-label="Étape">
+          {TABS.map((t) => {
+            const active = stage === t.value;
+            return (
+              <button key={t.value} role="tab" aria-selected={active} onClick={() => { setStage(t.value); setPage(1); }}
+                className={cn("flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold whitespace-nowrap border transition-colors",
+                  active ? "bg-primary text-white border-primary" : "bg-white text-[#3F4A43] border-border hover:border-primary/40")}>
+                <t.icon className="w-3.5 h-3.5" /> {t.label}
+                <span className={cn("text-[11px] tabular-nums px-1.5 rounded-full", active ? "bg-white/20" : "bg-muted text-[#6B746E]")}>{tabCount(t.value)}</span>
+              </button>
+            );
+          })}
+        </div>
+        <div className="relative flex-1 min-w-0 lg:max-w-xs lg:ml-auto">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B746E]" />
+          <input type="search" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+            placeholder="Pseudo, nom ou email…" aria-label="Rechercher un membre"
+            className="w-full h-10 pl-10 pr-9 bg-white border border-border rounded-xl text-[13px] font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" />
+          {search && (
+            <button onClick={() => { setSearch(""); setPage(1); }} aria-label="Effacer la recherche"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-[#6B746E] hover:bg-muted"><X className="w-3.5 h-3.5" /></button>
+          )}
         </div>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
-        {[
-          { label: "Total", value: stats.total, color: "#486B46" },
-          { label: "En attente", value: stats.pending, color: "#FF9E45" },
-          { label: "Acceptés", value: stats.accepted, color: "#38C172" },
-          { label: "Refusés", value: stats.declined, color: "#F56565" },
-          { label: "Expirés", value: stats.expired, color: "#9CA3AF" },
-          { label: "Bloqués", value: stats.blocked, color: "#F56565" },
-        ].map((s) => (
-          <motion.div
-            key={s.label}
-            initial={{ opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-white rounded-xl border border-[#E5E7EB] p-4 text-center"
-          >
-            <p className="text-2xl font-bold" style={{ color: s.color }}>{s.value}</p>
-            <p className="text-[11px] text-[#9CA3AF] font-medium mt-1">{s.label}</p>
-          </motion.div>
-        ))}
-      </div>
+      {error && <div role="alert" className="mb-4 p-3 rounded-xl bg-[#B42318]/10 border border-[#B42318]/20 text-[13px] font-medium text-[#B42318]">{error}</div>}
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-6">
-        <div className="flex items-center gap-2 bg-white border border-[#E5E7EB] rounded-xl px-3 py-2.5 flex-1 max-w-sm">
-          <Search className="w-4 h-4 text-[#9CA3AF]" />
-          <input
-            type="text"
-            placeholder="Rechercher un utilisateur…"
-            value={search}
-            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            className="bg-transparent text-sm text-[#374151] placeholder:text-[#D1D5DB] outline-none w-full font-medium"
-          />
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {STATUS_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => { setStatusFilter(opt.value); setPage(1); }}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-medium transition-all",
-                statusFilter === opt.value
-                  ? "bg-[#486B46] text-white"
-                  : "bg-white border border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]"
-              )}
-            >
-              <opt.icon className="w-3.5 h-3.5" />
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Matches List */}
       {loading ? (
-        <div className="flex items-center justify-center py-20">
-          <Loader2 className="w-8 h-8 text-[#38C172] animate-spin" />
+        <div className="space-y-3" aria-busy="true">
+          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[132px] bg-white rounded-2xl border border-border animate-pulse" />)}
         </div>
-      ) : matches.length === 0 ? (
-        <div className="text-center py-20 bg-white rounded-2xl border border-[#E5E7EB]">
-          <Heart className="w-12 h-12 text-[#E5E7EB] mx-auto mb-3" />
-          <p className="text-[#9CA3AF] font-medium">Aucun match trouvé</p>
-          <p className="text-[#9CA3AF] text-sm mt-1">Les appariements apparaîtront ici</p>
+      ) : couples.length === 0 && !error ? (
+        <div className="bg-white rounded-2xl border border-border py-14 px-6 text-center">
+          <HeartHandshake className="w-9 h-9 text-primary/70 mx-auto mb-3" />
+          <p className="text-[15px] font-semibold text-foreground">
+            {debounced ? "Aucun couple ne correspond" : stage === "match" ? "Pas encore de match" : "Rien dans cette étape pour l'instant"}
+          </p>
+          <p className="text-[13px] text-[#56615A] mt-1 max-w-md mx-auto">
+            {debounced ? "Essayez un autre pseudo, nom ou email."
+              : stage === "match" ? "Dès qu'un membre valide la demande d'engagement de l'autre, leur match apparaît ici."
+              : "Les couples apparaîtront ici au fil de leur parcours."}
+          </p>
         </div>
       ) : (
-        <div className="space-y-3">
-          {matches.map((match) => (
-            <motion.div
-              key={match.id}
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-2xl border border-[#E5E7EB] p-5 hover:border-[#C6D4C0] transition-all"
-            >
-              <div className="flex flex-col lg:flex-row lg:items-center gap-4">
-                {/* User A */}
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#38C172] to-[#86EFAC] flex items-center justify-center text-white text-sm font-bold shrink-0">
-                    {match.user_a?.name?.charAt(0)?.toUpperCase() || "?"}
-                  </div>
-                  <div className="min-w-0">
-                    <Link href={`/admin/users/${match.user_a_id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#486B46] truncate block">
-                      {match.user_a?.name || "Utilisateur inconnu"}
-                    </Link>
-                    <p className="text-xs text-[#9CA3AF] truncate">{match.user_a?.city}, {match.user_a?.country}</p>
-                  </div>
-                </div>
-
-                {/* Heart */}
-                <div className="flex items-center justify-center shrink-0">
-                  <Heart className="w-5 h-5 text-[#F56565] fill-[#F56565]/20" />
-                </div>
-
-                {/* User B */}
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4F7DF3] to-[#86EFAC] flex items-center justify-center text-white text-sm font-bold shrink-0">
-                    {match.user_b?.name?.charAt(0)?.toUpperCase() || "?"}
-                  </div>
-                  <div className="min-w-0">
-                    <Link href={`/admin/users/${match.user_b_id}`} className="text-sm font-semibold text-[#1a1a1a] hover:text-[#486B46] truncate block">
-                      {match.user_b?.name || "Utilisateur inconnu"}
-                    </Link>
-                    <p className="text-xs text-[#9CA3AF] truncate">{match.user_b?.city}, {match.user_b?.country}</p>
-                  </div>
-                </div>
-
-                {/* Score & Status */}
-                <div className="flex items-center gap-3 shrink-0">
-                  {match.match_score !== null && (
-                    <div className="text-center px-3">
-                      <p className="text-lg font-bold text-[#486B46]">{match.match_score}%</p>
-                      <p className="text-[10px] text-[#9CA3AF]">Score</p>
-                    </div>
-                  )}
-                  <span className={cn("px-3 py-1.5 rounded-lg text-xs font-semibold", STATUS_CLASSES[match.status] || "bg-[#E5E7EB] text-[#6B7280]")}>
-                    {STATUS_LABELS[match.status] || match.status}
-                  </span>
-                </div>
-
-                {/* Meta */}
-                <div className="flex items-center gap-2 text-[11px] text-[#9CA3AF] shrink-0">
-                  <span>Initié par: {INITIATOR_LABELS[match.initiated_by] || match.initiated_by}</span>
-                  <span>·</span>
-                  <span>{new Date(match.created_at).toLocaleDateString("fr-FR")}</span>
-                </div>
-
-                {/* Actions */}
-                <div className="flex items-center gap-2 shrink-0">
-                  <button
-                    onClick={() => setSelectedMatch(match)}
-                    className="w-8 h-8 rounded-lg border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F9FAFB] hover:text-[#374151] transition-all"
-                    title="Voir détails"
-                  >
-                    <Eye className="w-4 h-4" />
-                  </button>
-                  {match.status === "pending" && (
-                    <>
-                      <button
-                        onClick={() => handleAction(match.id, "accepted")}
-                        disabled={actionLoading === match.id}
-                        className="w-8 h-8 rounded-lg bg-[#38C172]/10 flex items-center justify-center text-[#38C172] hover:bg-[#38C172]/20 transition-all disabled:opacity-50"
-                        title="Accepter"
-                      >
-                        {actionLoading === match.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle2 className="w-4 h-4" />}
-                      </button>
-                      <button
-                        onClick={() => handleAction(match.id, "declined")}
-                        disabled={actionLoading === match.id}
-                        className="w-8 h-8 rounded-lg bg-[#F56565]/10 flex items-center justify-center text-[#F56565] hover:bg-[#F56565]/20 transition-all disabled:opacity-50"
-                        title="Refuser"
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-
-              {match.admin_notes && (
-                <div className="mt-3 p-3 bg-[#F9FAFB] rounded-lg text-xs text-[#6B7280]">
-                  <span className="font-semibold">Note admin:</span> {match.admin_notes}
-                </div>
-              )}
-            </motion.div>
-          ))}
-        </div>
+        <ul className="space-y-3">
+          {couples.map((c) => <CoupleCard key={c.id} c={c} score={scores.get(c.id) ?? null} />)}
+        </ul>
       )}
 
-      {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex items-center justify-between mt-6 pt-4 border-t border-[#E5E7EB]">
-          <p className="text-sm text-[#9CA3AF]">
-            Page {page} sur {totalPages} · {total} résultats
-          </p>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="w-9 h-9 rounded-xl border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F9FAFB] disabled:opacity-40 transition-all"
-            >
-              <ChevronLeft className="w-4 h-4" />
-            </button>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="w-9 h-9 rounded-xl border border-[#E5E7EB] flex items-center justify-center text-[#6B7280] hover:bg-[#F9FAFB] disabled:opacity-40 transition-all"
-            >
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Detail Modal */}
-      {selectedMatch && (
-        <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center p-4" onClick={() => setSelectedMatch(null)}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95 }}
-            animate={{ opacity: 1, scale: 1 }}
-            className="bg-white rounded-2xl max-w-lg w-full p-6 shadow-xl max-h-[90vh] overflow-y-auto"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <h3 className="text-lg font-bold text-[#1a1a1a] mb-4" style={{ fontFamily: "'Playfair Display', serif" }}>
-              Détails du Match
-            </h3>
-
-            <div className="space-y-4">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#38C172] to-[#86EFAC] flex items-center justify-center text-white font-bold">
-                  {selectedMatch.user_a?.name?.charAt(0)?.toUpperCase()}
-                </div>
-                <div>
-                  <p className="font-semibold">{selectedMatch.user_a?.name}</p>
-                  <p className="text-xs text-[#9CA3AF]">{selectedMatch.user_a?.email}</p>
-                </div>
-              </div>
-              <div className="flex items-center justify-center">
-                <Heart className="w-6 h-6 text-[#F56565]" />
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-[#4F7DF3] to-[#86EFAC] flex items-center justify-center text-white font-bold">
-                  {selectedMatch.user_b?.name?.charAt(0)?.toUpperCase()}
-                </div>
-                <div>
-                  <p className="font-semibold">{selectedMatch.user_b?.name}</p>
-                  <p className="text-xs text-[#9CA3AF]">{selectedMatch.user_b?.email}</p>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3 p-4 bg-[#F9FAFB] rounded-xl text-sm">
-                <div>
-                  <p className="text-[#9CA3AF] text-xs">Statut</p>
-                  <span className={cn("inline-block px-2 py-1 rounded-md text-xs font-semibold mt-1", STATUS_CLASSES[selectedMatch.status])}>
-                    {STATUS_LABELS[selectedMatch.status]}
-                  </span>
-                </div>
-                <div>
-                  <p className="text-[#9CA3AF] text-xs">Score</p>
-                  <p className="font-semibold">{selectedMatch.match_score ? `${selectedMatch.match_score}%` : "N/A"}</p>
-                </div>
-                <div>
-                  <p className="text-[#9CA3AF] text-xs">Initié par</p>
-                  <p className="font-semibold">{INITIATOR_LABELS[selectedMatch.initiated_by]}</p>
-                </div>
-                <div>
-                  <p className="text-[#9CA3AF] text-xs">Créé le</p>
-                  <p className="font-semibold">{new Date(selectedMatch.created_at).toLocaleDateString("fr-FR")}</p>
-                </div>
-                {selectedMatch.mentor && (
-                  <div className="col-span-2">
-                    <p className="text-[#9CA3AF] text-xs">Mentor assigné</p>
-                    <p className="font-semibold">{selectedMatch.mentor.name}</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Notes */}
-              <div>
-                <label className="text-sm font-medium text-[#374151] mb-1 block">Note admin</label>
-                <textarea
-                  value={noteText}
-                  onChange={(e) => setNoteText(e.target.value)}
-                  placeholder="Ajouter une note…"
-                  className="w-full p-3 border border-[#E5E7EB] rounded-xl text-sm text-[#374151] outline-none focus:border-[#486B46] resize-none"
-                  rows={3}
-                />
-              </div>
-
-              {/* Actions */}
-              {selectedMatch.status === "pending" && (
-                <div className="flex gap-3">
-                  <button
-                    onClick={() => handleAction(selectedMatch.id, "accepted")}
-                    disabled={!!actionLoading}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#38C172] text-white font-semibold text-sm hover:bg-[#2FA860] transition-all disabled:opacity-50"
-                  >
-                    <CheckCircle2 className="w-4 h-4" />
-                    Accepter
-                  </button>
-                  <button
-                    onClick={() => handleAction(selectedMatch.id, "declined")}
-                    disabled={!!actionLoading}
-                    className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#F56565] text-white font-semibold text-sm hover:bg-[#E04E4E] transition-all disabled:opacity-50"
-                  >
-                    <XCircle className="w-4 h-4" />
-                    Refuser
-                  </button>
-                </div>
-              )}
-
-              <button
-                onClick={() => setSelectedMatch(null)}
-                className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[#6B7280] font-medium text-sm hover:bg-[#F9FAFB] transition-all"
-              >
-                Fermer
-              </button>
+      {!loading && total > 0 && (
+        <div className="flex items-center justify-between gap-3 mt-5">
+          <p className="text-[12px] text-[#6B746E] font-medium">{total} couple{total > 1 ? "s" : ""}</p>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1.5">
+              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} aria-label="Page précédente"
+                className="w-9 h-9 rounded-lg flex items-center justify-center border border-border bg-white hover:bg-muted disabled:opacity-40"><ChevronLeft className="w-4 h-4" /></button>
+              <span className="text-[12px] font-semibold text-[#56615A] px-2 tabular-nums">{page} / {totalPages}</span>
+              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} aria-label="Page suivante"
+                className="w-9 h-9 rounded-lg flex items-center justify-center border border-border bg-white hover:bg-muted disabled:opacity-40"><ChevronRight className="w-4 h-4" /></button>
             </div>
-          </motion.div>
+          )}
         </div>
       )}
+    </div>
+  );
+}
+
+function StatTile({ label, value, icon: Icon, hint }: { label: string; value: number; icon: typeof Heart; hint?: string }) {
+  return (
+    <div className="bg-white rounded-2xl border border-border px-4 py-3.5">
+      <div className="flex items-center justify-between">
+        <span className="text-[13px] font-semibold text-[#56615A]">{label}</span>
+        <Icon className="w-4 h-4 text-primary" />
+      </div>
+      <p className="mt-1.5 text-[28px] leading-none font-bold text-foreground tabular-nums tracking-tight">{value.toLocaleString("fr-FR")}</p>
+      {hint && <p className="mt-1 text-[11.5px] text-[#6B746E]">{hint}</p>}
+    </div>
+  );
+}
+
+function Member({ p, align }: { p: CoupleProfile; align: "left" | "right" }) {
+  const display = p.pseudo || p.name || "Membre";
+  const a = age(p.birth_date);
+  const place = [p.city, p.country].filter(Boolean).join(", ");
+  return (
+    <Link href={`/admin/users/${p.id}`} className={cn("group flex items-center gap-3 min-w-0", align === "right" && "sm:flex-row-reverse sm:text-right")}>
+      <Avatar className="w-12 h-12 border-2 border-white shadow-sm shrink-0">
+        <AvatarImage src={avatarSrc(p.avatar_url ?? undefined, 128)} />
+        <AvatarFallback className="bg-primary/10 text-primary font-bold">{display.charAt(0).toUpperCase()}</AvatarFallback>
+      </Avatar>
+      <span className="min-w-0">
+        <span className="block text-[14.5px] font-bold text-foreground truncate group-hover:text-primary">{display}</span>
+        {p.name && p.pseudo && <span className="block text-[12px] text-[#6B746E] truncate">{p.name}</span>}
+        <span className="block text-[12px] text-[#56615A] truncate">{[a !== null ? `${a} ans` : null, place].filter(Boolean).join(" · ") || "—"}</span>
+      </span>
+    </Link>
+  );
+}
+
+function CoupleCard({ c, score }: { c: Couple; score: number | null }) {
+  const st = STAGE[c.stage];
+  const isMatch = c.stage === "match";
+  const inRelation = c.stage !== "alliance_pending" && c.stage !== "declined";
+  const engagementBy = c.engagement?.requester_id === c.requester.id ? c.requester : c.addressee;
+  return (
+    <li className={cn("bg-white rounded-2xl border p-4 sm:p-5", isMatch ? "border-primary/40" : "border-border")}>
+      {/* Les deux membres, reliés par le cœur du match */}
+      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4">
+        <Member p={c.requester} align="left" />
+        <div className="flex sm:flex-col items-center gap-2 justify-center">
+          <span className={cn("w-10 h-10 rounded-full flex items-center justify-center",
+            isMatch ? "bg-primary text-white" : inRelation ? "bg-primary/10 text-primary" : "bg-muted text-[#8A938C]")}>
+            <st.icon className="w-5 h-5" />
+          </span>
+          <span className={cn("inline-flex items-center h-6 px-2.5 rounded-full text-[11.5px] font-bold whitespace-nowrap", st.className)}>{st.label}</span>
+        </div>
+        <Member p={c.addressee} align="right" />
+      </div>
+
+      {/* Repères du couple */}
+      <div className="mt-4 pt-3.5 border-t border-border/70 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2.5 text-[12.5px]">
+        <Fact icon={Gauge} label="Compatibilité">
+          {score === null ? <span className="text-[#6B746E]">Questionnaire incomplet</span>
+            : <span className="font-bold text-foreground tabular-nums">{score} %</span>}
+        </Fact>
+        <Fact icon={isMatch ? CalendarHeart : Clock} label={isMatch ? "Match le" : inRelation ? "En relation depuis" : "Demande d'alliance le"}>
+          {formatDate(isMatch ? c.matched_at : inRelation ? c.relation_at : c.requested_at)}
+        </Fact>
+        <Fact icon={MessageCircle} label="Conversation">
+          {c.conversation.id
+            ? <>{c.conversation.message_count} message{c.conversation.message_count > 1 ? "s" : ""}{c.conversation.last_message_at && <span className="text-[#6B746E]"> · {relative(c.conversation.last_message_at)}</span>}</>
+            : <span className="text-[#6B746E]">Pas encore commencée</span>}
+        </Fact>
+        <Fact icon={Gem} label="Engagement">
+          {!c.engagement ? <span className="text-[#6B746E]">—</span>
+            : c.engagement.status === "accepted" ? <>Validé · demandé par {engagementBy.pseudo || engagementBy.name || "un membre"}</>
+            : c.engagement.status === "pending" ? <>Demandé par {engagementBy.pseudo || engagementBy.name || "un membre"} le {formatDate(c.engagement.requested_at)}</>
+            : <span className="text-[#6B746E]">Refusé</span>}
+        </Fact>
+      </div>
+
+      <div className="mt-3.5 flex flex-wrap gap-2">
+        <Link href={`/admin/users/${c.requester.id}`} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-[12px] font-semibold text-foreground hover:bg-muted">
+          <UserRound className="w-3.5 h-3.5" /> {c.requester.pseudo || c.requester.name || "Profil"}
+        </Link>
+        <Link href={`/admin/users/${c.addressee.id}`} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-[12px] font-semibold text-foreground hover:bg-muted">
+          <UserRound className="w-3.5 h-3.5" /> {c.addressee.pseudo || c.addressee.name || "Profil"}
+        </Link>
+        {c.conversation.id && (
+          <Link href={`/admin/chat-monitoring?user=${c.requester.id}`} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-[12px] font-semibold text-primary hover:bg-primary/5">
+            <Sparkles className="w-3.5 h-3.5" /> Voir leur conversation
+          </Link>
+        )}
+      </div>
+    </li>
+  );
+}
+
+function Fact({ icon: Icon, label, children }: { icon: typeof Heart; label: string; children: React.ReactNode }) {
+  return (
+    <div className="min-w-0">
+      <p className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#8A938C]"><Icon className="w-3.5 h-3.5 text-primary" /> {label}</p>
+      <p className="mt-0.5 text-[#3F4A43] truncate">{children}</p>
     </div>
   );
 }

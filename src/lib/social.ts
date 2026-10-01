@@ -46,6 +46,20 @@ const MATCH_QUESTIONNAIRE_COLS = [
 
 const FULL_PROFILE_COLS = `${PROFILE_COLS}, ${MATCH_QUESTIONNAIRE_COLS}`;
 
+/**
+ * Le questionnaire d'un AUTRE membre tel que le voit le matching (mêmes champs
+ * que MATCH_QUESTIONNAIRE_COLS). Sert à l'admin pour afficher exactement le
+ * pourcentage que voient les membres.
+ */
+export function pickMatchFields(q: Record<string, unknown> | null | undefined): Record<string, unknown> {
+  const src = q || {};
+  return Object.fromEntries(
+    [...MATCH_TEXT_FIELDS, ...MATCH_JSON_FIELDS]
+      .map((f) => [f, src[f]] as const)
+      .filter(([, v]) => v !== null && v !== undefined && v !== "")
+  );
+}
+
 function mapRow(d: any): MemberProfile {
   return {
     id: d.id,

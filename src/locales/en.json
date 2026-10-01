@@ -1733,5 +1733,24 @@
     "editError": "Your changes could not be saved.",
     "editExpiredTitle": "Editing time is over",
     "editExpiredDesc": "A message can be edited for 5 minutes after it is sent. You can still delete it."
+  },
+  "push": {
+    "bannerTitle": "Get notifications on your phone",
+    "bannerDesc": "New messages, alliance requests, engagement, events: be notified even when the site is closed.",
+    "enable": "Turn on notifications",
+    "later": "Later",
+    "disable": "Turn off",
+    "settingsTitle": "Notifications on this device",
+    "onLabel": "On for this device",
+    "onDesc": "You receive Garden of Alliance notifications on this device, even when the site is closed, as soon as it is online.",
+    "enabledTitle": "Notifications are on",
+    "enabledDesc": "A confirmation notification was just sent to this device.",
+    "deniedTitle": "Notifications blocked",
+    "deniedDesc": "Notifications are blocked for this site. Allow them in your browser settings (padlock icon next to the address), then try again.",
+    "unsupportedDesc": "This browser does not support notifications. Try Chrome on Android, or Safari on iPhone after adding the site to your home screen.",
+    "errorTitle": "Could not turn on notifications",
+    "iosStep1": "In Safari, tap Share",
+    "iosStep2": "Choose “Add to Home Screen”",
+    "iosStep3": "Open Garden of Alliance from your home screen, then turn on notifications here."
   }
 }
