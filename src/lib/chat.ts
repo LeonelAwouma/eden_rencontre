@@ -350,6 +350,9 @@ export async function getMessages(convId: string, myId: string): Promise<ChatMes
   }));
 }
 
+/** Erreur renvoyée par sendChatMessage quand l'admin a restreint ou bloqué la conversation. */
+export const CONVERSATION_CLOSED = "conversation_closed";
+
 export async function sendChatMessage(
   convId: string,
   content: string,
@@ -358,6 +361,13 @@ export async function sendChatMessage(
   receiverId?: string
 ): Promise<{ message?: ChatMessage; error?: string; moderationError?: string }> {
   if (!supabase) return { error: "Supabase non configuré." };
+
+  // Conversation restreinte ou bloquée par la modération : la RLS refuserait
+  // l'envoi, on le signale avant avec un message clair. (Sans la colonne
+  // status — migration non exécutée — la requête échoue et on continue.)
+  const { data: conv, error: convErr } = await supabase
+    .from("conversations").select("status").eq("id", convId).maybeSingle();
+  if (!convErr && conv?.status && conv.status !== "active") return { error: CONVERSATION_CLOSED };
 
   // ── Moderation pipeline (text only, skip for image-only messages) ──
   if (content.trim() && senderId) {

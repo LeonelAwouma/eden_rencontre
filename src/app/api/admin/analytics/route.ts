@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { requireAdmin } from "@/lib/admin-auth";
+import { genderKey } from "@/lib/verses";
+import { ADMIN_SYSTEM_EMAIL } from "@/lib/admin-system-shared";
 
 export async function GET(req: NextRequest) {
   if (!(await requireAdmin().catch(() => null))) {
@@ -55,7 +57,7 @@ export async function GET(req: NextRequest) {
     // Daily registrations for chart
     const { data: allProfiles } = await supabase
       .from("profiles")
-      .select("created_at, status, gender, city, country")
+      .select("created_at, status, city, country")
       .gte("created_at", startDate.toISOString())
       .order("created_at", { ascending: true });
 
@@ -77,12 +79,24 @@ export async function GET(req: NextRequest) {
       }
     });
 
-    // Gender distribution
-    const genderCounts: Record<string, number> = {};
-    (allProfiles || []).forEach((p) => {
-      const g = p.gender || "Non spécifié";
-      genderCounts[g] = (genderCounts[g] || 0) + 1;
+    // Gender distribution — sur tous les membres (pas seulement les inscrits de
+    // la période), hors compte système « Admin ». Les valeurs stockées varient
+    // (« homme »/« femme » à l'inscription, « Male »/« Female » via l'ancien
+    // formulaire de profil…) : on les ramène à deux catégories.
+    const { data: genderRows } = await supabase
+      .from("profiles")
+      .select("gender")
+      .neq("email", ADMIN_SYSTEM_EMAIL);
+    const genderCounts = { male: 0, female: 0, unknown: 0 };
+    (genderRows || []).forEach((p) => {
+      const key = genderKey(p.gender);
+      genderCounts[key ?? "unknown"]++;
     });
+    const genderDistribution = [
+      { name: "Hommes", value: genderCounts.male, color: "#486B46" },
+      { name: "Femmes", value: genderCounts.female, color: "#8FB08A" },
+      { name: "Non renseigné", value: genderCounts.unknown, color: "#D1D5DB" },
+    ].filter((g) => g.value > 0);
 
     // Top cities
     const cityCounts: Record<string, number> = {};
@@ -120,7 +134,7 @@ export async function GET(req: NextRequest) {
         completedMeets: completedMeetsCount,
       },
       dailyRegistrations: Object.values(dailyData),
-      genderDistribution: Object.entries(genderCounts).map(([name, value]) => ({ name, value })),
+      genderDistribution,
       topCities,
       topCountries,
     });

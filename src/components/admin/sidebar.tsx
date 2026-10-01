@@ -29,7 +29,7 @@ const NAV_ITEMS = [
   { label: "Utilisateurs", href: "/admin/users", icon: Users, section: "main", shortcut: "⌘U" },
   { label: "Matching", href: "/admin/matching", icon: Heart, section: "main" },
   { label: "Témoignages", href: "/admin/testimonials", icon: MessageSquare, section: "content" },
-  { label: "Chat Monitoring", href: "/admin/chat-monitoring", icon: MessageCircle, section: "content" },
+  { label: "Surveillance de la discussion", href: "/admin/chat-monitoring", icon: MessageCircle, section: "content" },
   { label: "Messagerie", href: "/admin/messages", icon: Send, section: "content" },
   { label: "Événements", href: "/admin/events", icon: CalendarDays, section: "content" },
   { label: "Visioconférences", href: "/admin/meets", icon: Video, section: "content" },
@@ -150,7 +150,7 @@ export function Sidebar({
                             {!isCollapsed && (
                               <motion.span initial={{ opacity: 0, width: 0 }} animate={{ opacity: 1, width: "auto" }}
                                 exit={{ opacity: 0, width: 0 }} transition={{ duration: 0.15 }}
-                                className={cn("text-[13px] whitespace-nowrap overflow-hidden flex-1",
+                                className={cn("text-[13px] whitespace-nowrap overflow-hidden text-ellipsis flex-1",
                                   active ? "font-semibold text-[#3D6B3B]" : "font-medium")}>
                                 {item.label}
                               </motion.span>

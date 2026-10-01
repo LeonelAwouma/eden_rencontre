@@ -30,7 +30,7 @@ interface AnalyticsData {
     completedMeets: number;
   };
   dailyRegistrations: { date: string; total: number; approved: number; pending: number }[];
-  genderDistribution: { name: string; value: number }[];
+  genderDistribution: { name: string; value: number; color: string }[];
   topCities: { city: string; count: number }[];
   topCountries: { country: string; count: number }[];
 }
@@ -42,7 +42,6 @@ const PERIOD_OPTIONS = [
   { value: 365, label: "1 an" },
 ];
 
-const GENDER_COLORS = ["#38C172", "#4F7DF3", "#FF9E45", "#8B5CF6", "#F56565"];
 
 export default function AnalyticsPage() {
   const [data, setData] = useState<AnalyticsData | null>(null);
@@ -187,6 +186,7 @@ export default function AnalyticsPage() {
             >
               <h2 className="text-[18px] font-semibold text-[#1a1a1a] tracking-tight mb-5" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
                 Répartition par genre
+                <span className="ml-2 text-[12px] font-medium text-[#9CA3AF]">tous les membres</span>
               </h2>
               {data.genderDistribution.length > 0 ? (
                 <div className="h-[250px] flex items-center justify-center">
@@ -201,8 +201,8 @@ export default function AnalyticsPage() {
                         paddingAngle={4}
                         dataKey="value"
                       >
-                        {data.genderDistribution.map((_, i) => (
-                          <Cell key={i} fill={GENDER_COLORS[i % GENDER_COLORS.length]} />
+                        {data.genderDistribution.map((g) => (
+                          <Cell key={g.name} fill={g.color} />
                         ))}
                       </Pie>
                       <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #E5E7EB", fontSize: 13, fontWeight: 500 }} />

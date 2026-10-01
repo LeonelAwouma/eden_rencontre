@@ -39,7 +39,7 @@ import { supabase } from "@/lib/supabase";
 import {
   upsertMyProfile, searchUsers, listConversations, getMessages,
   sendChatMessage, uploadChatImage, uploadAvatar, markConversationRead,
-  startConversation, contactAdmin, CHAT_EMOJIS, type ChatConversation, type ChatMessage,
+  startConversation, contactAdmin, CHAT_EMOJIS, CONVERSATION_CLOSED, type ChatConversation, type ChatMessage,
   type DirectoryUser, type MemberProfile,
 } from "@/lib/chat";
 import {
@@ -579,6 +579,10 @@ export default function DashboardPage() {
   };
 
   const notifySendError = (error: string) => {
+    if (error === CONVERSATION_CLOSED) {
+      toast({ title: t("dashboard.toastConversationClosedTitle"), description: t("dashboard.toastConversationClosedDesc"), variant: "destructive" });
+      return;
+    }
     if (/row-level|policy|not_friends|permission/i.test(error)) {
       const name = activeConv?.name || t("dashboard.thisMember");
       toast({ title: t("dashboard.toastBecomeFriendsTitle"), description: t("dashboard.toastBecomeFriendsDesc", { name }) });
@@ -2254,6 +2258,7 @@ export default function DashboardPage() {
                               : { background: "#FFFFFF", border: "1px solid #E8E5E0", color: "#2F2F2F", borderBottomLeftRadius: "6px" }}>
                             {m.imageUrl && <a href={m.imageUrl} target="_blank" rel="noopener noreferrer"><img src={m.imageUrl} alt="Photo" className="rounded-xl max-h-56 w-auto object-cover" /></a>}
                             {m.text && <p className={cn(m.imageUrl && "px-2.5 pt-1.5")}>{m.text}</p>}
+                            {!m.text && !m.imageUrl && <p className="italic opacity-70">{t("dashboard.messageRemovedByModeration")}</p>}
                             <span className={cn("block text-[9px] mt-1 text-right", m.imageUrl && "px-2.5 pb-1")}
                               style={{ color: m.from === "me" ? "rgba(255,255,255,0.6)" : "#777777" }}>{m.time}</span>
                           </div>

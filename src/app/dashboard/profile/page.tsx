@@ -15,6 +15,7 @@ import {
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { useI18n } from "@/lib/i18n";
+import { normalizeGender } from "@/lib/verses";
 import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
 import { AutoSaveIndicator } from "@/components/autosave-indicator";
 import { ProfilePhotoEditor } from "@/components/profile-photo-editor";
@@ -94,9 +95,10 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
     { value: "Widowed", key: "civilStatusWidowed" },
     { value: "Separated", key: "civilStatusSeparated" },
   ];
+  // Mêmes valeurs qu'à l'inscription : le matching filtre sur « homme » / « femme ».
   const GENDER_OPTIONS = [
-    { value: "Male", label: t("profilePage.genderMale") },
-    { value: "Female", label: t("profilePage.genderFemale") },
+    { value: "homme", label: t("profilePage.genderMale") },
+    { value: "femme", label: t("profilePage.genderFemale") },
   ];
   const MARRIAGE_VISION_OPTIONS = [
     t("profilePage.visionBiblicalMarriage"), t("profilePage.visionPrayerBased"), t("profilePage.visionMinistryCouple"),
@@ -114,7 +116,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
     profession: profile.profession || "",
     bio: profile.bio || "",
     civil_status: profile.civil_status || "",
-    gender: profile.gender || "",
+    gender: normalizeGender(profile.gender) as string,
     birth_date: profile.birth_date || "",
     marriage_vision: (profile.marriage_vision || []) as string[],
   });
@@ -123,7 +125,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
     setForm({
       name: profile.name || "", pseudo: profile.pseudo || "", city: profile.city || "", country: profile.country || "",
       region: profile.region || "", profession: profile.profession || "", bio: profile.bio || "",
-      civil_status: profile.civil_status || "", gender: profile.gender || "",
+      civil_status: profile.civil_status || "", gender: normalizeGender(profile.gender),
       birth_date: profile.birth_date || "", marriage_vision: profile.marriage_vision || [],
     });
   }, [profile]);
@@ -200,7 +202,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
               <InfoRow label={t("profilePage.pseudo")} value={profile.pseudo} />
               <InfoRow label={t("profilePage.fullName")} value={profile.name} />
               <InfoRow label={t("profilePage.email")} value={profile.email} />
-              <InfoRow label={t("profilePage.gender")} value={profile.gender} />
+              <InfoRow label={t("profilePage.gender")} value={GENDER_OPTIONS.find(o => o.value === normalizeGender(profile.gender))?.label || profile.gender} />
               <InfoRow label={t("profilePage.dateOfBirth")} value={formatDate(profile.birth_date, locale)} />
               <InfoRow label={t("profilePage.civilStatus")} value={profile.civil_status} />
             </div>

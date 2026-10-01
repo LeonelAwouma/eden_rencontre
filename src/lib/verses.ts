@@ -160,6 +160,12 @@ export function genderKey(gender?: string | null): GenderKey {
   return null;
 }
 
+/** Valeur canonique à enregistrer dans profiles.gender (« homme » / « femme »), "" si inconnue. */
+export function normalizeGender(gender?: string | null): "homme" | "femme" | "" {
+  const key = genderKey(gender);
+  return key === "male" ? "homme" : key === "female" ? "femme" : "";
+}
+
 const LAST_KEY = "eden-last-verse";
 
 /**

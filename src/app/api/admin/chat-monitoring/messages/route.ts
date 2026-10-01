@@ -20,26 +20,32 @@ export async function GET(req: NextRequest) {
 
   const supabase = getSupabaseAdmin();
 
-  // Query the REAL messages table
-  let query = supabase
-    .from("messages")
-    .select(`
-      id,
-      conversation_id,
-      sender_id,
-      content,
-      image_url,
-      created_at
-    `)
-    .eq("conversation_id", conversationId)
-    .order("created_at", { ascending: true })
-    .limit(limit);
+  // Query the REAL messages table (les colonnes de modération n'existent
+  // qu'après la migration 20261001_chat_moderation.sql)
+  const buildQuery = (withModeration: boolean) => {
+    let q = supabase
+      .from("messages")
+      .select(withModeration
+        ? "id, conversation_id, sender_id, content, image_url, created_at, is_flagged, flag_reason, is_deleted"
+        : "id, conversation_id, sender_id, content, image_url, created_at")
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: true })
+      .limit(limit);
+    if (since) q = q.gt("created_at", since);
+    return q;
+  };
 
-  if (since) {
-    query = query.gt("created_at", since);
+  type MessageRow = {
+    id: string; conversation_id: string; sender_id: string; content: string | null;
+    image_url: string | null; created_at: string;
+    is_flagged?: boolean; flag_reason?: string | null; is_deleted?: boolean;
+  };
+  let result = await buildQuery(true);
+  if (result.error && (result.error.code === "42703" || /column/i.test(result.error.message))) {
+    result = await buildQuery(false);
   }
-
-  const { data: messages, error } = await query;
+  const { error } = result;
+  const messages = result.data as unknown as MessageRow[] | null;
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   // Get unique sender IDs and fetch their profiles
@@ -68,9 +74,9 @@ export async function GET(req: NextRequest) {
     content: msg.content || "",
     image_url: msg.image_url || null,
     message_type: msg.image_url ? "image" : "text",
-    is_flagged: false,
-    flag_reason: null,
-    is_deleted: false,
+    is_flagged: !!msg.is_flagged,
+    flag_reason: msg.flag_reason ?? null,
+    is_deleted: !!msg.is_deleted,
     created_at: msg.created_at,
     sender: senderMap[msg.sender_id] || {
       id: msg.sender_id,

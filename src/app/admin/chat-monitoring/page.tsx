@@ -135,14 +135,21 @@ const ALERT_TYPE_LABELS: Record<string, string> = {
 };
 
 const MODERATION_ACTIONS = [
-  { value: "warning", label: "Avertissement", color: "#FF9E45" },
-  { value: "mute", label: "Mute", color: "#9CA3AF" },
-  { value: "restrict", label: "Restreindre", color: "#FF9E45" },
-  { value: "temporary_ban", label: "Ban temporaire", color: "#F56565" },
-  { value: "permanent_ban", label: "Ban permanent", color: "#F56565" },
-  { value: "account_suspension", label: "Suspension", color: "#F56565" },
-  { value: "note", label: "Note", color: "#4F7DF3" },
+  { value: "warning", label: "Avertissement", color: "#FF9E45", hint: "Le membre reçoit un message de l'équipe dans sa messagerie." },
+  { value: "restrict", label: "Restreindre la conversation", color: "#FF9E45", hint: "La conversation passe en lecture seule : plus aucun envoi." },
+  { value: "block", label: "Bloquer la conversation", color: "#F56565", hint: "La conversation est fermée pour les deux membres." },
+  { value: "account_suspension", label: "Suspendre le compte", color: "#F56565", hint: "Le membre ne peut plus se connecter et reçoit un email." },
+  { value: "note", label: "Note interne", color: "#486B46", hint: "Simple note dans le journal de modération, rien n'est envoyé." },
 ];
+
+type Notice = { kind: "success" | "error"; text: string } | null;
+
+/** Réponse d'API → message d'erreur lisible (ou null si tout va bien). */
+async function apiError(res: Response): Promise<string | null> {
+  if (res.ok) return null;
+  const data = await res.json().catch(() => ({}));
+  return data.error || "L'action n'a pas pu être effectuée.";
+}
 
 // ─── Real-time Conversation Viewer Component ─────────────────────────
 function ConversationViewer({
@@ -150,11 +157,13 @@ function ConversationViewer({
   userA,
   userB,
   onClose,
+  onNotice,
 }: {
   conversationId: string;
   userA: ChatUser;
   userB: ChatUser;
   onClose: () => void;
+  onNotice: (notice: Notice) => void;
 }) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loading, setLoading] = useState(true);
@@ -242,7 +251,7 @@ function ConversationViewer({
 
   const handleFlagMessage = async (messageId: string, flag: boolean) => {
     try {
-      await fetch("/api/admin/chat-monitoring", {
+      const res = await fetch("/api/admin/chat-monitoring", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -251,30 +260,37 @@ function ConversationViewer({
           status: flag ? "flagged" : "unflagged",
         }),
       });
+      const err = await apiError(res);
+      if (err) { onNotice({ kind: "error", text: err }); return; }
       setMessages((prev) =>
         prev.map((m) =>
           m.id === messageId
-            ? { ...m, is_flagged: flag, flag_reason: flag ? "Flagged by admin" : null }
+            ? { ...m, is_flagged: flag, flag_reason: flag ? "Signalé par un administrateur" : null }
             : m
         )
       );
     } catch (e) {
       console.error("Failed to flag message:", e);
+      onNotice({ kind: "error", text: "Le signalement n'a pas pu être enregistré." });
     }
   };
 
   const handleDeleteMessage = async (messageId: string) => {
+    if (!window.confirm("Supprimer ce message ? Il sera effacé pour les deux membres.")) return;
     try {
-      await fetch("/api/admin/chat-monitoring", {
+      const res = await fetch("/api/admin/chat-monitoring", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "message", id: messageId, status: "deleted" }),
       });
+      const err = await apiError(res);
+      if (err) { onNotice({ kind: "error", text: err }); return; }
       setMessages((prev) =>
         prev.map((m) => (m.id === messageId ? { ...m, is_deleted: true } : m))
       );
     } catch (e) {
       console.error("Failed to delete message:", e);
+      onNotice({ kind: "error", text: "Le message n'a pas pu être supprimé." });
     }
   };
 
@@ -518,7 +534,15 @@ export default function ChatMonitoringPage() {
   const [viewingConversation, setViewingConversation] = useState<Conversation | null>(null);
   const [modAction, setModAction] = useState({ type: "warning", reason: "", target_user_id: "" });
   const [showModModal, setShowModModal] = useState(false);
+  const [notice, setNotice] = useState<Notice>(null);
+  const noticeTimer = useRef<NodeJS.Timeout | null>(null);
   const limit = 20;
+
+  const showNotice = useCallback((n: Notice) => {
+    setNotice(n);
+    if (noticeTimer.current) clearTimeout(noticeTimer.current);
+    if (n) noticeTimer.current = setTimeout(() => setNotice(null), n.kind === "error" ? 8000 : 4000);
+  }, []);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -552,18 +576,36 @@ export default function ChatMonitoringPage() {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
+  const CONV_ACTION_COPY: Record<string, { confirm: string; done: string }> = {
+    restricted: {
+      confirm: "Restreindre cette conversation ? Elle passera en lecture seule : aucun des deux membres ne pourra plus y écrire.",
+      done: "Conversation restreinte : elle est désormais en lecture seule.",
+    },
+    blocked: {
+      confirm: "Bloquer cette conversation ? Elle sera fermée pour les deux membres.",
+      done: "Conversation bloquée.",
+    },
+    active: { confirm: "", done: "Conversation réactivée : les membres peuvent de nouveau écrire." },
+  };
+
   const handleConversationAction = async (convId: string, status: string, restricted_reason?: string) => {
+    const copy = CONV_ACTION_COPY[status];
+    if (copy?.confirm && !window.confirm(copy.confirm)) return;
     setActionLoading(convId);
     try {
-      await fetch("/api/admin/chat-monitoring", {
+      const res = await fetch("/api/admin/chat-monitoring", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "conversation", id: convId, status, restricted_reason }),
       });
+      const err = await apiError(res);
+      if (err) { showNotice({ kind: "error", text: err }); return; }
+      showNotice({ kind: "success", text: copy?.done || "Conversation mise à jour." });
       await fetchData();
       setSelectedConv(null);
     } catch (e) {
       console.error("Failed to update conversation:", e);
+      showNotice({ kind: "error", text: "La conversation n'a pas pu être mise à jour." });
     } finally {
       setActionLoading(null);
     }
@@ -572,11 +614,13 @@ export default function ChatMonitoringPage() {
   const handleAlertAction = async (alertId: string, status: string, admin_notes?: string) => {
     setActionLoading(alertId);
     try {
-      await fetch("/api/admin/chat-monitoring", {
+      const res = await fetch("/api/admin/chat-monitoring", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ type: "alert", id: alertId, status, admin_notes }),
       });
+      const err = await apiError(res);
+      if (err) { showNotice({ kind: "error", text: err }); return; }
       await fetchData();
     } catch (e) {
       console.error("Failed to update alert:", e);
@@ -586,10 +630,12 @@ export default function ChatMonitoringPage() {
   };
 
   const handleModeration = async () => {
-    if (!modAction.reason || !modAction.target_user_id) return;
+    if (!modAction.reason.trim() || !modAction.target_user_id) return;
+    if (modAction.type === "account_suspension" &&
+      !window.confirm("Suspendre ce compte ? Le membre ne pourra plus se connecter.")) return;
     setActionLoading("mod");
     try {
-      await fetch("/api/admin/chat-monitoring", {
+      const res = await fetch("/api/admin/chat-monitoring", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -599,10 +645,16 @@ export default function ChatMonitoringPage() {
           reason: modAction.reason,
         }),
       });
+      const err = await apiError(res);
+      if (err) { showNotice({ kind: "error", text: err }); return; }
+      const data = await res.json().catch(() => ({}));
+      showNotice({ kind: "success", text: data.message || "Action de modération enregistrée." });
       setShowModModal(false);
       setModAction({ type: "warning", reason: "", target_user_id: "" });
+      await fetchData();
     } catch (e) {
       console.error("Failed to create moderation action:", e);
+      showNotice({ kind: "error", text: "L'action de modération n'a pas pu être effectuée." });
     } finally {
       setActionLoading(null);
     }
@@ -612,13 +664,35 @@ export default function ChatMonitoringPage() {
 
   return (
     <div className="max-w-7xl mx-auto">
-      
+      <AnimatePresence>
+        {notice && (
+          <motion.div
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 12 }}
+            role="status"
+            className={cn(
+              "fixed bottom-6 right-6 z-[60] max-w-sm flex items-start gap-3 px-4 py-3 rounded-xl shadow-lg border text-sm bg-white",
+              notice.kind === "success" ? "border-[#486B46]/30 text-[#3A5A3A]" : "border-[#F56565]/30 text-[#B83232]"
+            )}
+          >
+            {notice.kind === "success"
+              ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0 text-[#486B46]" />
+              : <AlertCircle className="w-4 h-4 mt-0.5 shrink-0 text-[#F56565]" />}
+            <span className="flex-1">{notice.text}</span>
+            <button onClick={() => showNotice(null)} className="text-[#9CA3AF] hover:text-[#374151]" aria-label="Fermer">
+              <X className="w-4 h-4" />
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
 
       {/* Page Title */}
       <div className="mb-6">
         <div className="flex items-center gap-3">
           <h2 className="text-2xl font-bold text-[#1a1a1a] tracking-tight" style={{ fontFamily: "'Playfair Display', serif" }}>
-            Chat Monitoring
+            Surveillance de la discussion
           </h2>
           {filterUserId && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#486B46]/10 border border-[#486B46]/20">
@@ -969,6 +1043,7 @@ export default function ChatMonitoringPage() {
                 userA={viewingConversation.user_a}
                 userB={viewingConversation.user_b}
                 onClose={() => setViewingConversation(null)}
+                onNotice={showNotice}
               />
             </div>
           )}
@@ -1033,6 +1108,9 @@ export default function ChatMonitoringPage() {
                     </button>
                   ))}
                 </div>
+                <p className="text-xs text-[#6B7280] mt-2">
+                  {MODERATION_ACTIONS.find((a) => a.value === modAction.type)?.hint}
+                </p>
               </div>
 
               <div>
@@ -1049,7 +1127,7 @@ export default function ChatMonitoringPage() {
               <div className="flex gap-3">
                 <button
                   onClick={handleModeration}
-                  disabled={!modAction.reason || !modAction.target_user_id || !!actionLoading}
+                  disabled={!modAction.reason.trim() || !modAction.target_user_id || !!actionLoading}
                   className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#486B46] text-white font-semibold text-sm hover:bg-[#3A5A3A] transition-all disabled:opacity-50"
                 >
                   {actionLoading === "mod" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Shield className="w-4 h-4" />}
