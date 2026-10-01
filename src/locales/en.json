@@ -546,7 +546,12 @@
       "testimony": "Testimony",
       "guide": "Guide",
       "external": "External link"
-    }
+    },
+    "formationEyebrow": "Marriage Academy · Course",
+    "formationTitle": "Build on the Rock",
+    "formationDesc": "Garden of Alliance’s marriage preparation course, in six pillars: lessons, case studies and quizzes to build your covenant on a solid foundation.",
+    "formationCta": "Take the course",
+    "formationAlt": "A couple places a stone together on a rock engraved “Jesus Christ, our foundation”, in front of a house under construction."
   },
   "legalCgu": {
     "eyebrow": "Legal",
@@ -1178,7 +1183,7 @@
     "verifiedProfileBadge": "Verified Profile ✅",
     "verificationInProgress": "Verification in progress",
     "verificationNotApproved": "Verification not approved",
-    "verifiedDesc": "Your profile displays the 'Verified Profile' badge. Other members can see that your identity has been confirmed.",
+    "verifiedDesc": "Your profile shows the “Verified profile” badge: your profile and questionnaire are complete. Keep them up to date to keep it.",
     "underReviewDesc": "Your profile is being reviewed by our team. You will be notified once a decision is made.",
     "rejectedReasonPrefix": "Reason:",
     "rejectedDescDefault": "Your request was not approved. You can update your profile and submit again.",
@@ -1359,7 +1364,15 @@
     "missingProfession": "Your profession",
     "missingCivilStatus": "Your civil status",
     "missingMarriageVision": "Your vision of marriage",
-    "missingQuestionnaire": "The compatibility questionnaire"
+    "missingQuestionnaire": "The compatibility questionnaire",
+    "badgeGoalTitle": "Get the “Verified profile” badge",
+    "badgeGoalDesc": "It is awarded automatically as soon as your profile and questionnaire are fully completed. Other members can then see your profile is serious and complete.",
+    "badgeProfileStep": "Profile information",
+    "badgeQuestionnaireStep": "Questionnaire",
+    "badgeMissing": "Still to complete:",
+    "badgeComplete": "Complete my profile",
+    "badgeGrantedTitle": "✅ “Verified profile” badge earned!",
+    "badgeGrantedDesc": "Your profile and questionnaire are complete: the badge is now shown on your profile."
   },
   "chatGuide": {
     "headerTitle": "Guide to Your First 5 Conversations",
@@ -1753,5 +1766,12 @@
     "iosStep1": "In Safari, tap Share",
     "iosStep2": "Choose “Add to Home Screen”",
     "iosStep3": "Open Garden of Alliance from your home screen, then turn on notifications here."
+  },
+  "phone": {
+    "label": "Phone number",
+    "dialLabel": "Country code",
+    "placeholder": "6 90 12 34 56",
+    "hint": "Only visible to the Garden of Alliance team, to contact you if needed.",
+    "invalid": "Invalid number: check the country code and the number of digits."
   }
 }

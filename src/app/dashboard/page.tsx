@@ -348,6 +348,8 @@ export default function DashboardPage() {
 
   // Verification status
   const [verificationStatus, setVerificationStatus] = useState<string>("none");
+  // Avancement vers le badge « Profil vérifié » (attribué automatiquement quand tout est rempli).
+  const [badgeProgress, setBadgeProgress] = useState<{ profile: { completed: number; total: number; missing: string[] }; questionnaire: { answered: number; total: number } } | null>(null);
   const [verificationRejectionReason, setVerificationRejectionReason] = useState<string | null>(null);
 
   // Upcoming events
@@ -394,13 +396,18 @@ export default function DashboardPage() {
   // Fetch verification status on mount
   useEffect(() => {
     if (!user?.id) return;
-    fetch(`/api/user/verification-status?user_id=${user.id}`)
-      .then((r) => r.json())
-      .then((d) => {
-        if (d.verification_status) setVerificationStatus(d.verification_status);
-        if (d.verification_rejection_reason) setVerificationRejectionReason(d.verification_rejection_reason);
-      })
-      .catch(() => {});
+    (async () => {
+      const { data } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+      const token = data.session?.access_token;
+      if (!token) return;
+      const res = await fetch("/api/user/verification", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+      if (!res.ok) return;
+      const d = await res.json();
+      if (d.status) setVerificationStatus(d.status);
+      if (d.rejectionReason) setVerificationRejectionReason(d.rejectionReason);
+      if (d.profile && d.questionnaire) setBadgeProgress({ profile: d.profile, questionnaire: d.questionnaire });
+      if (d.granted) toast({ title: t("dashboard.badgeGrantedTitle"), description: t("dashboard.badgeGrantedDesc") });
+    })().catch(() => {});
   }, [user?.id]);
 
   const ENGAGEMENT_NOTIF_TYPES = ["engagement_request", "engagement_accepted", "engagement_declined"];
@@ -1557,8 +1564,47 @@ export default function DashboardPage() {
                   </Button>
                 </div>
 
+                {/* Badge « Profil vérifié » : ce qu'il reste à remplir pour l'obtenir */}
+                {(verificationStatus === "none" || verificationStatus === "under_review") && badgeProgress && (
+                  <div className="rounded-2xl p-5"
+                    style={{ background: "linear-gradient(135deg, #EEF5EC 0%, #FAF9F6 100%)", border: "1px solid #C6D4C0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
+                    <div className="flex items-center gap-3 mb-2">
+                      <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: "#FFFFFF" }}>
+                        <ShieldCheck className="w-4 h-4" style={{ color: "#486B46" }} />
+                      </div>
+                      <p className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>{t("dashboard.badgeGoalTitle")}</p>
+                    </div>
+                    <p className="text-xs leading-relaxed mb-3" style={{ color: "#777777" }}>{t("dashboard.badgeGoalDesc")}</p>
+                    {[
+                      { label: t("dashboard.badgeProfileStep"), done: badgeProgress.profile.completed, total: badgeProgress.profile.total },
+                      { label: t("dashboard.badgeQuestionnaireStep"), done: badgeProgress.questionnaire.answered, total: badgeProgress.questionnaire.total },
+                    ].map((step) => (
+                      <div key={step.label} className="mb-2.5">
+                        <div className="flex justify-between text-[12px] font-semibold mb-1" style={{ color: "#3F4A43" }}>
+                          <span className="flex items-center gap-1.5">
+                            {step.done >= step.total ? <CheckCircle2 className="w-3.5 h-3.5" style={{ color: "#486B46" }} /> : null}
+                            {step.label}
+                          </span>
+                          <span className="tabular-nums">{step.done}/{step.total}</span>
+                        </div>
+                        <Progress value={step.total ? (step.done / step.total) * 100 : 0} className="h-1.5" style={{ background: "#FFFFFF" }} />
+                      </div>
+                    ))}
+                    {badgeProgress.profile.missing.length > 0 && (
+                      <p className="text-[11.5px] mt-1" style={{ color: "#6B746E" }}>
+                        {t("dashboard.badgeMissing")} {badgeProgress.profile.missing.join(", ")}
+                      </p>
+                    )}
+                    <Button onClick={() => router.push("/dashboard/profile")} variant="outline"
+                      className="w-full mt-3 h-9 rounded-xl font-bold text-xs"
+                      style={{ borderColor: "#C6D4C0", color: "#486B46", background: "#FFFFFF" }}>
+                      {t("dashboard.badgeComplete")}
+                    </Button>
+                  </div>
+                )}
+
                 {/* Verification Status Card */}
-                {verificationStatus !== "none" && !(verificationStatus === "verified" && profileCompletionPct !== null && profileCompletionPct < 100) && (
+                {(verificationStatus === "verified" || verificationStatus === "rejected") && !(verificationStatus === "verified" && profileCompletionPct !== null && profileCompletionPct < 100) && (
                   <div className="rounded-2xl p-5"
                     style={{
                       background: verificationStatus === "verified" ? "linear-gradient(135deg, #EEF5EC 0%, #FAF9F6 100%)"
@@ -1575,13 +1621,11 @@ export default function DashboardPage() {
                       </div>
                       <p className="font-headline font-bold text-sm" style={{ color: "#2F2F2F" }}>
                         {verificationStatus === "verified" && t("dashboard.verifiedProfileBadge")}
-                        {verificationStatus === "under_review" && t("dashboard.verificationInProgress")}
                         {verificationStatus === "rejected" && t("dashboard.verificationNotApproved")}
                       </p>
                     </div>
                     <p className="text-xs leading-relaxed" style={{ color: "#777777" }}>
                       {verificationStatus === "verified" && t("dashboard.verifiedDesc")}
-                      {verificationStatus === "under_review" && t("dashboard.underReviewDesc")}
                       {verificationStatus === "rejected" && (verificationRejectionReason
                         ? `${t("dashboard.rejectedReasonPrefix")} ${verificationRejectionReason}`
                         : t("dashboard.rejectedDescDefault"))}
@@ -2692,11 +2736,6 @@ export default function DashboardPage() {
                         {verificationStatus === "verified" && profileCompletionPct === 100 && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1" style={{ background: "#EEF5EC", color: "#486B46" }}>
                             <CheckCircle2 className="w-3 h-3" /> {t("dashboard.verifiedProfileBadge")}
-                          </span>
-                        )}
-                        {verificationStatus === "under_review" && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1" style={{ background: "#FFFBEB", color: "#D97706" }}>
-                            <Clock className="w-3 h-3" /> {t("dashboard.verificationInProgress")}
                           </span>
                         )}
                       </div>

@@ -445,11 +445,11 @@ export async function saveQuestionnaireAnswers(answers: Record<string, any>): Pr
 }
 
 /**
- * Marque le questionnaire comme terminé via le serveur, qui crée la demande de
- * badge « Profil vérifié » si toutes les questions requises sont remplies.
+ * Marque le questionnaire comme terminé via le serveur, qui attribue le badge
+ * « Profil vérifié » si le profil et toutes les questions requises sont remplis.
  * À utiliser partout où le membre valide son questionnaire (onboarding, espace membre).
  */
-export async function completeOnboarding(answers: Record<string, any>): Promise<{ ok: boolean; error?: string; verificationRequested?: boolean }> {
+export async function completeOnboarding(answers: Record<string, any>): Promise<{ ok: boolean; error?: string; verificationGranted?: boolean }> {
   if (!supabase) return saveOnboarding(answers, true);
   const { data } = await supabase.auth.getSession();
   const token = data.session?.access_token;
@@ -462,7 +462,7 @@ export async function completeOnboarding(answers: Record<string, any>): Promise<
     });
     const body = await res.json().catch(() => ({}));
     if (!res.ok) return { ok: false, error: body.error || "Enregistrement impossible." };
-    return { ok: true, verificationRequested: !!body.verification_requested };
+    return { ok: true, verificationGranted: !!body.verification_granted };
   } catch {
     return { ok: false, error: "Erreur réseau. Vérifiez votre connexion." };
   }

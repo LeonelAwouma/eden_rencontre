@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { isValidE164 } from "@/lib/geo";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { verifySelfieServer } from "@/lib/face-verification-server";
 
@@ -26,6 +27,7 @@ export async function POST(request: NextRequest) {
       charterAcceptFull,
       selfieImage,
       livenessFrames,
+      phone,
       profilePhotos,
       avatarUrl,
     } = body;
@@ -33,6 +35,11 @@ export async function POST(request: NextRequest) {
     // Selfie verification is recomputed here from the actual images — the client's
     // own score/verified claim is never trusted, since it's just JSON an attacker
     // could forge without ever taking a real selfie.
+    // Numéro de téléphone au format international (+237…), obligatoire.
+    if (!isValidE164(phone)) {
+      return NextResponse.json({ error: "Numéro de téléphone invalide." }, { status: 400 });
+    }
+
     let selfieVerified = false;
     let selfieVerificationScore = 0;
     let selfieDetails: Record<string, unknown> | null = null;
@@ -174,6 +181,12 @@ export async function POST(request: NextRequest) {
           updated_at: new Date().toISOString(),
         })
         .eq("id", userId);
+    }
+
+    // Téléphone : colonne profiles.phone (20261002_profiles_phone.sql). Sans elle, l'inscription continue.
+    {
+      const { error: phoneError } = await db.from("profiles").update({ phone }).eq("id", userId);
+      if (phoneError) console.warn("[inscription] téléphone non enregistré:", phoneError.message);
     }
 
     // Détail de la vérification du selfie pour l'admin (photo par photo, présence).

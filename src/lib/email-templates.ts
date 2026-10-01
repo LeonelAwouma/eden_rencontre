@@ -403,13 +403,16 @@ export function accountSuspendedEmail(name: string, reason?: string): RenderedEm
   });
 }
 
-export function verificationApprovedEmail(name: string): RenderedEmail {
+/** `auto` : badge attribué automatiquement (profil et questionnaire complets), et non par l'équipe. */
+export function verificationApprovedEmail(name: string, auto = false): RenderedEmail {
   return render("Votre profil est vérifié — Garden of Alliance", {
     preheader: "Le badge « Profil vérifié » est maintenant visible sur votre profil.",
     title: "Votre profil est vérifié",
     body:
       greeting(name) +
-      p("Notre équipe a vérifié votre profil. Le badge « Profil vérifié » est désormais visible par les autres membres, ce qui leur permet d'échanger avec vous en confiance.") +
+      p(auto
+        ? "Votre profil et votre questionnaire sont maintenant complets : le badge « Profil vérifié » vous est attribué. Il est désormais visible par les autres membres, ce qui leur permet d'échanger avec vous en confiance."
+        : "Notre équipe a vérifié votre profil. Le badge « Profil vérifié » est désormais visible par les autres membres, ce qui leur permet d'échanger avec vous en confiance.") +
       button(`${appUrl()}/dashboard`, "Accéder à Garden of Alliance"),
   });
 }

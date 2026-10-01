@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { checkQuestionnaireCompletion } from "@/lib/onboarding";
+import { evaluateVerificationBadge } from "@/lib/verification-badge";
 
 /**
  * POST — Fin du questionnaire d'onboarding.
@@ -9,8 +10,8 @@ import { checkQuestionnaireCompletion } from "@/lib/onboarding";
  *
  * Le membre est identifié par son jeton, jamais par un user_id envoyé par le
  * navigateur (sinon n'importe qui pourrait écraser le questionnaire d'un autre).
- * La demande de badge (verification_status « under_review ») n'est créée que si
- * toutes les questions requises sont remplies, et jamais pour un profil déjà vérifié.
+ * Si le profil ET le questionnaire sont complets, le badge « Profil vérifié »
+ * est attribué automatiquement (src/lib/verification-badge.ts).
  */
 export async function POST(req: NextRequest) {
   try {
@@ -37,49 +38,24 @@ export async function POST(req: NextRequest) {
     }
 
     const completion = checkQuestionnaireCompletion(answers, { excludeOptional: true });
-    const alreadyVerified = profile.verification_status === "verified";
-    const requestBadge = completion.percentage === 100 && !alreadyVerified && profile.verification_status !== "under_review";
 
-    const update: Record<string, unknown> = {
+    const { error: updateError } = await supabase.from("profiles").update({
       questionnaire: answers,
       onboarding_completed: true,
       updated_at: new Date().toISOString(),
-    };
-    if (requestBadge) update.verification_status = "under_review";
-
-    const { error: updateError } = await supabase.from("profiles").update(update).eq("id", userId);
+    }).eq("id", userId);
     if (updateError) {
       console.error("[Onboarding Complete] Error saving onboarding:", updateError.message);
       return NextResponse.json({ error: "Enregistrement impossible. Réessayez." }, { status: 500 });
     }
 
-    if (requestBadge) {
-      try {
-        await supabase.from("meeting_notifications").insert({
-          user_id: userId,
-          notification_type: "verification_pending",
-          title: "Profil en cours de vérification",
-          message: "Votre profil a été complété avec succès. Il est maintenant en cours de révision par notre équipe. Vous recevrez une notification dès que votre statut « Profil Vérifié » sera attribué.",
-        });
-      } catch (notifErr) {
-        console.error("[Onboarding Complete] Failed to create user notification:", notifErr);
-      }
-      try {
-        await supabase.from("admin_notifications").insert({
-          type: "user",
-          title: "Demande de vérification de profil",
-          message: `${profile.pseudo || profile.name || profile.email} a complété son questionnaire et demande le badge « Profil Vérifié ».`,
-          link: `/admin/users/${userId}`,
-          metadata: { user_id: userId },
-        });
-      } catch (adminNotifErr) {
-        console.error("[Onboarding Complete] Failed to create admin notification:", adminNotifErr);
-      }
-    }
+    // Profil + questionnaire complets ⇒ badge « Profil vérifié » attribué automatiquement.
+    const badge = await evaluateVerificationBadge(supabase, userId);
 
     return NextResponse.json({
       ok: true,
-      verification_requested: requestBadge,
+      verification_granted: !!badge?.granted,
+      verification_status: badge?.status ?? profile.verification_status,
       questionnaire: { answered: completion.answered, total: completion.total },
     });
   } catch (err) {

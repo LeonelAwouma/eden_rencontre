@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
 import { Search, Library, Video, Headphones, BookOpen, FileText, File, Star, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -63,6 +64,25 @@ export default function MediathequePage() {
               className="w-full pl-12 pr-4 py-4 bg-white border border-[#E8E5E0] rounded-2xl text-[15px] placeholder:text-[#D1D5DB] outline-none focus:border-[#486B46] focus:ring-2 focus:ring-[#486B46]/10 shadow-sm" />
           </div>
         </motion.div>
+
+        {/* Formation « Bâtir sur le roc » : la formation phare, avec son image */}
+        <Link href="/dashboard/academie"
+          className="group mb-10 grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] rounded-3xl border border-[#E8E5E0] bg-white overflow-hidden shadow-sm hover:shadow-lg hover:border-[#C6D4C0] transition-all">
+          <span className="relative block aspect-[4/3] md:aspect-auto md:min-h-[260px] bg-[#F4F3EF] overflow-hidden">
+            <Image src="/batir_roc.png" alt={t("mediatheque.formationAlt")} fill sizes="(min-width: 768px) 40vw, 100vw"
+              className="object-cover object-[center_45%] group-hover:scale-[1.03] transition-transform duration-700" />
+          </span>
+          <span className="flex flex-col justify-center p-6 sm:p-8">
+            <span className="text-[12px] font-bold uppercase tracking-[0.18em] text-[#486B46]">{t("mediatheque.formationEyebrow")}</span>
+            <span className="mt-2 font-headline text-[28px] sm:text-[34px] font-bold leading-tight text-[#2F2F2F] group-hover:text-[#486B46] transition-colors">
+              {t("mediatheque.formationTitle")}
+            </span>
+            <span className="mt-2 text-[15px] leading-relaxed text-[#56615A]">{t("mediatheque.formationDesc")}</span>
+            <span className="mt-5 inline-flex items-center gap-2 self-start h-11 px-5 rounded-full bg-[#486B46] text-white text-[14px] font-bold group-hover:bg-[#3A5A38] transition-colors">
+              <BookOpen className="w-4 h-4" /> {t("mediatheque.formationCta")}
+            </span>
+          </span>
+        </Link>
 
         <div className="flex flex-wrap gap-2 justify-center mb-8">
           <button onClick={()=>{setCategoryFilter("all");setPage(1);}} className={cn("px-4 py-2 rounded-xl text-[13px] font-semibold", categoryFilter==="all"?"bg-[#486B46] text-white":"bg-white border border-[#E8E5E0]")}>{t("mediatheque.allContent")}</button>

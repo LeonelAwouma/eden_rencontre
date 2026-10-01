@@ -15,6 +15,7 @@ import {
   Heart,
   Calendar,
   Mail,
+  Phone,
   Globe,
   FileText,
   X,
@@ -53,6 +54,7 @@ interface UserProfile {
   selfie_verified: boolean;
   selfie_verification_score: number;
   selfie_url: string | null;
+  phone?: string | null;
   profile_photos?: string[] | null;
   selfie_verification_details?: SelfieDetails | null;
   verification_status: string;
@@ -335,6 +337,7 @@ export default function AdminUserDetailPage() {
               <InfoItem icon={User} label="Pseudo" value={user.pseudo} />
               <InfoItem icon={User} label="Nom" value={user.name} />
               <InfoItem icon={Mail} label="Email" value={user.email} />
+              <InfoItem icon={Phone} label="Téléphone" value={user.phone ?? null} />
               <InfoItem icon={Calendar} label="Âge" value={age ? `${age} ans` : null} />
               <InfoItem
                 icon={User}

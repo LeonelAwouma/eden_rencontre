@@ -727,9 +727,19 @@ export default function ProfilePage() {
 
   useEffect(() => { loadProfile(); }, [loadProfile]);
 
-  const handleRefresh = () => {
-    loadProfile();
+  const handleRefresh = async () => {
     setToast({ message: t("profilePage.profileUpdatedSuccess"), type: "success" });
+    // Profil et questionnaire complets ⇒ badge « Profil vérifié » attribué automatiquement.
+    try {
+      const { data } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
+      const token = data.session?.access_token;
+      if (token) {
+        const res = await fetch("/api/user/verification", { method: "POST", headers: { Authorization: `Bearer ${token}` } });
+        const d = res.ok ? await res.json() : null;
+        if (d?.granted) setToast({ message: t("dashboard.badgeGrantedTitle"), type: "success" });
+      }
+    } catch { /* hors ligne : réessayé à la prochaine ouverture du tableau de bord */ }
+    loadProfile();
   };
 
   const handleLogout = async () => {

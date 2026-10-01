@@ -202,8 +202,8 @@ export async function sendMeetingCancelledEmail(
 }
 
 // ── Vérification de profil ───────────────────────────────────
-export async function sendVerificationApprovedEmail(email: string, name: string): Promise<boolean> {
-  return sendEmail(email, verificationApprovedEmail(name));
+export async function sendVerificationApprovedEmail(email: string, name: string, auto = false): Promise<boolean> {
+  return sendEmail(email, verificationApprovedEmail(name, auto));
 }
 
 export async function sendVerificationRejectedEmail(email: string, name: string, reason?: string): Promise<boolean> {

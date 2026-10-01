@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
+/**
+ * Couverture de la formation « Bâtir sur le roc » : /batir_roc.png.
+ * Si la migration 20260929_batir_sur_le_roc_cover_png.sql n'a pas été exécutée,
+ * la base pointe encore vers /batir_roc.webp (fichier supprimé) ou n'a pas
+ * d'image : la couverture était alors vide dans la médiathèque.
+ */
+function formationCover(slug: string | null, cover: string | null): string | null {
+  if (slug?.startsWith("batir-sur-le-roc") && (!cover || cover === "/batir_roc.webp")) return "/batir_roc.png";
+  return cover;
+}
+
 export async function GET(request: NextRequest) {
   try {
     await requireAdmin();
@@ -29,6 +40,7 @@ export async function GET(request: NextRequest) {
       const own = (links || []).filter((l) => l.learning_path_id === path.id);
       return {
         ...path,
+        cover_url: formationCover(path.slug, path.cover_url),
         resource_count: own.length,
         ...(withSteps ? {
           steps: own.flatMap((l, i) => {

@@ -23,6 +23,9 @@ import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
 import { cameraErrorKey } from "@/lib/camera-error";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
+import { filterCountries, filterCities, countryLabel, phoneIsoFor, dialOfIso, toE164 } from "@/lib/geo";
+import { PhoneInput } from "@/components/phone-input";
+import { Flag } from "@/components/flag";
 import { fileToCompressedDataUrl, videoFrameToDataUrl, captureLivenessBurst, MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
 import { useMobileContinueGate, MobileContinueGate } from "@/components/mobile-continue-gate";
 import {
@@ -55,38 +58,11 @@ const TikTokIcon = ({ className }: { className?: string }) => (
   </svg>
 );
 
-const COUNTRIES_DATA: Record<string, string[]> = {
-  "Sénégal": ["Dakar", "Thiès", "Saint-Louis", "Ziguinchor", "Mbour", "Kaolack", "Kolda", "Touba", "Louga"],
-  "Côte d'Ivoire": ["Abidjan", "Bouaké", "Yamoussoukro", "San-Pédro", "Korhogo", "Daloa", "Man"],
-  "Cameroun": ["Douala", "Yaoundé", "Garoua", "Bamenda", "Maroua", "Bafoussam", "Ngaoundéré"],
-  "RD Congo": ["Kinshasa", "Lubumbashi", "Mbuji-Mayi", "Goma", "Kisangani", "Bukavu", "Kananga"],
-  "Gabon": ["Libreville", "Port-Gentil", "Franceville", "Oyem", "Moanda"],
-  "Mali": ["Bamako", "Sikasso", "Mopti", "Koutiala", "Kayes", "Ségou", "Gao"],
-  "Bénin": ["Cotonou", "Porto-Novo", "Parakou", "Djougou", "Abomey-Calavi"],
-  "Togo": ["Lomé", "Sokodé", "Kara", "Atakpamé", "Kpalimé"],
-  "Burkina Faso": ["Ouagadougou", "Bobo-Dioulasso", "Koudougou", "Ouahigouya", "Banfora"],
-  "Congo-Brazzaville": ["Brazzaville", "Pointe-Noire", "Dolisie", "Nkayi"],
-  "Guinée": ["Conakry", "Nzérékoré", "Kankan", "Kindia", "Labé"],
-  "Niger": ["Niamey", "Zinder", "Maradi", "Agadez", "Tahoua"],
-  "France": ["Paris", "Lyon", "Marseille", "Lille", "Bordeaux", "Nantes", "Strasbourg", "Montpellier"],
-  "Belgique": ["Bruxelles", "Anvers", "Liège", "Charleroi", "Gand"],
-  "Canada": ["Montréal", "Toronto", "Ottawa", "Québec", "Calgary", "Vancouver"],
-  "USA": ["New York", "Washington", "Atlanta", "Chicago", "Houston", "Miami", "Los Angeles"],
-  "Suisse": ["Genève", "Lausanne", "Zurich", "Bâle"],
-  "Royaume-Uni": ["Londres", "Birmingham", "Manchester", "Glasgow"]
-};
-
-const AFRICAN_COUNTRIES = [
-  "Sénégal", "Côte d'Ivoire", "Cameroun", "RD Congo", "Gabon", "Mali", "Bénin", "Togo", "Burkina Faso", "Congo-Brazzaville", "Guinée", "Niger"
-];
-
-const DIASPORA_COUNTRIES = [
-  "France", "Belgique", "Canada", "USA", "Suisse", "Royaume-Uni"
-];
+// Pays, villes et indicatifs : src/lib/geo.ts (commun aux deux formulaires d'inscription).
 
 export default function CompleteRegistrationPage() {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
   const { ready: deviceReady, showGate, continueOnDesktop } = useMobileContinueGate();
   const [step, setStep] = useState(0);
   // Écran « pseudonyme » affiché avant les 12 étapes du profil.
@@ -112,6 +88,8 @@ export default function CompleteRegistrationPage() {
     charterAuthorizeVerification: false,
     charterCommitRespectful: false,
     charterAcceptFull: false,
+    phoneIso: "CM",
+    phoneLocal: "",
   });
 
   const pseudoValid = formData.pseudo.trim().length >= 2 && formData.pseudo.trim().length <= 30 && !/[<>"]/.test(formData.pseudo);
@@ -232,7 +210,7 @@ export default function CompleteRegistrationPage() {
   };
 
   const handleCountrySelect = (country: string) => {
-    setFormData({ ...formData, country, city: "" });
+    setFormData({ ...formData, country, city: "", phoneIso: phoneIsoFor(country) });
     nextStep();
   };
 
@@ -371,6 +349,7 @@ export default function CompleteRegistrationPage() {
           pseudo: formData.pseudo.trim(),
           gender: formData.gender,
           birthDate: formData.birthDate,
+          phone: toE164(dialOfIso(formData.phoneIso), formData.phoneLocal),
           discoverySource: formData.discoverySource,
           civilStatus: formData.civilStatus,
           region: formData.region,
@@ -414,11 +393,9 @@ export default function CompleteRegistrationPage() {
     }
   };
 
-  const availableCountries = formData.region === "Afrique" ? AFRICAN_COUNTRIES : DIASPORA_COUNTRIES;
-  const filteredCountries = availableCountries.filter((c) => c.toLowerCase().includes(countrySearch.toLowerCase()));
+  const filteredCountries = filterCountries(formData.region, countrySearch);
 
-  const availableCities = formData.country ? COUNTRIES_DATA[formData.country] || [] : [];
-  const filteredCities = availableCities.filter((c) => c.toLowerCase().includes(citySearch.toLowerCase()));
+  const filteredCities = filterCities(formData.country, citySearch);
 
   const discoverySources = [
     { name: "TikTok", label: "TikTok", icon: <TikTokIcon className="w-5 h-5 text-[#ff0050]" /> },
@@ -741,13 +718,13 @@ export default function CompleteRegistrationPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
                   {filteredCountries.map((country) => (
                     <Button
-                      key={country}
+                      key={country.name}
                       variant="outline"
-                      onClick={() => handleCountrySelect(country)}
+                      onClick={() => handleCountrySelect(country.name)}
                       className="h-14 rounded-xl border-foreground/5 bg-card hover:bg-foreground/5 hover:border-primary/50 text-base font-bold text-foreground/80 group text-left justify-start px-6"
                     >
-                      <MapPin className="w-4 h-4 text-primary/40 group-hover:text-primary mr-2" />
-                      <span className="group-hover:text-primary transition-colors">{country}</span>
+                      <Flag iso={country.iso} className="mr-3" />
+                      <span className="group-hover:text-primary transition-colors truncate">{countryLabel(country, locale)}</span>
                     </Button>
                   ))}
                 </div>
@@ -839,9 +816,15 @@ export default function CompleteRegistrationPage() {
                       <p className="text-[11px] text-foreground/30 uppercase tracking-widest">{t("completeRegistration.yearsOld", { age })}</p>
                     )}
                   </div>
+                  <PhoneInput
+                    iso={formData.phoneIso}
+                    local={formData.phoneLocal}
+                    onIso={(phoneIso) => setFormData({ ...formData, phoneIso })}
+                    onLocal={(phoneLocal) => setFormData({ ...formData, phoneLocal })}
+                  />
                   <Button
                     onClick={nextStep}
-                    disabled={!ageValid}
+                    disabled={!ageValid || !toE164(dialOfIso(formData.phoneIso), formData.phoneLocal)}
                     className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                   >
                     {t("completeRegistration.continue")} <ArrowRight className="w-5 h-5 ml-2" />
