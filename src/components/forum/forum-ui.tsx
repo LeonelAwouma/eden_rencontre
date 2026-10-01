@@ -61,7 +61,7 @@ export function QuoteBlock({ name, text, mine, className }: { name: string; text
  * l'équipe portent un badge. `actions` : menu propre à chaque espace.
  */
 export function ForumBubble({
-  m, mine, showAuthor, authorName, staffBadge, stickerLabel, quoteAuthor, unavailableQuote, time, actions, highlight, onQuoteClick,
+  m, mine, showAuthor, authorName, staffBadge, stickerLabel, quoteAuthor, unavailableQuote, time, editedLabel, actions, highlight, onQuoteClick,
 }: {
   m: ForumMessage;
   mine: boolean;
@@ -73,6 +73,8 @@ export function ForumBubble({
   quoteAuthor: (q: NonNullable<ForumMessage["reply_to"]>) => string;
   unavailableQuote: string;
   time: string;
+  /** « modifié », affiché à côté de l'heure quand le texte a été corrigé. */
+  editedLabel: string;
   actions?: React.ReactNode;
   highlight?: boolean;
   onQuoteClick?: (id: string) => void;
@@ -130,7 +132,9 @@ export function ForumBubble({
         {m.body.trim() && <p className="text-[14.5px] leading-relaxed whitespace-pre-wrap break-words">{m.body}</p>}
 
         <span className={cn("block text-right text-[10.5px] mt-0.5 tabular-nums",
-          stickerOnly ? "text-[#6B746E]" : mine ? "text-white/70" : "text-[#8A938C]")}>{time}</span>
+          stickerOnly ? "text-[#6B746E]" : mine ? "text-white/70" : "text-[#8A938C]")}>
+          {m.edited_at && <span className="italic mr-1">{editedLabel}</span>}{time}
+        </span>
       </div>
 
       {!mine && actions && <span className="self-center sm:opacity-0 sm:group-hover:opacity-100 sm:focus-within:opacity-100 transition-opacity">{actions}</span>}

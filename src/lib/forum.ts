@@ -7,7 +7,7 @@
 
 import { supabase } from "@/lib/supabase";
 import {
-  DEFAULT_FORUM_SETTINGS, FORUM_PAGE_SIZE, forumMessageColumns, isForumMissing,
+  DEFAULT_FORUM_SETTINGS, FORUM_PAGE_SIZE, forumMessageColumns, isForumMissing, isMissingColumn,
   type ForumMessage, type ForumSettings,
 } from "@/lib/forum-shared";
 
@@ -18,7 +18,13 @@ export const FORUM_UNAVAILABLE = "forum_unavailable";
 /** Envoi refusé : groupe réservé aux admins, ou membre en sourdine. */
 export const FORUM_CANNOT_POST = "forum_cannot_post";
 
-const COLUMNS = forumMessageColumns();
+/** Envoi refusé : le délai de 5 minutes pour modifier un message est dépassé. */
+export const FORUM_EDIT_EXPIRED = "forum_edit_expired";
+
+// Colonne edited_at : présente après la migration 20261002_forum_edit.sql.
+// Sans elle, on relit les messages sans cette colonne plutôt que de casser le forum.
+let withEdited = true;
+const columns = () => forumMessageColumns(undefined, withEdited);
 
 type Result<T> = { data?: T; error?: string };
 
@@ -61,10 +67,14 @@ export async function getMemberCount(): Promise<number | null> {
 /** Derniers messages (du plus ancien au plus récent), ou ceux d'avant `before`. */
 export async function listMessages(before?: string): Promise<Result<{ messages: ForumMessage[]; hasMore: boolean }>> {
   if (!supabase) return { error: FORUM_UNAVAILABLE };
-  let q = supabase.from("forum_messages").select(COLUMNS)
-    .order("created_at", { ascending: false }).limit(FORUM_PAGE_SIZE + 1);
-  if (before) q = q.lt("created_at", before);
-  const { data, error } = await q;
+  const run = () => {
+    let q = supabase!.from("forum_messages").select(columns())
+      .order("created_at", { ascending: false }).limit(FORUM_PAGE_SIZE + 1);
+    if (before) q = q.lt("created_at", before);
+    return q;
+  };
+  let { data, error } = await run();
+  if (error && withEdited && isMissingColumn(error)) { withEdited = false; ({ data, error } = await run()); }
   if (error) return fail(error);
   const rows = (data || []) as unknown as ForumMessage[];
   return { data: { messages: rows.slice(0, FORUM_PAGE_SIZE).reverse(), hasMore: rows.length > FORUM_PAGE_SIZE } };
@@ -72,7 +82,7 @@ export async function listMessages(before?: string): Promise<Result<{ messages: 
 
 export async function getMessage(id: string): Promise<ForumMessage | null> {
   if (!supabase) return null;
-  const { data } = await supabase.from("forum_messages").select(COLUMNS).eq("id", id).maybeSingle();
+  const { data } = await supabase.from("forum_messages").select(columns()).eq("id", id).maybeSingle();
   return (data as unknown as ForumMessage) ?? null;
 }
 
@@ -81,10 +91,25 @@ export async function sendForumMessage(input: { body?: string; sticker?: string 
   const { data, error } = await supabase
     .from("forum_messages")
     .insert({ body: (input.body || "").trim(), sticker: input.sticker || null, reply_to_id: input.replyTo || null })
-    .select(COLUMNS)
+    .select(columns())
     .single();
   if (error) return fail(error);
   return { data: data as unknown as ForumMessage };
+}
+
+/**
+ * Modifier le texte de son message (5 minutes après l'envoi au plus, contrôlé
+ * par la base). Sans ligne modifiée, le délai est dépassé (ou le droit retiré).
+ */
+export async function editForumMessage(id: string, body: string): Promise<Result<ForumMessage>> {
+  if (!supabase) return { error: FORUM_UNAVAILABLE };
+  if (!withEdited) return { error: FORUM_UNAVAILABLE };
+  const { data, error } = await supabase
+    .from("forum_messages").update({ body: body.trim() }).eq("id", id).select(columns());
+  if (error) return isMissingColumn(error) ? { error: FORUM_UNAVAILABLE } : fail(error);
+  const row = (data || [])[0];
+  if (!row) return { error: FORUM_EDIT_EXPIRED };
+  return { data: row as unknown as ForumMessage };
 }
 
 export async function deleteForumMessage(id: string): Promise<Result<true>> {
@@ -102,11 +127,12 @@ export async function reportForumMessage(messageId: string, reason: string): Pro
 }
 
 /**
- * Temps réel : nouveaux messages, suppressions, changement des réglages
+ * Temps réel : nouveaux messages, modifications, suppressions, changement des réglages
  * (mode admins seulement, message épinglé…). Renvoie la fonction de désabonnement.
  */
 export function subscribeForum(handlers: {
   onInsert: (id: string) => void;
+  onUpdate: (id: string) => void;
   onDelete: (id: string) => void;
   onSettings: () => void;
 }): () => void {
@@ -115,6 +141,7 @@ export function subscribeForum(handlers: {
   const channel = client
     .channel("forum-group")
     .on("postgres_changes", { event: "INSERT", schema: "public", table: "forum_messages" }, (p) => handlers.onInsert((p.new as { id: string }).id))
+    .on("postgres_changes", { event: "UPDATE", schema: "public", table: "forum_messages" }, (p) => handlers.onUpdate((p.new as { id: string }).id))
     .on("postgres_changes", { event: "DELETE", schema: "public", table: "forum_messages" }, (p) => handlers.onDelete((p.old as { id: string }).id))
     .on("postgres_changes", { event: "UPDATE", schema: "public", table: "forum_settings" }, () => handlers.onSettings())
     .subscribe();

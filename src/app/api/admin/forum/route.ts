@@ -11,7 +11,7 @@ import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getAdminAccountId } from "@/lib/admin-system-user";
 import { ADMIN_SYSTEM_EMAIL } from "@/lib/admin-system-shared";
-import { DEFAULT_FORUM_SETTINGS, FORUM_LIMITS, findSticker, forumMessageColumns } from "@/lib/forum-shared";
+import { DEFAULT_FORUM_SETTINGS, FORUM_LIMITS, findSticker, forumMessageColumns, isMissingColumn } from "@/lib/forum-shared";
 import { ADMIN_AUTHOR_COLUMNS, forumError } from "@/lib/forum-admin";
 
 const PAGE = 80;
@@ -39,13 +39,19 @@ export async function GET(req: NextRequest) {
   const reportCount: Record<string, number> = {};
   for (const r of reports) reportCount[r.message_id] = (reportCount[r.message_id] || 0) + 1;
 
-  let q = db.from("forum_messages").select(forumMessageColumns(ADMIN_AUTHOR_COLUMNS))
-    .order("created_at", { ascending: false }).limit(PAGE + 1);
-  if (before) q = q.lt("created_at", before);
-  if (after) q = q.gt("created_at", after);
-  if (search) q = q.ilike("body", `%${search}%`);
-  if (reportedOnly) q = q.in("id", Object.keys(reportCount).length ? Object.keys(reportCount) : NO_MATCH);
-  const msgRes = await q;
+  // edited_at n'existe qu'après 20261002_forum_edit.sql : sans elle, on relit sans.
+  let withEdited = true;
+  const listQuery = () => {
+    let q = db.from("forum_messages").select(forumMessageColumns(ADMIN_AUTHOR_COLUMNS, withEdited))
+      .order("created_at", { ascending: false }).limit(PAGE + 1);
+    if (before) q = q.lt("created_at", before);
+    if (after) q = q.gt("created_at", after);
+    if (search) q = q.ilike("body", `%${search}%`);
+    if (reportedOnly) q = q.in("id", Object.keys(reportCount).length ? Object.keys(reportCount) : NO_MATCH);
+    return q;
+  };
+  let msgRes = await listQuery();
+  if (msgRes.error && isMissingColumn(msgRes.error)) { withEdited = false; msgRes = await listQuery(); }
   if (msgRes.error) return forumError(msgRes.error);
   const rows = (msgRes.data || []) as unknown as ({ id: string } & Record<string, unknown>)[];
   const messages = rows.slice(0, PAGE).reverse().map((m) => ({ ...m, open_reports: reportCount[m.id] || 0 }));
@@ -53,7 +59,7 @@ export async function GET(req: NextRequest) {
   // Message épinglé (peut être plus ancien que la page chargée).
   let pinned = null;
   if (settingsRes.data?.pinned_message_id) {
-    const p = await db.from("forum_messages").select(forumMessageColumns(ADMIN_AUTHOR_COLUMNS)).eq("id", settingsRes.data.pinned_message_id).maybeSingle();
+    const p = await db.from("forum_messages").select(forumMessageColumns(ADMIN_AUTHOR_COLUMNS, withEdited)).eq("id", settingsRes.data.pinned_message_id).maybeSingle();
     pinned = p.data ?? null;
   }
 

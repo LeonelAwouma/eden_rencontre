@@ -48,6 +48,14 @@ export const findSticker = (id: string | null | undefined) => FORUM_STICKERS.fin
 
 /** Limites, identiques aux contraintes SQL (20261001_forum.sql). */
 export const FORUM_LIMITS = { bodyMax: 2000, reportMax: 500 };
+
+/** Un message peut être modifié pendant 5 minutes après son envoi (20261002_forum_edit.sql). */
+export const FORUM_EDIT_WINDOW_MS = 5 * 60 * 1000;
+
+/** Texte encore modifiable : message avec du texte, envoyé il y a moins de 5 minutes. */
+export function isEditable(m: { body: string; created_at: string }, now = Date.now()): boolean {
+  return !!m.body.trim() && now - new Date(m.created_at).getTime() < FORUM_EDIT_WINDOW_MS;
+}
 export const FORUM_PAGE_SIZE = 50;
 
 export interface ForumAuthor {
@@ -73,6 +81,8 @@ export interface ForumMessage {
   reply_to_id: string | null;
   is_staff: boolean;
   created_at: string;
+  /** Date de la dernière modification du texte (null : jamais modifié). */
+  edited_at?: string | null;
   author: ForumAuthor | null;
   reply_to: ForumQuote | null;
 }
@@ -91,10 +101,13 @@ export const DEFAULT_FORUM_SETTINGS: ForumSettings = {
   pinned_message_id: null,
 };
 
-/** Colonnes PostgREST d'un message, avec auteur et message cité. */
-export function forumMessageColumns(authorColumns = "id, pseudo, avatar_url") {
+/**
+ * Colonnes PostgREST d'un message, avec auteur et message cité.
+ * `withEdited: false` : base sans la migration 20261002 (colonne edited_at absente).
+ */
+export function forumMessageColumns(authorColumns = "id, pseudo, avatar_url", withEdited = true) {
   return (
-    "id, author_id, body, sticker, reply_to_id, is_staff, created_at, " +
+    `id, author_id, body, sticker, reply_to_id, is_staff, created_at, ${withEdited ? "edited_at, " : ""}` +
     `author:profiles!forum_messages_author_id_fkey(${authorColumns}), ` +
     "reply_to:reply_to_id(id, body, sticker, is_staff, author:profiles!forum_messages_author_id_fkey(pseudo))"
   );
@@ -106,6 +119,10 @@ export function isForumMissing(error: { code?: string; message?: string } | null
   return error.code === "42P01" || error.code === "PGRST205" || error.code === "PGRST200" ||
     /relation .*forum_.* does not exist|could not find the table|could not find a relationship/i.test(error.message || "");
 }
+
+/** Colonne absente (migration pas encore exécutée). */
+export const isMissingColumn = (error: { code?: string; message?: string } | null | undefined) =>
+  !!error && (error.code === "42703" || /column .* does not exist/i.test(error.message || ""));
 
 /** Aperçu court d'un message (citation, message épinglé). */
 export function messagePreview(m: { body: string; sticker: string | null }, stickerLabel: string): string {

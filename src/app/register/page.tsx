@@ -23,6 +23,7 @@ import { Monogram } from "@/components/ornaments";
 import { AvatarPicker } from "@/components/avatar-picker";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
+import { fileToCompressedDataUrl, videoFrameToDataUrl, MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
 import { useMobileContinueGate, MobileContinueGate } from "@/components/mobile-continue-gate";
 import {
   AlertTriangle,
@@ -161,20 +162,23 @@ export default function RegisterPage() {
   const [activePhotoSlot, setActivePhotoSlot] = useState<number | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Photo réduite dès le choix (1280 px, JPEG) : envoyées en base64, les photos
+  // brutes d'un téléphone dépassaient la limite de 4,5 Mo des fonctions Vercel.
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || activePhotoSlot === null) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPhotos(prev => {
-        const next = [...prev];
-        next[activePhotoSlot] = reader.result as string;
-        return next;
-      });
-    };
-    reader.readAsDataURL(file);
+    const slot = activePhotoSlot;
     // Reset input so the same file can be re-selected
     e.target.value = "";
+    if (!file || slot === null) return;
+    const dataUrl = await fileToCompressedDataUrl(file);
+    if (!dataUrl) { setPhotoError(t("camera.photoUnsupported")); return; }
+    setPhotoError(null);
+    setPhotos((prev) => {
+      const next = [...prev];
+      next[slot] = dataUrl;
+      return next;
+    });
   };
 
   const openPhotoPicker = (slotIndex: number) => {
@@ -255,10 +259,7 @@ export default function RegisterPage() {
 
     try {
       // Use server-side API for registration (creates user with "pending" status)
-      const res = await fetch("/api/auth/register", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
+      const payload = JSON.stringify({
           name: `${formData.firstName} ${formData.lastName}`.trim(),
           pseudo: formData.pseudo,
           firstName: formData.firstName,
@@ -279,7 +280,18 @@ export default function RegisterPage() {
           selfieImage: selfieDataUri,
           profilePhotos: photos.filter(Boolean),
           avatarUrl: publicAvatar,
-        }),
+        });
+      // Garde-fou : au-delà de 4,5 Mo, Vercel refuse la requête (413) sans réponse lisible.
+      if (payload.length > MAX_UPLOAD_PAYLOAD) {
+        setCreateError(t("camera.photosTooLarge"));
+        setCreating(false);
+        return;
+      }
+
+      const res = await fetch("/api/auth/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
       });
 
       const data = await res.json();
@@ -340,21 +352,12 @@ export default function RegisterPage() {
   };
 
   const captureSelfie = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current) return;
     const video = videoRef.current;
-    const canvas = canvasRef.current;
     // Tant que la vidéo n'a pas démarré, videoWidth vaut 0 : le canvas serait
     // vide et toDataURL renverrait "data:," — une image invalide.
-    if (!video.videoWidth || !video.videoHeight) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    // Mirror the image for selfie
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0);
-    const dataUri = canvas.toDataURL("image/jpeg", 0.85);
+    const dataUri = videoFrameToDataUrl(video);
+    if (!dataUri) return;
     setSelfieDataUri(dataUri);
     stopCamera();
   };
@@ -1010,6 +1013,7 @@ export default function RegisterPage() {
                   className="hidden"
                   onChange={handlePhotoSelect}
                 />
+                {photoError && <p role="alert" className="mt-2 text-xs text-destructive">{photoError}</p>}
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                     <Upload className="w-6 h-6 text-primary" />

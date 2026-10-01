@@ -1518,7 +1518,9 @@
     "busy": "The camera is already in use by another application. Close it and try again.",
     "insecure": "The camera requires a secure connection (HTTPS).",
     "error": "Unable to access the camera. Please try again.",
-    "verifyError": "Error during verification. Please try again."
+    "verifyError": "Error during verification. Please try again.",
+    "photoUnsupported": "This photo format could not be read. Please choose a JPEG or PNG photo (for example a screenshot of the photo).",
+    "photosTooLarge": "Your photos are too large to be sent. Please replace them with other photos and try again."
   },
   "completeRegistration": {
     "pseudoTitle": "Choose your username",
@@ -1722,6 +1724,14 @@
       "rire": "So funny!",
       "touche": "So touching",
       "bonne-nuit": "Good night"
-    }
+    },
+    "edit": "Edit",
+    "edited": "edited",
+    "editingTitle": "Editing message",
+    "cancelEdit": "Cancel editing",
+    "saveEdit": "Save changes",
+    "editError": "Your changes could not be saved.",
+    "editExpiredTitle": "Editing time is over",
+    "editExpiredDesc": "A message can be edited for 5 minutes after it is sent. You can still delete it."
   }
 }

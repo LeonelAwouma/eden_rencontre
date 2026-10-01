@@ -1518,7 +1518,9 @@
     "busy": "La caméra est déjà utilisée par une autre application. Fermez-la puis réessayez.",
     "insecure": "La caméra nécessite une connexion sécurisée (HTTPS).",
     "error": "Impossible d'accéder à la caméra. Veuillez réessayer.",
-    "verifyError": "Erreur lors de la vérification. Veuillez réessayer."
+    "verifyError": "Erreur lors de la vérification. Veuillez réessayer.",
+    "photoUnsupported": "Ce format de photo n’a pas pu être lu. Choisissez une photo en JPEG ou PNG (par exemple une capture d’écran de la photo).",
+    "photosTooLarge": "Vos photos sont trop lourdes pour être envoyées. Remplacez-les par d’autres photos puis réessayez."
   },
   "completeRegistration": {
     "pseudoTitle": "Choisissez votre pseudonyme",
@@ -1722,6 +1724,14 @@
       "rire": "Trop drôle !",
       "touche": "Ça me touche",
       "bonne-nuit": "Bonne nuit"
-    }
+    },
+    "edit": "Modifier",
+    "edited": "modifié",
+    "editingTitle": "Modification du message",
+    "cancelEdit": "Annuler la modification",
+    "saveEdit": "Enregistrer la modification",
+    "editError": "La modification n’a pas pu être enregistrée.",
+    "editExpiredTitle": "Délai de modification dépassé",
+    "editExpiredDesc": "Un message peut être modifié pendant 5 minutes après son envoi. Vous pouvez toujours le supprimer."
   }
 }

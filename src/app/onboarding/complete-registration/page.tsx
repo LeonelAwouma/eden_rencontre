@@ -23,6 +23,7 @@ import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
 import { cameraErrorKey } from "@/lib/camera-error";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
+import { fileToCompressedDataUrl, videoFrameToDataUrl, MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
 import { useMobileContinueGate, MobileContinueGate } from "@/components/mobile-continue-gate";
 import {
   AlertTriangle,
@@ -122,19 +123,23 @@ export default function CompleteRegistrationPage() {
   const [activePhotoSlot, setActivePhotoSlot] = useState<number | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
-  const handlePhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Photo réduite dès le choix (1280 px, JPEG) : envoyées en base64, les photos
+  // brutes d'un téléphone dépassaient la limite de 4,5 Mo des fonctions Vercel.
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file || activePhotoSlot === null) return;
-    const reader = new FileReader();
-    reader.onload = () => {
-      setPhotos((prev) => {
-        const next = [...prev];
-        next[activePhotoSlot] = reader.result as string;
-        return next;
-      });
-    };
-    reader.readAsDataURL(file);
+    const slot = activePhotoSlot;
+    // Reset input so the same file can be re-selected
     e.target.value = "";
+    if (!file || slot === null) return;
+    const dataUrl = await fileToCompressedDataUrl(file);
+    if (!dataUrl) { setPhotoError(t("camera.photoUnsupported")); return; }
+    setPhotoError(null);
+    setPhotos((prev) => {
+      const next = [...prev];
+      next[slot] = dataUrl;
+      return next;
+    });
   };
 
   const openPhotoPicker = (slotIndex: number) => {
@@ -275,20 +280,12 @@ export default function CompleteRegistrationPage() {
   };
 
   const captureSelfie = () => {
-    if (!videoRef.current || !canvasRef.current) return;
+    if (!videoRef.current) return;
     const video = videoRef.current;
-    const canvas = canvasRef.current;
     // Tant que la vidéo n'a pas démarré, videoWidth vaut 0 : le canvas serait
     // vide et toDataURL renverrait "data:," — une image invalide.
-    if (!video.videoWidth || !video.videoHeight) return;
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.translate(canvas.width, 0);
-    ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0);
-    const dataUri = canvas.toDataURL("image/jpeg", 0.85);
+    const dataUri = videoFrameToDataUrl(video);
+    if (!dataUri) return;
     setSelfieDataUri(dataUri);
     stopCamera();
   };
@@ -361,10 +358,7 @@ export default function CompleteRegistrationPage() {
         }
       }
 
-      const res = await fetch("/api/auth/google-onboarding", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
+      const payload = JSON.stringify({
           pseudo: formData.pseudo.trim(),
           gender: formData.gender,
           birthDate: formData.birthDate,
@@ -379,7 +373,18 @@ export default function CompleteRegistrationPage() {
           charterAcceptFull: formData.charterAcceptFull,
           selfieImage: selfieDataUri,
           profilePhotos: photos.filter(Boolean),
-        }),
+        });
+      // Garde-fou : au-delà de 4,5 Mo, Vercel refuse la requête (413) sans réponse lisible.
+      if (payload.length > MAX_UPLOAD_PAYLOAD) {
+        setSaveError(t("camera.photosTooLarge"));
+        setSaving(false);
+        return;
+      }
+
+      const res = await fetch("/api/auth/google-onboarding", {
+        method: "POST",
+        headers,
+        body: payload,
       });
 
       const data = await res.json();
@@ -970,6 +975,7 @@ export default function CompleteRegistrationPage() {
                   className="hidden"
                   onChange={handlePhotoSelect}
                 />
+                {photoError && <p role="alert" className="mt-2 text-xs text-destructive">{photoError}</p>}
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                     <Upload className="w-6 h-6 text-primary" />

@@ -4,7 +4,7 @@ import { Suspense, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
-  ArrowLeft, Send, Smile, Sticker as StickerIcon, X, Pin, Lock, VolumeX, MoreVertical, Reply, Copy, Flag, Trash2,
+  ArrowLeft, Send, Smile, Sticker as StickerIcon, X, Pin, Lock, VolumeX, MoreVertical, Reply, Copy, Flag, Trash2, Pencil, Check,
   ChevronDown, Loader2, MessagesSquare, GraduationCap, Info,
 } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
@@ -25,7 +25,7 @@ import {
   FORUM_CANNOT_POST, FORUM_LIMITS, FORUM_UNAVAILABLE, DEFAULT_FORUM_SETTINGS,
   dayKey, dayLabel, timeLabel, messagePreview,
   getForumSettings, getMemberCount, getMessage, getMyId, getMyMute, listMessages, sendForumMessage,
-  deleteForumMessage, reportForumMessage, subscribeForum,
+  deleteForumMessage, reportForumMessage, subscribeForum, editForumMessage, isEditable, FORUM_EDIT_EXPIRED,
   type ForumMessage, type ForumSettings,
 } from "@/lib/forum";
 
@@ -55,6 +55,8 @@ function ForumGroup() {
 
   const [draft, setDraft] = useState("");
   const [replyTo, setReplyTo] = useState<ForumMessage | null>(null);
+  // Message en cours de modification (le compositeur sert alors à corriger son texte).
+  const [editing, setEditing] = useState<ForumMessage | null>(null);
   const [panel, setPanel] = useState<"none" | "emoji" | "sticker">("none");
   const [sending, setSending] = useState(false);
   const [showInfo, setShowInfo] = useState(false);
@@ -123,6 +125,12 @@ function ForumGroup() {
         setMessages((prev) => (prev.some((x) => x.id === m.id) ? prev : [...prev, m]));
         if (!atBottom.current && m.author_id !== me) setUnseen((n) => n + 1);
       },
+      onUpdate: async (id) => {
+        const m = await getMessage(id);
+        if (!m) return;
+        setMessages((prev) => prev.map((x) => (x.id === m.id ? m : x)));
+        setPinned((p) => (p?.id === m.id ? m : p));
+      },
       onDelete: (id) => {
         setMessages((prev) => prev.filter((x) => x.id !== id));
         setPinned((p) => (p?.id === id ? null : p));
@@ -180,7 +188,28 @@ function ForumGroup() {
   /* ── Envoi ── */
   const canPost = !settings.admins_only && !mute;
 
+  const saveEdit = async () => {
+    if (!editing || !draft.trim()) return;
+    if (draft.trim() === editing.body.trim()) { cancelEdit(); return; }
+    setSending(true);
+    const res = await editForumMessage(editing.id, draft);
+    setSending(false);
+    if (res.error || !res.data) {
+      toast({
+        title: res.error === FORUM_EDIT_EXPIRED ? t("forum.editExpiredTitle") : t("forum.editError"),
+        description: res.error === FORUM_EDIT_EXPIRED ? t("forum.editExpiredDesc") : undefined,
+        variant: "destructive",
+      });
+      if (res.error === FORUM_EDIT_EXPIRED) cancelEdit();
+      return;
+    }
+    setMessages((prev) => prev.map((x) => (x.id === res.data!.id ? res.data! : x)));
+    setPinned((p) => (p?.id === res.data!.id ? res.data! : p));
+    cancelEdit();
+  };
+
   const send = async (sticker?: string) => {
+    if (editing && !sticker) { await saveEdit(); return; }
     const body = sticker ? "" : draft;
     if (!sticker && !body.trim()) return;
     setSending(true);
@@ -205,6 +234,7 @@ function ForumGroup() {
 
   const onKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     // Entrée envoie, Maj+Entrée va à la ligne (comme WhatsApp Web).
+    if (e.key === "Escape" && editing) { e.preventDefault(); cancelEdit(); return; }
     if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) {
       e.preventDefault();
       if (!sending) send();
@@ -229,7 +259,20 @@ function ForumGroup() {
   };
 
   /* ── Actions sur un message ── */
-  const startReply = (m: ForumMessage) => { setReplyTo(m); setPanel("none"); inputRef.current?.focus(); };
+  const startReply = (m: ForumMessage) => { setEditing(null); setReplyTo(m); setPanel("none"); inputRef.current?.focus(); };
+
+  const startEdit = (m: ForumMessage) => {
+    setReplyTo(null);
+    setPanel("none");
+    setEditing(m);
+    setDraft(m.body);
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (el) { el.focus(); el.setSelectionRange(el.value.length, el.value.length); }
+    });
+  };
+
+  const cancelEdit = () => { setEditing(null); setDraft(""); };
 
   const copy = async (m: ForumMessage) => {
     try { await navigator.clipboard.writeText(m.body); toast({ title: t("forum.copied") }); } catch { /* presse-papiers indisponible */ }
@@ -239,6 +282,7 @@ function ForumGroup() {
     const m = toDelete;
     setToDelete(null);
     if (!m) return;
+    if (editing?.id === m.id) cancelEdit();
     const res = await deleteForumMessage(m.id);
     if (res.error) { toast({ title: t("forum.deleteError"), variant: "destructive" }); return; }
     setMessages((prev) => prev.filter((x) => x.id !== m.id));
@@ -367,6 +411,7 @@ function ForumGroup() {
                     quoteAuthor={(q) => (q.is_staff ? t("forum.staff") : q.author?.pseudo || t("forum.member"))}
                     unavailableQuote={t("forum.quoteUnavailable")}
                     time={timeLabel(m.created_at, locale)}
+                    editedLabel={t("forum.edited")}
                     highlight={highlight === m.id}
                     onQuoteClick={jumpTo}
                     actions={
@@ -374,6 +419,9 @@ function ForumGroup() {
                         mine={m.author_id === me}
                         canReply={canPost}
                         hasText={!!m.body.trim()}
+                        createdAt={m.created_at}
+                        body={m.body}
+                        onEdit={() => startEdit(m)}
                         onReply={() => startReply(m)}
                         onCopy={() => copy(m)}
                         onReport={() => setToReport(m)}
@@ -410,6 +458,16 @@ function ForumGroup() {
               </p>
             ) : (
               <>
+                {editing && (
+                  <div className="flex items-center gap-2 mb-2">
+                    <Pencil className="w-4 h-4 text-primary shrink-0" />
+                    <QuoteBlock className="flex-1 min-w-0" name={t("forum.editingTitle")}
+                      text={messagePreview(editing, "")} />
+                    <button onClick={cancelEdit} aria-label={t("forum.cancelEdit")}
+                      className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B746E] hover:bg-muted shrink-0"><X className="w-4 h-4" /></button>
+                  </div>
+                )}
+
                 {replyTo && (
                   <div className="flex items-center gap-2 mb-2">
                     <Reply className="w-4 h-4 text-primary shrink-0" />
@@ -457,9 +515,9 @@ function ForumGroup() {
                   <textarea ref={inputRef} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKeyDown}
                     rows={1} maxLength={FORUM_LIMITS.bodyMax} placeholder={t("forum.composerPlaceholder")} aria-label={t("forum.composerPlaceholder")}
                     className="flex-1 min-w-0 resize-none rounded-[22px] border border-border bg-card px-4 py-2.5 text-[15px] leading-snug outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 max-h-[148px]" />
-                  <button type="submit" disabled={!draft.trim() || sending} aria-label={t("forum.send")}
+                  <button type="submit" disabled={!draft.trim() || sending} aria-label={editing ? t("forum.saveEdit") : t("forum.send")}
                     className="w-11 h-11 rounded-full bg-primary text-white flex items-center justify-center shrink-0 hover:bg-primary/90 disabled:opacity-40 transition-colors">
-                    {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                    {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : editing ? <Check className="w-5 h-5" /> : <Send className="w-5 h-5" />}
                   </button>
                 </form>
               </>
@@ -500,13 +558,16 @@ function ForumGroup() {
   );
 }
 
-function MessageMenu({ mine, canReply, hasText, onReply, onCopy, onReport, onDelete }: {
-  mine: boolean; canReply: boolean; hasText: boolean;
-  onReply: () => void; onCopy: () => void; onReport: () => void; onDelete: () => void;
+function MessageMenu({ mine, canReply, hasText, createdAt, body, onEdit, onReply, onCopy, onReport, onDelete }: {
+  mine: boolean; canReply: boolean; hasText: boolean; createdAt: string; body: string;
+  onEdit: () => void; onReply: () => void; onCopy: () => void; onReport: () => void; onDelete: () => void;
 }) {
   const { t } = useI18n();
+  // Délai de 5 minutes recalculé à chaque ouverture du menu.
+  const [now, setNow] = useState(() => Date.now());
+  const canEdit = mine && canReply && isEditable({ body, created_at: createdAt }, now);
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={(open) => { if (open) setNow(Date.now()); }}>
       <DropdownMenuTrigger asChild>
         <button aria-label={t("forum.messageActions")}
           className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B746E] hover:bg-white/80 hover:text-foreground">
@@ -514,6 +575,7 @@ function MessageMenu({ mine, canReply, hasText, onReply, onCopy, onReport, onDel
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align={mine ? "end" : "start"} className="w-44">
+        {canEdit && <DropdownMenuItem onSelect={onEdit}><Pencil className="w-4 h-4 mr-2" /> {t("forum.edit")}</DropdownMenuItem>}
         {canReply && <DropdownMenuItem onSelect={onReply}><Reply className="w-4 h-4 mr-2" /> {t("forum.reply")}</DropdownMenuItem>}
         {hasText && <DropdownMenuItem onSelect={onCopy}><Copy className="w-4 h-4 mr-2" /> {t("forum.copy")}</DropdownMenuItem>}
         {mine ? (

@@ -4,7 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import Link from "next/link";
 import {
   MessagesSquare, Users, Flag, VolumeX, Volume2, Pin, PinOff, Trash2, Reply, MoreVertical, Send, Smile,
-  Sticker as StickerIcon, X, Loader2, Lock, Search, CheckCircle2, UserRound, Save, ShieldCheck, Settings2,
+  Sticker as StickerIcon, X, Loader2, Lock, Search, CheckCircle2, UserRound, Save, ShieldCheck, Settings2, Pencil, Check,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
@@ -18,7 +18,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { FORUM_LIMITS, dayKey, dayLabel, timeLabel, messagePreview, type ForumSettings } from "@/lib/forum-shared";
+import { FORUM_LIMITS, dayKey, dayLabel, timeLabel, messagePreview, isEditable, type ForumSettings } from "@/lib/forum-shared";
 import { ADMIN_FORMATION_PATH } from "@/lib/formation/paths";
 import {
   adminAuthorName, formatDateTime, stickerLabelFr, type AdminForumMessage,
@@ -64,6 +64,7 @@ export default function AdminForumPage() {
 
   const [draft, setDraft] = useState("");
   const [replyTo, setReplyTo] = useState<AdminForumMessage | null>(null);
+  const [editing, setEditing] = useState<AdminForumMessage | null>(null);
   const [panel, setPanel] = useState<"none" | "emoji" | "sticker">("none");
   const [toDelete, setToDelete] = useState<AdminForumMessage | null>(null);
   const [highlight, setHighlight] = useState<string | null>(null);
@@ -193,7 +194,21 @@ export default function AdminForumPage() {
     }
   };
 
+  const startEdit = (m: AdminForumMessage) => { setReplyTo(null); setPanel("none"); setEditing(m); setDraft(m.body); };
+  const cancelEdit = () => { setEditing(null); setDraft(""); };
+
+  const saveEdit = async () => {
+    if (!editing || !draft.trim()) return;
+    const target = editing;
+    const ok = await call("send", `/api/admin/forum/messages/${target.id}`, { method: "PATCH", body: JSON.stringify({ body: draft }) }, "Message modifié.");
+    if (!ok) return;
+    const text = draft.trim();
+    setMessages((prev) => prev.map((x) => (x.id === target.id ? { ...x, body: text, edited_at: new Date().toISOString() } : x)));
+    cancelEdit();
+  };
+
   const send = async (sticker?: string) => {
+    if (editing && !sticker) { await saveEdit(); return; }
     if (!sticker && !draft.trim()) return;
     const ok = await call("send", "/api/admin/forum", {
       method: "POST", body: JSON.stringify({ body: sticker ? "" : draft, sticker: sticker || null, reply_to_id: replyTo?.id ?? null }),
@@ -209,6 +224,7 @@ export default function AdminForumPage() {
     const m = toDelete;
     setToDelete(null);
     if (!m) return;
+    if (editing?.id === m.id) cancelEdit();
     if (await call(m.id, `/api/admin/forum/messages/${m.id}`, { method: "DELETE" }, "Message supprimé pour tout le groupe.")) {
       setMessages((prev) => prev.filter((x) => x.id !== m.id));
       setReports((prev) => prev.filter((r) => r.message_id !== m.id));
@@ -364,6 +380,7 @@ export default function AdminForumPage() {
                       quoteAuthor={(q) => adminAuthorName(q)}
                       unavailableQuote="Message supprimé"
                       time={filtered ? formatDateTime(m.created_at) : timeLabel(m.created_at, "fr-FR")}
+                      editedLabel="modifié"
                       highlight={highlight === m.id || m.open_reports > 0}
                       onQuoteClick={jumpTo}
                       actions={
@@ -372,7 +389,8 @@ export default function AdminForumPage() {
                           pinned={settings?.pinned_message_id === m.id}
                           muted={mutedIds.has(m.author_id)}
                           busy={busy === m.id || busy === `mute-${m.author_id}`}
-                          onReply={() => { setReplyTo(m); setPanel("none"); }}
+                          onReply={() => { setEditing(null); setReplyTo(m); setPanel("none"); }}
+                          onEdit={() => startEdit(m)}
                           onPin={() => saveSettings({ pinned_message_id: settings?.pinned_message_id === m.id ? null : m.id },
                             settings?.pinned_message_id === m.id ? "Message désépinglé." : "Message épinglé en haut du groupe.")}
                           onKeep={() => keep(m)}
@@ -390,6 +408,13 @@ export default function AdminForumPage() {
 
           {/* Compositeur de l'équipe */}
           <div className="shrink-0 border-t border-border px-3 py-2.5 bg-white">
+            {editing && (
+              <div className="flex items-center gap-2 mb-2">
+                <Pencil className="w-4 h-4 text-primary shrink-0" />
+                <QuoteBlock className="flex-1 min-w-0" name="Modification du message de l'équipe" text={messagePreview(editing, "")} />
+                <button onClick={cancelEdit} aria-label="Annuler la modification" className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B746E] hover:bg-muted"><X className="w-4 h-4" /></button>
+              </div>
+            )}
             {replyTo && (
               <div className="flex items-center gap-2 mb-2">
                 <Reply className="w-4 h-4 text-primary shrink-0" />
@@ -425,12 +450,12 @@ export default function AdminForumPage() {
                 <StickerIcon className="w-5 h-5" />
               </button>
               <textarea value={draft} onChange={(e) => setDraft(e.target.value)} rows={1} maxLength={FORUM_LIMITS.bodyMax}
-                onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
+                onKeyDown={(e) => { if (e.key === "Escape" && editing) { e.preventDefault(); cancelEdit(); return; } if (e.key === "Enter" && !e.shiftKey && !e.nativeEvent.isComposing) { e.preventDefault(); send(); } }}
                 placeholder="Écrire au groupe au nom de l'équipe…" aria-label="Message de l'équipe"
                 className="flex-1 min-w-0 resize-none rounded-[20px] border border-border bg-white px-4 py-2 text-[14px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 max-h-[140px]" />
               <button type="submit" disabled={!draft.trim() || busy === "send"} aria-label="Envoyer"
                 className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shrink-0 hover:bg-[#3A5A38] disabled:opacity-40">
-                {busy === "send" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                {busy === "send" ? <Loader2 className="w-4 h-4 animate-spin" /> : editing ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
               </button>
             </form>
             <p className="mt-1.5 text-[11.5px] text-[#6B746E] flex items-center gap-1"><ShieldCheck className="w-3.5 h-3.5 text-primary" /> Signé « Équipe Garden of Alliance » côté membres.</p>
@@ -555,13 +580,16 @@ function StatTile({ label, value, icon: Icon, hint, onClick, active, highlight }
     : <div className={cls}>{content}</div>;
 }
 
-function AdminMessageMenu({ m, pinned, muted, busy, onReply, onPin, onKeep, onDelete, onMute, onUnmute }: {
+function AdminMessageMenu({ m, pinned, muted, busy, onReply, onEdit, onPin, onKeep, onDelete, onMute, onUnmute }: {
   m: AdminForumMessage; pinned: boolean; muted: boolean; busy: boolean;
-  onReply: () => void; onPin: () => void; onKeep: () => void; onDelete: () => void;
+  onReply: () => void; onEdit: () => void; onPin: () => void; onKeep: () => void; onDelete: () => void;
   onMute: (duration: string) => void; onUnmute: () => void;
 }) {
+  // Délai de 5 minutes recalculé à chaque ouverture du menu.
+  const [now, setNow] = useState(() => Date.now());
+  const canEdit = m.is_staff && isEditable(m, now);
   return (
-    <DropdownMenu>
+    <DropdownMenu onOpenChange={(open) => { if (open) setNow(Date.now()); }}>
       <DropdownMenuTrigger asChild>
         <button aria-label="Actions sur le message" disabled={busy}
           className="w-8 h-8 rounded-full flex items-center justify-center text-[#6B746E] hover:bg-white hover:text-foreground disabled:opacity-40">
@@ -570,6 +598,7 @@ function AdminMessageMenu({ m, pinned, muted, busy, onReply, onPin, onKeep, onDe
       </DropdownMenuTrigger>
       <DropdownMenuContent align={m.is_staff ? "end" : "start"} className="w-56">
         {!m.is_staff && <DropdownMenuLabel className="text-[11.5px] font-medium text-[#6B746E] truncate">{adminAuthorName(m)}</DropdownMenuLabel>}
+        {canEdit && <DropdownMenuItem onSelect={onEdit}><Pencil className="w-4 h-4 mr-2" /> Modifier (5 min après l&apos;envoi)</DropdownMenuItem>}
         <DropdownMenuItem onSelect={onReply}><Reply className="w-4 h-4 mr-2" /> Répondre</DropdownMenuItem>
         <DropdownMenuItem onSelect={onPin}>{pinned ? <><PinOff className="w-4 h-4 mr-2" /> Désépingler</> : <><Pin className="w-4 h-4 mr-2" /> Épingler en haut du groupe</>}</DropdownMenuItem>
         {m.open_reports > 0 && <DropdownMenuItem onSelect={onKeep}><CheckCircle2 className="w-4 h-4 mr-2" /> Conserver (signalement traité)</DropdownMenuItem>}
