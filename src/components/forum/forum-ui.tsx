@@ -103,14 +103,19 @@ export function ForumBubble({
         stickerOnly ? "" : mine
           ? "bg-primary text-white px-3 py-2 rounded-br-md"
           : cn("bg-white border px-3 py-2 rounded-bl-md text-[#2E3A33]", m.is_staff ? "border-primary/40" : "border-[#E8E5E0]"))}>
-        {!mine && showAuthor && !stickerOnly && (
-          <span className="flex items-center gap-1.5 mb-0.5">
-            <span className={cn("text-[12.5px] font-bold truncate", m.is_staff ? "text-primary" : "text-[#8A5A00]")}>{authorName}</span>
-            {m.is_staff && <span className="px-1.5 py-px rounded bg-primary text-white text-[9.5px] font-bold uppercase tracking-wide">{staffBadge}</span>}
+        {/* Pseudo de l'expéditeur sur chaque message, y compris les siens. */}
+        {!stickerOnly && (
+          <span className={cn("flex items-center gap-1.5 mb-0.5", mine && "justify-end")}>
+            <span className={cn("text-[12.5px] font-bold truncate",
+              mine ? "text-white/90" : m.is_staff ? "text-primary" : "text-[#8A5A00]")}>{authorName}</span>
+            {m.is_staff && (
+              <span className={cn("px-1.5 py-px rounded text-[9.5px] font-bold uppercase tracking-wide",
+                mine ? "bg-white/20 text-white" : "bg-primary text-white")}>{staffBadge}</span>
+            )}
           </span>
         )}
-        {!mine && showAuthor && stickerOnly && (
-          <span className="block text-[12px] font-bold text-[#56615A] mb-1">{authorName}</span>
+        {stickerOnly && (
+          <span className={cn("block text-[12px] font-bold text-[#56615A] mb-1", mine && "text-right")}>{authorName}</span>
         )}
 
         {m.reply_to_id && (
