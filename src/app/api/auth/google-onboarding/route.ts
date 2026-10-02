@@ -191,46 +191,34 @@ export async function POST(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
 
-    const { error: profileError } = await db
-      .from("profiles")
-      .update(profileData)
-      .eq("id", userId);
+    // Pas de ligne dans profiles (déclencheur absent lors de la création du
+    // compte Google, ou profil supprimé) : un `update` ne toucherait aucune
+    // ligne SANS renvoyer d'erreur, et l'inscription semblerait réussie alors
+    // que rien n'est enregistré. On crée donc la ligne explicitement.
+    let profileError;
+    if (existingProfile) {
+      ({ error: profileError } = await db.from("profiles").update(profileData).eq("id", userId));
+    } else {
+      const { data: { user: authUser } } = await db.auth.admin.getUserById(userId);
+      const meta = authUser?.user_metadata || {};
+      const authEmail = authUser?.email || null;
+      ({ error: profileError } = await db.from("profiles").insert({
+        ...profileData,
+        id: userId,
+        email: authEmail,
+        name: meta.name || meta.full_name || (authEmail ? authEmail.split("@")[0] : cleanPseudo),
+        avatar_url: meta.avatar_url || meta.picture || null,
+        onboarding_completed: false,
+        created_at: new Date().toISOString(),
+      }));
+    }
 
     if (profileError) {
-      console.error("[Google Onboarding] Profile update error:", profileError.message);
-      // Try upsert in case profile doesn't exist yet
-      const upsertData: Record<string, any> = {
-        id: userId,
-        pseudo: cleanPseudo,
-        gender: gender,
-        birth_date: birthDate,
-        civil_status: civilStatus,
-        region: region,
-        country: country,
-        city: city,
-        marriage_vision: marriageVision || [],
-        status: "pending",
-        onboarding_completed: false,
-        selfie_verified: false,
-        selfie_verification_score: 0,
-        selfie_url: registration.selfieRef,
-        profile_photos: registration.photoRefs,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      const { error: upsertError } = await db.from("profiles").upsert(
-        upsertData,
-        { onConflict: "id" }
+      console.error("[Google Onboarding] Profile save error:", profileError.message);
+      return NextResponse.json(
+        { error: "Erreur lors de la mise à jour du profil." },
+        { status: 500 }
       );
-
-      if (upsertError) {
-        console.error("[Google Onboarding] Profile upsert error:", upsertError.message);
-        return NextResponse.json(
-          { error: "Erreur lors de la mise à jour du profil." },
-          { status: 500 }
-        );
-      }
     }
 
     // Téléphone : colonne profiles.phone (20261002_profiles_phone.sql). Sans elle, l'inscription continue.
