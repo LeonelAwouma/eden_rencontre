@@ -831,7 +831,9 @@
     "autoRefresh": "Keep this page open: it will refresh on its own as soon as your profile is approved.",
     "approvedTitle": "Your profile has been approved!",
     "approvedBody": "Welcome to Garden of Alliance. Opening the doors to your space…",
-    "approvedCta": "Enter my space"
+    "approvedCta": "Enter my space",
+    "noSessionHint": "Your profile may already be approved: log in to find out and access your space.",
+    "noSessionCta": "Log in"
   },
   "searching": {
     "phase1": "Preparing your sanctuary…",

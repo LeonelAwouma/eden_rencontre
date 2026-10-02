@@ -831,7 +831,9 @@
     "autoRefresh": "Gardez cette page ouverte : elle s'actualisera d'elle-même dès que votre profil sera validé.",
     "approvedTitle": "Votre profil a été validé !",
     "approvedBody": "Bienvenue dans Garden of Alliance. Nous vous ouvrons les portes de votre espace…",
-    "approvedCta": "Entrer dans mon espace"
+    "approvedCta": "Entrer dans mon espace",
+    "noSessionHint": "Votre profil a peut-être déjà été validé : connectez-vous pour le savoir et accéder à votre espace.",
+    "noSessionCta": "Me connecter"
   },
   "searching": {
     "phase1": "Préparation de votre sanctuaire…",

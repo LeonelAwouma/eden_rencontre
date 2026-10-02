@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Clock, Mail, ArrowLeft, CheckCircle2, ArrowRight } from "lucide-react";
+import { Clock, Mail, ArrowLeft, CheckCircle2, ArrowRight, LogIn } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { logout } from "@/lib/auth";
@@ -23,20 +23,24 @@ function PendingContent() {
   const { t } = useI18n();
   const email = searchParams.get("email") || "";
   const [approved, setApproved] = useState(false);
+  /** null : vérification en cours ; false : aucune session, la page ne peut pas suivre le statut. */
+  const [hasSession, setHasSession] = useState<boolean | null>(null);
 
   // La session est conservée pendant l'attente : la page surveille le statut
   // et fait entrer le membre dès que l'admin valide son profil. Sans danger :
   // la RLS (20260924_member_approval_rls.sql) ne laisse un compte non approuvé
   // lire que sa propre fiche, et MemberGate bloque l'espace membre.
   useEffect(() => {
-    if (!supabase) return;
+    if (!supabase) { setHasSession(false); return; }
     const db = supabase;
     let cancelled = false;
     let timer: ReturnType<typeof setInterval> | undefined;
 
     const check = async () => {
       const { data: { session } } = await db.auth.getSession();
-      if (!session || cancelled) return;
+      if (cancelled) return;
+      setHasSession(!!session);
+      if (!session) return;
       const { data } = await db.from("profiles").select("status").eq("id", session.user.id).maybeSingle();
       const status = data?.status as AccountStatus | undefined;
       if (cancelled || !status || status === "pending") return;
@@ -165,7 +169,24 @@ function PendingContent() {
           </div>
         </div>
 
-        <p className="text-xs text-foreground/40 leading-relaxed">{t("registerPending.autoRefresh")}</p>
+        {hasSession === true && (
+          <p className="text-xs text-foreground/40 leading-relaxed">{t("registerPending.autoRefresh")}</p>
+        )}
+
+        {/* Sans session (page ouverte depuis un lien, session fermée…), la page ne
+            peut pas voir la validation : on propose de se connecter. */}
+        {hasSession === false && (
+          <div className="space-y-3">
+            <p className="text-sm text-foreground/60 leading-relaxed">{t("registerPending.noSessionHint")}</p>
+            <Link
+              href={`/login${email ? `?email=${encodeURIComponent(email)}` : ""}`}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <LogIn className="w-4 h-4" />
+              {t("registerPending.noSessionCta")}
+            </Link>
+          </div>
+        )}
 
         {/* Back to home */}
         <Link
