@@ -23,6 +23,7 @@ import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
 import { cameraErrorKey } from "@/lib/camera-error";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
+import { uploadRegistrationMedia } from "@/lib/registration-media-client";
 import { filterCountries, filterCities, countryLabel, phoneIsoFor, dialOfIso, toE164 } from "@/lib/geo";
 import { PhoneInput } from "@/components/phone-input";
 import { Flag } from "@/components/flag";
@@ -345,6 +346,21 @@ export default function CompleteRegistrationPage() {
         }
       }
 
+      // Les images partent directement dans Supabase Storage (bucket privé) :
+      // la route d'inscription ne reçoit que leurs chemins, quelques Ko au lieu de plusieurs Mo.
+      let media: Awaited<ReturnType<typeof uploadRegistrationMedia>> | null = null;
+      try {
+        media = await uploadRegistrationMedia({ photos: photos.filter(Boolean) as string[], selfie: selfieDataUri, frames: livenessFrames });
+      } catch (uploadErr) {
+        const message = uploadErr instanceof Error ? uploadErr.message : "";
+        // Stockage pas encore installé (migration non exécutée) : on revient à l'ancien envoi.
+        if (!/non configuré/i.test(message)) {
+          setSaveError(message || t("camera.photosTooLarge"));
+          setSaving(false);
+          return;
+        }
+      }
+
       const payload = JSON.stringify({
           pseudo: formData.pseudo.trim(),
           gender: formData.gender,
@@ -359,9 +375,7 @@ export default function CompleteRegistrationPage() {
           charterAuthorizeVerification: formData.charterAuthorizeVerification,
           charterCommitRespectful: formData.charterCommitRespectful,
           charterAcceptFull: formData.charterAcceptFull,
-          selfieImage: selfieDataUri,
-          livenessFrames,
-          profilePhotos: photos.filter(Boolean),
+          ...(media ?? { selfieImage: selfieDataUri, livenessFrames, profilePhotos: photos.filter(Boolean) }),
         });
       // Garde-fou : au-delà de 4,5 Mo, Vercel refuse la requête (413) sans réponse lisible.
       if (payload.length > MAX_UPLOAD_PAYLOAD) {

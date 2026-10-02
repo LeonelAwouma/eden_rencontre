@@ -162,8 +162,8 @@ export default function AdminUsersPage() {
         fetchUsers();
         // Action enregistrée, mais le membre n'a pas été prévenu : l'admin doit le savoir.
         if (data.emailSent === false) {
-          setEmailWarning(EMAIL_NOT_SENT[action]);
-          setTimeout(() => setEmailWarning(null), 10000);
+          setEmailWarning(`${EMAIL_NOT_SENT[action as keyof typeof EMAIL_NOT_SENT]}${data.emailError ? ` Cause : ${data.emailError}` : ""}`);
+          setTimeout(() => setEmailWarning(null), 20000);
         }
       } else {
         const data = await res.json().catch(() => ({}));

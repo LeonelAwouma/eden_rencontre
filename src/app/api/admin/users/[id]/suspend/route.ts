@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { sendAccountSuspendedEmail } from "@/lib/email";
+import { sendAccountSuspendedEmail, getLastEmailError } from "@/lib/email";
 
 export async function POST(
   request: NextRequest,
@@ -62,7 +62,7 @@ export async function POST(
       ip
     );
 
-    return NextResponse.json({ ok: true, message: "Utilisateur suspendu.", emailSent });
+    return NextResponse.json({ ok: true, message: "Utilisateur suspendu.", emailSent, emailError: emailSent ? null : getLastEmailError() });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });

@@ -21,6 +21,7 @@ import {
   verificationApprovedEmail,
   verificationRejectedEmail,
   newsletterWelcomeEmail,
+  testEmail,
   type RenderedEmail,
   type MeetInvitationEmailParams,
   type MeetingInvitationEmailParams,
@@ -104,6 +105,27 @@ function applySettings(email: RenderedEmail, settings: EmailSettings): RenderedE
  */
 type EmailKind = "account" | "meeting";
 
+/**
+ * Cause du dernier échec d'envoi, en clair, pour l'admin (« pourquoi le membre
+ * n'a-t-il rien reçu ? »). Remise à zéro à chaque envoi.
+ */
+let lastEmailError: string | null = null;
+export const getLastEmailError = () => lastEmailError;
+
+function explainSmtpError(err: unknown): string {
+  const e = err as { code?: string; responseCode?: number; response?: string; message?: string };
+  if (e.responseCode === 535 || e.code === "EAUTH") {
+    return "Identifiants SMTP refusés par le serveur d'e-mail : vérifiez SMTP_USER et SMTP_PASSWORD dans Vercel (mot de passe de la boîte contact@ chez Hostinger).";
+  }
+  if (e.code === "ECONNECTION" || e.code === "ETIMEDOUT" || e.code === "ESOCKET" || e.code === "EDNS") {
+    return "Serveur d'e-mail injoignable (SMTP_HOST / SMTP_PORT) : vérifiez la configuration ou réessayez plus tard.";
+  }
+  if (e.responseCode && e.responseCode >= 500) {
+    return `Message refusé par le serveur d'e-mail (${e.responseCode}) : ${String(e.response || "").slice(0, 160)}`;
+  }
+  return `Erreur d'envoi : ${String(e.message || err).slice(0, 160)}`;
+}
+
 async function sendEmail(
   to: string,
   rendered: RenderedEmail,
@@ -117,6 +139,7 @@ async function sendEmail(
   }
   const email = applySettings(rendered, settings);
   const smtpPassword = process.env.SMTP_PASSWORD;
+  lastEmailError = null;
 
   if (smtpPassword) {
     // Use Hostinger SMTP via nodemailer
@@ -124,6 +147,7 @@ async function sendEmail(
       const transporter = getTransporter();
       if (!transporter) {
         console.error("SMTP transporter could not be created — missing SMTP_PASSWORD");
+        lastEmailError = "SMTP_PASSWORD manquant sur le serveur.";
         return false;
       }
 
@@ -132,6 +156,7 @@ async function sendEmail(
       return true;
     } catch (err) {
       console.error("Email send error (SMTP):", err);
+      lastEmailError = explainSmtpError(err);
       return false;
     }
   }
@@ -147,9 +172,16 @@ async function sendEmail(
   // En production, rien n'est parti : on le signale au lieu de faire croire à un envoi.
   if (process.env.NODE_ENV === "production") {
     console.error("Email NOT sent: SMTP_PASSWORD is missing in production.");
+    lastEmailError = "Aucun e-mail ne peut partir : la variable SMTP_PASSWORD n'est pas définie dans Vercel (Settings → Environment Variables), puis redéployez.";
     return false;
   }
   return true;
+}
+
+/** E-mail de test (Admin → Paramètres) : renvoie la cause précise en cas d'échec. */
+export async function sendTestEmail(to: string): Promise<{ ok: boolean; error: string | null }> {
+  const ok = await sendEmail(to, testEmail());
+  return { ok, error: ok ? null : lastEmailError || "Échec de l'envoi." };
 }
 
 // ── Inscription et compte ────────────────────────────────────

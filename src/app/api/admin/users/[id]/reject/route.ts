@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { sendAccountRejectedEmail } from "@/lib/email";
+import { sendAccountRejectedEmail, getLastEmailError } from "@/lib/email";
 
 export async function POST(
   request: NextRequest,
@@ -63,7 +63,7 @@ export async function POST(
       ip
     );
 
-    return NextResponse.json({ ok: true, message: "Utilisateur rejeté.", emailSent });
+    return NextResponse.json({ ok: true, message: "Utilisateur rejeté.", emailSent, emailError: emailSent ? null : getLastEmailError() });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });

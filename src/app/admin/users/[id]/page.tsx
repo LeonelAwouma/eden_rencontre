@@ -138,7 +138,7 @@ export default function AdminUserDetailPage() {
         setRejectReason("");
         setSuspendReason("");
         // Action enregistrée, mais le membre n'a pas été prévenu : l'admin doit le savoir.
-        if (data.emailSent === false) setActionNotice({ tone: "warning", text: EMAIL_NOT_SENT[action] });
+        if (data.emailSent === false) setActionNotice({ tone: "warning", text: `${EMAIL_NOT_SENT[action]}${data.emailError ? ` Cause : ${data.emailError}` : ""}` });
       } else {
         const data = await res.json().catch(() => ({}));
         setActionNotice({ tone: "error", text: data.error || "L'action n'a pas pu être effectuée. Réessayez." });

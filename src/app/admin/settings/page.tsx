@@ -202,6 +202,7 @@ export default function SettingsPage() {
             <p className="text-[11px] text-[#9CA3AF] pt-4">
               Les e-mails liés au compte (inscription, validation, mot de passe, vérification) partent toujours.
             </p>
+            <TestEmailPanel />
           </div>
         );
       case "appearance":
@@ -369,6 +370,59 @@ function AppearanceSection({
           className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all"
         />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Test d'envoi : envoie un vrai e-mail avec la configuration du serveur et
+ * affiche la cause précise en cas d'échec (mot de passe SMTP absent ou refusé…).
+ */
+function TestEmailPanel() {
+  const [to, setTo] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const send = async () => {
+    setBusy(true);
+    setResult(null);
+    try {
+      const res = await fetch("/api/admin/settings/test-email", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ to }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) setResult({ ok: false, text: data.error || "Le test n'a pas pu être lancé." });
+      else setResult(data.ok
+        ? { ok: true, text: `E-mail de test envoyé à ${data.to}. Vérifiez la boîte de réception (et les indésirables).` }
+        : { ok: false, text: data.error || "Échec de l'envoi." });
+    } catch {
+      setResult({ ok: false, text: "Le test n'a pas pu être lancé." });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mt-6 pt-5 border-t border-[#F3F4F6]">
+      <h4 className="text-[14px] font-bold text-[#1a1a1a]">Tester l&apos;envoi des e-mails</h4>
+      <p className="text-[12px] text-[#6B7280] mt-1">
+        Si les membres ne reçoivent pas leurs e-mails (validation de compte…), envoyez un test : en cas d&apos;échec, la cause exacte s&apos;affiche.
+      </p>
+      <div className="mt-3 flex flex-col sm:flex-row gap-2">
+        <input type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="Adresse de test (par défaut : la vôtre)"
+          aria-label="Adresse de test"
+          className="flex-1 h-10 px-3 rounded-xl border border-[#E5E7EB] text-[13px] outline-none focus:border-[#486B46] focus:ring-2 focus:ring-[#486B46]/10" />
+        <button onClick={send} disabled={busy}
+          className="h-10 px-4 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#3A5A38] disabled:opacity-60">
+          {busy ? "Envoi…" : "Envoyer un e-mail de test"}
+        </button>
+      </div>
+      {result && (
+        <p role="status" className={cn("mt-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium",
+          result.ok ? "bg-[#486B46]/10 text-[#2E4A36]" : "bg-[#B42318]/10 text-[#B42318]")}>
+          {result.text}
+        </p>
+      )}
     </div>
   );
 }

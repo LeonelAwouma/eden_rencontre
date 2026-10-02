@@ -13,6 +13,7 @@ import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { verifySelfieServer } from "@/lib/face-verification-server";
 import { decide, type LivenessCheck } from "@/lib/face-rules";
+import { resolveMediaUrl, resolveMediaUrls } from "@/lib/registration-media";
 
 export const maxDuration = 60;
 
@@ -26,8 +27,11 @@ export async function POST(_req: NextRequest, { params }: { params: Promise<{ id
   if (error || !profile) return NextResponse.json({ error: "Membre introuvable." }, { status: 404 });
   if (!profile.selfie_url) return NextResponse.json({ error: "Aucun selfie enregistré pour ce membre." }, { status: 400 });
 
-  const photos: string[] = Array.isArray(profile.profile_photos) ? profile.profile_photos.filter(Boolean) : [];
-  const result = await verifySelfieServer(profile.selfie_url, photos, null);
+  // Fichiers du stockage privé : liens signés de courte durée pour l'analyse.
+  const selfieSrc = await resolveMediaUrl(db, profile.selfie_url, 300);
+  if (!selfieSrc) return NextResponse.json({ error: "Selfie introuvable dans le stockage." }, { status: 404 });
+  const photos = await resolveMediaUrls(db, profile.profile_photos, 300);
+  const result = await verifySelfieServer(selfieSrc, photos, null);
 
   const previous = (profile.selfie_verification_details || null) as { liveness?: LivenessCheck | null } | null;
   const liveness = previous?.liveness ?? null;

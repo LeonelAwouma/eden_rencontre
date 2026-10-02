@@ -256,6 +256,15 @@ export function registrationReceivedEmail(name: string): RenderedEmail {
   });
 }
 
+/** E-mail de test envoyé depuis Admin → Paramètres. */
+export function testEmail(): RenderedEmail {
+  return render("Test d'envoi — Garden of Alliance", {
+    preheader: "Les e-mails de la plateforme partent correctement.",
+    title: "Les e-mails fonctionnent",
+    body: p("Cet e-mail de test confirme que la plateforme peut envoyer des e-mails : les membres recevront bien les confirmations d'inscription, de validation et de vérification."),
+  });
+}
+
 export function accountApprovedEmail(name: string): RenderedEmail {
   return render("Votre profil est maintenant actif — Garden of Alliance", {
     preheader: "Votre profil a été validé : vous pouvez maintenant accéder à votre compte.",

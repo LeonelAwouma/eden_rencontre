@@ -3,6 +3,10 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isValidE164 } from "@/lib/geo";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { verifySelfieServer } from "@/lib/face-verification-server";
+import { verifyRegistrationSelfie, publishAvatarFromMedia } from "@/lib/registration-media";
+
+// Analyse du selfie, des photos et de la rafale : jusqu'à une quinzaine d'images.
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
@@ -25,10 +29,7 @@ export async function POST(request: NextRequest) {
       charterAuthorizeVerification,
       charterCommitRespectful,
       charterAcceptFull,
-      selfieImage,
-      livenessFrames,
       phone,
-      profilePhotos,
       avatarUrl,
     } = body;
 
@@ -40,19 +41,21 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Numéro de téléphone invalide." }, { status: 400 });
     }
 
-    let selfieVerified = false;
-    let selfieVerificationScore = 0;
-    let selfieDetails: Record<string, unknown> | null = null;
-    if (typeof selfieImage === "string" && selfieImage.startsWith("data:")) {
-      // Rafale de la preuve de présence : 10 petites images au plus. Absente ⇒ contrôle échoué.
-      const frames = Array.isArray(livenessFrames)
-        ? livenessFrames.filter((f: unknown): f is string => typeof f === "string" && f.startsWith("data:image/") && f.length < 400_000).slice(0, 10)
-        : [];
-      const result = await verifySelfieServer(selfieImage, (profilePhotos || []).filter(Boolean), frames);
-      selfieDetails = { photos: result.photos, liveness: result.liveness, reason: result.reason, checked_at: new Date().toISOString() };
-      selfieVerified = result.verified;
-      selfieVerificationScore = result.score;
-    }
+    // Photos et selfie : déposés par le navigateur dans le stockage privé
+    // (src/lib/registration-media.ts). Le score n'est jamais pris du client :
+    // la vérification est refaite ici, à partir des fichiers.
+    const registration = await verifyRegistrationSelfie(getSupabaseAdmin(), body, verifySelfieServer);
+    const selfieVerified = registration.verified;
+    const selfieVerificationScore = registration.score;
+    const selfieDetails = registration.details;
+
+    const avatarIndex = typeof body.avatarPhotoIndex === "number" ? body.avatarPhotoIndex : -1;
+    const avatarFromPhoto = registration.media && avatarIndex >= 0 ? registration.media.profilePhotoPaths[avatarIndex] : undefined;
+    const finalAvatarUrl: string | null = avatarFromPhoto
+      ? await publishAvatarFromMedia(getSupabaseAdmin(), avatarFromPhoto)
+      : typeof avatarUrl === "string" && /^https?:\/\//.test(avatarUrl) ? avatarUrl
+      : typeof avatarUrl === "string" && avatarUrl.startsWith("data:") && avatarUrl.length < 3_000_000 ? avatarUrl // ancien format
+      : null;
 
     if (!email || !password || !name || !pseudo || !firstName || !lastName) {
       return NextResponse.json(
@@ -74,7 +77,7 @@ export async function POST(request: NextRequest) {
         pseudo,
         firstName,
         lastName,
-        avatar_url: avatarUrl || null,
+        avatar_url: finalAvatarUrl,
         gender,
         birthDate,
         discoverySource,
@@ -147,9 +150,9 @@ export async function POST(request: NextRequest) {
         onboarding_completed: false,
         selfie_verified: selfieVerified,
         selfie_verification_score: selfieVerificationScore,
-        selfie_url: selfieImage || null,
-        profile_photos: profilePhotos || [],
-        avatar_url: avatarUrl || null,
+        selfie_url: registration.selfieRef,
+        profile_photos: registration.photoRefs,
+        avatar_url: finalAvatarUrl,
         updated_at: new Date().toISOString(),
       });
 
@@ -175,9 +178,9 @@ export async function POST(request: NextRequest) {
           onboarding_completed: false,
           selfie_verified: selfieVerified,
           selfie_verification_score: selfieVerificationScore,
-          selfie_url: selfieImage || null,
-          profile_photos: profilePhotos || [],
-          avatar_url: avatarUrl || null,
+          selfie_url: registration.selfieRef,
+          profile_photos: registration.photoRefs,
+          avatar_url: finalAvatarUrl,
           updated_at: new Date().toISOString(),
         })
         .eq("id", userId);

@@ -3,6 +3,10 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isValidE164 } from "@/lib/geo";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { verifySelfieServer } from "@/lib/face-verification-server";
+import { verifyRegistrationSelfie, publishAvatarFromMedia } from "@/lib/registration-media";
+
+// Analyse du selfie, des photos et de la rafale : jusqu'à une quinzaine d'images.
+export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   try {
@@ -20,10 +24,7 @@ export async function POST(request: NextRequest) {
       charterAuthorizeVerification,
       charterCommitRespectful,
       charterAcceptFull,
-      selfieImage,
-      livenessFrames,
       phone,
-      profilePhotos,
     } = body;
 
     // Selfie verification is recomputed here from the actual uploaded photos — the
@@ -35,19 +36,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Numéro de téléphone invalide." }, { status: 400 });
     }
 
-    let selfieVerified = false;
-    let selfieVerificationScore = 0;
-    let selfieDetails: Record<string, unknown> | null = null;
-    if (typeof selfieImage === "string" && selfieImage.startsWith("data:")) {
-      // Rafale de la preuve de présence : 10 petites images au plus. Absente ⇒ contrôle échoué.
-      const frames = Array.isArray(livenessFrames)
-        ? livenessFrames.filter((f: unknown): f is string => typeof f === "string" && f.startsWith("data:image/") && f.length < 400_000).slice(0, 10)
-        : [];
-      const result = await verifySelfieServer(selfieImage, (profilePhotos || []).filter(Boolean), frames);
-      selfieDetails = { photos: result.photos, liveness: result.liveness, reason: result.reason, checked_at: new Date().toISOString() };
-      selfieVerified = result.verified;
-      selfieVerificationScore = result.score;
-    }
+    // Photos et selfie : déposés par le navigateur dans le stockage privé
+    // (src/lib/registration-media.ts). Le score n'est jamais pris du client :
+    // la vérification est refaite ici, à partir des fichiers.
+    const registration = await verifyRegistrationSelfie(getSupabaseAdmin(), body, verifySelfieServer);
+    const selfieVerified = registration.verified;
+    const selfieVerificationScore = registration.score;
+    const selfieDetails = registration.details;
 
     // Pseudonyme public (le vrai nom Google reste réservé à l'admin)
     const cleanPseudo = typeof pseudo === "string" ? pseudo.trim() : "";
@@ -192,8 +187,8 @@ export async function POST(request: NextRequest) {
       status,
       selfie_verified: selfieVerified,
       selfie_verification_score: selfieVerificationScore,
-      selfie_url: selfieImage || null,
-      profile_photos: profilePhotos || [],
+      selfie_url: registration.selfieRef,
+      profile_photos: registration.photoRefs,
       updated_at: new Date().toISOString(),
     };
 
@@ -219,8 +214,8 @@ export async function POST(request: NextRequest) {
         onboarding_completed: false,
         selfie_verified: selfieVerified,
         selfie_verification_score: selfieVerificationScore,
-        selfie_url: selfieImage || null,
-        profile_photos: profilePhotos || [],
+        selfie_url: registration.selfieRef,
+        profile_photos: registration.photoRefs,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };
