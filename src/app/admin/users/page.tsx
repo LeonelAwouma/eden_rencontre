@@ -26,6 +26,7 @@ import { cn, formatDate } from "@/lib/utils";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { checkQuestionnaireCompletion } from "@/lib/onboarding";
 import { PageHeader } from "@/components/admin/page-header";
+import { DataHealthPanel } from "@/components/admin/data-health-panel";
 import { EMAIL_NOT_SENT } from "@/lib/admin-email-warning";
 
 /** Mêmes conditions que la fiche membre et que l'API /verify : profil ET questionnaire complets. */
@@ -208,6 +209,8 @@ export default function AdminUsersPage() {
         title="Utilisateurs"
         subtitle={`${total} utilisateur${total !== 1 ? "s" : ""} au total`}
       />
+
+      <DataHealthPanel />
 
       {/* Error banner */}
       {emailWarning && (

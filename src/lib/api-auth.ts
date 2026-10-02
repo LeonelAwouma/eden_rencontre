@@ -115,3 +115,22 @@ export async function getAuthenticatedUser(
 
   return null;
 }
+/**
+ * Membre connecté ET approuvé par l'admin, sinon null.
+ *
+ * Les routes API utilisent la clé de service, qui contourne la RLS : la règle
+ * « espace réservé aux comptes approuvés » doit donc y être revérifiée. Depuis
+ * que la page d'attente garde la session des comptes en attente, un jeton
+ * valide ne suffit plus à prouver l'accès à l'espace membre.
+ */
+export async function getApprovedUser(request: NextRequest): Promise<AuthenticatedUser | null> {
+  const user = await getAuthenticatedUser(request);
+  if (!user) return null;
+  const { data } = await getSupabaseAdmin().from("profiles").select("status").eq("id", user.id).maybeSingle();
+  return data?.status === "approved" ? user : null;
+}
+
+/** Adresse IP du client (Vercel renseigne x-forwarded-for), pour les limites de tentatives. */
+export function clientIp(request: NextRequest): string {
+  return request.headers.get("x-forwarded-for")?.split(",")[0].trim() || request.headers.get("x-real-ip") || "unknown";
+}

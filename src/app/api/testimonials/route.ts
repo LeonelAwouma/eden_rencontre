@@ -1,22 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getApprovedUser } from "@/lib/api-auth";
+import { checkRateLimit, recordRateLimit } from "@/lib/otp";
+
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024;
+const IMAGE_TYPES: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+/** Témoignages par membre et par jour (anti-abus). */
+const MAX_PER_DAY = 5;
+
+const text = (v: FormDataEntryValue | null, max: number) =>
+  typeof v === "string" && v.trim() ? v.trim().slice(0, max) : null;
 
 export async function POST(req: NextRequest) {
+  // Auteur = membre approuvé de la session. Avant, le user_id venait du
+  // formulaire : n'importe qui pouvait publier au nom de n'importe quel membre.
+  const user = await getApprovedUser(req);
+  if (!user) return NextResponse.json({ error: "Connectez-vous pour partager votre témoignage." }, { status: 401 });
+
   try {
+    if (!(await checkRateLimit(user.id, "testimonial_submit", MAX_PER_DAY, 24 * 3600))) {
+      return NextResponse.json({ error: "Vous avez déjà envoyé plusieurs témoignages aujourd'hui. Réessayez demain." }, { status: 429 });
+    }
+
     const formData = await req.formData();
 
-    const user_id = formData.get("user_id") as string;
-    const couple_names = formData.get("couple_names") as string;
-    const title = formData.get("title") as string;
-    const content = formData.get("content") as string;
-    const rating = formData.get("rating") as string;
-    const imageFile = formData.get("image") as File | null;
+    const user_id = user.id;
+    const couple_names = text(formData.get("couple_names"), 120);
+    const title = text(formData.get("title"), 200);
+    const content = text(formData.get("content"), 5000);
+    const rating = text(formData.get("rating"), 2);
+    const image = formData.get("image");
+    const imageFile = image instanceof File ? image : null;
 
-    if (!user_id || !content) {
-      return NextResponse.json(
-        { error: "user_id et content sont requis" },
-        { status: 400 }
-      );
+    if (!content) {
+      return NextResponse.json({ error: "Le témoignage est vide." }, { status: 400 });
+    }
+    if (imageFile && imageFile.size > 0 && (!IMAGE_TYPES[imageFile.type] || imageFile.size > MAX_IMAGE_BYTES)) {
+      return NextResponse.json({ error: "Photo refusée : JPG, PNG ou WebP de 5 Mo au plus." }, { status: 400 });
     }
 
     let imageUrl: string | null = null;
@@ -25,8 +45,8 @@ export async function POST(req: NextRequest) {
     if (imageFile && imageFile.size > 0) {
       try {
         const supabaseUpload = getSupabaseAdmin();
-        const fileExt = imageFile.name.split(".").pop();
-        const fileName = `${user_id}/${Date.now()}.${fileExt}`;
+        // Extension tirée du type vérifié, jamais du nom fourni par le navigateur.
+        const fileName = `${user_id}/${Date.now()}.${IMAGE_TYPES[imageFile.type]}`;
 
         const { data: uploadData, error: uploadError } = await supabaseUpload.storage
           .from("testimonials")
@@ -57,7 +77,7 @@ export async function POST(req: NextRequest) {
         couple_names: couple_names || null,
         title: title || null,
         content,
-        rating: rating ? parseInt(rating, 10) : null,
+        rating: rating ? Math.min(5, Math.max(1, parseInt(rating, 10) || 5)) : null,
         image_url: imageUrl,
         status: "pending_review",
       })
@@ -66,8 +86,9 @@ export async function POST(req: NextRequest) {
 
     if (error) {
       console.error("Testimonial insert error:", error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ error: "Témoignage non enregistré. Réessayez." }, { status: 500 });
     }
+    await recordRateLimit(user.id, "testimonial_submit");
 
     // Create admin notification for new testimonial
     try {

@@ -203,6 +203,17 @@ export async function updateProfile(updates: EditableProfile): Promise<AuthResul
   return { ok: true, user: users[idx] };
 }
 
+/**
+ * En-tête d'authentification pour les routes /api réservées aux membres : la
+ * session Supabase vit dans le navigateur (localStorage), pas dans un cookie,
+ * donc le serveur ne la voit que si on lui transmet le jeton.
+ */
+export async function authHeaders(): Promise<Record<string, string>> {
+  if (!supabase) return {};
+  const token = (await supabase.auth.getSession()).data.session?.access_token;
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 export async function getSession(): Promise<EdenUser | null> {
   if (supabase) {
     const { data } = await supabase.auth.getUser();

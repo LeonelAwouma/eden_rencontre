@@ -353,64 +353,42 @@ export async function getMessages(convId: string, myId: string): Promise<ChatMes
 /** Erreur renvoyée par sendChatMessage quand l'admin a restreint ou bloqué la conversation. */
 export const CONVERSATION_CLOSED = "conversation_closed";
 
+/**
+ * Envoi d'un message : passe par /api/chat/send, qui applique la modération
+ * côté serveur et insère le message (l'insertion directe depuis le navigateur
+ * est refusée par la RLS). `senderId` et `receiverId` ne sont plus utilisés :
+ * l'expéditeur est toujours celui de la session.
+ */
 export async function sendChatMessage(
   convId: string,
   content: string,
   imageUrl?: string | null,
-  senderId?: string,
-  receiverId?: string
+  _senderId?: string,
+  _receiverId?: string
 ): Promise<{ message?: ChatMessage; error?: string; moderationError?: string }> {
   if (!supabase) return { error: "Supabase non configuré." };
+  const token = (await supabase.auth.getSession()).data.session?.access_token;
+  if (!token) return { error: "Session expirée. Veuillez vous reconnecter." };
 
-  // Conversation restreinte ou bloquée par la modération : la RLS refuserait
-  // l'envoi, on le signale avant avec un message clair. (Sans la colonne
-  // status — migration non exécutée — la requête échoue et on continue.)
-  const { data: conv, error: convErr } = await supabase
-    .from("conversations").select("status").eq("id", convId).maybeSingle();
-  if (!convErr && conv?.status && conv.status !== "active") return { error: CONVERSATION_CLOSED };
-
-  // ── Moderation pipeline (text only, skip for image-only messages) ──
-  if (content.trim() && senderId) {
-    try {
-      const modRes = await fetch("/api/moderation/validate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          senderId,
-          receiverId: receiverId || "",
-          conversationId: convId,
-          content: content.trim(),
-        }),
-      });
-      const mod = await modRes.json();
-      if (!mod.allowed) {
-        return { error: mod.blockReason || mod.warnings?.[0] || "Message bloqué par le système de modération.", moderationError: mod.warnings?.[0] };
-      }
-      // If warned (DELIVER=false but allowed=true), pass warning to caller
-      if (mod.decision === "WARN" && mod.warnings?.length) {
-        // Still send the message, but return the warning
-      }
-    } catch (modErr) {
-      // Moderation service failure — fail open (allow message)
-      console.warn("[Eden] moderation check failed, allowing message:", modErr);
+  try {
+    const res = await fetch("/api/chat/send", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ conversationId: convId, content: content.trim(), imageUrl: imageUrl ?? null }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.message) {
+      // conversation_closed / not_friends : gérés par l'interface (toast dédié).
+      return { error: data.error || "Message non envoyé. Réessayez.", moderationError: data.moderationError };
     }
+    const m = data.message;
+    return {
+      message: { id: m.id, from: "me", text: m.content, time: fmt(m.created_at), imageUrl: m.image_url },
+    };
+  } catch (err) {
+    console.error("[Eden] envoi message échoué:", err);
+    return { error: "Connexion impossible. Réessayez." };
   }
-
-  const { data, error } = await supabase
-    .from("messages")
-    .insert({ conversation_id: convId, content, image_url: imageUrl ?? null })
-    .select("id, sender_id, content, image_url, created_at")
-    .single();
-  if (error) {
-    // Le refus « amis seulement » est attendu : on le laisse au gestionnaire d'UI (toast),
-    // on ne logue bruyamment que les vraies erreurs techniques.
-    if (!/row-level|policy/i.test(error.message)) console.error("[Eden] envoi message échoué:", error.message);
-    return { error: error.message };
-  }
-  const m: any = data;
-  return {
-    message: { id: m.id, from: "me", text: m.content, time: fmt(m.created_at), imageUrl: m.image_url },
-  };
 }
 
 // Upload d'une photo dans le bucket public "chat-images" → renvoie l'URL publique.

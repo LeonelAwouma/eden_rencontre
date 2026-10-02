@@ -7,13 +7,24 @@
  * Ouverte sans connexion : le formulaire classique crée le compte après
  * l'envoi des photos. Chaque adresse ne sert qu'une fois, pour un chemin
  * aléatoire, et le bucket limite la taille et le type des fichiers.
+ * Limité par adresse IP : chaque appel ouvre 14 adresses d'envoi.
  */
 
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { createUploadSlots } from "@/lib/registration-media";
+import { checkRateLimit, recordRateLimit } from "@/lib/otp";
+import { clientIp } from "@/lib/api-auth";
 
-export async function POST() {
+/** Une inscription en demande une, plus quelques reprises (photo refaite, retour en arrière…). */
+const MAX_PER_IP_PER_HOUR = 15;
+
+export async function POST(request: NextRequest) {
+  const ipKey = `registration-media:${clientIp(request)}`;
+  if (!(await checkRateLimit(ipKey, "registration_media", MAX_PER_IP_PER_HOUR, 3600))) {
+    return NextResponse.json({ error: "Trop d'envois de photos depuis cette connexion. Réessayez dans une heure." }, { status: 429 });
+  }
+  await recordRateLimit(ipKey, "registration_media");
   try {
     const slots = await createUploadSlots(getSupabaseAdmin());
     return NextResponse.json(slots);

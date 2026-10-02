@@ -179,71 +179,10 @@ This prevents scenarios where:
 
 ## API Endpoints
 
-### `GET /api/matching/discover`
-
-Returns compatible profiles for the authenticated user.
-
-**Response:**
-```json
-{
-  "matches": [
-    {
-      "user_id": "u_104",
-      "name": "Grace",
-      "age": 26,
-      "city": "Yaoundé",
-      "score": 91,
-      "match_level": "exceptional_match",
-      "match_status": "STRONG_MATCH",
-      "reasons": ["Forte compatibilité spirituelle", "Vision du mariage alignée"],
-      "differences": ["Ambitions professionnelles différentes"],
-      "explanation": {
-        "compatibility_score": 91,
-        "spiritual_score": 95,
-        "marriage_family_score": 88,
-        "values_score": 90,
-        "personality_score": 85,
-        "lifestyle_score": 82,
-        "preferences_score": 89,
-        "strengths": [...],
-        "differences": [...]
-      }
-    }
-  ],
-  "total": 1,
-  "page": 1,
-  "limit": 50,
-  "user_completion_pct": 95
-}
-```
-
-### `POST /api/matching/discover`
-
-Check compatibility with a specific user.
-
-**Request:**
-```json
-{ "candidate_id": "u_104" }
-```
-
-**Response:**
-```json
-{
-  "score": 91,
-  "why": ["✨ Compatibilité exceptionnelle", "Forte compatibilité spirituelle"],
-  "discuss": ["Ambitions professionnelles différentes"],
-  "status": "STRONG_MATCH",
-  "details": {
-    "score_a_to_b": 91,
-    "score_b_to_a": 89,
-    "mutual_score": 89,
-    "match_status": "STRONG_MATCH",
-    "match_level": "exceptional_match"
-  }
-}
-```
-
----
+L'ancienne route `/api/matching/discover` a été supprimée (2026-10-02) : elle
+n'était plus utilisée et exposait les profils sans vérifier le statut des
+comptes. Le matching est calculé dans l'espace membre (`src/lib/matching/adapter.ts`),
+sur les profils que la RLS laisse voir (membres approuvés uniquement).
 
 ## Performance Architecture
 

@@ -277,6 +277,24 @@ export function accountApprovedEmail(name: string): RenderedEmail {
   });
 }
 
+/**
+ * Relance d'un membre approuvé dont le profil est incomplet (Admin → Utilisateurs → À traiter).
+ * `missing` : éléments manquants, en clair (« votre questionnaire de compatibilité »…).
+ */
+export function profileReminderEmail(name: string, missing: string[]): RenderedEmail {
+  return render("Complétez votre profil — Garden of Alliance", {
+    preheader: "Il ne manque que quelques informations pour profiter pleinement de Garden of Alliance.",
+    title: "Complétez votre profil",
+    body:
+      greeting(name) +
+      p("Votre compte Garden of Alliance est actif, mais votre profil n'est pas encore complet. Sans ces informations, nous ne pouvons pas vous présenter de profils compatibles.") +
+      note("Il vous reste à renseigner", missing.map((m) => `• ${esc(m)}`).join("<br>")) +
+      p("Cela ne prend que quelques minutes : connectez-vous, les étapes manquantes vous seront proposées directement.") +
+      button(`${appUrl()}/login`, "Compléter mon profil") +
+      replyLine("Si vous rencontrez une difficulté"),
+  });
+}
+
 export function accountRejectedEmail(name: string, reason?: string): RenderedEmail {
   return render("Votre demande d'inscription — Garden of Alliance", {
     preheader: "Réponse à votre demande d'inscription sur Garden of Alliance.",

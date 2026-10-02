@@ -1,5 +1,10 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { checkRateLimit, recordRateLimit } from "@/lib/otp";
+import { clientIp } from "@/lib/api-auth";
+
+/** Inscriptions par adresse IP et par heure (anti-création de comptes en masse). */
+const MAX_REGISTRATIONS_PER_IP = 5;
 import { isValidE164 } from "@/lib/geo";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { verifySelfieServer } from "@/lib/face-verification-server";
@@ -11,6 +16,10 @@ export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
   const startedAt = Date.now();
+  const ipKey = `register-ip:${clientIp(request)}`;
+  if (!(await checkRateLimit(ipKey, "register", MAX_REGISTRATIONS_PER_IP, 3600))) {
+    return NextResponse.json({ error: "Trop d'inscriptions depuis cette connexion. Réessayez dans une heure." }, { status: 429 });
+  }
   try {
     const body = await request.json();
     const {
@@ -103,6 +112,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    await recordRateLimit(ipKey, "register");
     const userId = authData.user?.id;
     if (!userId) {
       return NextResponse.json(

@@ -34,7 +34,7 @@ function validatePassword(password: string): string | null {
  * Calculates password strength on a 0–4 scale.
  * 0 = empty, 1 = weak, 2 = fair, 3 = good, 4 = strong
  */
-export function getPasswordStrength(password: string): {
+function getPasswordStrength(password: string): {
   score: number;
   label: string;
   color: string;

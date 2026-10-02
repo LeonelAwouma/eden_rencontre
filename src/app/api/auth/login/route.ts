@@ -1,11 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { checkRateLimit, recordRateLimit } from "@/lib/otp";
+import { clientIp } from "@/lib/api-auth";
+
+// Échecs tolérés sur 15 minutes avant blocage temporaire : par compte visé
+// (essais de mots de passe sur une adresse) et par adresse IP (essais en masse).
+// Toutes ces connexions partent du serveur : sans limite ici, les limites de
+// Supabase (par IP) finiraient par bloquer tous les membres à la fois.
+const MAX_FAILURES_PER_EMAIL = 8;
+const MAX_FAILURES_PER_IP = 30;
+const WINDOW_SECONDS = 15 * 60;
+const TOO_MANY = "Trop de tentatives de connexion. Patientez 15 minutes avant de réessayer.";
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
-    if (!email || !password) {
+    if (!email || !password || typeof email !== "string" || typeof password !== "string") {
       return NextResponse.json(
         { error: "Email et mot de passe requis." },
         { status: 400 }
@@ -14,6 +25,17 @@ export async function POST(request: NextRequest) {
 
     const db = getSupabaseAdmin();
     const cleanEmail = email.trim().toLowerCase();
+    const ip = clientIp(request);
+    const emailKey = `login:${cleanEmail}`;
+    const ipKey = `login-ip:${ip}`;
+
+    const [emailOk, ipOk] = await Promise.all([
+      checkRateLimit(emailKey, "login_failure", MAX_FAILURES_PER_EMAIL, WINDOW_SECONDS),
+      checkRateLimit(ipKey, "login_failure", MAX_FAILURES_PER_IP, WINDOW_SECONDS),
+    ]);
+    if (!emailOk || !ipOk) {
+      return NextResponse.json({ error: TOO_MANY }, { status: 429 });
+    }
 
     // Authenticate with Supabase
     const { data: authData, error: authError } = await db.auth.signInWithPassword({
@@ -23,6 +45,7 @@ export async function POST(request: NextRequest) {
 
     if (authError) {
       if (/Invalid login credentials/i.test(authError.message)) {
+        await Promise.all([recordRateLimit(emailKey, "login_failure"), recordRateLimit(ipKey, "login_failure")]);
         return NextResponse.json(
           { error: "Email ou mot de passe incorrect." },
           { status: 401 }

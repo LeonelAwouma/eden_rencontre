@@ -24,6 +24,7 @@ import {
   verificationRejectedEmail,
   newsletterWelcomeEmail,
   testEmail,
+  profileReminderEmail,
   type RenderedEmail,
   type MeetInvitationEmailParams,
   type MeetingInvitationEmailParams,
@@ -197,6 +198,10 @@ export async function sendRegistrationReceivedEmail(email: string, name: string)
 
 export async function sendAccountApprovedEmail(email: string, name: string): Promise<boolean> {
   return sendEmail(email, accountApprovedEmail(name));
+}
+
+export async function sendProfileReminderEmail(email: string, name: string, missing: string[]): Promise<boolean> {
+  return sendEmail(email, profileReminderEmail(name, missing));
 }
 
 export async function sendAccountRejectedEmail(email: string, name: string, reason?: string): Promise<boolean> {

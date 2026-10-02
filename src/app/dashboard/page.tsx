@@ -26,7 +26,7 @@ import { PhotoLightbox } from "@/components/photo-lightbox";
 import { BillingToggle } from "@/components/pricing/billing-toggle";
 import { planPricing, formatFcfa, type BillingPeriod, type PlanId } from "@/lib/pricing";
 import { useToast } from "@/hooks/use-toast";
-import { getSession, logout, updateProfile, ageFromBirthDate, type EdenUser } from "@/lib/auth";
+import { getSession, logout, updateProfile, ageFromBirthDate, authHeaders, type EdenUser } from "@/lib/auth";
 import { ALL_LESSONS, resumeLesson, isPillarOneComplete } from "@/lib/formation/batir-sur-le-roc";
 import { FormationLock } from "@/components/formation-lock";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
@@ -368,16 +368,19 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (activeTab !== "Notifications" || !user?.id) return;
-    fetch(`/api/meetings/notifications?user_id=${user.id}`)
-      .then((r) => r.json())
+    // Jeton de session transmis : sans lui, ces routes répondent 401 (la session vit dans le navigateur).
+    const meetingNotifsRequest = authHeaders()
+      .then((headers) => fetch("/api/meetings/notifications", { headers }))
+      .then((r) => r.json());
+    meetingNotifsRequest
       .then((d) => { if (d.notifications) setMeetingNotifs(d.notifications); })
       .catch(() => {});
-    fetch(`/api/blog/notifications?user_id=${user.id}`)
+    authHeaders()
+      .then((headers) => fetch("/api/blog/notifications", { headers }))
       .then((r) => r.json())
       .then((d) => { if (d.notifications) setBlogNotifs(d.notifications); })
       .catch(() => {});
-    fetch(`/api/meetings/notifications?user_id=${user.id}`)
-      .then((r) => r.json())
+    meetingNotifsRequest
       .then((d) => {
         if (d.notifications) {
           const vNotifs = d.notifications.filter((n: any) =>
@@ -422,8 +425,8 @@ export default function DashboardPage() {
     setMeetingNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
     fetch("/api/meetings/notifications", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mark_all: true, user_id: user.id }),
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+      body: JSON.stringify({ mark_all: true }),
     }).catch(() => {});
   };
   const markBlogNotifsRead = async () => {
@@ -431,8 +434,8 @@ export default function DashboardPage() {
     setBlogNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
     fetch("/api/blog/notifications", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ mark_all: true, user_id: user.id }),
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
+      body: JSON.stringify({ mark_all: true }),
     }).catch(() => {});
   };
   const markVerificationNotifsRead = async () => {
@@ -440,7 +443,7 @@ export default function DashboardPage() {
     setVerificationNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
     fetch("/api/meetings/notifications", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
       body: JSON.stringify({ notification_ids: verificationNotifs.map((n) => n.id) }),
     }).catch(() => {});
   };
@@ -449,7 +452,7 @@ export default function DashboardPage() {
     setEngagementNotifs((prev) => prev.map((n) => ({ ...n, is_read: true })));
     fetch("/api/meetings/notifications", {
       method: "PATCH",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(await authHeaders()) },
       body: JSON.stringify({ notification_ids: engagementNotifs.map((n) => n.id) }),
     }).catch(() => {});
   };
@@ -746,7 +749,6 @@ export default function DashboardPage() {
       setTestimonialSubmitting(true);
       try {
         const body = new FormData();
-        body.append("user_id", user.id);
         body.append("couple_names", displayName);
         body.append("content", composerText.trim());
         body.append("rating", "5");
@@ -754,7 +756,7 @@ export default function DashboardPage() {
           body.append("image", composerImageFile);
         }
 
-        const res = await fetch("/api/testimonials", { method: "POST", body });
+        const res = await fetch("/api/testimonials", { method: "POST", headers: await authHeaders(), body });
         if (!res.ok) {
           const data = await res.json();
           throw new Error(data.error || t("dashboard.toastSubmissionError"));

@@ -1,13 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { getAuthenticatedUser } from "@/lib/api-auth";
 
-// GET — Get blog notifications for a specific user
+// Notifications du membre connecté uniquement : l'identifiant vient de la
+// session, plus d'un paramètre user_id (qui permettait de lire celles d'un autre).
+
+// GET — Get blog notifications for the signed-in user
 export async function GET(req: NextRequest) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   try {
     const supabase = getSupabaseAdmin();
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get("user_id");
-    if (!userId) return NextResponse.json({ error: "user_id requis" }, { status: 400 });
+    const userId = user.id;
 
     const { data, error } = await supabase
       .from("meeting_notifications")
@@ -18,34 +22,37 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
     return NextResponse.json({ notifications: data || [] });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Erreur serveur";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[blog/notifications]", err);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }
 
 // PATCH — Mark blog notification(s) as read
 export async function PATCH(req: NextRequest) {
+  const user = await getAuthenticatedUser(req);
+  if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   try {
     const supabase = getSupabaseAdmin();
     const body = await req.json();
-    const { notification_ids, mark_all, user_id } = body;
+    const { notification_ids, mark_all } = body;
 
-    if (mark_all && user_id) {
+    if (mark_all) {
       const { error } = await supabase.from("meeting_notifications")
-        .update({ is_read: true }).eq("user_id", user_id).eq("notification_type", "blog_post").eq("is_read", false);
+        .update({ is_read: true }).eq("user_id", user.id).eq("notification_type", "blog_post").eq("is_read", false);
       if (error) throw error;
       return NextResponse.json({ success: true });
     }
 
     if (Array.isArray(notification_ids) && notification_ids.length > 0) {
-      const { error } = await supabase.from("meeting_notifications").update({ is_read: true }).in("id", notification_ids);
+      const { error } = await supabase.from("meeting_notifications").update({ is_read: true })
+        .in("id", notification_ids.filter((id: unknown) => typeof id === "string").slice(0, 200)).eq("user_id", user.id);
       if (error) throw error;
       return NextResponse.json({ success: true });
     }
 
     return NextResponse.json({ error: "notification_ids ou mark_all requis" }, { status: 400 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Erreur serveur";
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error("[blog/notifications]", err);
+    return NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
   }
 }

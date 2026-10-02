@@ -19,6 +19,7 @@ import {
   Globe,
   FileText,
   X,
+  Trash2,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -91,6 +92,8 @@ export default function AdminUserDetailPage() {
   const [showVerifyRejectModal, setShowVerifyRejectModal] = useState(false);
   const [verifyRejectReason, setVerifyRejectReason] = useState("");
   const [showSelfieModal, setShowSelfieModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState("");
 
   // Compute questionnaire completion status
   const questionnaireCompletion = useMemo(() => {
@@ -172,6 +175,27 @@ export default function AdminUserDetailPage() {
       }
     } catch (err) {
       console.error(`Error ${action}ing verification:`, err);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
+  /** Suppression définitive : compte, profil, données liées et photos d'inscription. */
+  const handleDelete = async () => {
+    setActionLoading("delete");
+    setActionNotice(null);
+    try {
+      const res = await fetch(`/api/admin/users/${userId}`, { method: "DELETE" });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        router.push("/admin/users");
+        return;
+      }
+      setShowDeleteModal(false);
+      setActionNotice({ tone: "error", text: data.error || "La suppression n'a pas pu être effectuée." });
+    } catch {
+      setShowDeleteModal(false);
+      setActionNotice({ tone: "error", text: "Erreur réseau. Veuillez réessayer." });
     } finally {
       setActionLoading(null);
     }
@@ -310,6 +334,20 @@ export default function AdminUserDetailPage() {
             <CheckCircle2 className="w-4 h-4" />
             Réactiver le compte
           </Button>
+        </div>
+      )}
+
+      {!/\.local$/i.test(user.email || "") && (
+        <div>
+          <button
+            type="button"
+            onClick={() => { setDeleteConfirm(""); setShowDeleteModal(true); }}
+            disabled={!!actionLoading}
+            className="inline-flex items-center gap-1.5 text-[13px] font-medium text-red-600/80 hover:text-red-700 disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            Supprimer le membre
+          </button>
         </div>
       )}
 
@@ -586,6 +624,47 @@ export default function AdminUserDetailPage() {
                 className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg"
               >
                 {actionLoading === "reject" ? "Rejet…" : "Confirmer le rejet"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div role="dialog" aria-modal="true" aria-labelledby="delete-member-title" className="bg-white rounded-2xl w-full max-w-md p-6 space-y-5">
+            <div className="flex items-center justify-between">
+              <h3 id="delete-member-title" className="text-lg font-bold text-gray-900">Supprimer définitivement ce membre</h3>
+              <button onClick={() => setShowDeleteModal(false)} className="text-gray-400 hover:text-gray-600" aria-label="Fermer">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <p className="text-sm text-gray-600">
+              Le compte de <strong>{user.email}</strong>, son profil, ses conversations, alliances et photos d&apos;inscription seront supprimés. Cette action est irréversible. Aucun e-mail n&apos;est envoyé au membre.
+            </p>
+            <div className="space-y-2">
+              <Label htmlFor="delete-confirm" className="text-xs font-bold uppercase tracking-widest text-gray-500">
+                Tapez SUPPRIMER pour confirmer
+              </Label>
+              <Input
+                id="delete-confirm"
+                value={deleteConfirm}
+                onChange={(e) => setDeleteConfirm(e.target.value)}
+                autoComplete="off"
+                className="rounded-xl"
+              />
+            </div>
+            <div className="flex gap-3">
+              <Button onClick={() => setShowDeleteModal(false)} variant="outline" className="flex-1 rounded-lg">
+                Annuler
+              </Button>
+              <Button
+                onClick={handleDelete}
+                disabled={deleteConfirm.trim().toUpperCase() !== "SUPPRIMER" || !!actionLoading}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white rounded-lg"
+              >
+                {actionLoading === "delete" ? "Suppression…" : "Supprimer"}
               </Button>
             </div>
           </div>

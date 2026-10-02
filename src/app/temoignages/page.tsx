@@ -6,7 +6,7 @@ import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { Heart, MessageCircleCode, CheckCircle2, MapPin, Calendar, X, Check, ImageIcon, Loader2, Clock } from "lucide-react";
-import { getSession } from "@/lib/auth";
+import { getSession, authHeaders } from "@/lib/auth";
 import { PageHeader, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 
@@ -172,7 +172,6 @@ export default function TemoignagesPage() {
 
     try {
       const body = new FormData();
-      body.append("user_id", userId);
       body.append("couple_names", formData.names);
       body.append("title", formData.quote);
       body.append("content", formData.story);
@@ -183,6 +182,7 @@ export default function TemoignagesPage() {
 
       const res = await fetch("/api/testimonials", {
         method: "POST",
+        headers: await authHeaders(),
         body,
       });
 
