@@ -231,6 +231,7 @@
     "selfieSkipWarning": "Without verification, your profile will have reduced visibility.",
     "avatarTitle": "Choose your public photo",
     "avatarSubtitle": "Use one of your photos or generate an illustrated avatar — this is what other members will see.",
+    "avatarChooseHint": "Select one of your photos or an avatar to continue.",
     "continueToCompletion": "Continue",
     "completionBadge": "Identity verified",
     "completionBadgeDesc": "Your photos have been successfully validated.",

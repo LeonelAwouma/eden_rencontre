@@ -43,6 +43,15 @@ export async function POST(request: NextRequest) {
     // l'analyse des visages tourne après la réponse et met à jour le verdict.
     const registration = readRegistrationSelfie(body);
 
+    // Photo publique choisie à l'inscription (même règle que /api/auth/register).
+    const avatarIndex = typeof body.avatarPhotoIndex === "number" ? body.avatarPhotoIndex : -1;
+    const avatarFromPhoto = registration.media && avatarIndex >= 0 ? registration.media.profilePhotoPaths[avatarIndex] : undefined;
+    const chosenAvatarUrl: string | null = avatarFromPhoto
+      ? await publishAvatarFromMedia(getSupabaseAdmin(), avatarFromPhoto)
+      : typeof body.avatarUrl === "string" && /^https?:\/\//.test(body.avatarUrl) ? body.avatarUrl
+      : typeof body.avatarUrl === "string" && body.avatarUrl.startsWith("data:") && body.avatarUrl.length < 3_000_000 ? body.avatarUrl // ancien format
+      : null;
+
     // Pseudonyme public (le vrai nom Google reste réservé à l'admin)
     const cleanPseudo = typeof pseudo === "string" ? pseudo.trim() : "";
     if (cleanPseudo.length < 2 || cleanPseudo.length > 30 || /[<>"]/.test(cleanPseudo)) {
@@ -188,6 +197,7 @@ export async function POST(request: NextRequest) {
       selfie_verification_score: 0,
       selfie_url: registration.selfieRef,
       profile_photos: registration.photoRefs,
+      ...(chosenAvatarUrl ? { avatar_url: chosenAvatarUrl } : {}),
       updated_at: new Date().toISOString(),
     };
 
@@ -207,7 +217,7 @@ export async function POST(request: NextRequest) {
         id: userId,
         email: authEmail,
         name: meta.name || meta.full_name || (authEmail ? authEmail.split("@")[0] : cleanPseudo),
-        avatar_url: meta.avatar_url || meta.picture || null,
+        avatar_url: chosenAvatarUrl || meta.avatar_url || meta.picture || null,
         onboarding_completed: false,
         created_at: new Date().toISOString(),
       }));
@@ -247,6 +257,7 @@ export async function POST(request: NextRequest) {
         country,
         city,
         marriageVision,
+        ...(chosenAvatarUrl ? { avatar_url: chosenAvatarUrl } : {}),
       },
     });
 

@@ -24,6 +24,7 @@ import { cameraErrorKey } from "@/lib/camera-error";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { uploadRegistrationMedia } from "@/lib/registration-media-client";
+import { AvatarPicker } from "@/components/avatar-picker";
 import { filterCountries, filterCities, countryLabel, phoneIsoFor, dialOfIso, toE164 } from "@/lib/geo";
 import { PhoneInput } from "@/components/phone-input";
 import { Flag } from "@/components/flag";
@@ -99,6 +100,8 @@ export default function CompleteRegistrationPage() {
 
   // Photo uploads (same 3-photo requirement as the classic registration flow)
   const [photos, setPhotos] = useState<(string | null)[]>([null, null, null]);
+  /** Photo publique : une des photos de profil, ou un avatar illustré. */
+  const [publicAvatar, setPublicAvatar] = useState<string | null>(null);
   const [activePhotoSlot, setActivePhotoSlot] = useState<number | null>(null);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -150,7 +153,7 @@ export default function CompleteRegistrationPage() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const totalSteps = 12;
+  const totalSteps = 13;
   const displayStep = pseudoDone ? step + 2 : 1;
   const progress = (displayStep / (totalSteps + 1)) * 100;
 
@@ -376,6 +379,9 @@ export default function CompleteRegistrationPage() {
           charterCommitRespectful: formData.charterCommitRespectful,
           charterAcceptFull: formData.charterAcceptFull,
           ...(media ?? { selfieImage: selfieDataUri, livenessFrames, profilePhotos: photos.filter(Boolean) }),
+          // Avatar pris parmi les photos : le serveur le copie dans le stockage public des avatars.
+          avatarPhotoIndex: media && publicAvatar ? (photos.filter(Boolean) as string[]).indexOf(publicAvatar) : -1,
+          avatarUrl: publicAvatar && (!publicAvatar.startsWith("data:") || !media) ? publicAvatar : null,
         });
       // Garde-fou : au-delà de 4,5 Mo, Vercel refuse la requête (413) sans réponse lisible.
       if (payload.length > MAX_UPLOAD_PAYLOAD) {
@@ -1166,9 +1172,35 @@ export default function CompleteRegistrationPage() {
             )}
 
             {/* ============================================================ */}
-            {/* Step 11 — Completion / Summary */}
+            {/* Step 11 — Public Avatar */}
             {/* ============================================================ */}
-            {step >= 11 && (
+            {pseudoDone && step === 11 && (
+              <div className="space-y-6">
+                <div className="space-y-3">
+                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.avatarTitle")}</h1>
+                  <p className="text-foreground/50 text-sm">{t("register.avatarSubtitle")}</p>
+                </div>
+
+                <AvatarPicker photos={photos} value={publicAvatar} onChange={setPublicAvatar} />
+
+                {!publicAvatar && <p className="text-xs text-foreground/50 text-center">{t("register.avatarChooseHint")}</p>}
+                <Button
+                  onClick={nextStep}
+                  disabled={!publicAvatar}
+                  className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                >
+                  {t("register.continueToCompletion")} <ArrowRight className="w-5 h-5 ml-2" />
+                </Button>
+                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
+                </button>
+              </div>
+            )}
+
+            {/* ============================================================ */}
+            {/* Step 12 — Completion / Summary */}
+            {/* ============================================================ */}
+            {step >= 12 && (
               <div className="space-y-8">
                 {/* Success Banner */}
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">

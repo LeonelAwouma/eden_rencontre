@@ -172,8 +172,8 @@ function PhonePrompt({ country, onDone }: { country: string; onDone: () => void 
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center px-5">
-      <form onSubmit={submit} className="w-full max-w-md bg-card rounded-3xl border border-foreground/5 shadow-xl p-7 sm:p-9 space-y-6">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 sm:px-5">
+      <form onSubmit={submit} className="w-full max-w-md bg-card rounded-3xl border border-foreground/5 shadow-xl px-4 py-7 sm:p-9 space-y-6">
         <div className="flex flex-col items-center text-center gap-3">
           <Monogram className="w-11 h-9 text-primary" />
           <h1 className="font-headline text-2xl sm:text-3xl font-bold text-foreground">{t("dashboard.phonePromptTitle")}</h1>

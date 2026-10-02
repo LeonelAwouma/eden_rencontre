@@ -1222,9 +1222,11 @@ export default function RegisterPage() {
 
                 <AvatarPicker photos={photos} value={publicAvatar} onChange={setPublicAvatar} />
 
+                {!publicAvatar && <p className="text-xs text-foreground/50 text-center">{t("register.avatarChooseHint")}</p>}
                 <Button
                   onClick={nextStep}
-                  className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                  disabled={!publicAvatar}
+                  className="w-full h-14 disabled:opacity-50 disabled:hover:scale-100 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform"
                 >
                   {t("register.continueToCompletion")} <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
