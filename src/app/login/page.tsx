@@ -78,6 +78,12 @@ export default function LoginPage() {
 
       if (!res.ok) {
         if (data.error === "pending") {
+          // Mot de passe déjà vérifié par le serveur : session ouverte pour que la
+          // page d'attente fasse entrer le membre dès la validation.
+          try {
+            const { supabase } = await import("@/lib/supabase");
+            await supabase?.auth.signInWithPassword({ email: formData.email.trim().toLowerCase(), password: formData.password });
+          } catch { /* non bloquant */ }
           router.push(`/register/pending?email=${encodeURIComponent(formData.email)}`);
           return;
         }

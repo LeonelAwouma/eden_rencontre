@@ -19,7 +19,7 @@
 import path from "path";
 import sharp from "sharp";
 import * as tf from "@tensorflow/tfjs";
-import "@tensorflow/tfjs-backend-wasm";
+import { setWasmPaths } from "@tensorflow/tfjs-backend-wasm";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore — no bundled types for the node-wasm build; the public API matches face-api.esm.js.
 import * as faceapi from "@vladmandic/face-api/dist/face-api.node-wasm.js";
@@ -30,6 +30,8 @@ import {
 } from "./face-rules";
 
 const MODEL_PATH = path.join(process.cwd(), "public", "models");
+/** Binaires .wasm de TensorFlow (inclus dans la fonction Vercel par next.config.ts). */
+const WASM_DIR = path.join(process.cwd(), "node_modules", "@tensorflow", "tfjs-backend-wasm", "dist") + path.sep;
 
 export interface ServerVerificationResult {
   score: number;
@@ -46,8 +48,14 @@ let readyPromise: Promise<void> | null = null;
 function ensureReady(): Promise<void> {
   if (!readyPromise) {
     readyPromise = (async () => {
-      await tf.setBackend("wasm");
+      setWasmPaths(WASM_DIR);
+      // Sans .wasm, TensorFlow retombe en silence sur le calcul JavaScript,
+      // des dizaines de fois plus lent : on le signale clairement.
+      const ok = await tf.setBackend("wasm");
       await tf.ready();
+      if (!ok || tf.getBackend() !== "wasm") {
+        console.error(`[selfie] moteur WASM indisponible (fichiers attendus dans ${WASM_DIR}) : analyse en mode lent « ${tf.getBackend()} ».`);
+      }
       await Promise.all([
         faceapi.nets.tinyFaceDetector.loadFromDisk(MODEL_PATH),
         faceapi.nets.faceLandmark68Net.loadFromDisk(MODEL_PATH),

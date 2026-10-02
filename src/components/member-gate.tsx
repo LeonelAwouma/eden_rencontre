@@ -61,13 +61,15 @@ export function MemberGate({ children }: { children: React.ReactNode }) {
         setAllowed(true);
         return;
       }
-      await logout();
-      if (cancelled) return;
+      // En attente : la session est gardée, la page d'attente surveille le
+      // statut et fait entrer le membre dès la validation.
       if (account.status === "pending") {
         router.replace(`/register/pending?email=${encodeURIComponent(account.email)}`);
-      } else {
-        router.replace(`/login?blocked=${account.status}`);
+        return;
       }
+      await logout();
+      if (cancelled) return;
+      router.replace(`/login?blocked=${account.status}`);
     })();
     return () => { cancelled = true; };
   }, [router, pathname]);

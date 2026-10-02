@@ -827,7 +827,11 @@
     "step2": "You receive a confirmation email",
     "step3": "You can log in and access the Sanctuary",
     "backHome": "Back to home",
-    "tagline": "Garden of Alliance — Blessed Union"
+    "tagline": "Garden of Alliance — Blessed Union",
+    "autoRefresh": "Keep this page open: it will refresh on its own as soon as your profile is approved.",
+    "approvedTitle": "Your profile has been approved!",
+    "approvedBody": "Welcome to Garden of Alliance. Opening the doors to your space…",
+    "approvedCta": "Enter my space"
   },
   "searching": {
     "phase1": "Preparing your sanctuary…",

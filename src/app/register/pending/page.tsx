@@ -1,21 +1,107 @@
 "use client";
 
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
-import { Clock, Mail, ArrowLeft } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Clock, Mail, ArrowLeft, CheckCircle2, ArrowRight } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { logout } from "@/lib/auth";
+import { supabase } from "@/lib/supabase";
+
+/** Intervalle de vérification du statut pendant que la page reste ouverte. */
+const POLL_MS = 20_000;
+/** Délai d'affichage de « Votre profil a été validé » avant d'entrer dans l'espace membre. */
+const ENTER_DELAY_MS = 3_500;
+const MEMBER_HOME = "/searching";
+
+type AccountStatus = "pending" | "approved" | "rejected" | "suspended";
 
 function PendingContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const { t } = useI18n();
   const email = searchParams.get("email") || "";
+  const [approved, setApproved] = useState(false);
 
-  // Compte pas encore approuvé : aucune session ne doit rester ouverte
-  // (cas de la connexion Google, où Supabase ouvre la session avant la validation).
-  useEffect(() => { void logout(); }, []);
+  // La session est conservée pendant l'attente : la page surveille le statut
+  // et fait entrer le membre dès que l'admin valide son profil. Sans danger :
+  // la RLS (20260924_member_approval_rls.sql) ne laisse un compte non approuvé
+  // lire que sa propre fiche, et MemberGate bloque l'espace membre.
+  useEffect(() => {
+    if (!supabase) return;
+    const db = supabase;
+    let cancelled = false;
+    let timer: ReturnType<typeof setInterval> | undefined;
+
+    const check = async () => {
+      const { data: { session } } = await db.auth.getSession();
+      if (!session || cancelled) return;
+      const { data } = await db.from("profiles").select("status").eq("id", session.user.id).maybeSingle();
+      const status = data?.status as AccountStatus | undefined;
+      if (cancelled || !status || status === "pending") return;
+      stop();
+      if (status === "approved") {
+        setApproved(true);
+        setTimeout(() => { if (!cancelled) router.replace(MEMBER_HOME); }, ENTER_DELAY_MS);
+      } else {
+        await logout();
+        if (!cancelled) router.replace(`/login?blocked=${status}`);
+      }
+    };
+    const onVisible = () => { if (document.visibilityState === "visible") void check(); };
+    const stop = () => {
+      if (timer) clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+
+    void check();
+    timer = setInterval(check, POLL_MS);
+    // Retour sur l'onglet (souvent depuis l'e-mail de validation) : vérification immédiate.
+    document.addEventListener("visibilitychange", onVisible);
+    return () => { cancelled = true; stop(); };
+  }, [router]);
+
+  if (approved) {
+    return (
+      <div className="min-h-screen bg-background flex flex-col items-center justify-center px-5 py-12">
+        <div className="w-full max-w-md text-center space-y-8">
+          <Link href="/" className="inline-flex items-center gap-3 group">
+            <Monogram className="w-10 h-10 text-primary shrink-0" />
+            <span className="font-headline text-2xl font-bold tracking-tight text-foreground">
+              Garden <span>of Alliance</span>
+            </span>
+          </Link>
+
+          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle2 className="w-10 h-10 text-primary" />
+          </div>
+
+          <div className="space-y-4" role="status" aria-live="polite">
+            <h1 className="font-headline text-3xl sm:text-4xl font-bold text-foreground">
+              {t("registerPending.approvedTitle")}
+            </h1>
+            <p className="text-foreground/50 text-base leading-relaxed">
+              {t("registerPending.approvedBody")}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => router.replace(MEMBER_HOME)}
+            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors"
+          >
+            {t("registerPending.approvedCta")}
+            <ArrowRight className="w-4 h-4" />
+          </button>
+
+          <p className="text-foreground/15 text-[10px] font-medium uppercase tracking-widest">
+            {t("registerPending.tagline")}
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-5 py-12">
@@ -78,6 +164,8 @@ function PendingContent() {
             </div>
           </div>
         </div>
+
+        <p className="text-xs text-foreground/40 leading-relaxed">{t("registerPending.autoRefresh")}</p>
 
         {/* Back to home */}
         <Link

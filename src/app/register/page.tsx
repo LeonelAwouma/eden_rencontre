@@ -301,6 +301,13 @@ export default function RegisterPage() {
         return;
       }
 
+      // Session ouverte côté navigateur : la page d'attente suit le statut et
+      // fait entrer le membre dès la validation. Facultatif : sans elle, la page reste statique.
+      try {
+        const { supabase } = await import("@/lib/supabase");
+        await supabase?.auth.signInWithPassword({ email: formData.email.trim().toLowerCase(), password: formData.password });
+      } catch { /* non bloquant */ }
+
       // Redirect to pending approval page
       router.push(`/register/pending?email=${encodeURIComponent(formData.email)}`);
     } catch {

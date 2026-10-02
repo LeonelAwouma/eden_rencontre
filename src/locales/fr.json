@@ -827,7 +827,11 @@
     "step2": "Vous recevez un email de confirmation",
     "step3": "Vous pouvez vous connecter et accéder au Sanctuaire",
     "backHome": "Retour à l'accueil",
-    "tagline": "Garden of Alliance — Alliance Bénie"
+    "tagline": "Garden of Alliance — Alliance Bénie",
+    "autoRefresh": "Gardez cette page ouverte : elle s'actualisera d'elle-même dès que votre profil sera validé.",
+    "approvedTitle": "Votre profil a été validé !",
+    "approvedBody": "Bienvenue dans Garden of Alliance. Nous vous ouvrons les portes de votre espace…",
+    "approvedCta": "Entrer dans mon espace"
   },
   "searching": {
     "phase1": "Préparation de votre sanctuaire…",
