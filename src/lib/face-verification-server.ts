@@ -38,6 +38,8 @@ export interface ServerVerificationResult {
   photos: PhotoCheck[];
   liveness: LivenessCheck | null;
   reason: string;
+  /** Budget de temps épuisé avant la fin de l'analyse (voir `deadline`). */
+  timedOut?: boolean;
 }
 
 let readyPromise: Promise<void> | null = null;
@@ -61,14 +63,13 @@ async function loadImageBuffer(src: string): Promise<Buffer> {
     const base64 = src.split(",")[1] || "";
     return Buffer.from(base64, "base64");
   }
-  const res = await fetch(src);
+  const res = await fetch(src, { signal: AbortSignal.timeout(15_000) });
   if (!res.ok) throw new Error(`Failed to fetch image (${res.status})`);
   return Buffer.from(await res.arrayBuffer());
 }
 
 /** Decodes to a tf.Tensor3D, capped at 640px on the long side (preserves aspect ratio — squishing would distort the face). */
-async function loadImageTensor(src: string) {
-  const buf = await loadImageBuffer(src);
+async function loadImageTensor(buf: Buffer) {
   const { data, info } = await sharp(buf)
     .rotate() // apply EXIF orientation
     .resize(640, 640, { fit: "inside", withoutEnlargement: true })
@@ -78,16 +79,18 @@ async function loadImageTensor(src: string) {
   return tf.tensor3d(new Uint8Array(data), [info.height, info.width, 3], "int32");
 }
 
-const detectorOptions = () => new faceapi.TinyFaceDetectorOptions({ inputSize: 512, scoreThreshold: 0.5 });
+// Rafale : visage proche de la caméra, une entrée plus petite suffit et coûte ~2,5× moins.
+const detectorOptions = (inputSize = 512) => new faceapi.TinyFaceDetectorOptions({ inputSize, scoreThreshold: 0.5 });
+const FRAME_INPUT_SIZE = 320;
 
 /** Tous les visages de l'image (avec repères et descripteur), du plus grand au plus petit. */
-async function detectFaces(src: string) {
-  const tensor = await loadImageTensor(src);
+async function detectFaces(image: Promise<Buffer>, inputSize?: number) {
+  const tensor = await loadImageTensor(await image);
   try {
     // `tensor` is a valid tf.Tensor3D at runtime, but face-api's types reference
     // its own internal copy of the tfjs declarations (structurally distinct for TS).
     const faces = await faceapi
-      .detectAllFaces(tensor as any, detectorOptions())
+      .detectAllFaces(tensor as any, detectorOptions(inputSize))
       .withFaceLandmarks()
       .withFaceDescriptors();
     const area = (f: any) => f.detection.box.width * f.detection.box.height;
@@ -105,29 +108,68 @@ function mainFaces(faces: any[]) {
 }
 
 /**
+ * Ordre d'analyse de la rafale : extrémités puis milieux successifs. La tête
+ * tourne au fil de la capture, donc les premières images analysées couvrent
+ * déjà toute l'amplitude et la preuve est souvent acquise avant la fin.
+ */
+function spreadOrder(n: number): number[] {
+  if (n <= 2) return [...Array(n).keys()];
+  const order = [0, n - 1];
+  let gaps: [number, number][] = [[0, n - 1]];
+  while (order.length < n) {
+    const next: [number, number][] = [];
+    for (const [a, b] of gaps) {
+      if (b - a < 2) continue;
+      const mid = Math.floor((a + b) / 2);
+      order.push(mid);
+      next.push([a, mid], [mid, b]);
+    }
+    gaps = next;
+  }
+  return order;
+}
+
+/**
  * @param livenessFrames images de la rafale prise pendant que la personne tourne la tête.
  *   `null` : pas de contrôle de présence (revérification d'un ancien inscrit par l'admin).
+ * @param deadline horodatage (ms) au-delà duquel on n'analyse plus d'image : la
+ *   fonction Vercel est coupée à 60 s, l'inscription doit aboutir avant. Une
+ *   analyse interrompue n'est jamais validée (`timedOut`, à revérifier par l'admin).
  */
 export async function verifySelfieServer(
   selfieSrc: string,
   profilePhotoSrcs: string[],
-  livenessFrames: string[] | null = null
+  livenessFrames: string[] | null = null,
+  deadline = Infinity
 ): Promise<ServerVerificationResult> {
-  const empty = (reason: string): ServerVerificationResult =>
-    ({ score: 0, verified: false, photoScores: [], photos: [], liveness: null, reason });
+  const empty = (reason: string, timedOut = false): ServerVerificationResult =>
+    ({ score: 0, verified: false, photoScores: [], photos: [], liveness: null, reason, ...(timedOut ? { timedOut } : {}) });
+  const late = () => Date.now() > deadline;
+  const interrupted = "Analyse interrompue (trop longue) : relancez « Revérifier » depuis l'admin.";
+  // Téléchargements lancés tous ensemble, pendant le chargement des modèles.
+  const fetchAll = (srcs: string[]) => srcs.map((src) => {
+    const p = loadImageBuffer(src);
+    p.catch(() => {}); // rejet traité à l'usage ; évite un rejet non géré si l'image n'est jamais analysée
+    return p;
+  });
+  const selfieImage = fetchAll([selfieSrc])[0];
+  const photoImages = fetchAll(profilePhotoSrcs.filter(Boolean));
+  const frameImages = fetchAll(livenessFrames?.slice(0, 10) ?? []);
   try {
     await ensureReady();
+    if (late()) return empty(interrupted, true);
 
-    const selfieFaces = mainFaces(await detectFaces(selfieSrc));
+    const selfieFaces = mainFaces(await detectFaces(selfieImage));
     if (selfieFaces.length === 0) return empty("Aucun visage détecté sur le selfie.");
     if (selfieFaces.length > 1) return empty("Plusieurs visages sur le selfie : il doit vous montrer seul(e).");
     const selfie = selfieFaces[0];
 
     // ── Chaque photo de profil doit correspondre ──
     const photos: PhotoCheck[] = [];
-    for (const src of profilePhotoSrcs.filter(Boolean)) {
+    for (const image of photoImages) {
+      if (late()) return { ...empty(interrupted, true), photoScores: photos.map((p) => p.score), photos };
       try {
-        const faces = mainFaces(await detectFaces(src));
+        const faces = mainFaces(await detectFaces(image));
         if (faces.length === 0) { photos.push({ score: 0, issue: "no_face" }); continue; }
         if (faces.length > 1) {
           // Photo de groupe : on note la meilleure ressemblance, mais elle ne prouve pas l'identité.
@@ -144,13 +186,19 @@ export async function verifySelfieServer(
 
     // ── Preuve de présence : même visage, tête qui pivote ──
     let liveness: LivenessCheck | null = null;
+    let livenessTimedOut = false;
     if (livenessFrames) {
       const yaws: number[] = [livenessYaw(selfie)];
       let framesWithFace = 1;
       let sameFace = true;
-      for (const frame of livenessFrames.slice(0, 10)) {
+      const proven = () => framesWithFace >= LIVENESS_MIN_FRAMES && sameFace
+        && Math.max(...yaws) - Math.min(...yaws) >= LIVENESS_MIN_YAW_RANGE;
+      for (const i of spreadOrder(frameImages.length)) {
+        // Présence déjà prouvée : inutile d'analyser le reste de la rafale.
+        if (proven()) break;
+        if (late()) { livenessTimedOut = true; break; }
         try {
-          const faces = mainFaces(await detectFaces(frame));
+          const faces = mainFaces(await detectFaces(frameImages[i], FRAME_INPUT_SIZE));
           if (faces.length !== 1) continue;
           framesWithFace++;
           if (faceapi.euclideanDistance(selfie.descriptor, faces[0].descriptor) > PHOTO_MATCH_THRESHOLD + 0.05) sameFace = false;
@@ -158,13 +206,14 @@ export async function verifySelfieServer(
         } catch { /* image illisible : ignorée */ }
       }
       const yawRange = Math.max(...yaws) - Math.min(...yaws);
-      const passed = framesWithFace >= LIVENESS_MIN_FRAMES && sameFace && yawRange >= LIVENESS_MIN_YAW_RANGE;
+      const passed = proven();
       liveness = {
         checked: true,
         passed,
         framesWithFace,
         yawRange: Math.round(yawRange * 100) / 100,
         reason: passed ? "Présence confirmée."
+          : livenessTimedOut ? "analyse de la capture interrompue (trop longue)."
           : framesWithFace < LIVENESS_MIN_FRAMES ? "visage pas assez visible pendant la capture, recommencez face à la caméra."
           : !sameFace ? "le visage a changé pendant la capture."
           : "la tête n'a pas tourné pendant la capture. Tournez lentement la tête de gauche à droite.",
@@ -172,7 +221,10 @@ export async function verifySelfieServer(
     }
 
     const verdict = decide(photos, liveness);
-    return { ...verdict, photoScores: photos.map((p) => p.score), photos, liveness };
+    return {
+      ...verdict, photoScores: photos.map((p) => p.score), photos, liveness,
+      ...(livenessTimedOut && !liveness?.passed ? { timedOut: true } : {}),
+    };
   } catch (error) {
     return empty(`Erreur lors de la vérification : ${error instanceof Error ? error.message : "erreur inconnue"}`);
   }

@@ -1,14 +1,16 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isValidE164 } from "@/lib/geo";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { verifySelfieServer } from "@/lib/face-verification-server";
-import { verifyRegistrationSelfie, publishAvatarFromMedia } from "@/lib/registration-media";
+import { readRegistrationSelfie, verifyAndSaveRegistrationSelfie, publishAvatarFromMedia, VERIFY_BUDGET_MS } from "@/lib/registration-media";
 
-// Analyse du selfie, des photos et de la rafale : jusqu'à une quinzaine d'images.
+// Analyse du selfie, des photos et de la rafale (jusqu'à une quinzaine d'images),
+// faite après la réponse : voir verifyAndSaveRegistrationSelfie.
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
+  const startedAt = Date.now();
   try {
     const body = await request.json();
     const {
@@ -37,12 +39,9 @@ export async function POST(request: NextRequest) {
     }
 
     // Photos et selfie : déposés par le navigateur dans le stockage privé
-    // (src/lib/registration-media.ts). Le score n'est jamais pris du client :
-    // la vérification est refaite ici, à partir des fichiers.
-    const registration = await verifyRegistrationSelfie(getSupabaseAdmin(), body, verifySelfieServer);
-    const selfieVerified = registration.verified;
-    const selfieVerificationScore = registration.score;
-    const selfieDetails = registration.details;
+    // (src/lib/registration-media.ts). Le compte est enregistré « non vérifié » ;
+    // l'analyse des visages tourne après la réponse et met à jour le verdict.
+    const registration = readRegistrationSelfie(body);
 
     // Pseudonyme public (le vrai nom Google reste réservé à l'admin)
     const cleanPseudo = typeof pseudo === "string" ? pseudo.trim() : "";
@@ -185,8 +184,8 @@ export async function POST(request: NextRequest) {
       city: city,
       marriage_vision: marriageVision || [],
       status,
-      selfie_verified: selfieVerified,
-      selfie_verification_score: selfieVerificationScore,
+      selfie_verified: false,
+      selfie_verification_score: 0,
       selfie_url: registration.selfieRef,
       profile_photos: registration.photoRefs,
       updated_at: new Date().toISOString(),
@@ -212,8 +211,8 @@ export async function POST(request: NextRequest) {
         marriage_vision: marriageVision || [],
         status: "pending",
         onboarding_completed: false,
-        selfie_verified: selfieVerified,
-        selfie_verification_score: selfieVerificationScore,
+        selfie_verified: false,
+        selfie_verification_score: 0,
         selfie_url: registration.selfieRef,
         profile_photos: registration.photoRefs,
         created_at: new Date().toISOString(),
@@ -240,12 +239,13 @@ export async function POST(request: NextRequest) {
       if (phoneError) console.warn("[inscription] téléphone non enregistré:", phoneError.message);
     }
 
-    // Détail de la vérification du selfie pour l'admin (photo par photo, présence).
-    // Colonne ajoutée par 20261002_selfie_verification.sql : sans elle, on continue.
-    if (selfieDetails) {
-      const { error: detailsError } = await db.from("profiles").update({ selfie_verification_details: selfieDetails }).eq("id", userId);
-      if (detailsError) console.warn("[selfie] détail non enregistré:", detailsError.message);
-    }
+    // Analyse des visages après la réponse : le membre n'attend pas (elle a
+    // fait dépasser les 60 s de la fonction). Verdict et détail pour l'admin
+    // sont enregistrés à la fin ; une analyse trop longue reste « non vérifié ».
+    const verifiedUserId = userId;
+    after(() => verifyAndSaveRegistrationSelfie(
+      db, verifiedUserId, body, registration, verifySelfieServer, startedAt + VERIFY_BUDGET_MS
+    ));
 
     // Also update user metadata in Supabase Auth so mapSupabaseUser works correctly
     const { error: metaError } = await db.auth.admin.updateUserById(userId, {
@@ -267,18 +267,21 @@ export async function POST(request: NextRequest) {
       // Non-critical: profile is already saved in the profiles table
     }
 
-    // Send confirmation email (« inscription reçue ») — seulement pour un compte en attente de validation
-    if (status === "pending") try {
-      const { data: { user: authUser } } = await db.auth.admin.getUserById(userId);
-      const userEmail = authUser?.email || "";
-      const userName = authUser?.user_metadata?.name || authUser?.user_metadata?.full_name || userEmail.split("@")[0];
-      if (userEmail) {
-        await sendRegistrationReceivedEmail(userEmail, userName);
+    // Send confirmation email (« inscription reçue ») — seulement pour un compte en attente de validation.
+    // Après la réponse : le membre n'attend pas le serveur d'e-mail.
+    if (status === "pending") after(async () => {
+      try {
+        const { data: { user: authUser } } = await db.auth.admin.getUserById(verifiedUserId);
+        const userEmail = authUser?.email || "";
+        const userName = authUser?.user_metadata?.name || authUser?.user_metadata?.full_name || userEmail.split("@")[0];
+        if (userEmail) {
+          await sendRegistrationReceivedEmail(userEmail, userName);
+        }
+      } catch (emailErr) {
+        console.warn("[Google Onboarding] Could not send confirmation email:", emailErr);
+        // Non-critical: profile is already saved
       }
-    } catch (emailErr) {
-      console.warn("[Google Onboarding] Could not send confirmation email:", emailErr);
-      // Non-critical: profile is already saved
-    }
+    });
 
     return NextResponse.json({
       ok: true,

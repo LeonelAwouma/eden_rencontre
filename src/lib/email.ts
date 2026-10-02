@@ -5,6 +5,8 @@
 // Les gabarits (mise en page, contenus) vivent dans email-templates.ts.
 
 import nodemailer from "nodemailer";
+import MailComposer from "nodemailer/lib/mail-composer";
+import { saveToSentFolder } from "./email-sent-copy";
 import {
   CONTACT_EMAIL,
   LOGO_CID,
@@ -151,8 +153,12 @@ async function sendEmail(
         return false;
       }
 
-      await transporter.sendMail(buildMail(settings, to, email, headers));
+      // Message compilé une seule fois : la copie de « Envoyée » est identique à l'e-mail parti.
+      const raw = await new MailComposer(buildMail(settings, to, email, headers)).compile().build();
+      await transporter.sendMail({ envelope: { from: SMTP_USER, to }, raw });
       console.log(`📧 Email sent to ${to} — Subject: ${email.subject}`);
+      // Attendu (et non lancé en tâche de fond) : sur Vercel la fonction s'arrête au retour.
+      await saveToSentFolder(SMTP_USER, smtpPassword, raw);
       return true;
     } catch (err) {
       console.error("Email send error (SMTP):", err);
