@@ -203,6 +203,7 @@ export default function SettingsPage() {
               Les e-mails liés au compte (inscription, validation, mot de passe, vérification) partent toujours.
             </p>
             <TestEmailPanel />
+            <ApprovalEmailsPanel />
           </div>
         );
       case "appearance":
@@ -417,6 +418,111 @@ function TestEmailPanel() {
           {busy ? "Envoi…" : "Envoyer un e-mail de test"}
         </button>
       </div>
+      {result && (
+        <p role="status" className={cn("mt-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium",
+          result.ok ? "bg-[#486B46]/10 text-[#2E4A36]" : "bg-[#B42318]/10 text-[#B42318]")}>
+          {result.text}
+        </p>
+      )}
+    </div>
+  );
+}
+
+/**
+ * Rattrapage de l'e-mail de validation : membres approuvés sans envoi
+ * enregistré (approuvés avant le suivi des envois, ou envoi échoué).
+ */
+function ApprovalEmailsPanel() {
+  const [members, setMembers] = useState<{ email: string; name: string | null }[] | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [showList, setShowList] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+
+  const load = useCallback(async () => {
+    setLoadError(null);
+    try {
+      const res = await fetch("/api/admin/users/approval-emails");
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setLoadError(data.error || "Liste indisponible."); setMembers(null); return; }
+      setMembers(data.members || []);
+    } catch {
+      setLoadError("Liste indisponible.");
+    }
+  }, []);
+
+  useEffect(() => { void load(); }, [load]);
+
+  const send = async () => {
+    if (!members?.length) return;
+    if (!window.confirm(`Envoyer l'e-mail « Votre profil est maintenant actif » à ${members.length} membre(s) approuvé(s) ?`)) return;
+    setBusy(true);
+    setResult(null);
+    let sent = 0;
+    const failed: { id: string; email: string; error: string }[] = [];
+    try {
+      // Par lots : la route traite quelques envois à la fois et indique ce qu'il reste.
+      for (let guard = 0; guard < 50; guard++) {
+        const res = await fetch("/api/admin/users/approval-emails", {
+          method: "POST", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ skip: failed.map((f) => f.id) }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { setResult({ ok: false, text: data.error || "L'envoi a été interrompu." }); break; }
+        sent += (data.sent || []).length;
+        failed.push(...(data.failed || []));
+        if (!data.remaining) {
+          setResult(failed.length
+            ? { ok: false, text: `${sent} e-mail(s) envoyé(s), ${failed.length} échec(s) : ${failed.map((f) => `${f.email} (${f.error})`).join(" ; ")}` }
+            : { ok: true, text: `${sent} e-mail(s) de validation envoyé(s).` });
+          break;
+        }
+      }
+    } catch {
+      setResult({ ok: false, text: `Envoi interrompu après ${sent} e-mail(s). Relancez pour envoyer le reste.` });
+    } finally {
+      setBusy(false);
+      void load();
+    }
+  };
+
+  return (
+    <div className="mt-6 pt-5 border-t border-[#F3F4F6]">
+      <h4 className="text-[14px] font-bold text-[#1a1a1a]">E-mail de validation non reçu</h4>
+      <p className="text-[12px] text-[#6B7280] mt-1">
+        Membres approuvés sans envoi enregistré de l&apos;e-mail « Votre profil est maintenant actif » : approuvés avant le suivi des envois, ou envoi échoué.
+      </p>
+      {loadError ? (
+        <p role="alert" className="mt-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium bg-[#B42318]/10 text-[#B42318]">{loadError}</p>
+      ) : members === null ? (
+        <p className="mt-3 text-[13px] text-[#9CA3AF]">Chargement…</p>
+      ) : members.length === 0 ? (
+        <p className="mt-3 text-[13px] font-medium text-[#2E4A36]">Tous les membres approuvés ont reçu leur e-mail de validation.</p>
+      ) : (
+        <div className="mt-3 space-y-2">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+            <button type="button" onClick={() => setShowList((v) => !v)} aria-expanded={showList}
+              className="text-left text-[13px] font-semibold text-[#486B46] hover:underline">
+              {members.length} membre(s) concerné(s) {showList ? "▴" : "▾"}
+            </button>
+            <button onClick={send} disabled={busy}
+              className="sm:ml-auto h-10 px-4 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#3A5A38] disabled:opacity-60 flex items-center justify-center gap-2">
+              {busy && <Loader2 className="w-4 h-4 animate-spin" />}
+              {busy ? "Envoi…" : `Envoyer l'e-mail de validation (${members.length})`}
+            </button>
+          </div>
+          {showList && (
+            <ul className="rounded-xl border border-[#F3F4F6] divide-y divide-[#F3F4F6] text-[12px] text-[#374151]">
+              {members.map((m) => (
+                <li key={m.email} className="px-3 py-2 flex flex-wrap gap-x-2">
+                  <span className="font-semibold">{m.name || "Membre"}</span>
+                  <span className="text-[#9CA3AF] break-all">{m.email}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
       {result && (
         <p role="status" className={cn("mt-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium",
           result.ok ? "bg-[#486B46]/10 text-[#2E4A36]" : "bg-[#B42318]/10 text-[#B42318]")}>

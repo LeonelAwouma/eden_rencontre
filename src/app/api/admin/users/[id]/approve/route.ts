@@ -47,6 +47,12 @@ export async function POST(
 
     // Send approval email — le résultat est renvoyé à l'admin, qui doit savoir si le membre a été prévenu.
     const emailSent = user.email ? await sendAccountApprovedEmail(user.email, user.name || "Membre") : false;
+    // Trace de l'envoi (20261002_approval_email_tracking.sql) : sans elle, le rattrapage
+    // d'Admin → Paramètres ne saurait pas qui a déjà reçu l'e-mail. Sans la colonne, on continue.
+    if (emailSent) {
+      const { error: trackError } = await db.from("profiles").update({ approval_email_sent_at: new Date().toISOString() }).eq("id", id);
+      if (trackError) console.warn("[approve] envoi de l'e-mail non enregistré:", trackError.message);
+    }
 
     // Log the action
     const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || "unknown";

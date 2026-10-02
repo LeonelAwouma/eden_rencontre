@@ -221,18 +221,28 @@ export type AccountStatus = "approved" | "pending" | "rejected" | "suspended";
  * `null` = pas de session. En cas de doute (profil absent, lecture impossible),
  * on répond "pending" : l'accès n'est jamais accordé par défaut.
  */
-export async function getMyAccountStatus(): Promise<{ status: AccountStatus; email: string; profileComplete: boolean; pseudo: string | null; sessionPseudo: string | null } | null> {
+export async function getMyAccountStatus(): Promise<{
+  status: AccountStatus; email: string; profileComplete: boolean; pseudo: string | null; sessionPseudo: string | null;
+  /** Numéro de téléphone renseigné (demandé à l'inscription depuis le 2026-10-02 ; les anciens membres le complètent à l'entrée). */
+  hasPhone: boolean; country: string | null;
+} | null> {
   const user = await getSession();
   if (!user) return null;
   const email = user.email || "";
   // Repli localStorage (sans Supabase) : pas de validation admin possible.
   const sessionPseudo = user.pseudo?.trim() || null;
-  if (!supabase || !user.id) return { status: "approved", email, profileComplete: true, pseudo: sessionPseudo, sessionPseudo };
-  const { data, error } = await supabase.from("profiles").select("status, gender, country, city, pseudo").eq("id", user.id).maybeSingle();
+  if (!supabase || !user.id) return { status: "approved", email, profileComplete: true, pseudo: sessionPseudo, sessionPseudo, hasPhone: true, country: null };
+  const [{ data, error }, phoneRes] = await Promise.all([
+    supabase.from("profiles").select("status, gender, country, city, pseudo").eq("id", user.id).maybeSingle(),
+    // Lu à part : sans la colonne (migration 20261002_profiles_phone.sql non exécutée),
+    // on ne bloque personne et le reste du statut reste lisible.
+    supabase.from("profiles").select("phone").eq("id", user.id).maybeSingle(),
+  ]);
   if (error) {
     console.error("[Eden] lecture du statut du compte impossible:", error.message);
-    return { status: "pending", email, profileComplete: true, pseudo: null, sessionPseudo };
+    return { status: "pending", email, profileComplete: true, pseudo: null, sessionPseudo, hasPhone: true, country: null };
   }
+  const hasPhone = phoneRes.error ? true : !!(phoneRes.data as { phone?: string | null } | null)?.phone;
   const d = data as any;
   const s = d?.status;
   const status: AccountStatus = s === "approved" || s === "rejected" || s === "suspended" ? s : "pending";
@@ -241,7 +251,7 @@ export async function getMyAccountStatus(): Promise<{ status: AccountStatus; ema
   const profileComplete = !!(d?.gender && d?.country && d?.city);
   // Pseudo public : celui du profil (lu par l'admin et les membres), pas celui de la session.
   const pseudo = typeof d?.pseudo === "string" && d.pseudo.trim() ? d.pseudo.trim() : null;
-  return { status, email, profileComplete, pseudo, sessionPseudo };
+  return { status, email, profileComplete, pseudo, sessionPseudo, hasPhone, country: d?.country || null };
 }
 
 export async function signInWithGoogle(): Promise<{ ok: boolean; error?: string }> {
@@ -291,6 +301,18 @@ export function isValidPseudo(pseudo: string): boolean {
  * Enregistre le pseudonyme dans le profil (lu par l'admin et les membres),
  * puis dans la session. L'échec du profil est remonté : c'est lui qui compte.
  */
+/** Numéro de téléphone du membre connecté (format international E.164, ex. +237690123456). */
+export async function saveMyPhone(phone: string | null): Promise<{ ok: boolean; error?: string }> {
+  if (!phone || !/^\+\d{8,15}$/.test(phone)) return { ok: false, error: "Numéro invalide : vérifiez l’indicatif et le nombre de chiffres." };
+  if (!supabase) return { ok: true };
+  const { data: auth } = await supabase.auth.getUser();
+  const id = auth.user?.id;
+  if (!id) return { ok: false, error: "Session expirée. Veuillez vous reconnecter." };
+  const { error } = await supabase.from("profiles").update({ phone, updated_at: new Date().toISOString() }).eq("id", id);
+  if (error) return { ok: false, error: "Impossible d'enregistrer le numéro. Réessayez." };
+  return { ok: true };
+}
+
 export async function saveMyPseudo(pseudo: string): Promise<{ ok: boolean; error?: string }> {
   const p = pseudo.trim();
   if (!isValidPseudo(p)) return { ok: false, error: "Le pseudonyme doit contenir entre 2 et 30 caractères, sans < > ni guillemets." };

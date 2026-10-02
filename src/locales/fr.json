@@ -1086,6 +1086,8 @@
     "avatarPickerConfirm": "Confirmer",
     "avatarPickerCancel": "Annuler",
     "choosePseudoTitle": "Choisissez votre pseudonyme",
+    "phonePromptTitle": "Votre numéro de téléphone",
+    "phonePromptDesc": "Nous demandons désormais un numéro à chaque membre. Il reste visible uniquement par l’équipe Garden of Alliance, pour vous contacter si besoin.",
     "choosePseudoDesc": "C'est ce nom qui sera désormais visible par les autres membres, à la place de votre nom réel.",
     "pseudoPlaceholder": "Votre pseudonyme",
     "pseudoConfirm": "Continuer",

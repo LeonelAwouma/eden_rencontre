@@ -1086,6 +1086,8 @@
     "avatarPickerConfirm": "Confirm",
     "avatarPickerCancel": "Cancel",
     "choosePseudoTitle": "Choose your nickname",
+    "phonePromptTitle": "Your phone number",
+    "phonePromptDesc": "We now ask every member for a phone number. It is only visible to the Garden of Alliance team, to contact you if needed.",
     "choosePseudoDesc": "This is the name other members will now see, instead of your real name.",
     "pseudoPlaceholder": "Your nickname",
     "pseudoConfirm": "Continue",
