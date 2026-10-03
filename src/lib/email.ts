@@ -185,6 +185,25 @@ async function sendEmail(
   return true;
 }
 
+/**
+ * Connexion au serveur d'e-mail (identifiants compris), sans rien envoyer.
+ * Utilisé par le contrôle quotidien (src/lib/account-health.ts) : un mot de
+ * passe SMTP changé ou expiré se voit le jour même, pas quand les membres se
+ * plaignent de ne rien recevoir.
+ */
+export async function verifySmtp(): Promise<{ ok: boolean; error: string | null }> {
+  const transporter = getTransporter();
+  if (!transporter) return { ok: false, error: "SMTP_PASSWORD n'est pas défini sur le serveur : aucun e-mail ne part." };
+  try {
+    await transporter.verify();
+    return { ok: true, error: null };
+  } catch (err) {
+    return { ok: false, error: explainSmtpError(err) };
+  } finally {
+    transporter.close();
+  }
+}
+
 /** E-mail de test (Admin → Paramètres) : renvoie la cause précise en cas d'échec. */
 export async function sendTestEmail(to: string): Promise<{ ok: boolean; error: string | null }> {
   const ok = await sendEmail(to, testEmail());

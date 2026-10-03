@@ -233,6 +233,39 @@ export async function getSession(): Promise<EdenUser | null> {
 
 export type AccountStatus = "approved" | "pending" | "rejected" | "suspended";
 
+/** Statut du compte illisible (erreur technique) : à distinguer d'un compte en attente. */
+export class AccountStatusUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AccountStatusUnavailableError";
+  }
+}
+
+/**
+ * Signale à l'admin un incident vécu par un membre (notification « Système »).
+ * Volontairement SANS jeton d'authentification : le jeton peut justement être
+ * la cause de la panne (trop lourd, invalide). Identité lue dans la session
+ * locale, à titre indicatif. Ne lève jamais d'erreur.
+ */
+export async function reportIncident(kind: string, detail?: string): Promise<void> {
+  try {
+    if (typeof window === "undefined") return;
+    const session = supabase ? (await supabase.auth.getSession()).data.session : null;
+    await fetch("/api/client-incident", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        kind,
+        detail: (detail || "").slice(0, 500),
+        userId: session?.user?.id || null,
+        email: session?.user?.email || null,
+        path: window.location.pathname,
+      }),
+      keepalive: true,
+    });
+  } catch { /* le signalement ne doit jamais gêner le membre */ }
+}
+
 /**
  * Statut de validation du compte connecté (profiles.status), fixé par l'admin.
  * `null` = pas de session. En cas de doute (profil absent, lecture impossible),
@@ -243,7 +276,23 @@ export async function getMyAccountStatus(): Promise<{
   /** Numéro de téléphone renseigné (demandé à l'inscription depuis le 2026-10-02 ; les anciens membres le complètent à l'entrée). */
   hasPhone: boolean; country: string | null;
 } | null> {
-  const user = await getSession();
+  let user: EdenUser | null;
+  if (supabase) {
+    // Pas de session locale : vraiment déconnecté.
+    const { data: { session: local } } = await supabase.auth.getSession();
+    if (!local) return null;
+    const { data: ud, error: ue } = await supabase.auth.getUser();
+    // Jeton refusé (401/403) : session expirée ou révoquée → reconnexion.
+    // Toute autre erreur (jeton trop lourd → 400/431, panne, réseau) n'est PAS
+    // une déconnexion : on la signale au lieu de renvoyer le membre en boucle.
+    if (ue && ue.status !== 401 && ue.status !== 403) {
+      void reportIncident("session_check_failed", `${ue.status ?? "réseau"} ${ue.message}`);
+      throw new AccountStatusUnavailableError(ue.message);
+    }
+    user = ud.user ? mapSupabaseUser(ud.user) : null;
+  } else {
+    user = await getSession();
+  }
   if (!user) return null;
   const email = user.email || "";
   // Repli localStorage (sans Supabase) : pas de validation admin possible.
@@ -256,8 +305,13 @@ export async function getMyAccountStatus(): Promise<{
     supabase.from("profiles").select("phone").eq("id", user.id).maybeSingle(),
   ]);
   if (error) {
+    // Ne JAMAIS conclure « en attente » sur une erreur : un compte approuvé dont
+    // la lecture échoue (jeton trop lourd, panne réseau…) se retrouvait renvoyé
+    // vers la page d'attente, sans que personne le sache. L'appelant affiche une
+    // erreur claire et l'incident est signalé à l'admin.
     console.error("[Eden] lecture du statut du compte impossible:", error.message);
-    return { status: "pending", email, profileComplete: true, pseudo: null, sessionPseudo, hasPhone: true, country: null };
+    void reportIncident("account_status_unreadable", error.message);
+    throw new AccountStatusUnavailableError(error.message);
   }
   const hasPhone = phoneRes.error ? true : !!(phoneRes.data as { phone?: string | null } | null)?.phone;
   const d = data as any;

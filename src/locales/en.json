@@ -834,7 +834,8 @@
     "approvedBody": "Welcome to Garden of Alliance. Opening the doors to your space…",
     "approvedCta": "Enter my space",
     "noSessionHint": "Your profile may already be approved: log in to find out and access your space.",
-    "noSessionCta": "Log in"
+    "noSessionCta": "Log in",
+    "statusErrorHint": "We can’t check your account status. Log in again to retry; our team has been notified."
   },
   "searching": {
     "phase1": "Preparing your sanctuary…",
@@ -1782,5 +1783,11 @@
     "placeholder": "6 90 12 34 56",
     "hint": "Only visible to the Garden of Alliance team, to contact you if needed.",
     "invalid": "Invalid number: check the country code and the number of digits."
+  },
+  "memberGate": {
+    "unavailableTitle": "We can’t open your space",
+    "unavailableDesc": "We can’t verify your account right now. Our team has been notified. Try again, or log in again: that usually fixes it.",
+    "retry": "Try again",
+    "reconnect": "Log in again"
   }
 }

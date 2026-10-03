@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Clock, Mail, ArrowLeft, CheckCircle2, ArrowRight, LogIn } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
-import { logout } from "@/lib/auth";
+import { logout, reportIncident } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 
 /** Intervalle de vérification du statut pendant que la page reste ouverte. */
@@ -25,6 +25,8 @@ function PendingContent() {
   const [approved, setApproved] = useState(false);
   /** null : vérification en cours ; false : aucune session, la page ne peut pas suivre le statut. */
   const [hasSession, setHasSession] = useState<boolean | null>(null);
+  /** Statut illisible (erreur technique) : on le dit, au lieu d'attendre une validation qui ne s'affichera jamais. */
+  const [statusError, setStatusError] = useState(false);
 
   // La session est conservée pendant l'attente : la page surveille le statut
   // et fait entrer le membre dès que l'admin valide son profil. Sans danger :
@@ -35,13 +37,21 @@ function PendingContent() {
     const db = supabase;
     let cancelled = false;
     let timer: ReturnType<typeof setInterval> | undefined;
+    let reported = false;
 
     const check = async () => {
       const { data: { session } } = await db.auth.getSession();
       if (cancelled) return;
       setHasSession(!!session);
       if (!session) return;
-      const { data } = await db.from("profiles").select("status").eq("id", session.user.id).maybeSingle();
+      const { data, error } = await db.from("profiles").select("status").eq("id", session.user.id).maybeSingle();
+      if (cancelled) return;
+      if (error) {
+        setStatusError(true);
+        if (!reported) { reported = true; void reportIncident("pending_status_unreadable", error.message); }
+        return;
+      }
+      setStatusError(false);
       const status = data?.status as AccountStatus | undefined;
       if (cancelled || !status || status === "pending") return;
       stop();
@@ -169,8 +179,22 @@ function PendingContent() {
           </div>
         </div>
 
-        {hasSession === true && (
+        {hasSession === true && !statusError && (
           <p className="text-xs text-foreground/40 leading-relaxed">{t("registerPending.autoRefresh")}</p>
+        )}
+
+        {statusError && (
+          <div role="alert" className="space-y-3">
+            <p className="text-sm text-foreground/60 leading-relaxed">{t("registerPending.statusErrorHint")}</p>
+            <button
+              type="button"
+              onClick={async () => { await logout().catch(() => {}); router.replace(`/login${email ? `?email=${encodeURIComponent(email)}` : ""}`); }}
+              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors"
+            >
+              <LogIn className="w-4 h-4" />
+              {t("registerPending.noSessionCta")}
+            </button>
+          </div>
         )}
 
         {/* Sans session (page ouverte depuis un lien, session fermée…), la page ne

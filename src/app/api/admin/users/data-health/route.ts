@@ -10,12 +10,16 @@
  * POST { action: "remind" } → e-mail « Complétez votre profil » aux membres
  *   incomplets non relancés depuis 7 jours, par lots (l'interface rappelle
  *   la route tant qu'il en reste).
+ * POST { action: "scan" }   → contrôle complet des comptes, e-mails compris
+ *   (même contrôle que la tâche quotidienne, src/lib/account-health.ts).
+ * POST { action: "repair", id } → répare un compte signalé par le contrôle.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { sendProfileReminderEmail, getLastEmailError } from "@/lib/email";
+import { scanAccounts, repairAccount } from "@/lib/account-health";
 
 export const maxDuration = 60;
 
@@ -82,7 +86,10 @@ async function collect(db: Db) {
 export async function GET() {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: "Non autorisé" }, { status: 401 }); }
   try {
-    return NextResponse.json(await collect(getSupabaseAdmin()));
+    const db = getSupabaseAdmin();
+    // Anomalies techniques (sans le test e-mail, plus lent : action « scan »).
+    const [base, health] = await Promise.all([collect(db), scanAccounts(db, { checkEmail: false })]);
+    return NextResponse.json({ ...base, anomalies: health.anomalies });
   } catch (err) {
     console.error("[admin/data-health]", err);
     return NextResponse.json({ error: "Données indisponibles." }, { status: 500 });
@@ -93,9 +100,21 @@ export async function POST(req: NextRequest) {
   let admin;
   try { admin = await requireAdmin(); } catch { return NextResponse.json({ error: "Non autorisé" }, { status: 401 }); }
   const body = await req.json().catch(() => ({}));
+  const db = getSupabaseAdmin();
+
+  if (body.action === "scan") {
+    return NextResponse.json(await scanAccounts(db));
+  }
+  if (body.action === "repair") {
+    if (typeof body.id !== "string") return NextResponse.json({ error: "Compte manquant." }, { status: 400 });
+    const res = await repairAccount(db, body.id);
+    if (res.ok && res.actions.length) {
+      try { await logAdminAction(admin.adminId, admin.email, "account_repaired", "user", body.id, { actions: res.actions }); } catch { /* non bloquant */ }
+    }
+    return NextResponse.json(res, { status: res.ok ? 200 : 500 });
+  }
   if (body.action !== "remind") return NextResponse.json({ error: "Action inconnue." }, { status: 400 });
 
-  const db = getSupabaseAdmin();
   const { incomplete, reminderTracking } = await collect(db);
   // Sans la colonne de suivi, impossible de garantir « une relance par semaine » : on refuse.
   if (!reminderTracking) return NextResponse.json({ error: MIGRATION_HINT }, { status: 500 });

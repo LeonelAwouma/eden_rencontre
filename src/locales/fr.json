@@ -834,7 +834,8 @@
     "approvedBody": "Bienvenue dans Garden of Alliance. Nous vous ouvrons les portes de votre espace…",
     "approvedCta": "Entrer dans mon espace",
     "noSessionHint": "Votre profil a peut-être déjà été validé : connectez-vous pour le savoir et accéder à votre espace.",
-    "noSessionCta": "Me connecter"
+    "noSessionCta": "Me connecter",
+    "statusErrorHint": "Nous n’arrivons pas à vérifier l’état de votre compte. Reconnectez-vous pour réessayer ; notre équipe a été prévenue."
   },
   "searching": {
     "phase1": "Préparation de votre sanctuaire…",
@@ -1782,5 +1783,11 @@
     "placeholder": "6 90 12 34 56",
     "hint": "Visible uniquement par l’équipe Garden of Alliance, pour vous contacter si besoin.",
     "invalid": "Numéro invalide : vérifiez l’indicatif et le nombre de chiffres."
+  },
+  "memberGate": {
+    "unavailableTitle": "Impossible d’ouvrir votre espace",
+    "unavailableDesc": "Nous n’arrivons pas à vérifier votre compte pour le moment. Notre équipe a été prévenue. Réessayez, ou reconnectez-vous : cela suffit le plus souvent.",
+    "retry": "Réessayer",
+    "reconnect": "Me reconnecter"
   }
 }

@@ -2,8 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
-import { getMyAccountStatus, logout, saveMyPseudo, saveMyPhone, isValidPseudo } from "@/lib/auth";
+import { Loader2, RefreshCw, LogIn } from "lucide-react";
+import { getMyAccountStatus, logout, saveMyPseudo, saveMyPhone, isValidPseudo, AccountStatusUnavailableError } from "@/lib/auth";
 import { PhoneInput } from "@/components/phone-input";
 import { dialOfIso, phoneIsoFor, toE164 } from "@/lib/geo";
 import { Monogram } from "@/components/ornaments";
@@ -32,6 +32,9 @@ export function MemberGate({ children }: { children: React.ReactNode }) {
   const [needsPseudo, setNeedsPseudo] = useState(false);
   /** Pays du profil, pour préremplir l'indicatif ; non nul = numéro à demander. */
   const [phoneCountry, setPhoneCountry] = useState<string | null>(null);
+  /** Statut illisible (erreur technique) : écran d'erreur, jamais « en attente » ni « déconnecté ». */
+  const [unavailable, setUnavailable] = useState(false);
+  const [attempt, setAttempt] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -39,10 +42,15 @@ export function MemberGate({ children }: { children: React.ReactNode }) {
       let account: Awaited<ReturnType<typeof getMyAccountStatus>>;
       try {
         account = await getMyAccountStatus();
-      } catch {
+      } catch (err) {
+        if (cancelled) return;
+        // Erreur technique (déjà signalée à l'admin par getMyAccountStatus) :
+        // on le dit au membre au lieu de le renvoyer ailleurs sans explication.
+        if (err instanceof AccountStatusUnavailableError) { setUnavailable(true); return; }
         account = null;
       }
       if (cancelled) return;
+      setUnavailable(false);
       if (!account) {
         router.replace(`/login?next=${encodeURIComponent(pathname || "/dashboard")}`);
         return;
@@ -80,7 +88,11 @@ export function MemberGate({ children }: { children: React.ReactNode }) {
       router.replace(`/login?blocked=${account.status}`);
     })();
     return () => { cancelled = true; };
-  }, [router, pathname]);
+  }, [router, pathname, attempt]);
+
+  if (unavailable) {
+    return <AccountUnavailable onRetry={() => { setUnavailable(false); setAttempt((n) => n + 1); }} />;
+  }
 
   if (needsPseudo && !allowed) {
     return <PseudoPrompt onDone={() => { setNeedsPseudo(false); if (phoneCountry === null) setAllowed(true); }} />;
@@ -191,6 +203,43 @@ function PhonePrompt({ country, onDone }: { country: string; onDone: () => void 
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : t("dashboard.pseudoConfirm")}
         </button>
       </form>
+    </div>
+  );
+}
+
+/**
+ * Statut du compte illisible : le membre est connecté mais le site n'arrive
+ * pas à vérifier son compte. L'incident est déjà signalé à l'admin.
+ * « Me reconnecter » renouvelle la session, ce qui suffit le plus souvent.
+ */
+function AccountUnavailable({ onRetry }: { onRetry: () => void }) {
+  const { t } = useI18n();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const reconnect = async () => {
+    setBusy(true);
+    await logout().catch(() => {});
+    router.replace("/login");
+  };
+  return (
+    <div className="min-h-screen bg-background flex items-center justify-center px-4 sm:px-5">
+      <div role="alert" className="w-full max-w-md bg-card rounded-3xl border border-foreground/5 shadow-xl px-5 py-8 sm:p-9 space-y-6 text-center">
+        <Monogram className="w-11 h-9 text-primary mx-auto" />
+        <div className="space-y-2">
+          <h1 className="font-headline text-2xl sm:text-3xl font-bold text-foreground">{t("memberGate.unavailableTitle")}</h1>
+          <p className="text-sm text-foreground/60">{t("memberGate.unavailableDesc")}</p>
+        </div>
+        <div className="flex flex-col gap-3">
+          <button type="button" onClick={onRetry} disabled={busy}
+            className="w-full h-12 rounded-xl bg-primary text-primary-foreground font-bold flex items-center justify-center gap-2 disabled:opacity-50">
+            <RefreshCw className="w-4 h-4" /> {t("memberGate.retry")}
+          </button>
+          <button type="button" onClick={reconnect} disabled={busy}
+            className="w-full h-12 rounded-xl border border-foreground/10 text-foreground font-semibold flex items-center justify-center gap-2 disabled:opacity-50">
+            {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <LogIn className="w-4 h-4" />} {t("memberGate.reconnect")}
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
