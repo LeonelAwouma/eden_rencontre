@@ -106,7 +106,9 @@
     "secureConnection": "Secure connection",
     "protectedData": "Protected data",
     "justRegistered": "Your profile has been created successfully. {bold} to access your sanctuary.",
-    "justRegisteredBold": "Sign in"
+    "justRegisteredBold": "Sign in",
+    "maintenanceTitle": "Site under maintenance",
+    "maintenanceNotice": "The site is under maintenance until Wednesday, October 7. Some features may be temporarily unavailable. Thank you for your patience."
   },
   "mobileGate": {
     "title": "Continue on your phone",
