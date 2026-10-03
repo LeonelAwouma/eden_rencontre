@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isValidE164 } from "@/lib/geo";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { verifySelfieServer } from "@/lib/face-verification-server";
-import { readRegistrationSelfie, verifyAndSaveRegistrationSelfie, publishAvatarFromMedia, VERIFY_BUDGET_MS } from "@/lib/registration-media";
+import { readRegistrationSelfie, verifyAndSaveRegistrationSelfie, resolveRegistrationAvatar, VERIFY_BUDGET_MS } from "@/lib/registration-media";
 
 // Analyse du selfie, des photos et de la rafale (jusqu'à une quinzaine d'images),
 // faite après la réponse : voir verifyAndSaveRegistrationSelfie.
@@ -44,13 +44,7 @@ export async function POST(request: NextRequest) {
     const registration = readRegistrationSelfie(body);
 
     // Photo publique choisie à l'inscription (même règle que /api/auth/register).
-    const avatarIndex = typeof body.avatarPhotoIndex === "number" ? body.avatarPhotoIndex : -1;
-    const avatarFromPhoto = registration.media && avatarIndex >= 0 ? registration.media.profilePhotoPaths[avatarIndex] : undefined;
-    const chosenAvatarUrl: string | null = avatarFromPhoto
-      ? await publishAvatarFromMedia(getSupabaseAdmin(), avatarFromPhoto)
-      : typeof body.avatarUrl === "string" && /^https?:\/\//.test(body.avatarUrl) ? body.avatarUrl
-      : typeof body.avatarUrl === "string" && body.avatarUrl.startsWith("data:") && body.avatarUrl.length < 3_000_000 ? body.avatarUrl // ancien format
-      : null;
+    const chosenAvatarUrl = await resolveRegistrationAvatar(getSupabaseAdmin(), body, registration.media);
 
     // Pseudonyme public (le vrai nom Google reste réservé à l'admin)
     const cleanPseudo = typeof pseudo === "string" ? pseudo.trim() : "";

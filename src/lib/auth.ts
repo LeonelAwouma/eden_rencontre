@@ -166,7 +166,13 @@ export async function updateProfile(updates: EditableProfile): Promise<AuthResul
   });
 
   if (supabase) {
-    const { data, error } = await supabase.auth.updateUser({ data: clean });
+    // Les métadonnées partent dans le jeton de session, joint à CHAQUE requête :
+    // une image encodée (data:…) ou une valeur très longue le rendrait si lourd
+    // que Supabase refuserait toutes les requêtes du membre. Elles restent
+    // donc hors des métadonnées (la table profiles, elle, les reçoit).
+    const meta = Object.fromEntries(Object.entries(clean).filter(([, v]) =>
+      !(typeof v === "string" && (v.startsWith("data:") || v.length > 2000))));
+    const { data, error } = await supabase.auth.updateUser({ data: meta });
     if (error) return { ok: false, error: translateError(error.message) };
 
     // Les métadonnées ne servent qu'à la session : l'admin et les autres membres

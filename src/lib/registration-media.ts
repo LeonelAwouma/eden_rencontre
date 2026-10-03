@@ -135,6 +135,51 @@ export function readRegistrationSelfie(body: Record<string, unknown>): Registrat
 
 const legacyImage = (v: unknown, max: number) => typeof v === "string" && v.startsWith("data:image/") && v.length < max;
 
+const DATA_IMAGE = /^data:(image\/(?:jpeg|png|webp));base64,([A-Za-z0-9+/=]+)$/;
+const EXT: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp" };
+
+/**
+ * Image encodée (data URI, ancien formulaire ou avatar dessiné) → fichier dans
+ * le bucket public des avatars, et son adresse. Une image encodée ne doit
+ * JAMAIS être enregistrée telle quelle : recopiée dans les métadonnées du
+ * compte, elle gonfle le jeton de session (Supabase y met user_metadata) au
+ * point que chaque requête du membre est refusée — il ne peut plus entrer.
+ */
+export async function publishAvatarFromDataUri(db: Db, dataUri: string): Promise<string | null> {
+  const m = DATA_IMAGE.exec(dataUri.trim());
+  if (!m || dataUri.length > 4_000_000) return null;
+  const target = `avatars/reg-${randomUUID()}.${EXT[m[1]]}`;
+  const { error } = await db.storage.from(AVATAR_BUCKET).upload(target, Buffer.from(m[2], "base64"), {
+    contentType: m[1], cacheControl: "31536000", upsert: false,
+  });
+  if (error) {
+    console.warn("[registration-media] dépôt de l'avatar impossible:", error.message);
+    return null;
+  }
+  return db.storage.from(AVATAR_BUCKET).getPublicUrl(target).data.publicUrl;
+}
+
+/**
+ * Photo publique choisie à l'inscription : une des photos de profil (copiée
+ * dans le bucket public), un avatar illustré (adresse https), ou une image
+ * encodée de l'ancien formulaire (déposée dans le stockage). Toujours une
+ * adresse courte, jamais une image encodée.
+ */
+export async function resolveRegistrationAvatar(
+  db: Db,
+  body: Record<string, unknown>,
+  media: RegistrationMedia | null
+): Promise<string | null> {
+  const index = typeof body.avatarPhotoIndex === "number" ? body.avatarPhotoIndex : -1;
+  const fromPhoto = media && index >= 0 ? media.profilePhotoPaths[index] : undefined;
+  if (fromPhoto) return publishAvatarFromMedia(db, fromPhoto);
+  const url = body.avatarUrl;
+  if (typeof url !== "string" || !url) return null;
+  if (/^https:\/\//.test(url) && url.length < 2000) return url;
+  if (url.startsWith("data:")) return publishAvatarFromDataUri(db, url);
+  return null;
+}
+
 /**
  * Vérification du selfie à l'inscription, à partir des fichiers stockés, puis
  * enregistrement du verdict dans profiles. Appelée APRÈS la réponse (`after`

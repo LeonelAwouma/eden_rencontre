@@ -8,7 +8,7 @@ const MAX_REGISTRATIONS_PER_IP = 5;
 import { isValidE164 } from "@/lib/geo";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { verifySelfieServer } from "@/lib/face-verification-server";
-import { readRegistrationSelfie, verifyAndSaveRegistrationSelfie, publishAvatarFromMedia, VERIFY_BUDGET_MS } from "@/lib/registration-media";
+import { readRegistrationSelfie, verifyAndSaveRegistrationSelfie, resolveRegistrationAvatar, VERIFY_BUDGET_MS } from "@/lib/registration-media";
 
 // Analyse du selfie, des photos et de la rafale (jusqu'à une quinzaine d'images),
 // faite après la réponse : voir verifyAndSaveRegistrationSelfie.
@@ -57,13 +57,7 @@ export async function POST(request: NextRequest) {
     // l'analyse des visages tourne après la réponse et met à jour le verdict.
     const registration = readRegistrationSelfie(body);
 
-    const avatarIndex = typeof body.avatarPhotoIndex === "number" ? body.avatarPhotoIndex : -1;
-    const avatarFromPhoto = registration.media && avatarIndex >= 0 ? registration.media.profilePhotoPaths[avatarIndex] : undefined;
-    const finalAvatarUrl: string | null = avatarFromPhoto
-      ? await publishAvatarFromMedia(getSupabaseAdmin(), avatarFromPhoto)
-      : typeof avatarUrl === "string" && /^https?:\/\//.test(avatarUrl) ? avatarUrl
-      : typeof avatarUrl === "string" && avatarUrl.startsWith("data:") && avatarUrl.length < 3_000_000 ? avatarUrl // ancien format
-      : null;
+    const finalAvatarUrl = await resolveRegistrationAvatar(getSupabaseAdmin(), body, registration.media);
 
     if (!email || !password || !name || !pseudo || !firstName || !lastName) {
       return NextResponse.json(
