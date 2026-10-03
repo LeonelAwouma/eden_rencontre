@@ -361,7 +361,6 @@ export default function AdminUserDetailPage() {
             selfieUrl={user.selfie_url}
             photos={(user.profile_photos || []).filter(Boolean)}
             verified={user.selfie_verified}
-            score={user.selfie_verification_score}
             details={user.selfie_verification_details ?? null}
             onUpdated={(patch) => setUser((u) => (u ? { ...u, ...patch } : u))}
           />
@@ -497,9 +496,13 @@ export default function AdminUserDetailPage() {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Vérification selfie</p>
                 <p className="text-sm text-gray-700 mt-0.5">
-                  {user.selfie_verified
-                    ? `✅ Vérifié (Score : ${user.selfie_verification_score || 0}%)`
-                    : `⏳ Non vérifié${user.selfie_url ? ` (Score : ${user.selfie_verification_score || 0}%)` : ""}`}
+                  {!user.selfie_url
+                    ? "Aucun selfie"
+                    : user.selfie_verification_details?.method === "admin"
+                      ? (user.selfie_verified ? "✅ Le selfie correspond (vérifié par l'admin)" : "❌ Ne correspond pas (vérifié par l'admin)")
+                      : user.selfie_verified
+                        ? "⚠️ Validé automatiquement (ancienne méthode) — à confirmer"
+                        : "⏳ À comparer"}
                 </p>
                 {user.selfie_url ? (
                   <div className="mt-2 flex flex-wrap gap-1.5">
@@ -776,7 +779,7 @@ export default function AdminUserDetailPage() {
             <div className="p-4">
               <p className="text-[13px] font-semibold text-gray-900">Selfie pris à l'inscription</p>
               <p className="text-[12px] text-gray-500 mt-0.5">
-                Score de correspondance calculé côté serveur : {user.selfie_verification_score || 0}%
+                À comparer avec les photos de profil dans le panneau « Vérification du selfie ».
               </p>
             </div>
           </div>

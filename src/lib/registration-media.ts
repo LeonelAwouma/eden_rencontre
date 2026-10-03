@@ -16,13 +16,8 @@ export const REGISTRATION_BUCKET = "registration-media";
 const AVATAR_BUCKET = "chat-images";
 
 export const MAX_PROFILE_PHOTOS = 3;
+/** Rafale de l'ancien formulaire (preuve de présence automatique, abandonnée) : lue seulement pour être supprimée. */
 export const MAX_LIVENESS_FRAMES = 10;
-/**
- * Temps accordé à l'analyse des visages, compté depuis le début de la requête.
- * La fonction est coupée à 60 s (maxDuration) : on garde de la marge pour
- * enregistrer le verdict. Au-delà, le compte reste « non vérifié ».
- */
-export const VERIFY_BUDGET_MS = 50_000;
 
 /** Chemin d'un fichier d'inscription : <dossier>/<type>-<uuid>.jpg (noms aléatoires, jamais le nom d'origine). */
 const MEDIA_PATH = /^[0-9a-f-]{36}\/(photo|selfie|frame)-[0-9a-f-]{36}\.jpg$/;
@@ -40,12 +35,13 @@ export async function createUploadSlots(db: Db): Promise<{ folder: string; photo
     if (error || !data) throw new Error(error?.message || "Adresse d'envoi indisponible.");
     return { path, token: data.token };
   };
-  const [photos, selfie, frames] = await Promise.all([
+  const [photos, selfie] = await Promise.all([
     Promise.all(Array.from({ length: MAX_PROFILE_PHOTOS }, () => make("photo"))),
     make("selfie"),
-    Promise.all(Array.from({ length: MAX_LIVENESS_FRAMES }, () => make("frame"))),
   ]);
-  return { folder, photos, selfie, frames };
+  // Plus de rafale : la liste reste présente (vide) pour un formulaire encore
+  // ouvert avec l'ancienne version, qui la lit.
+  return { folder, photos, selfie, frames: [] };
 }
 
 export interface RegistrationMedia {
@@ -181,60 +177,12 @@ export async function resolveRegistrationAvatar(
 }
 
 /**
- * Vérification du selfie à l'inscription, à partir des fichiers stockés, puis
- * enregistrement du verdict dans profiles. Appelée APRÈS la réponse (`after`
- * dans les routes) : l'analyse d'une quinzaine d'images peut prendre de
- * longues secondes, le membre n'a pas à l'attendre. La rafale de présence est
- * supprimée une fois analysée. Le score n'est jamais pris du client.
+ * Plus de comparaison automatique du selfie : l'admin compare lui-même le
+ * selfie aux photos depuis la fiche du membre. Un formulaire encore ouvert
+ * avec l'ancienne version peut toutefois déposer une rafale de « preuve de
+ * présence » : elle n'a plus d'usage, on ne la conserve pas.
  */
-export async function verifyAndSaveRegistrationSelfie(
-  db: Db,
-  userId: string,
-  body: Record<string, unknown>,
-  registration: RegistrationSelfie,
-  verify: (selfie: string, photos: string[], frames: string[], deadline: number) => Promise<{
-    verified: boolean; score: number; photos: unknown; liveness: unknown; reason: string; timedOut?: boolean;
-  }>,
-  deadline: number
-): Promise<void> {
-  const { media } = registration;
-  try {
-    let selfieSrc: string | null;
-    let photoSrcs: string[];
-    let frameSrcs: string[];
-    if (media) {
-      // Liens signés de courte durée : le serveur télécharge les images pour les analyser.
-      [selfieSrc, photoSrcs, frameSrcs] = await Promise.all([
-        media.selfiePath ? signedMediaUrl(db, media.selfiePath, 300) : Promise.resolve(null),
-        Promise.all(media.profilePhotoPaths.map((p) => signedMediaUrl(db, p, 300))).then((u) => u.filter((x): x is string => !!x)),
-        Promise.all(media.livenessFramePaths.map((p) => signedMediaUrl(db, p, 300))).then((u) => u.filter((x): x is string => !!x)),
-      ]);
-    } else {
-      selfieSrc = registration.selfieRef;
-      photoSrcs = registration.photoRefs;
-      frameSrcs = Array.isArray(body.livenessFrames)
-        ? body.livenessFrames.filter((f): f is string => legacyImage(f, 400_000)).slice(0, MAX_LIVENESS_FRAMES)
-        : [];
-    }
-    if (!selfieSrc) return;
-
-    const result = await verify(selfieSrc, photoSrcs, frameSrcs, deadline);
-    const verdict = { selfie_verified: result.verified, selfie_verification_score: result.score };
-    const details = {
-      photos: result.photos, liveness: result.liveness, reason: result.reason, checked_at: new Date().toISOString(),
-      ...(result.timedOut ? { timed_out: true } : {}),
-    };
-    // Colonne de détail ajoutée par 20261002_selfie_verification.sql : sans elle, on enregistre au moins le verdict.
-    const { error } = await db.from("profiles").update({ ...verdict, selfie_verification_details: details }).eq("id", userId);
-    if (error) {
-      console.warn("[selfie] détail non enregistré:", error.message);
-      await db.from("profiles").update(verdict).eq("id", userId);
-    }
-    if (result.timedOut) console.warn(`[selfie] analyse interrompue (trop longue) pour ${userId} : à revérifier depuis l'admin.`);
-  } catch (err) {
-    console.error("[selfie] vérification impossible:", err);
-  } finally {
-    // La rafale ne sert qu'à la preuve de présence : on ne la conserve pas.
-    if (media?.livenessFramePaths.length) await deleteMedia(db, media.livenessFramePaths);
-  }
+export async function discardLivenessFrames(db: Db, registration: RegistrationSelfie): Promise<void> {
+  const frames = registration.media?.livenessFramePaths ?? [];
+  if (frames.length) await deleteMedia(db, frames);
 }

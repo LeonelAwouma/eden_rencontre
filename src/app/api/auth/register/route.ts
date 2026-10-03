@@ -14,15 +14,11 @@ import { normalizeGender } from "@/lib/verses";
 import { isAdultBirthDate } from "@/lib/registration-rules";
 import { reportRegistrationFailure } from "@/lib/registration-incident";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
-import { verifySelfieServer } from "@/lib/face-verification-server";
-import { readRegistrationSelfie, verifyAndSaveRegistrationSelfie, resolveRegistrationAvatar, VERIFY_BUDGET_MS } from "@/lib/registration-media";
+import { readRegistrationSelfie, discardLivenessFrames, resolveRegistrationAvatar } from "@/lib/registration-media";
 
-// Analyse du selfie, des photos et de la rafale (jusqu'à une quinzaine d'images),
-// faite après la réponse : voir verifyAndSaveRegistrationSelfie.
 export const maxDuration = 60;
 
 export async function POST(request: NextRequest) {
-  const startedAt = Date.now();
   const ipKey = `register-ip:${clientIp(request)}`;
   if (!(await checkRateLimit(ipKey, "register", MAX_REGISTRATIONS_PER_IP, 3600))) {
     return NextResponse.json({ error: "Trop d'inscriptions depuis cette connexion. Réessayez dans une heure." }, { status: 429 });
@@ -52,17 +48,15 @@ export async function POST(request: NextRequest) {
       avatarUrl,
     } = body;
 
-    // Selfie verification is recomputed here from the actual images — the client's
-    // own score/verified claim is never trusted, since it's just JSON an attacker
-    // could forge without ever taking a real selfie.
     // Numéro de téléphone au format international (+237…), obligatoire.
     if (!isValidE164(phone)) {
       return NextResponse.json({ error: "Numéro de téléphone invalide." }, { status: 400 });
     }
 
     // Photos et selfie : déposés par le navigateur dans le stockage privé
-    // (src/lib/registration-media.ts). Le compte est enregistré « non vérifié » ;
-    // l'analyse des visages tourne après la réponse et met à jour le verdict.
+    // (src/lib/registration-media.ts). Aucune comparaison automatique :
+    // le compte est enregistré « selfie à comparer » et l'admin compare lui-même
+    // le selfie aux photos depuis la fiche du membre (SelfieCheckPanel).
     const registration = readRegistrationSelfie(body);
 
     if (!email || !password || !name || !pseudo || !firstName || !lastName) {
@@ -213,13 +207,9 @@ export async function POST(request: NextRequest) {
       if (phoneError) console.warn("[inscription] téléphone non enregistré:", phoneError.message);
     }
 
-    // Analyse des visages après la réponse : le membre n'attend pas (elle a
-    // fait dépasser les 60 s de la fonction). Verdict et détail pour l'admin
-    // sont enregistrés à la fin ; une analyse trop longue reste « non vérifié ».
+    // Rafale de l'ancien formulaire (preuve de présence automatique, abandonnée) : non conservée.
     const verifiedUserId = userId;
-    after(() => verifyAndSaveRegistrationSelfie(
-      db, verifiedUserId, body, registration, verifySelfieServer, startedAt + VERIFY_BUDGET_MS
-    ));
+    after(() => discardLivenessFrames(db, registration));
 
     // 4. Send confirmation email — après la réponse, le membre n'attend pas le serveur d'e-mail.
     after(() => sendRegistrationReceivedEmail(cleanEmail, name).then(() => undefined));

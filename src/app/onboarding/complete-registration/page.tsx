@@ -16,11 +16,10 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { getSession, ageFromBirthDate, MIN_AGE } from "@/lib/auth";
+import { getSession, logout, ageFromBirthDate, MIN_AGE } from "@/lib/auth";
 import { isRegistrationComplete } from "@/lib/registration-rules";
 import { supabase } from "@/lib/supabase";
 import { MARRIAGE_VALUES } from "@/lib/values";
-import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
 import { cameraErrorKey } from "@/lib/camera-error";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
@@ -29,7 +28,7 @@ import { AvatarPicker } from "@/components/avatar-picker";
 import { filterCountries, filterCities, countryLabel, phoneIsoFor, dialOfIso, toE164 } from "@/lib/geo";
 import { PhoneInput } from "@/components/phone-input";
 import { Flag } from "@/components/flag";
-import { fileToCompressedDataUrl, videoFrameToDataUrl, captureLivenessBurst, MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
+import { fileToCompressedDataUrl, videoFrameToDataUrl, MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
 import { useMobileContinueGate, MobileContinueGate } from "@/components/mobile-continue-gate";
 import {
   AlertTriangle,
@@ -142,11 +141,6 @@ export default function CompleteRegistrationPage() {
 
   // Selfie verification state
   const [selfieDataUri, setSelfieDataUri] = useState<string | null>(null);
-  // Preuve de présence : images prises pendant que la personne tourne la tête (jugées par le serveur).
-  const [livenessFrames, setLivenessFrames] = useState<string[]>([]);
-  const [burstProgress, setBurstProgress] = useState<number | null>(null);
-  const [selfieVerifying, setSelfieVerifying] = useState(false);
-  const [selfieResult, setSelfieResult] = useState<{ score: number; verified: boolean; reason: string } | null>(null);
   const [selfieError, setSelfieError] = useState<string | null>(null);
   const [cameraActive, setCameraActive] = useState(false);
   const [videoPlaying, setVideoPlaying] = useState(false);
@@ -267,61 +261,21 @@ export default function CompleteRegistrationPage() {
     setCameraActive(false);
   };
 
-  const captureSelfie = async () => {
-    if (!videoRef.current || burstProgress !== null) return;
-    const video = videoRef.current;
+  // Selfie simple : aucune comparaison automatique, l'admin compare lui-même
+  // le selfie aux photos de profil avant de valider le compte.
+  const captureSelfie = () => {
+    if (!videoRef.current) return;
     // Tant que la vidéo n'a pas démarré, videoWidth vaut 0 : image invalide.
-    const dataUri = videoFrameToDataUrl(video);
+    const dataUri = videoFrameToDataUrl(videoRef.current);
     if (!dataUri) return;
-    // La personne tourne lentement la tête : une photo IA ou un écran tenus
-    // devant la caméra ne pivotent pas, le serveur le détecte.
-    setBurstProgress(0);
-    const frames = await captureLivenessBurst(video, { onProgress: (done, total) => setBurstProgress(done / total) });
-    setBurstProgress(null);
-    setLivenessFrames(frames);
     setSelfieDataUri(dataUri);
     stopCamera();
   };
 
   const retakeSelfie = () => {
     setSelfieDataUri(null);
-    setLivenessFrames([]);
-    setSelfieResult(null);
     setSelfieError(null);
     startCamera();
-  };
-
-  const handleVerifySelfie = async () => {
-    if (!selfieDataUri) return;
-    setSelfieVerifying(true);
-    setSelfieError(null);
-    setSelfieResult(null);
-
-    try {
-      const quality = await validateSelfieQuality(selfieDataUri);
-      if (!quality.valid) {
-        setSelfieError(quality.reason);
-        setSelfieVerifying(false);
-        return;
-      }
-
-      const referencePhotos = photos.filter(Boolean) as string[];
-      // No reference photo at all to compare against — fall back to the quality
-      // check alone (face-like content, well-lit) instead of a match score that
-      // can never be computed.
-      const result = referencePhotos.length > 0
-        ? await verifySelfie(selfieDataUri, referencePhotos)
-        : { score: 100, verified: true, photoScores: [], reason: "Selfie valide." };
-      setSelfieResult(result);
-
-      if (result.verified) {
-        setTimeout(() => nextStep(), 1000);
-      }
-    } catch {
-      setSelfieError(t("camera.verifyError"));
-    } finally {
-      setSelfieVerifying(false);
-    }
   };
 
   // Cleanup camera stream on unmount
@@ -356,7 +310,7 @@ export default function CompleteRegistrationPage() {
       // la route d'inscription ne reçoit que leurs chemins, quelques Ko au lieu de plusieurs Mo.
       let media: Awaited<ReturnType<typeof uploadRegistrationMedia>> | null = null;
       try {
-        media = await uploadRegistrationMedia({ photos: photos.filter(Boolean) as string[], selfie: selfieDataUri, frames: livenessFrames });
+        media = await uploadRegistrationMedia({ photos: photos.filter(Boolean) as string[], selfie: selfieDataUri, frames: [] });
       } catch (uploadErr) {
         const message = uploadErr instanceof Error ? uploadErr.message : "";
         // Stockage pas encore installé (migration non exécutée) : on revient à l'ancien envoi.
@@ -381,7 +335,7 @@ export default function CompleteRegistrationPage() {
           charterAuthorizeVerification: formData.charterAuthorizeVerification,
           charterCommitRespectful: formData.charterCommitRespectful,
           charterAcceptFull: formData.charterAcceptFull,
-          ...(media ?? { selfieImage: selfieDataUri, livenessFrames, profilePhotos: photos.filter(Boolean) }),
+          ...(media ?? { selfieImage: selfieDataUri, profilePhotos: photos.filter(Boolean) }),
           // Avatar pris parmi les photos : le serveur le copie dans le stockage public des avatars.
           avatarPhotoIndex: media && publicAvatar ? (photos.filter(Boolean) as string[]).indexOf(publicAvatar) : -1,
           avatarUrl: publicAvatar && (!publicAvatar.startsWith("data:") || !media) ? publicAvatar : null,
@@ -586,6 +540,11 @@ export default function CompleteRegistrationPage() {
                 <Button type="submit" disabled={!pseudoValid} className="w-full h-14 rounded-xl font-bold text-base gap-2">
                   {t("completeRegistration.continue")} <ChevronRight className="w-4 h-4" />
                 </Button>
+                {/* Première étape : le compte Google est déjà connecté, et la garde de l'espace
+                    membre ramènerait ici. Revenir en arrière = se déconnecter et retrouver la connexion. */}
+                <button type="button" onClick={async () => { await logout(); router.replace("/login"); }} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2 disabled:opacity-40">
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
+                </button>
               </form>
             )}
 
@@ -1094,16 +1053,8 @@ export default function CompleteRegistrationPage() {
                       <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                         <div className="w-48 h-48 border-2 border-primary/50 rounded-full" />
                       </div>
-                      {burstProgress !== null && (
-                        <div className="absolute top-4 inset-x-4 rounded-2xl bg-black/65 backdrop-blur-md px-4 py-3 text-center text-white">
-                          <p className="text-sm font-bold">{t("camera.livenessInstruction")}</p>
-                          <div className="mt-2 h-1.5 rounded-full bg-white/25 overflow-hidden">
-                            <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.round(burstProgress * 100)}%` }} />
-                          </div>
-                        </div>
-                      )}
                       <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                        <Button onClick={captureSelfie} disabled={!videoPlaying || burstProgress !== null}
+                        <Button onClick={captureSelfie} disabled={!videoPlaying}
                           className="bg-primary text-primary-foreground font-bold rounded-full w-16 h-16 p-0 shadow-lg disabled:opacity-40">
                           <Camera className="w-6 h-6" />
                         </Button>
@@ -1131,40 +1082,13 @@ export default function CompleteRegistrationPage() {
                   </div>
                 )}
 
-                {/* Result */}
-                {selfieResult && (
-                  <div className={`flex items-start gap-3 rounded-xl p-4 ${selfieResult.verified ? 'bg-primary/10 border border-primary/20' : 'bg-destructive/10 border border-destructive/20'}`}>
-                    {selfieResult.verified ? (
-                      <CheckCircle2 className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-                    ) : (
-                      <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                    )}
-                    <div>
-                      <p className={`text-sm font-bold ${selfieResult.verified ? 'text-primary' : 'text-destructive/90'}`}>
-                        {selfieResult.verified ? t("completeRegistration.verifySuccess") : t("completeRegistration.verifyFailed")}
-                      </p>
-                      <p className={`text-xs mt-1 ${selfieResult.verified ? 'text-foreground/50' : 'text-destructive/70'}`}>
-                        {selfieResult.reason} {t("completeRegistration.scoreLabel", { score: selfieResult.score })}
-                      </p>
-                    </div>
-                  </div>
-                )}
-
-                {/* Verify Button */}
-                {selfieDataUri && !selfieResult?.verified && (
+                {/* Continuer : l'équipe comparera le selfie aux photos avant de valider le compte */}
+                {selfieDataUri && (
                   <Button
-                    onClick={handleVerifySelfie}
-                    disabled={selfieVerifying}
-                    className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-70"
+                    onClick={nextStep}
+                    className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform"
                   >
-                    {selfieVerifying ? (
-                      <span className="flex items-center gap-3">
-                        <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                        {t("completeRegistration.verifying")}
-                      </span>
-                    ) : (
-                      <>{t("completeRegistration.verifyIdentity")} <ShieldCheck className="w-5 h-5 ml-2" /></>
-                    )}
+                    {t("register.selfieContinueBtn")} <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
                 )}
 
@@ -1264,6 +1188,9 @@ export default function CompleteRegistrationPage() {
                     <>{t("completeRegistration.submitProfile")} <Heart className="w-6 h-6 fill-primary-foreground" /></>
                   )}
                 </Button>
+                <button type="button" onClick={prevStep} disabled={saving} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2 disabled:opacity-40">
+                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
+                </button>
               </div>
             )}
 
