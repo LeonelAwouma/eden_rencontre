@@ -15,6 +15,7 @@ import { getAuthenticatedUser } from "@/lib/api-auth";
 import {
   generateMeetAuthUrl,
   createOAuthState,
+  setOAuthStateCookie,
 } from "@/lib/google-meet";
 
 export async function POST(request: NextRequest) {
@@ -28,8 +29,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Generate a CSRF state parameter containing the user ID
-    const state = createOAuthState(user.id);
+    // 2. Generate a signed CSRF state containing the user ID
+    const { state, nonce } = createOAuthState(user.id);
 
     // 3. Build the callback URL
     const origin = request.headers.get("origin") || request.nextUrl.origin;
@@ -47,10 +48,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       authUrl,
     });
+    setOAuthStateCookie(res, nonce);
+    return res;
   } catch (err: any) {
     console.error("[API /google-meet/authorize] Unexpected error:", err);
     return NextResponse.json(

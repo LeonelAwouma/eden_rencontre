@@ -13,6 +13,7 @@ import {
   exchangeCodeForTokens,
   storeCredentials,
   parseOAuthState,
+  OAUTH_STATE_COOKIE,
   GOOGLE_MEET_SCOPE,
 } from "@/lib/google-meet";
 
@@ -31,7 +32,10 @@ export async function GET(request: NextRequest) {
     const redirectTo = (params: Record<string, string>) => {
       const url = new URL(redirectBase);
       Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
-      return NextResponse.redirect(url.toString());
+      const res = NextResponse.redirect(url.toString());
+      // Usage unique : le state ne peut pas être rejoué.
+      res.cookies.set(OAUTH_STATE_COOKIE, "", { path: "/api/google-meet/callback", maxAge: 0 });
+      return res;
     };
 
     // 1. Handle OAuth errors
@@ -58,8 +62,8 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    // 3. Validate state (CSRF protection)
-    const parsed = parseOAuthState(state);
+    // 3. Validate state (signature + cookie du navigateur qui a lancé la connexion)
+    const parsed = parseOAuthState(state, request.cookies.get(OAUTH_STATE_COOKIE)?.value);
     if (!parsed) {
       return redirectTo({
         google_meet_error: "Session expirée ou invalide. Veuillez réessayer.",

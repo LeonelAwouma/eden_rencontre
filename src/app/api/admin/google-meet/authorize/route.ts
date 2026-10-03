@@ -15,6 +15,7 @@ import { requireAdmin } from "@/lib/admin-auth";
 import {
   generateMeetAuthUrl,
   createOAuthState,
+  setOAuthStateCookie,
 } from "@/lib/google-meet";
 
 export async function POST(request: NextRequest) {
@@ -30,8 +31,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Generate a CSRF state with admin ID and return path
-    const state = createOAuthState(admin.adminId, "/admin/meets");
+    // 2. Generate a signed CSRF state with admin ID and return path
+    const { state, nonce } = createOAuthState(admin.adminId, "/admin/meets");
 
     // 3. Use the SAME callback URL as the user flow (already in Google Cloud Console)
     const origin = request.headers.get("origin") || request.nextUrl.origin;
@@ -49,10 +50,12 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({
+    const res = NextResponse.json({
       success: true,
       authUrl,
     });
+    setOAuthStateCookie(res, nonce);
+    return res;
   } catch (err: any) {
     console.error("[API /admin/google-meet/authorize] Unexpected error:", err);
     return NextResponse.json(

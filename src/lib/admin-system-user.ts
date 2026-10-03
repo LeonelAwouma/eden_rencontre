@@ -7,9 +7,9 @@
 //  GET /api/support/admin-id (user → admin, see contactAdmin() in chat.ts).
 // ============================================================================
 
+import crypto from "crypto";
 import type { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { ADMIN_SYSTEM_EMAIL } from "@/lib/admin-system-shared";
-const ADMIN_SYSTEM_PASSWORD = "Eden-Admin-System-2024!SecureRandom";
 export const ADMIN_PROFILE_NAME = "Admin";
 
 type SupabaseAdminClient = ReturnType<typeof getSupabaseAdmin>;
@@ -30,9 +30,12 @@ export async function ensureAdminSystemUser(supabase: SupabaseAdminClient): Prom
   const existing = existingUsers?.users?.find((u) => u.email === ADMIN_SYSTEM_EMAIL);
   if (existing) return (cachedAdminId = existing.id);
 
+  // Personne ne se connecte à ce compte : il n'agit que via la clé de service.
+  // Mot de passe aléatoire jamais conservé (l'ancien, écrit en dur dans le dépôt,
+  // est remplacé par supabase/migrations/20261003_security_hardening.sql).
   const { data: newUser, error } = await supabase.auth.admin.createUser({
     email: ADMIN_SYSTEM_EMAIL,
-    password: ADMIN_SYSTEM_PASSWORD,
+    password: crypto.randomBytes(48).toString("base64url"),
     email_confirm: true,
     user_metadata: { name: ADMIN_PROFILE_NAME, is_system_admin: true },
   });

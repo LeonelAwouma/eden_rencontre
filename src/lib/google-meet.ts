@@ -8,7 +8,9 @@
  * Never expose Google credentials, tokens, or client secrets to the frontend.
  */
 
+import crypto from "crypto";
 import { getSupabaseAdmin } from "./supabase-admin";
+import { getSessionSecret } from "./session-secret";
 
 // ─── Configuration ───────────────────────────────────────────
 
@@ -560,45 +562,81 @@ function mapGoogleErrorCode(status: number): string {
   }
 }
 
-/**
- * Create a state parameter for CSRF protection.
- * The state contains the user ID, optional return path, and a timestamp.
- *
- * @param userId - The user or admin ID
- * @param returnTo - Optional path to redirect after callback (e.g. "/admin/meets")
- */
-export function createOAuthState(userId: string, returnTo?: string): string {
-  const payload: Record<string, unknown> = {
-    userId,
-    timestamp: Date.now(),
-    nonce: Math.random().toString(36).substring(2, 15),
-  };
-  if (returnTo) {
-    payload.returnTo = returnTo;
-  }
-  // Base64 encode (no encryption needed — CSRF state is validated by presence, not secrecy)
-  return Buffer.from(JSON.stringify(payload)).toString("base64url");
+/** Cookie qui lie le `state` au navigateur qui a lancé la connexion Google. */
+export const OAUTH_STATE_COOKIE = "eden_gm_oauth";
+export const OAUTH_STATE_TTL_SECONDS = 10 * 60;
+/** Seules destinations admises après le retour de Google (jamais une adresse libre). */
+const OAUTH_RETURN_PATHS = new Set(["/dashboard", "/admin/meets"]);
+
+function signState(payload: string): string {
+  // Préfixe dédié : une signature de state ne peut pas servir de session admin.
+  return crypto.createHmac("sha256", getSessionSecret()).update(`google-meet-state:${payload}`).digest("base64url");
+}
+
+function sameString(a: string, b: string): boolean {
+  const ba = Buffer.from(a), bb = Buffer.from(b);
+  return ba.length === bb.length && crypto.timingSafeEqual(ba, bb);
 }
 
 /**
- * Parse and validate the OAuth state parameter.
- * Returns the userId and optional returnTo path, or null if invalid/expired.
- * State expires after 10 minutes.
+ * Crée le paramètre `state` signé de la connexion Google Meet, et le `nonce` à
+ * déposer dans le cookie OAUTH_STATE_COOKIE du navigateur.
+ *
+ * Avant, le state était un simple JSON encodé : on pouvait y mettre l'id de
+ * n'importe quel compte (admin compris) pour lui rattacher son propre compte
+ * Google, et un `returnTo` menant vers un site externe. Il est désormais signé,
+ * limité à deux destinations internes, et lié au navigateur par le cookie : un
+ * lien envoyé par un tiers ne rattache pas le Google de la victime à son compte.
+ *
+ * @param userId - The user or admin ID
+ * @param returnTo - "/admin/meets" pour le flux admin ; sinon tableau de bord
  */
-export function parseOAuthState(state: string): { userId: string; returnTo: string | null } | null {
+export function createOAuthState(userId: string, returnTo?: string): { state: string; nonce: string } {
+  const nonce = crypto.randomBytes(16).toString("base64url");
+  const payload = Buffer.from(
+    JSON.stringify({
+      userId,
+      timestamp: Date.now(),
+      nonce,
+      returnTo: returnTo && OAUTH_RETURN_PATHS.has(returnTo) ? returnTo : null,
+    })
+  ).toString("base64url");
+  return { state: `${payload}.${signState(payload)}`, nonce };
+}
+
+/** Dépose le nonce du state dans un cookie lu uniquement par le retour Google. */
+export function setOAuthStateCookie(res: { cookies: { set: (name: string, value: string, options: Record<string, unknown>) => unknown } }, nonce: string) {
+  res.cookies.set(OAUTH_STATE_COOKIE, nonce, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    // « lax » : le cookie accompagne la redirection de Google (navigation GET).
+    sameSite: "lax",
+    path: "/api/google-meet/callback",
+    maxAge: OAUTH_STATE_TTL_SECONDS,
+  });
+}
+
+/**
+ * Vérifie le `state` : signature, expiration (10 minutes) et nonce identique à
+ * celui du cookie du navigateur. Renvoie null s'il est invalide.
+ */
+export function parseOAuthState(
+  state: string,
+  cookieNonce: string | undefined
+): { userId: string; returnTo: string | null } | null {
   try {
-    const decoded = Buffer.from(state, "base64url").toString("utf-8");
-    const payload = JSON.parse(decoded);
+    const [payload, signature] = state.split(".");
+    if (!payload || !signature || !cookieNonce) return null;
+    if (!sameString(signState(payload), signature)) return null;
 
-    if (!payload.userId || !payload.timestamp) return null;
-
-    // State expires after 10 minutes
-    const age = Date.now() - payload.timestamp;
-    if (age > 10 * 60 * 1000) return null;
+    const data = JSON.parse(Buffer.from(payload, "base64url").toString("utf-8"));
+    if (typeof data.userId !== "string" || typeof data.timestamp !== "number") return null;
+    if (Date.now() - data.timestamp > OAUTH_STATE_TTL_SECONDS * 1000) return null;
+    if (!sameString(String(data.nonce), cookieNonce)) return null;
 
     return {
-      userId: payload.userId,
-      returnTo: payload.returnTo || null,
+      userId: data.userId,
+      returnTo: OAUTH_RETURN_PATHS.has(data.returnTo) ? data.returnTo : null,
     };
   } catch {
     return null;
