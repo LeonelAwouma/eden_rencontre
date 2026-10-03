@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { getSession, ageFromBirthDate, MIN_AGE } from "@/lib/auth";
+import { isRegistrationComplete } from "@/lib/registration-rules";
 import { supabase } from "@/lib/supabase";
 import { MARRIAGE_VALUES } from "@/lib/values";
 import { verifySelfie, validateSelfieQuality } from "@/lib/face-verification";
@@ -171,7 +172,9 @@ export default function CompleteRegistrationPage() {
         const { data: prof } = await supabase
           .from("profiles").select("pseudo, gender, country, city, birth_date").eq("id", session.id).maybeSingle();
         if (prof?.pseudo) existingPseudo = prof.pseudo;
-        if (prof?.pseudo && prof.gender && prof.country && prof.city && prof.birth_date) {
+        // Même règle que la garde de l'espace membre : sinon un membre sans pseudo
+        // ou sans date de naissance refaisait tout le formulaire, selfie compris.
+        if (isRegistrationComplete(prof)) {
           router.replace("/onboarding");
           return;
         }

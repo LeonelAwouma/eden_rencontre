@@ -17,6 +17,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
+import { isRegistrationComplete } from "@/lib/registration-rules";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { sendProfileReminderEmail, getLastEmailError } from "@/lib/email";
 import { scanAccounts, repairAccount } from "@/lib/account-health";
@@ -77,7 +78,7 @@ async function collect(db: Db) {
 
   const pending = rows
     .filter((p) => p.status === "pending" && !isTechnical(p.email))
-    .map((p) => ({ id: p.id, email: p.email, name: p.name, created_at: p.created_at, profileComplete: !!(p.gender && p.country && p.city) }))
+    .map((p) => ({ id: p.id, email: p.email, name: p.name, created_at: p.created_at, profileComplete: isRegistrationComplete(p) }))
     .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
 
   return { orphans, incomplete, pending, reminderTracking: reminded !== null };

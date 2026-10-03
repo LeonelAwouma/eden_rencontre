@@ -4,6 +4,7 @@
 // Le profil (nom, ville, valeurs…) est stocké dans les métadonnées utilisateur Supabase.
 
 import { supabase } from "./supabase";
+import { isRegistrationComplete } from "./registration-rules";
 
 export interface EdenUser {
   id?: string;
@@ -319,7 +320,7 @@ export async function getMyAccountStatus(): Promise<{
   const status: AccountStatus = s === "approved" || s === "rejected" || s === "suspended" ? s : "pending";
   // Informations de base demandées à l'inscription. Une inscription Google qui a
   // quitté la page « Complétez votre profil » arrive ici sans elles.
-  const profileComplete = !!(d?.gender && d?.country && d?.city);
+  const profileComplete = isRegistrationComplete(d);
   // Pseudo public : celui du profil (lu par l'admin et les membres), pas celui de la session.
   const pseudo = typeof d?.pseudo === "string" && d.pseudo.trim() ? d.pseudo.trim() : null;
   return { status, email, profileComplete, pseudo, sessionPseudo, hasPhone, country: d?.country || null };

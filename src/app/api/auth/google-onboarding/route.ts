@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse, after } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isValidE164 } from "@/lib/geo";
+import { normalizeGender } from "@/lib/verses";
+import { isAdultBirthDate } from "@/lib/registration-rules";
+import { reportRegistrationFailure } from "@/lib/registration-incident";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { verifySelfieServer } from "@/lib/face-verification-server";
 import { readRegistrationSelfie, verifyAndSaveRegistrationSelfie, resolveRegistrationAvatar, VERIFY_BUDGET_MS } from "@/lib/registration-media";
@@ -63,18 +66,18 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validate age (minimum 18)
-    const birth = new Date(birthDate);
-    const now = new Date();
-    let age = now.getFullYear() - birth.getFullYear();
-    const m = now.getMonth() - birth.getMonth();
-    if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) age--;
-    if (age < 18) {
+    // Validate age (minimum 18) — et une date bien formée (AAAA-MM-JJ)
+    if (!isAdultBirthDate(birthDate)) {
       return NextResponse.json(
         { error: "Vous devez avoir au moins 18 ans pour rejoindre Garden of Alliance." },
         { status: 400 }
       );
     }
+    const cleanGender = normalizeGender(gender);
+    if (!cleanGender) {
+      return NextResponse.json({ error: "Veuillez indiquer si vous êtes un homme ou une femme." }, { status: 400 });
+    }
+    const cleanMarriageVision = Array.isArray(marriageVision) ? marriageVision.filter((v) => typeof v === "string") : [];
 
     // Get the authenticated user from the Authorization header or cookie
     const db = getSupabaseAdmin();
@@ -179,13 +182,13 @@ export async function POST(request: NextRequest) {
     // onboarding_completed n'est PAS touché : il concerne le questionnaire, rempli ensuite.
     const profileData: Record<string, any> = {
       pseudo: cleanPseudo,
-      gender: gender,
+      gender: cleanGender,
       birth_date: birthDate,
       civil_status: civilStatus,
       region: region,
       country: country,
       city: city,
-      marriage_vision: marriageVision || [],
+      marriage_vision: cleanMarriageVision,
       status,
       selfie_verified: false,
       selfie_verification_score: 0,
@@ -219,8 +222,9 @@ export async function POST(request: NextRequest) {
 
     if (profileError) {
       console.error("[Google Onboarding] Profile save error:", profileError.message);
+      await reportRegistrationFailure("google_profile_save", profileError.message, { userId, flow: "google" });
       return NextResponse.json(
-        { error: "Erreur lors de la mise à jour du profil." },
+        { error: "Erreur lors de la mise à jour du profil. L'équipe a été prévenue ; réessayez dans quelques minutes." },
         { status: 500 }
       );
     }
@@ -243,14 +247,14 @@ export async function POST(request: NextRequest) {
     const { error: metaError } = await db.auth.admin.updateUserById(userId, {
       user_metadata: {
         pseudo: cleanPseudo,
-        gender,
+        gender: cleanGender,
         birthDate,
         discoverySource,
         civilStatus,
         region,
         country,
         city,
-        marriageVision,
+        marriageVision: cleanMarriageVision,
         ...(chosenAvatarUrl ? { avatar_url: chosenAvatarUrl } : {}),
       },
     });
@@ -283,6 +287,7 @@ export async function POST(request: NextRequest) {
     });
   } catch (error) {
     console.error("[Google Onboarding] API error:", error);
+    await reportRegistrationFailure("unexpected", error instanceof Error ? error.message : String(error), { flow: "google" });
     return NextResponse.json(
       { error: "Erreur interne du serveur." },
       { status: 500 }

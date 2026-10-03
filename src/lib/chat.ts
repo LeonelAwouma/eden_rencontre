@@ -3,6 +3,7 @@
 import { supabase } from "./supabase";
 import { ADMIN_SYSTEM_EMAIL } from "./admin-system-shared";
 import type { EdenUser } from "./auth";
+import { normalizeGender } from "./verses";
 
 export interface ChatConversation {
   id: string;          // conversation uuid
@@ -181,29 +182,58 @@ function fmt(iso: string) {
   }
 }
 
-// Enregistre / met à jour le profil de l'utilisateur connecté (annuaire).
+const isBlank = (v: unknown) => v === null || v === undefined || v === "" || (Array.isArray(v) && v.length === 0);
+
+/**
+ * Complète le profil de l'utilisateur connecté (annuaire) à partir de sa session.
+ *
+ * La table profiles est la source de vérité (inscription, « Mon profil », admin) :
+ * la session ne fait que combler un champ encore VIDE, jamais en écraser un.
+ * Avant, chaque ouverture du tableau de bord recopiait la session telle quelle :
+ * un genre, un pays ou une ville absents de la session effaçaient ceux du profil
+ * (et renvoyaient le membre vers le formulaire d'inscription), et pour un compte
+ * Google la photo Google, remise dans la session à chaque connexion, remplaçait
+ * l'avatar choisi.
+ */
 export async function upsertMyProfile(user: EdenUser): Promise<{ error?: string }> {
   if (!supabase || !user.id) return {};
-  const { error } = await supabase.from("profiles").upsert({
-    id: user.id,
-    email: user.email,
+  const birthDate = /^\d{4}-\d{2}-\d{2}$/.test(user.birthDate || "") ? user.birthDate : null;
+  const avatar = user.avatar_url && !user.avatar_url.startsWith("data:") ? user.avatar_url : null;
+  const fromSession: Record<string, unknown> = {
     name: user.name,
-    // Pseudo choisi dans la fenêtre du tableau de bord (stocké jusqu'ici dans la session seulement).
-    ...(user.pseudo ? { pseudo: user.pseudo } : {}),
-    city: user.city ?? null,
-    country: user.country ?? null,
-    region: user.region ?? null,
-    gender: user.gender ?? null,
-    birth_date: user.birthDate || null,
-    civil_status: user.civilStatus ?? null,
-    profession: user.profession ?? null,
-    bio: user.bio ?? null,
-    marriage_vision: user.marriageVision ?? null,
-    avatar_url: user.avatar_url ?? null,
-    updated_at: new Date().toISOString(),
-  });
+    pseudo: user.pseudo,
+    city: user.city,
+    country: user.country,
+    region: user.region,
+    gender: normalizeGender(user.gender) || null,
+    birth_date: birthDate,
+    civil_status: user.civilStatus,
+    profession: user.profession,
+    bio: user.bio,
+    marriage_vision: Array.isArray(user.marriageVision) ? user.marriageVision : null,
+    avatar_url: avatar,
+  };
+
+  const { data: row, error: readError } = await supabase
+    .from("profiles").select(Object.keys(fromSession).join(", ")).eq("id", user.id).maybeSingle();
+  if (readError) {
+    console.error("[Eden] lecture du profil échouée:", readError.message);
+    return { error: readError.message };
+  }
+
+  const current = (row || {}) as unknown as Record<string, unknown>;
+  const patch = Object.fromEntries(
+    Object.entries(fromSession).filter(([k, v]) => !isBlank(v) && isBlank(current[k]))
+  );
+
+  // Profil absent (déclencheur d'inscription manquant) : on le crée.
+  const { error } = row
+    ? Object.keys(patch).length
+      ? await supabase.from("profiles").update({ ...patch, updated_at: new Date().toISOString() }).eq("id", user.id)
+      : { error: null }
+    : await supabase.from("profiles").insert({ id: user.id, email: user.email, ...patch });
   if (error) {
-    console.error("[Eden] upsert profil échoué:", error.message);
+    console.error("[Eden] complément du profil échoué:", error.message);
     return { error: error.message };
   }
   return {};

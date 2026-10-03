@@ -16,17 +16,22 @@ import { createUploadSlots } from "@/lib/registration-media";
 import { checkRateLimit, recordRateLimit } from "@/lib/otp";
 import { clientIp } from "@/lib/api-auth";
 
-/** Une inscription en demande une, plus quelques reprises (photo refaite, retour en arrière…). */
-const MAX_PER_IP_PER_HOUR = 15;
+/**
+ * Une inscription en demande une, plus quelques reprises (photo refaite, retour
+ * en arrière…). Large à dessein : derrière un opérateur mobile ou le Wi-Fi d'un
+ * événement, beaucoup de membres partagent la même adresse IP.
+ */
+const MAX_PER_IP_PER_HOUR = 40;
 
 export async function POST(request: NextRequest) {
   const ipKey = `registration-media:${clientIp(request)}`;
   if (!(await checkRateLimit(ipKey, "registration_media", MAX_PER_IP_PER_HOUR, 3600))) {
     return NextResponse.json({ error: "Trop d'envois de photos depuis cette connexion. Réessayez dans une heure." }, { status: 429 });
   }
-  await recordRateLimit(ipKey, "registration_media");
   try {
     const slots = await createUploadSlots(getSupabaseAdmin());
+    // Comptée seulement quand des adresses d'envoi ont réellement été ouvertes.
+    await recordRateLimit(ipKey, "registration_media");
     return NextResponse.json(slots);
   } catch (err) {
     const message = err instanceof Error ? err.message : "";
