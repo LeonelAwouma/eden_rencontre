@@ -7,15 +7,12 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Eye, EyeOff, ArrowRight, Heart, ShieldCheck, AlertCircle, CheckCircle2, Wrench } from "lucide-react";
+import { Eye, EyeOff, ArrowRight, Heart, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 import { signInWithGoogle, getSession } from "@/lib/auth";
 import { Monogram } from "@/components/ornaments";
 import { ImposingFloralCorners } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 import { LoadingScreen } from "@/components/loading-screen";
-
-/** Fin de la maintenance annoncée : mercredi 7 octobre 2026 inclus (heure du Cameroun). */
-const MAINTENANCE_UNTIL = new Date("2026-10-08T00:00:00+01:00").getTime();
 
 // Page à rouvrir après connexion (?next=/dashboard/academie). Seuls les chemins
 // internes sont acceptés, pour qu'un lien piégé ne puisse pas rediriger ailleurs.
@@ -240,17 +237,6 @@ export default function LoginPage() {
               {t("login.subtitle")}
             </p>
           </div>
-
-          {/* Maintenance annoncée : la mention disparaît d'elle-même après la date */}
-          {Date.now() < MAINTENANCE_UNTIL && (
-            <div role="status" className="relative z-10 flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-xl p-4">
-              <Wrench className="w-5 h-5 text-primary shrink-0 mt-0.5" />
-              <div>
-                <p className="text-sm font-bold text-primary">{t("login.maintenanceTitle")}</p>
-                <p className="text-sm text-foreground/70 leading-relaxed mt-0.5">{t("login.maintenanceNotice")}</p>
-              </div>
-            </div>
-          )}
 
           {justRegistered && (
             <div className="flex items-start gap-3 bg-primary/10 border border-primary/20 rounded-xl p-4 animate-in fade-in slide-in-from-top-1 duration-300">
