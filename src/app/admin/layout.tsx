@@ -145,15 +145,15 @@ export default function AdminLayout({
 
         <div
           className={cn(
-            "flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ease-in-out",
-            sidebarCollapsed ? "lg:ml-[68px]" : "lg:ml-[256px]"
+            "flex-1 flex flex-col min-h-screen min-w-0 transition-[margin] duration-200 ease-out",
+            sidebarCollapsed ? "lg:ml-[72px]" : "lg:ml-[248px]"
           )}
         >
           {/* Montée une seule fois ici : elle était recopiée dans 21 pages, où
               son bouton menu mobile était branché sur un callback vide. */}
           <AdminTopbar adminName={admin?.name || "Administrateur"} />
 
-          <main className="flex-1 p-3 sm:p-4 md:p-6 lg:p-8 max-w-[1600px] w-full mx-auto">
+          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8 max-w-[1600px] w-full min-w-0 mx-auto">
             {children}
           </main>
         </div>

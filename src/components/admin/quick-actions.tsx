@@ -2,89 +2,68 @@
 
 import { motion } from "framer-motion";
 import Link from "next/link";
-import {
-  UserCheck,
-  CalendarPlus,
-  Users,
-  FileBarChart,
-  ArrowUpRight,
-} from "lucide-react";
+import { UserCheck, CalendarPlus, Users, FileBarChart, ChevronRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 const ACTIONS = [
-  {
-    label: "Approuver inscriptions",
-    description: "Examiner les demandes",
-    href: "/admin/users?status=pending",
-    icon: UserCheck,
-    color: "text-[#486B46]",
-    bg: "bg-[#486B46]/8",
-  },
-  {
-    label: "Créer un Meet",
-    description: "Nouvel événement",
-    href: "/admin/events/new",
-    icon: CalendarPlus,
-    color: "text-[#4F7DF3]",
-    bg: "bg-[#4F7DF3]/8",
-  },
-  {
-    label: "Gérer les utilisateurs",
-    description: "Voir tous les comptes",
-    href: "/admin/users",
-    icon: Users,
-    color: "text-[#486B46]",
-    bg: "bg-[#486B46]/8",
-  },
-  {
-    label: "Voir les rapports",
-    description: "Signalements en cours",
-    href: "/admin/reports",
-    icon: FileBarChart,
-    color: "text-[#8B5CF6]",
-    bg: "bg-[#8B5CF6]/8",
-  },
-];
+  { key: "pending", label: "Approuver les inscriptions", description: "Examiner les demandes en attente", href: "/admin/users?status=pending", icon: UserCheck },
+  { key: "meet", label: "Créer un Meet", description: "Planifier un nouvel événement", href: "/admin/events/new", icon: CalendarPlus },
+  { key: "users", label: "Gérer les utilisateurs", description: "Voir et modifier tous les comptes", href: "/admin/users", icon: Users },
+  { key: "reports", label: "Voir les rapports", description: "Signalements en cours", href: "/admin/reports", icon: FileBarChart },
+] as const;
 
-export function QuickActions() {
+export function QuickActions({ pendingUsers = 0, className }: { pendingUsers?: number; className?: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
+    <motion.section
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
-      className="bg-white rounded-2xl border border-[#E8E5E0] p-4 sm:p-6"
+      transition={{ duration: 0.25, delay: 0.15, ease: "easeOut" }}
+      aria-labelledby="quick-actions-title"
+      className={cn("bg-white rounded-2xl border border-[#E8E5E0] p-5 sm:p-6", className)}
     >
-      <h2
-        className="text-base sm:text-lg font-semibold text-[#2F2F2F] tracking-tight mb-4 sm:mb-5"
-        style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
-      >
+      <h2 id="quick-actions-title" className="text-[18px] font-semibold text-[#1F2A23] tracking-tight mb-4" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
         Actions rapides
       </h2>
-      <div className="space-y-2.5 sm:space-y-3">
-        {ACTIONS.map((action) => (
-          <Link
-            key={action.label}
-            href={action.href}
-            className="group flex items-center gap-3 sm:gap-3.5 p-3 sm:p-3.5 rounded-xl border border-[#E8E5E0] hover:border-[#486B46]/30 hover:bg-gradient-to-r hover:from-[#486B46]/[0.02] hover:to-[#6E8B63]/[0.04] transition-all duration-300 hover:-translate-y-0.5 hover:shadow-[0_4px_16px_rgba(72,107,70,0.06)]"
-          >
-            <div
-              className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl ${action.bg} flex items-center justify-center flex-shrink-0`}
-            >
-              <action.icon
-                className={`w-[16px] h-[16px] sm:w-[18px] sm:h-[18px] ${action.color}`}
-              />
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="text-[12px] sm:text-[13px] font-semibold text-[#2F2F2F]">
-                {action.label}
-              </p>
-              <p className="text-[10px] sm:text-[11px] text-[#9CA3AF] font-medium">
-                {action.description}
-              </p>
-            </div>
-            <ArrowUpRight className="w-4 h-4 text-[#D1D5DB] group-hover:text-[#486B46] transition-colors flex-shrink-0" />
-          </Link>
-        ))}
-      </div>
-    </motion.div>
+      <ul className="space-y-2">
+        {ACTIONS.map((action) => {
+          // Les demandes en attente réclament l'attention : action mise en avant.
+          const urgent = action.key === "pending" && pendingUsers > 0;
+          const Icon = action.icon;
+          return (
+            <li key={action.key}>
+              <Link
+                href={action.href}
+                className={cn(
+                  "group flex items-center gap-3 rounded-xl border px-3 py-3 transition-colors duration-150",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                  urgent
+                    ? "border-[#F59E0B]/40 bg-[#FFF8EC] hover:bg-[#FFF2DB]"
+                    : "border-[#EEEBE6] hover:border-primary/30 hover:bg-[#F7F9F6]"
+                )}
+              >
+                <span className={cn("w-9 h-9 rounded-lg flex items-center justify-center shrink-0",
+                  urgent ? "bg-[#F59E0B]/15 text-[#9A5A06]" : "bg-primary/[0.08] text-primary")}>
+                  <Icon className="w-[18px] h-[18px]" aria-hidden="true" />
+                </span>
+                <span className="flex-1 min-w-0">
+                  <span className="flex items-center gap-2">
+                    <span className="text-[14px] font-semibold text-[#1F2A23]">{action.label}</span>
+                    {urgent && (
+                      <span className="rounded-full bg-[#F59E0B] px-1.5 min-w-[20px] h-5 inline-flex items-center justify-center text-[11px] font-bold text-white tabular-nums">
+                        {pendingUsers > 99 ? "99+" : pendingUsers}
+                      </span>
+                    )}
+                  </span>
+                  <span className="block text-[12px] text-[#5F6B63] mt-0.5">
+                    {urgent ? `${pendingUsers} demande${pendingUsers > 1 ? "s" : ""} à examiner` : action.description}
+                  </span>
+                </span>
+                <ChevronRight className="w-4 h-4 shrink-0 text-[#9AA39D] transition-transform duration-150 group-hover:translate-x-0.5 group-hover:text-primary" aria-hidden="true" />
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </motion.section>
   );
 }

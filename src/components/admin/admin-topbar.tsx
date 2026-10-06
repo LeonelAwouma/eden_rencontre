@@ -126,11 +126,12 @@ export function AdminTopbar({ adminName = "Administrateur" }: { adminName?: stri
 
   const iconButton =
     "w-9 h-9 rounded-lg bg-card border border-border flex items-center justify-center " +
-    "text-muted-foreground hover:text-foreground hover:border-primary/40 transition-colors active:scale-95";
+    "text-[#56615A] hover:text-foreground hover:border-primary/40 transition-colors duration-150 active:scale-95 " +
+    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40";
 
   return (
-    <header className="sticky top-0 z-30 bg-background/85 backdrop-blur-md border-b border-border">
-      <div className="flex items-center gap-3 px-3 sm:px-4 md:px-6 lg:px-8 h-14 sm:h-16">
+    <header className="sticky top-0 z-30 bg-background/90 backdrop-blur-md border-b border-[#ECE8E1]">
+      <div className="flex items-center gap-3 px-4 sm:px-6 lg:px-8 h-14 sm:h-16">
         <button
           onClick={() => setSidebarOpen(true)}
           className={cn(iconButton, "lg:hidden shrink-0")}
@@ -149,7 +150,8 @@ export function AdminTopbar({ adminName = "Administrateur" }: { adminName?: stri
               if (next) fetchNotifications({ showLoading: true });
             }}
             className={cn(iconButton, "relative", isOpen && "border-primary text-foreground")}
-            aria-label="Notifications"
+            aria-label={unreadCount > 0 ? `Notifications (${unreadCount} non lues)` : "Notifications"}
+            aria-expanded={isOpen}
           >
             <Bell className="w-4 h-4" />
             {unreadCount > 0 && (
@@ -238,11 +240,15 @@ export function AdminTopbar({ adminName = "Administrateur" }: { adminName?: stri
           </AnimatePresence>
         </div>
 
-        <div
-          className="hidden sm:flex w-9 h-9 rounded-full bg-gradient-to-br from-primary to-deep-eden items-center justify-center text-primary-foreground text-xs font-bold"
-          title={adminName}
-        >
-          {adminName.charAt(0).toUpperCase()}
+        {/* Profil administrateur */}
+        <div className="hidden sm:flex items-center gap-2.5 pl-3 ml-1 border-l border-[#ECE8E1]" title={adminName}>
+          <span className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[13px] font-bold">
+            {adminName.charAt(0).toUpperCase()}
+          </span>
+          <span className="hidden md:block leading-tight">
+            <span className="block text-[13px] font-semibold text-[#1F2A23]">{adminName}</span>
+            <span className="block text-[12px] text-[#5F6B63]">Super Admin</span>
+          </span>
         </div>
       </div>
     </header>

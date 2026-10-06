@@ -1,13 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
+import Link from "next/link";
 import {
-  UserCheck,
-  UserMinus,
-  CalendarPlus,
-  LogIn,
-  Trash2,
+  UserCheck, UserMinus, UserX, CalendarPlus, CalendarCog, LogIn, Trash2, KeyRound, Mail, MessagesSquare,
+  BookOpen, Send, ShieldCheck, Wrench, Flag, Activity, type LucideIcon,
 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface AuditEntry {
   id: string;
@@ -15,141 +14,115 @@ interface AuditEntry {
   action: string;
   target_type: string;
   target_id: string;
+  target_label?: string | null;
   details: Record<string, unknown>;
   created_at: string;
 }
 
-const ACTION_CONFIG: Record<
-  string,
-  { label: string; icon: typeof UserCheck; color: string; bg: string }
-> = {
-  admin_login: {
-    label: "Connexion admin",
-    icon: LogIn,
-    color: "text-[#4F7DF3]",
-    bg: "bg-[#4F7DF3]/10",
-  },
-  user_approved: {
-    label: "Approbation utilisateur",
-    icon: UserCheck,
-    color: "text-[#486B46]",
-    bg: "bg-[#486B46]/10",
-  },
-  user_rejected: {
-    label: "Rejet utilisateur",
-    icon: UserMinus,
-    color: "text-[#F56565]",
-    bg: "bg-[#F56565]/10",
-  },
-  user_suspended: {
-    label: "Suspension utilisateur",
-    icon: UserMinus,
-    color: "text-[#F56565]",
-    bg: "bg-[#F56565]/10",
-  },
-  event_created: {
-    label: "Création événement",
-    icon: CalendarPlus,
-    color: "text-[#8B5CF6]",
-    bg: "bg-[#8B5CF6]/10",
-  },
-  event_updated: {
-    label: "Modification événement",
-    icon: CalendarPlus,
-    color: "text-[#486B46]",
-    bg: "bg-[#486B46]/10",
-  },
-  event_deleted: {
-    label: "Suppression événement",
-    icon: Trash2,
-    color: "text-[#F56565]",
-    bg: "bg-[#F56565]/10",
-  },
+type Tone = "green" | "red" | "blue" | "neutral";
+
+const TONES: Record<Tone, string> = {
+  green: "bg-primary/[0.08] text-primary ring-primary/15",
+  red: "bg-[#D64545]/[0.08] text-[#B83333] ring-[#D64545]/15",
+  blue: "bg-[#3B6FD9]/[0.08] text-[#2F5DBF] ring-[#3B6FD9]/15",
+  neutral: "bg-[#F3F1EC] text-[#56615A] ring-[#E8E5E0]",
 };
 
-interface ActivityTimelineProps {
-  entries: AuditEntry[];
+const ACTION_CONFIG: Record<string, { label: string; icon: LucideIcon; tone: Tone }> = {
+  admin_login: { label: "Connexion admin", icon: LogIn, tone: "blue" },
+  admin_password_changed: { label: "Mot de passe admin modifié", icon: KeyRound, tone: "blue" },
+  user_approved: { label: "Utilisateur approuvé", icon: UserCheck, tone: "green" },
+  user_rejected: { label: "Utilisateur rejeté", icon: UserMinus, tone: "red" },
+  user_suspended: { label: "Utilisateur suspendu", icon: UserMinus, tone: "red" },
+  user_deleted: { label: "Compte supprimé", icon: UserX, tone: "red" },
+  selfie_reviewed: { label: "Selfie vérifié", icon: ShieldCheck, tone: "green" },
+  account_repaired: { label: "Compte réparé", icon: Wrench, tone: "neutral" },
+  send_message_to_user: { label: "Message envoyé à un membre", icon: Send, tone: "blue" },
+  approval_emails_resent: { label: "E-mails d'approbation renvoyés", icon: Mail, tone: "blue" },
+  profile_reminders_sent: { label: "Rappels de profil envoyés", icon: Mail, tone: "blue" },
+  event_created: { label: "Événement créé", icon: CalendarPlus, tone: "green" },
+  event_updated: { label: "Événement modifié", icon: CalendarCog, tone: "neutral" },
+  event_deleted: { label: "Événement supprimé", icon: Trash2, tone: "red" },
+  blog_post_created: { label: "Article de blog créé", icon: BookOpen, tone: "green" },
+  blog_newsletter_sent: { label: "Newsletter envoyée", icon: Mail, tone: "blue" },
+  forum_message_sent: { label: "Message de l'équipe (forum)", icon: MessagesSquare, tone: "blue" },
+  forum_message_deleted: { label: "Message du forum supprimé", icon: Trash2, tone: "red" },
+  forum_member_muted: { label: "Membre mis en sourdine", icon: UserMinus, tone: "red" },
+  forum_member_unmuted: { label: "Sourdine levée", icon: UserCheck, tone: "green" },
+  accessibility_review_flagged: { label: "Avis d'accessibilité signalé", icon: Flag, tone: "red" },
+  accessibility_review_deleted: { label: "Avis d'accessibilité supprimé", icon: Trash2, tone: "red" },
+};
+
+function describe(action: string) {
+  return ACTION_CONFIG[action] || { label: action.replace(/_/g, " ").replace(/^./, (c) => c.toUpperCase()), icon: Activity, tone: "neutral" as Tone };
 }
 
-export function ActivityTimeline({ entries }: ActivityTimelineProps) {
+function formatWhen(iso: string) {
+  const d = new Date(iso);
+  const today = new Date();
+  const time = d.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+  if (d.toDateString() === today.toDateString()) return `Aujourd'hui, ${time}`;
+  const yesterday = new Date(today); yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return `Hier, ${time}`;
+  return `${d.toLocaleDateString("fr-FR", { day: "numeric", month: "short" })}, ${time}`;
+}
+
+export function ActivityTimeline({ entries, className }: { entries: AuditEntry[]; className?: string }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 16 }}
+    <motion.section
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay: 0.55, ease: "easeOut" }}
-      className="bg-white rounded-2xl border border-[#E8E5E0] overflow-hidden"
+      transition={{ duration: 0.25, delay: 0.25, ease: "easeOut" }}
+      aria-labelledby="activity-title"
+      className={cn("bg-white rounded-2xl border border-[#E8E5E0] overflow-hidden flex flex-col min-w-0", className)}
     >
-      <div className="px-4 sm:px-6 py-4 sm:py-5 border-b border-[#F3F4F6]">
-        <h2
-          className="text-base sm:text-lg font-semibold text-[#2F2F2F] tracking-tight"
-          style={{
-            fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif",
-          }}
-        >
-          Journal d'activité
+      <div className="px-5 sm:px-6 py-4 border-b border-[#F1EEE9]">
+        <h2 id="activity-title" className="text-[18px] font-semibold text-[#1F2A23] tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
+          Activité récente
         </h2>
-        <p className="text-[11px] sm:text-[12px] text-[#9CA3AF] mt-0.5 font-medium">
-          Actions récentes sur la plateforme
-        </p>
+        <p className="text-[13px] text-[#5F6B63] mt-0.5">Actions de l&apos;équipe sur la plateforme</p>
       </div>
 
       {entries.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-10 sm:py-12 px-6">
-          <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-2xl bg-[#F8F5F2] flex items-center justify-center mb-3">
-            <LogIn className="w-5 h-5 sm:w-6 sm:h-6 text-[#D1D5DB]" />
+        <div className="flex flex-col items-center justify-center py-12 px-6 text-center">
+          <div className="w-12 h-12 rounded-2xl bg-[#F5F2EC] flex items-center justify-center mb-3">
+            <Activity className="w-5 h-5 text-[#6B746E]" aria-hidden="true" />
           </div>
-          <p className="text-[13px] sm:text-[14px] font-medium text-[#777777]">
-            Aucune activité récente
-          </p>
-          <p className="text-[11px] sm:text-[12px] text-[#9CA3AF] mt-1">
-            Les actions seront enregistrées ici
-          </p>
+          <p className="text-[14px] font-medium text-[#3A443E]">Aucune activité récente</p>
+          <p className="text-[13px] text-[#5F6B63] mt-1">Les actions seront enregistrées ici</p>
         </div>
       ) : (
-        <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-0 max-h-[320px] sm:max-h-[360px] overflow-y-auto custom-scrollbar">
+        <ol className="px-5 sm:px-6 py-4 max-h-[420px] overflow-y-auto custom-scrollbar">
           {entries.map((entry, i) => {
-            const config = ACTION_CONFIG[entry.action] || {
-              label: entry.action,
-              icon: LogIn,
-              color: "text-[#777777]",
-              bg: "bg-[#F3F4F6]",
-            };
+            const config = describe(entry.action);
             const Icon = config.icon;
-
+            const last = i === entries.length - 1;
             return (
-              <motion.div
-                key={entry.id}
-                initial={{ opacity: 0, x: -8 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.3, delay: 0.6 + i * 0.05 }}
-                className="eden-timeline-connector flex items-start gap-3 py-3 sm:py-3.5"
-              >
-                <div
-                  className={`w-8 h-8 sm:w-9 sm:h-9 rounded-xl ${config.bg} flex items-center justify-center flex-shrink-0 z-10 bg-white`}
-                >
-                  <Icon
-                    className={`w-[14px] h-[14px] sm:w-[16px] sm:h-[16px] ${config.color}`}
-                  />
-                </div>
-                <div className="flex-1 min-w-0 pt-0.5 sm:pt-1">
-                  <p className="text-[12px] sm:text-[13px] font-medium text-[#2F2F2F]">
-                    {config.label}
-                  </p>
-                  <p className="text-[10px] sm:text-[11px] text-[#9CA3AF] mt-0.5 font-medium">
-                    {entry.admin_email} ·{" "}
-                    {new Date(entry.created_at).toLocaleString("fr-FR", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
+              <li key={entry.id} className="relative flex gap-3 pb-5 last:pb-0">
+                {/* Ligne verticale reliant les événements */}
+                {!last && <span className="absolute left-[15px] top-8 bottom-0 w-px bg-[#E8E5E0]" aria-hidden="true" />}
+                <span className={cn("relative z-10 w-8 h-8 rounded-full flex items-center justify-center shrink-0 ring-1", TONES[config.tone])}>
+                  <Icon className="w-4 h-4" aria-hidden="true" />
+                </span>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <p className="text-[14px] font-medium text-[#1F2A23] leading-snug">{config.label}</p>
+                  {entry.target_label && (
+                    <p className="text-[13px] text-[#3A443E] truncate">
+                      {entry.target_id ? (
+                        <Link href={`/admin/users/${entry.target_id}`} className="hover:text-primary hover:underline">{entry.target_label}</Link>
+                      ) : entry.target_label}
+                    </p>
+                  )}
+                  <p className="text-[12px] text-[#5F6B63] mt-0.5 truncate">
+                    <time dateTime={entry.created_at}>{formatWhen(entry.created_at)}</time>
+                    {entry.admin_email && <> · {entry.admin_email}</>}
                   </p>
                 </div>
-              </motion.div>
+              </li>
             );
           })}
-        </div>
+        </ol>
       )}
-    </motion.div>
+    </motion.section>
   );
 }

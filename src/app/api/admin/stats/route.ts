@@ -44,7 +44,7 @@ export async function GET(_request: NextRequest) {
       db.from("profiles").select("*", { count: "exact", head: true }).lt("created_at", cutoff30dIso),
       db.from("profiles").select("*", { count: "exact", head: true }).eq("status", "approved").lt("created_at", cutoff30dIso),
       db.from("profiles").select("*", { count: "exact", head: true }).eq("status", "suspended").lt("created_at", cutoff30dIso),
-      db.from("profiles").select("id, name, email, status, created_at, updated_at, city, country, avatar_url").order("created_at", { ascending: false }).limit(5),
+      db.from("profiles").select("id, name, pseudo, email, status, created_at, updated_at, city, country, avatar_url").order("created_at", { ascending: false }).limit(6),
       db.from("admin_audit_log").select("*").order("created_at", { ascending: false }).limit(10),
       db.from("profiles").select("created_at").gte("created_at", cutoff30dIso),
     ]);
@@ -67,6 +67,19 @@ export async function GET(_request: NextRequest) {
       });
     }
 
+    // Journal d'activité : nom de l'utilisateur concerné, pour la timeline.
+    const targetIds = [...new Set((recentAudit || [])
+      .filter((a) => a.target_type === "user" && a.target_id).map((a) => a.target_id as string))];
+    const targetNames = new Map<string, string>();
+    if (targetIds.length) {
+      const { data: targets } = await db.from("profiles").select("id, name, pseudo, email").in("id", targetIds);
+      for (const t of targets || []) targetNames.set(t.id, t.pseudo || t.name || t.email || "Membre");
+    }
+    const auditWithTargets = (recentAudit || []).map((a) => ({
+      ...a,
+      target_label: a.target_type === "user" && a.target_id ? targetNames.get(a.target_id) ?? null : null,
+    }));
+
     return NextResponse.json({
       stats: {
         totalUsers: totalUsers || 0,
@@ -84,7 +97,7 @@ export async function GET(_request: NextRequest) {
       },
       dailyRegistrations,
       recentUsers: recentUsers || [],
-      recentAudit: recentAudit || [],
+      recentAudit: auditWithTargets,
     });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {

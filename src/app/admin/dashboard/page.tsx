@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Users, Clock, ShieldCheck, ShieldOff, CalendarDays } from "lucide-react";
+import { Users, Clock, ShieldCheck, ShieldOff } from "lucide-react";
+import { PageHeader } from "@/components/admin/page-header";
 import { KPICard } from "@/components/admin/kpi-card";
 import { UsersChart } from "@/components/admin/users-chart";
 import { QuickActions } from "@/components/admin/quick-actions";
@@ -22,6 +23,7 @@ interface Stats {
 interface RecentUser {
   id: string;
   name: string;
+  pseudo?: string | null;
   email: string;
   status: string;
   created_at: string;
@@ -36,6 +38,7 @@ interface AuditEntry {
   action: string;
   target_type: string;
   target_id: string;
+  target_label?: string | null;
   details: Record<string, unknown>;
   created_at: string;
 }
@@ -46,13 +49,14 @@ interface Growth {
   suspendedUsers: number | null;
 }
 
+const HEADER = { title: "Tableau de bord", subtitle: "Vue d’ensemble de votre plateforme" };
+
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
   const [growth, setGrowth] = useState<Growth>({ totalUsers: null, approvedUsers: null, suspendedUsers: null });
   const [dailyRegistrations, setDailyRegistrations] = useState<{ date: string; count: number }[]>([]);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     fetch("/api/admin/stats")
@@ -69,94 +73,56 @@ export default function DashboardPage() {
 
   if (!stats) {
     return (
-      <div className="space-y-6">
-        {/* Skeleton loading */}
-        <div className="h-16 bg-white rounded-2xl animate-pulse" />
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {[...Array(4)].map((_, i) => (
-            <div key={i} className="h-36 bg-white rounded-[20px] animate-pulse" />
-          ))}
+      <div aria-busy="true" aria-label="Chargement du tableau de bord">
+        <PageHeader {...HEADER} />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-[148px] bg-white border border-[#E8E5E0] rounded-2xl animate-pulse" />)}
         </div>
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="h-80 bg-white rounded-[20px] animate-pulse lg:col-span-2" />
-          <div className="h-80 bg-white rounded-[20px] animate-pulse" />
+        <div className="grid grid-cols-12 gap-4 lg:gap-6">
+          <div className="col-span-12 lg:col-span-8 h-[340px] bg-white border border-[#E8E5E0] rounded-2xl animate-pulse" />
+          <div className="col-span-12 lg:col-span-4 h-[340px] bg-white border border-[#E8E5E0] rounded-2xl animate-pulse" />
         </div>
       </div>
     );
   }
 
-  // Real 30-day growth from the API — undefined when there's no 30-day-old
-  // baseline to compare against (e.g. a brand-new platform), in which case
-  // the badge is simply omitted rather than showing a fabricated number.
+  // Croissance réelle sur 30 jours ; sans base de comparaison, le badge est omis.
   const trendFrom = (pct: number | null) =>
-    pct === null ? undefined : { value: `${pct > 0 ? "+" : pct < 0 ? "−" : ""}${Math.abs(pct)}%`, positive: pct >= 0 };
+    pct === null ? undefined : { value: `${pct > 0 ? "+" : pct < 0 ? "−" : ""}${Math.abs(pct)} % sur 30 j`, positive: pct >= 0 };
+  const shareOf = (n: number) => (stats.totalUsers > 0 ? Math.round((n / stats.totalUsers) * 100) : 0);
 
   const KPI_CARDS = [
-    {
-      title: "Utilisateurs",
-      value: stats.totalUsers,
-      icon: Users,
-      accentColor: "blue" as const,
-      trend: trendFrom(growth.totalUsers),
-    },
-    {
-      title: "En attente de vérification",
-      value: stats.pendingUsers,
-      icon: Clock,
-      accentColor: "orange" as const,
-      status: "À réviser",
-    },
-    {
-      title: "Comptes approuvés",
-      value: stats.approvedUsers,
-      icon: ShieldCheck,
-      accentColor: "green" as const,
-      trend: trendFrom(growth.approvedUsers),
-    },
-    {
-      title: "Comptes suspendus",
-      value: stats.suspendedUsers,
-      icon: ShieldOff,
-      accentColor: "red" as const,
-      trend: trendFrom(growth.suspendedUsers),
-    },
+    { title: "Utilisateurs", value: stats.totalUsers, icon: Users, accentColor: "blue", trend: trendFrom(growth.totalUsers), hint: trendFrom(growth.totalUsers) ? undefined : "Tous comptes confondus" },
+    { title: "En attente de vérification", value: stats.pendingUsers, icon: Clock, accentColor: "orange", status: stats.pendingUsers > 0 ? "À réviser" : undefined, hint: stats.pendingUsers > 0 ? undefined : "Rien à traiter" },
+    { title: "Comptes approuvés", value: stats.approvedUsers, icon: ShieldCheck, accentColor: "green", trend: trendFrom(growth.approvedUsers), hint: `${shareOf(stats.approvedUsers)} % des inscrits` },
+    // Pour les suspensions, une hausse n'est pas une bonne nouvelle : la couleur s'inverse.
+    { title: "Comptes suspendus", value: stats.suspendedUsers, icon: ShieldOff, accentColor: "red",
+      trend: (() => { const t = trendFrom(growth.suspendedUsers); return t && { ...t, positive: (growth.suspendedUsers ?? 0) <= 0 }; })(),
+      hint: `${shareOf(stats.suspendedUsers)} % des inscrits` },
   ];
 
   return (
     <>
-      
+      <PageHeader {...HEADER} />
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-        {KPI_CARDS.map((card, i) => (
-          <KPICard key={card.title} {...card} index={i} />
-        ))}
+      {/* KPI : 4 sur une ligne (desktop), 2 × 2 (tablette), 1 par ligne (mobile) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
+        {KPI_CARDS.map((card, i) => <KPICard key={card.title} {...card} index={i} />)}
       </div>
 
-      {/* Chart + Quick Actions */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <UsersChart data={dailyRegistrations} />
-        <QuickActions />
-      </div>
-
-      {/* Recent Users + Activity Timeline */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="lg:col-span-2">
-          <RecentUsers users={recentUsers} />
-        </div>
-        <ActivityTimeline entries={auditLog} />
-      </div>
-
-      {/* Meet Stats */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 mb-6">
-        <div className="lg:col-span-1">
-          <MeetStats
-            publishedEvents={stats.publishedEvents}
-            totalEvents={stats.totalEvents}
-            totalUsers={stats.totalUsers}
-            approvedUsers={stats.approvedUsers}
-          />
-        </div>
+      {/* Grille 12 colonnes */}
+      <div className="grid grid-cols-12 gap-4 lg:gap-6">
+        <UsersChart data={dailyRegistrations} className="col-span-12 lg:col-span-8" />
+        <QuickActions pendingUsers={stats.pendingUsers} className="col-span-12 lg:col-span-4" />
+        <RecentUsers users={recentUsers} className="col-span-12 lg:col-span-8" />
+        <ActivityTimeline entries={auditLog} className="col-span-12 lg:col-span-4" />
+        <MeetStats
+          className="col-span-12"
+          publishedEvents={stats.publishedEvents}
+          totalEvents={stats.totalEvents}
+          totalUsers={stats.totalUsers}
+          approvedUsers={stats.approvedUsers}
+        />
       </div>
     </>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { LucideIcon } from "lucide-react";
+import { LucideIcon, TrendingUp, TrendingDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface KPICardProps {
@@ -11,106 +11,61 @@ interface KPICardProps {
   accentColor: string;
   trend?: { value: string; positive?: boolean };
   status?: string;
+  /** Information secondaire sous la valeur (ex. « 72 % des inscrits »). */
+  hint?: string;
   index?: number;
 }
 
-const accentConfig: Record<
-  string,
-  { border: string; iconText: string; iconBg: string; trendBg: string; trendText: string }
-> = {
-  blue: {
-    border: "border-l-[#4F7DF3]",
-    iconText: "text-[#4F7DF3]",
-    iconBg: "bg-[#4F7DF3]/8",
-    trendBg: "bg-[#4F7DF3]/8",
-    trendText: "text-[#4F7DF3]",
-  },
-  orange: {
-    border: "border-l-[#F59E0B]",
-    iconText: "text-[#F59E0B]",
-    iconBg: "bg-[#F59E0B]/8",
-    trendBg: "bg-[#F59E0B]/8",
-    trendText: "text-[#F59E0B]",
-  },
-  green: {
-    border: "border-l-[#486B46]",
-    iconText: "text-primary",
-    iconBg: "bg-primary/8",
-    trendBg: "bg-primary/8",
-    trendText: "text-primary",
-  },
-  red: {
-    border: "border-l-[#F56565]",
-    iconText: "text-destructive",
-    iconBg: "bg-destructive/8",
-    trendBg: "bg-destructive/8",
-    trendText: "text-destructive",
-  },
+// Accents discrets : la couleur ne touche que la pastille de l'icône et le badge.
+const accentConfig: Record<string, { iconText: string; iconBg: string; badge: string }> = {
+  blue: { iconText: "text-[#3B6FD9]", iconBg: "bg-[#3B6FD9]/[0.08]", badge: "bg-[#3B6FD9]/[0.08] text-[#2F5DBF]" },
+  orange: { iconText: "text-[#C9730A]", iconBg: "bg-[#F59E0B]/[0.10]", badge: "bg-[#F59E0B]/[0.12] text-[#9A5A06]" },
+  green: { iconText: "text-primary", iconBg: "bg-primary/[0.08]", badge: "bg-primary/[0.08] text-primary" },
+  red: { iconText: "text-[#D64545]", iconBg: "bg-[#D64545]/[0.08]", badge: "bg-[#D64545]/[0.08] text-[#B83333]" },
 };
 
-export function KPICard({
-  title,
-  value,
-  icon: Icon,
-  accentColor,
-  trend,
-  status,
-  index = 0,
-}: KPICardProps) {
+export function KPICard({ title, value, icon: Icon, accentColor, trend, status, hint, index = 0 }: KPICardProps) {
   const config = accentConfig[accentColor] || accentConfig.green;
+  const TrendIcon = trend?.positive === false ? TrendingDown : TrendingUp;
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 16 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, delay: index * 0.08, ease: "easeOut" }}
-      className={cn(
-        "bg-white rounded-2xl border border-border p-4 sm:p-5 border-l-[3px] transition-all duration-300",
-        "hover:border-border hover:shadow-[0_4px_24px_rgba(72,107,70,0.08)] hover:-translate-y-0.5",
-        config.border
-      )}
+      transition={{ duration: 0.25, delay: index * 0.05, ease: "easeOut" }}
+      className="bg-white rounded-2xl border border-[#E8E5E0] p-5 transition-[border-color,box-shadow] duration-200 hover:border-[#D9D4CC] hover:shadow-[0_2px_12px_rgba(31,51,40,0.05)]"
     >
-      <div className="flex items-start justify-between mb-3 sm:mb-4">
-        <div
-          className={cn(
-            "w-10 h-10 sm:w-11 sm:h-11 rounded-xl flex items-center justify-center",
-            config.iconBg
-          )}
-        >
-          <Icon className={cn("w-5 h-5", config.iconText)} />
+      <div className="flex items-center gap-3">
+        <div className={cn("w-9 h-9 rounded-xl flex items-center justify-center shrink-0", config.iconBg)}>
+          <Icon className={cn("w-[18px] h-[18px]", config.iconText)} aria-hidden="true" />
         </div>
-        {trend && (
-          <span
-            className={cn(
-              "text-[10px] sm:text-[11px] font-bold px-2 py-0.5 rounded-full",
-              trend.positive !== false ? config.trendBg : "bg-destructive/8",
-              trend.positive !== false ? config.trendText : "text-destructive"
-            )}
-          >
-            {trend.value}
-          </span>
-        )}
-        {status && (
-          <span
-            className={cn(
-              "text-[10px] sm:text-[11px] font-semibold px-2 py-0.5 rounded-full",
-              config.trendBg,
-              config.trendText
-            )}
-          >
-            {status}
-          </span>
-        )}
+        <p className="text-[13px] font-medium text-[#56615A] leading-snug min-w-0">{title}</p>
       </div>
+
       <p
-        className="text-[28px] sm:text-[36px] md:text-[42px] font-bold text-foreground leading-none tracking-tight"
+        className="mt-4 text-[32px] sm:text-[36px] font-bold text-[#1F2A23] leading-none tracking-tight tabular-nums"
         style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}
       >
         {value.toLocaleString("fr-FR")}
       </p>
-      <p className="text-[12px] sm:text-[13px] text-muted-foreground font-medium mt-1.5">
-        {title}
-      </p>
+
+      {(trend || status || hint) && (
+        <div className="mt-3 flex flex-wrap items-center gap-x-2 gap-y-1 min-h-[22px]">
+          {trend && (
+            <span
+              className={cn(
+                "inline-flex items-center gap-1 text-[12px] font-semibold px-2 py-0.5 rounded-full",
+                trend.positive === false ? "bg-[#D64545]/[0.08] text-[#B83333]" : "bg-primary/[0.08] text-primary"
+              )}
+            >
+              <TrendIcon className="w-3 h-3" aria-hidden="true" />
+              {trend.value}
+            </span>
+          )}
+          {status && <span className={cn("text-[12px] font-semibold px-2 py-0.5 rounded-full", config.badge)}>{status}</span>}
+          {hint && <span className="text-[12px] text-[#5F6B63]">{hint}</span>}
+        </div>
+      )}
     </motion.div>
   );
 }

@@ -38,11 +38,11 @@ export function PageHeader({
 
       <div className="flex flex-wrap items-end justify-between gap-x-6 gap-y-3">
         <div className="min-w-0">
-          <h1 className="font-headline text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">
+          <h1 className="font-headline text-[28px] sm:text-[30px] font-bold text-foreground tracking-tight leading-tight">
             {title}
           </h1>
           {subtitle && (
-            <p className="text-sm text-muted-foreground mt-1">{subtitle}</p>
+            <p className="text-[14px] text-[#56615A] mt-1">{subtitle}</p>
           )}
         </div>
         {actions && <div className="flex items-center gap-2 shrink-0">{actions}</div>}
