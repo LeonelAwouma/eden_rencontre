@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Home, Search, Users, Heart, MessageCircle, Crown, Zap, Star,
+  Home, Search, Users, Heart, MessageCircle, Crown, Zap, Star, LifeBuoy, RefreshCcw, Sprout,
   MapPin, Briefcase, X, ChevronRight, Eye, BookOpen, ArrowUpRight,
   Quote, ScrollText, Menu, Check, Clock, Bell, Lock, Settings,
   Pencil, Filter, ShieldCheck, CheckCircle2, LogOut, Camera,
@@ -54,7 +54,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Monogram, Flourish, VitrailPattern } from "@/components/ornaments";
 import { AvatarPicker } from "@/components/avatar-picker";
 import { ImposingFloralCorners, ImposingFloralSide } from "@/components/garden";
-import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
+import { DashboardSidebar, SIDEBAR_OFFSET_CLASS } from "@/components/dashboard/dashboard-sidebar";
+import { PricingCard } from "@/components/pricing/pricing-card";
+import { SUPPORT_WHATSAPP_URL } from "@/lib/contact";
 import { ChatGuide } from "@/components/dashboard/chat-guide";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
@@ -1182,67 +1184,83 @@ export default function DashboardPage() {
       />
 
       {/* ══ MAIN CONTENT (Layers 2 + 3) ══ */}
-      <div className="lg:pl-[280px] pb-[calc(76px+env(safe-area-inset-bottom))] lg:pb-0">
-        {/* Topbar */}
-        <header className="sticky top-0 z-30 backdrop-blur-xl h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8"
-          style={{ background: "rgba(250,249,246,0.92)", borderBottom: "1px solid #E8E5E0" }}>
-          {/* Mobile logo */}
-          <Link href="/dashboard" className="flex items-center gap-2 lg:hidden">
-            <Monogram className="w-8 h-7 text-primary shrink-0" />
-            <span className="font-headline text-lg font-bold text-foreground">Garden <span>of Alliance</span></span>
-          </Link>
-          {/* Desktop page title */}
-          <h1 className="hidden lg:block font-headline text-xl font-bold" style={{ color: "#2F2F2F" }}>{tabLabel(activeTab)}</h1>
-          <div className="flex items-center gap-2">
-            <button onClick={() => setActiveTab("Premium")} className="hidden sm:flex items-center gap-1.5 h-9 px-3.5 rounded-xl text-xs font-bold transition-colors"
-              style={{ background: "#EEF5EC", color: "#486B46", border: "1px solid #C6D4C0" }}>
-              <Zap className="w-3.5 h-3.5" style={{ fill: "#C6A15B", color: "#C6A15B" }} /> {t("dashboard.boost")}
-            </button>
-            <button onClick={() => setActiveTab("Notifications")} title={t("dashboardTabs.notifications")}
-              className="relative w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
-              style={{ color: "#777777" }}>
-              <Bell className="w-5 h-5" />
-              {notifCount > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 text-[9px] font-black rounded-full flex items-center justify-center"
-                  style={{ background: "#486B46", color: "#FFFFFF" }}>{notifCount}</span>
+      <div className={cn(SIDEBAR_OFFSET_CLASS, "pb-[calc(76px+env(safe-area-inset-bottom))] lg:pb-0")}>
+        {/* Topbar : titre de la page à gauche, actions discrètes à droite */}
+        <header className="sticky top-0 z-30 h-16 border-b border-[#E6EAE5] bg-[#FAF9F6]/90 backdrop-blur-xl">
+          <div className="h-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
+            {/* Mobile : menu + logo */}
+            <div className="flex items-center gap-2 lg:hidden min-w-0">
+              <button type="button" onClick={() => setMobileMenuOpen(true)} aria-label={t("dashboard.openMenu")}
+                className="w-10 h-10 -ml-2 rounded-lg flex items-center justify-center text-[#1C241F] hover:bg-[#F0F4EF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45">
+                <Menu className="w-5 h-5" />
+              </button>
+              <Link href="/dashboard" className="flex items-center gap-2 min-w-0">
+                <Monogram className="w-8 h-7 text-[#1F4D3A] shrink-0" />
+                <span className="font-headline text-[19px] font-bold text-[#1C241F] truncate">Garden <span className="italic font-medium text-[#3F704D]">of Alliance</span></span>
+              </Link>
+            </div>
+            {/* Desktop : titre de la page */}
+            <h1 className="hidden lg:block font-headline text-[26px] font-bold leading-none text-[#1C241F]">{tabLabel(activeTab)}</h1>
+
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              {/* Boost : action discrète, jamais en concurrence avec l'abonnement Premium */}
+              {activeTab !== "Premium" && (
+                <button type="button" onClick={() => setActiveTab("Premium")}
+                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-3 rounded-lg text-[13px] font-semibold text-[#3F704D] hover:bg-[#F0F4EF] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45">
+                  <Zap className="w-4 h-4 text-[#C6A15B]" aria-hidden="true" /> {t("dashboard.boost")}
+                </button>
               )}
-            </button>
-            <button onClick={() => setActiveTab("Profil")} className="rounded-full">
-              <Avatar className="w-9 h-9" style={{ border: "1px solid #E8E5E0" }}>
-                <AvatarImage src={avatarSrc(myAvatar)} />
-                <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{displayInitial}</AvatarFallback>
-              </Avatar>
-            </button>
+              <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"
+                aria-label={t("dashboard.support")} title={t("dashboard.support")}
+                className="hidden sm:flex w-10 h-10 rounded-lg items-center justify-center text-[#4A564F] hover:bg-[#F0F4EF] hover:text-[#1C241F] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45">
+                <LifeBuoy className="w-5 h-5" />
+              </a>
+              <button type="button" onClick={() => setActiveTab("Notifications")}
+                aria-label={notifCount > 0 ? `${t("dashboardTabs.notifications")} (${notifCount})` : t("dashboardTabs.notifications")}
+                className={cn("relative w-10 h-10 rounded-lg flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45",
+                  activeTab === "Notifications" ? "bg-[#EEF5EE] text-[#28543C]" : "text-[#4A564F] hover:bg-[#F0F4EF] hover:text-[#1C241F]")}>
+                <Bell className="w-5 h-5" />
+                {notifCount > 0 && (
+                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center bg-[#28543C] text-white ring-2 ring-[#FAF9F6] tabular-nums">
+                    {notifCount > 9 ? "9+" : notifCount}
+                  </span>
+                )}
+              </button>
+              <button type="button" onClick={() => setActiveTab("Profil")} aria-label={t("dashboard.myAccount")}
+                className="ml-1 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45 focus-visible:ring-offset-2">
+                <Avatar className="w-9 h-9 ring-1 ring-[#E6EAE5]">
+                  <AvatarImage src={avatarSrc(myAvatar)} alt="" />
+                  <AvatarFallback className="bg-[#EEF5EE] text-[#28543C] font-semibold">{displayInitial}</AvatarFallback>
+                </Avatar>
+              </button>
+            </div>
           </div>
         </header>
 
-        {/* Mobile Menu Overlay */}
-        {mobileMenuOpen && (
-          <div className="fixed inset-0 z-[60] backdrop-blur-xl lg:hidden flex flex-col p-8 pt-24 space-y-7 animate-in fade-in duration-300 overflow-y-auto"
-            style={{ background: "rgba(250,249,246,0.98)" }}>
-            <button onClick={() => setMobileMenuOpen(false)} className="absolute top-8 right-8 text-foreground"><X className="w-10 h-10" /></button>
-            {(["Accueil", "Découvrir", "Messages", "Demandes", "Visiteurs", "Favoris", "Notifications", "Premium", "Profil"] as Tab[]).map((name) => (
-              <button key={name} onClick={() => { setActiveTab(name); setMobileMenuOpen(false); }}
-                className={cn("flex items-center gap-6 text-2xl font-headline font-bold transition-colors",
-                  activeTab === name ? "text-foreground" : "text-foreground/60")}
-                style={activeTab === name ? { color: "#486B46" } : {}}>
-                {tabLabel(name)}
-              </button>
-            ))}
-            <Link href="/dashboard/forum" onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 text-2xl font-headline font-bold text-foreground/60 transition-colors">
-              <MessagesSquare className="w-6 h-6" style={{ color: "#486B46" }} /> {t("forum.title")}
-            </Link>
-            <Link href="/dashboard/academie" onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 text-2xl font-headline font-bold text-foreground/60 transition-colors">
-              <GraduationCap className="w-6 h-6" style={{ color: "#486B46" }} /> {t("dashboard.academyTitle")}
-            </Link>
-            <Link href="/dashboard/accessibilite" onClick={() => setMobileMenuOpen(false)}
-              className="flex items-center gap-3 text-2xl font-headline font-bold text-foreground/60 transition-colors">
-              <Accessibility className="w-6 h-6" style={{ color: "#486B46" }} /> {locale === "en" ? "Accessibility" : "Accessibilité"}
-            </Link>
-          </div>
-        )}
+        {/* Tiroir de navigation mobile : même navigation que la sidebar desktop */}
+        <AnimatePresence>
+          {mobileMenuOpen && (
+            <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true" aria-label={t("dashboardSidebar.navLabel")}>
+              <motion.div className="absolute inset-0 bg-[#1C241F]/30 backdrop-blur-[2px]" onClick={() => setMobileMenuOpen(false)}
+                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} />
+              <motion.div className="absolute inset-y-0 left-0 w-[288px] max-w-[86vw] shadow-[8px_0_32px_rgba(20,40,30,0.12)]"
+                initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} transition={{ duration: 0.24, ease: "easeOut" }}>
+                <DashboardSidebar
+                  variant="drawer"
+                  onClose={() => setMobileMenuOpen(false)}
+                  activeTab={activeTab}
+                  setActiveTab={setActiveTab}
+                  displayName={displayName}
+                  displayInitial={displayInitial}
+                  myAvatar={myAvatar}
+                  displayLocation={displayLocation}
+                  totalUnread={totalUnread}
+                  incomingRequestCount={incomingRequests.length}
+                />
+              </motion.div>
+            </div>
+          )}
+        </AnimatePresence>
 
         {/* ═══════════════════════════════════════════════════ */}
         {/* THREE-LAYER CONTENT */}
@@ -1797,7 +1815,7 @@ export default function DashboardPage() {
           </div>
         ) : (
           /* ══ OTHER TABS: SINGLE COLUMN ══ */
-          <main className="px-4 sm:px-6 lg:px-8 py-5 sm:py-8 space-y-6 sm:space-y-8 max-w-5xl mx-auto w-full">
+          <main className="px-4 sm:px-6 lg:px-8 py-6 sm:py-8 space-y-6 sm:space-y-8 max-w-[1180px] mx-auto w-full">
             <AnimatePresence mode="wait">
               <motion.div key={activeTab} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -12 }} transition={{ duration: 0.2 }}>
@@ -2624,91 +2642,101 @@ export default function DashboardPage() {
           </div>
         );
 
-      case "Premium":
+      case "Premium": {
+        // Mêmes formules et mêmes prix que la page publique /tarifs (src/lib/pricing.ts).
+        const annual = billingPeriod === "annual";
+        const maxSavings = planPricing("or", "annual").savings ?? 0;
+        const plans: {
+          id: PlanId; variant: "standard" | "recommended" | "exclusive"; badge?: string; features: string[];
+          /** Ordre mobile : la formule recommandée d'abord. */
+          mobileOrder: string;
+          className?: string;
+        }[] = [
+          { id: "bronze", variant: "standard", features: [t("tarifs.bronze.feature1"), t("tarifs.bronze.feature2"), t("tarifs.bronze.feature3")], mobileOrder: "order-3 md:order-1" },
+          { id: "argent", variant: "recommended", badge: t("tarifs.argent.badge"), features: [t("tarifs.argent.feature1"), t("tarifs.argent.feature2"), t("tarifs.argent.feature3")], mobileOrder: "order-1 md:order-2" },
+          { id: "or", variant: "exclusive", features: [t("tarifs.or.feature1"), t("tarifs.or.feature2"), t("tarifs.or.feature3"), t("tarifs.or.feature4")], mobileOrder: "order-2 md:order-3",
+            // Tablette : 2 + 1, la troisième carte centrée sous les deux autres.
+            className: "md:col-span-2 md:max-w-[400px] md:mx-auto md:w-full xl:col-span-1 xl:max-w-none" },
+        ];
         return (
-          <div className="space-y-8">
-            <div className="text-center space-y-3 max-w-xl mx-auto">
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest"
-                style={{ background: "#EEF5EC", color: "#486B46", border: "1px solid #C6D4C0" }}>
-                <Crown className="w-3.5 h-3.5" style={{ color: "#C6A15B" }} /> {t("dashboard.ourPlans")}
-              </div>
-              <h2 className="font-headline text-3xl sm:text-4xl font-bold" style={{ color: "#2F2F2F" }}>{t("dashboard.elevateYourPath")}</h2>
-              <p className="text-base" style={{ color: "#777777" }}>{t("dashboard.accessFullMeasure")}</p>
-            </div>
-            {/* Mêmes formules et mêmes prix que la page publique /tarifs (src/lib/pricing.ts) */}
-            <div className="flex flex-col items-center gap-2">
+          <div className="pb-6">
+            {/* En-tête éditorial */}
+            <header className="relative text-center max-w-2xl mx-auto pt-2 sm:pt-6">
+              <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 w-[520px] max-w-full h-[220px] rounded-full opacity-70"
+                style={{ background: "radial-gradient(closest-side, rgba(63,112,77,0.10), rgba(250,249,246,0))" }} />
+              <span className="relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white text-[12px] font-semibold uppercase tracking-[0.14em] text-[#3F704D] ring-1 ring-[#DCE6DA]">
+                <Crown className="w-3.5 h-3.5 text-[#C6A15B]" aria-hidden="true" /> {t("dashboard.ourPlans")}
+              </span>
+              <h2 className="relative mt-4 font-headline text-[34px] sm:text-[42px] lg:text-[48px] font-bold leading-[1.05] tracking-tight text-[#1C241F]">
+                {t("dashboard.elevateYourPath")}
+              </h2>
+              <p className="relative mt-4 text-[16px] sm:text-[17px] leading-relaxed text-[#5C665F]">{t("dashboard.accessFullMeasure")}</p>
+            </header>
+
+            {/* Période + formule actuelle */}
+            <div className="mt-8 flex flex-col items-center gap-3">
               <BillingToggle value={billingPeriod} onChange={setBillingPeriod} />
-              <p className="text-sm" style={{ color: "#56615A" }} aria-live="polite">
-                {t(billingPeriod === "annual" ? "billing.annualNote" : "billing.monthlyNote")}
+              <p className="min-h-[24px] text-[14px] text-[#5C665F]" aria-live="polite">
+                {annual ? (
+                  <span className="inline-flex items-center gap-1.5 font-semibold text-[#2F5A3D]">
+                    <Sparkles className="w-4 h-4 text-[#C6A15B]" aria-hidden="true" />
+                    {t("billing.saveUpTo", { amount: formatFcfa(maxSavings) })}
+                  </span>
+                ) : t("billing.monthlyNote")}
               </p>
-              <p className="inline-flex items-center gap-2 mt-1 px-3 py-1 rounded-full text-xs font-semibold" style={{ background: "#FAF9F6", color: "#56615A", border: "1px solid #E8E5E0" }}>
-                {t("dashboard.planCurrentPlan")} : {t("dashboard.planDiscoveryName")} ({t("dashboard.planFree")})
+              <p className="inline-flex items-center gap-2 h-8 pl-1.5 pr-3 rounded-full bg-white text-[13px] text-[#5C665F] ring-1 ring-[#E6EAE5]">
+                <span className="w-5 h-5 rounded-full bg-[#EEF5EE] flex items-center justify-center" aria-hidden="true">
+                  <Sprout className="w-3 h-3 text-[#3F704D]" />
+                </span>
+                {t("dashboard.planCurrentPlan")} · <span className="font-semibold text-[#1C241F]">{t("dashboard.planDiscoveryName")}</span>
+                <span className="sr-only">({t("dashboard.planFree")})</span>
               </p>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-5 max-w-5xl mx-auto">
-              {([
-                { id: "bronze", name: t("tarifs.bronze.name"), accent: false, features: [t("tarifs.bronze.feature1"), t("tarifs.bronze.feature2"), t("tarifs.bronze.feature3")], cta: t("tarifs.bronze.cta"), current: false },
-                { id: "argent", name: t("tarifs.argent.name"), accent: true, badge: t("tarifs.argent.badge"), features: [t("tarifs.argent.feature1"), t("tarifs.argent.feature2"), t("tarifs.argent.feature3")], cta: t("tarifs.argent.cta"), current: false },
-                { id: "or", name: t("tarifs.or.name"), accent: false, features: [t("tarifs.or.feature1"), t("tarifs.or.feature2"), t("tarifs.or.feature3"), t("tarifs.or.feature4")], cta: t("tarifs.or.cta"), current: false },
-              ] as { id: PlanId; name: string; accent: boolean; badge?: string; features: string[]; cta: string; current: boolean }[]).map((plan) => {
-                const price = planPricing(plan.id, billingPeriod);
+
+            {/* Cartes */}
+            <div className="mt-10 sm:mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-7 max-w-[1080px] mx-auto items-stretch">
+              {plans.map((plan) => {
+                const pricing = planPricing(plan.id, billingPeriod);
                 return (
-                <div key={plan.name} className="rounded-2xl p-6 overflow-hidden relative flex flex-col"
-                  style={{ background: plan.accent ? "linear-gradient(135deg, #FFFFFF 0%, #EEF5EC 100%)" : "#FFFFFF", border: `1px solid ${plan.accent ? "#C6D4C0" : "#E8E5E0"}`, boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
-                  <div className="space-y-5 flex-1 flex flex-col">
-                    <div className="flex items-center justify-between gap-2">
-                      <h3 className="font-headline text-xl font-bold flex items-center gap-2" style={{ color: "#2F2F2F" }}>
-                        {plan.accent && <Crown className="w-5 h-5" style={{ color: "#C6A15B" }} />}
-                        {plan.name}
-                      </h3>
-                      {plan.badge && <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black shrink-0" style={{ background: "#C6A15B", color: "#FFFFFF" }}>{plan.badge}</span>}
-                    </div>
-                    <div>
-                      {price.fullYear !== null && (
-                        <p className="text-sm font-semibold line-through" style={{ color: "#9CA3AF" }}>{formatFcfa(price.fullYear)} F</p>
-                      )}
-                      <div className="flex items-end gap-1.5 flex-wrap">
-                        <span className="font-headline text-4xl font-black" style={{ color: "#2F2F2F" }}>
-                          {formatFcfa(price.amount)}
-                        </span>
-                        <span className="mb-1.5 text-sm" style={{ color: "#6B746E" }}>F {t(billingPeriod === "annual" ? "billing.perYear" : "billing.perMonth")}</span>
-                      </div>
-                      {price.perMonth !== null && price.savings !== null && (
-                        <div className="mt-1.5 space-y-1">
-                          <p className="text-xs" style={{ color: "#56615A" }}>{t("billing.perMonthEquivalent", { amount: formatFcfa(price.perMonth) })}</p>
-                          <span className="inline-block px-2 py-0.5 rounded-full text-[11px] font-bold" style={{ background: "#EEF5EC", color: "#486B46" }}>
-                            {t("billing.savings", { amount: formatFcfa(price.savings) })}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    <ul className="space-y-3 flex-1">
-                      {plan.features.map((f) => (
-                        <li key={f} className="flex items-start gap-2.5 text-sm" style={{ color: "#2F2F2F" }}>
-                          <span className="w-5 h-5 rounded-full flex items-center justify-center shrink-0 mt-0.5" style={{ background: "#EEF5EC" }}>
-                            <Check className="w-3 h-3" style={{ color: "#486B46" }} />
-                          </span>
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    <Button disabled={plan.current}
-                      onClick={() => toast({ title: t("dashboard.toastSecurePaymentSoon") })}
-                      className="w-full h-12 rounded-xl font-bold text-sm gap-2"
-                      style={plan.accent ? { background: "#486B46", color: "#FFFFFF" } : { background: "#FAF9F6", color: plan.current ? "#777777" : "#486B46", border: plan.current ? undefined : "1px solid #C6D4C0" }}>
-                      {plan.accent && <Crown className="w-4 h-4" />}
-                      {plan.cta}
-                    </Button>
-                  </div>
-                </div>
+                  <PricingCard
+                    key={plan.id}
+                    className={cn(plan.mobileOrder, plan.className)}
+                    name={t(`tarifs.${plan.id}.name`)}
+                    description={t(`tarifs.${plan.id}.description`)}
+                    pricing={pricing}
+                    period={billingPeriod}
+                    features={plan.features}
+                    cta={t(`tarifs.${plan.id}.cta`)}
+                    variant={plan.variant}
+                    badge={plan.badge}
+                    onSelect={() => toast({ title: t("dashboard.toastSecurePaymentSoon") })}
+                    labels={{
+                      currency: t("billing.currency"),
+                      perMonth: t("billing.perMonth"),
+                      perYear: t("billing.perYear"),
+                      perMonthEquivalent: pricing.perMonth !== null ? t("billing.perMonthEquivalent", { amount: formatFcfa(pricing.perMonth) }) : undefined,
+                      savings: pricing.savings !== null ? t("billing.savings", { amount: formatFcfa(pricing.savings) }) : undefined,
+                    }}
+                  />
                 );
               })}
             </div>
-            <div className="flex items-center justify-center gap-2 text-xs" style={{ color: "#777777" }}>
-              <ShieldCheck className="w-4 h-4" style={{ color: "#486B46" }} /> {t("dashboard.securePaymentCancel")}
-            </div>
+
+            {/* Réassurance */}
+            <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[13px] text-[#5C665F]">
+              {[
+                { icon: Lock, label: t("tarifs.trustSecurePayment") },
+                { icon: RefreshCcw, label: t("tarifs.trustCancel") },
+                { icon: ShieldCheck, label: t("tarifs.trustProtected") },
+              ].map(({ icon: Icon, label }) => (
+                <li key={label} className="inline-flex items-center gap-2">
+                  <Icon className="w-4 h-4 text-[#3F704D]" aria-hidden="true" /> {label}
+                </li>
+              ))}
+            </ul>
           </div>
         );
+      }
 
       case "Profile":
       case "Profil":

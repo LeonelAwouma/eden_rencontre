@@ -726,7 +726,8 @@
       "feature4": "Invitation requests",
       "tagline": "To make the most of the platform and multiply your opportunities to connect.",
       "cta": "Upgrade to Gold"
-    }
+    },
+    "trustProtected": "Protected data"
   },
   "forgotPassword": {
     "emailRequired": "Email address is required.",
@@ -1070,8 +1071,17 @@
   "dashboardSidebar": {
     "premiumCardTitle": "Garden of Alliance Gold",
     "premiumCardText": "Unlimited visibility and messages",
-    "upgrade": "Upgrade",
-    "logout": "Log out"
+    "upgrade": "Go Premium",
+    "logout": "Log out",
+    "navLabel": "Main navigation",
+    "groupMain": "Main",
+    "groupMine": "My space",
+    "groupCommunity": "Community",
+    "groupSettings": "Settings",
+    "accountMenu": "Account menu",
+    "viewProfile": "My profile",
+    "closeMenu": "Close menu",
+    "unread": "unread"
   },
   "memberCard": {
     "removeFavorite": "Remove from favorites",
@@ -1279,7 +1289,7 @@
     "viewActivityNotifsHere": "View your activity notifications here.",
     "ourPlans": "Our Plans",
     "elevateYourPath": "Elevate your path",
-    "accessFullMeasure": "Access the full measure of Garden of Alliance to build your alliance.",
+    "accessFullMeasure": "Unlock the full Garden of Alliance experience and multiply your chances of building an authentic connection.",
     "planDiscoveryName": "Discovery",
     "planFree": "Free",
     "planFeatureBasicProfile": "Basic profile creation",
@@ -1383,7 +1393,10 @@
     "badgeMissing": "Still to complete:",
     "badgeComplete": "Complete my profile",
     "badgeGrantedTitle": "✅ “Verified profile” badge earned!",
-    "badgeGrantedDesc": "Your profile and questionnaire are complete: the badge is now shown on your profile."
+    "badgeGrantedDesc": "Your profile and questionnaire are complete: the badge is now shown on your profile.",
+    "support": "Support",
+    "openMenu": "Open menu",
+    "myAccount": "My account"
   },
   "chatGuide": {
     "headerTitle": "Guide to Your First 5 Conversations",
@@ -1675,7 +1688,9 @@
     "perMonthEquivalent": "i.e. {amount} F per month",
     "savings": "You save {amount} F per year",
     "annualNote": "Pay yearly and get 10% off.",
-    "monthlyNote": "No commitment, cancel anytime."
+    "monthlyNote": "No commitment, cancel anytime.",
+    "saveUpTo": "Save up to {amount} FCFA a year",
+    "currency": "F"
   },
   "profilePhoto": {
     "changePhoto": "Change photo",

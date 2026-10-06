@@ -726,7 +726,8 @@
       "feature4": "Demandes d'invitation",
       "tagline": "Pour profiter pleinement de la plateforme et multiplier vos opportunités de connexion.",
       "cta": "Passer à Or"
-    }
+    },
+    "trustProtected": "Données protégées"
   },
   "forgotPassword": {
     "emailRequired": "L'adresse email est requise.",
@@ -1071,7 +1072,16 @@
     "premiumCardTitle": "Garden of Alliance Or",
     "premiumCardText": "Visibilité et messages illimités",
     "upgrade": "Passer Premium",
-    "logout": "Se déconnecter"
+    "logout": "Se déconnecter",
+    "navLabel": "Navigation principale",
+    "groupMain": "Principal",
+    "groupMine": "Mon espace",
+    "groupCommunity": "Communauté",
+    "groupSettings": "Paramètres",
+    "accountMenu": "Menu du compte",
+    "viewProfile": "Mon profil",
+    "closeMenu": "Fermer le menu",
+    "unread": "non lus"
   },
   "memberCard": {
     "removeFavorite": "Retirer des favoris",
@@ -1279,7 +1289,7 @@
     "viewActivityNotifsHere": "Consultez ici vos notifications d'activité.",
     "ourPlans": "Nos formules",
     "elevateYourPath": "Élevez votre chemin",
-    "accessFullMeasure": "Accédez à toute la mesure de Garden of Alliance pour bâtir votre alliance.",
+    "accessFullMeasure": "Accédez à toute l'expérience Garden of Alliance et multipliez vos opportunités de créer une connexion authentique.",
     "planDiscoveryName": "Découverte",
     "planFree": "Gratuit",
     "planFeatureBasicProfile": "Création de profil de base",
@@ -1383,7 +1393,10 @@
     "badgeMissing": "À compléter :",
     "badgeComplete": "Compléter mon profil",
     "badgeGrantedTitle": "✅ Badge « Profil vérifié » obtenu !",
-    "badgeGrantedDesc": "Votre profil et votre questionnaire sont complets : le badge est maintenant affiché sur votre profil."
+    "badgeGrantedDesc": "Votre profil et votre questionnaire sont complets : le badge est maintenant affiché sur votre profil.",
+    "support": "Assistance",
+    "openMenu": "Ouvrir le menu",
+    "myAccount": "Mon compte"
   },
   "chatGuide": {
     "headerTitle": "Guide de vos 5 premières conversations",
@@ -1675,7 +1688,9 @@
     "perMonthEquivalent": "soit {amount} F par mois",
     "savings": "Vous économisez {amount} F par an",
     "annualNote": "Payez à l'année et profitez de 10 % de remise.",
-    "monthlyNote": "Sans engagement, résiliable à tout moment."
+    "monthlyNote": "Sans engagement, résiliable à tout moment.",
+    "saveUpTo": "Économisez jusqu'à {amount} FCFA par an",
+    "currency": "F"
   },
   "profilePhoto": {
     "changePhoto": "Changer la photo",

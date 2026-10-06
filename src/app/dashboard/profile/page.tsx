@@ -792,22 +792,23 @@ export default function ProfilePage() {
 
   return (
     <div className="flex h-screen bg-[#FAF9F6]">
-      {/* Sidebar desktop */}
-      <div className="hidden lg:block">
+      {/* Sidebar desktop (fixe) : la colonne réserve sa largeur pour ne pas masquer le contenu */}
+      <div className="hidden lg:block w-64 shrink-0">
         <DashboardSidebar {...sidebarProps} />
       </div>
 
       {/* Mobile nav */}
       <div className="lg:hidden">
-        <button onClick={() => setMobileNav(true)}
-          className="fixed top-4 left-4 z-50 w-10 h-10 bg-white rounded-xl shadow flex items-center justify-center border border-[#E0DDD8]">
-          <svg width="18" height="14" viewBox="0 0 18 14" fill="none"><path d="M1 1h16M1 7h16M1 13h16" stroke="#2F2F2F" strokeWidth="1.5" strokeLinecap="round" /></svg>
+        <button onClick={() => setMobileNav(true)} aria-label={t("dashboard.openMenu")}
+          className="fixed top-4 left-4 z-50 w-11 h-11 bg-white rounded-xl shadow-[0_4px_20px_rgba(20,40,30,0.08)] flex items-center justify-center border border-[#E6EAE5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45">
+          <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden="true"><path d="M1 1h16M1 7h16M1 13h16" stroke="#1C241F" strokeWidth="1.5" strokeLinecap="round" /></svg>
         </button>
         {mobileNav && (
-          <div className="fixed inset-0 z-[60]">
-            <div className="absolute inset-0 bg-black/30" onClick={() => setMobileNav(false)} />
-            <div className="relative z-10 h-full w-[280px]">
-              <DashboardSidebar {...sidebarProps} />
+          <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true">
+            <div className="absolute inset-0 bg-[#1C241F]/30 backdrop-blur-[2px]" onClick={() => setMobileNav(false)} />
+            <div className="relative z-10 h-full w-[288px] max-w-[86vw] shadow-[8px_0_32px_rgba(20,40,30,0.12)] animate-in slide-in-from-left duration-200">
+              {/* Mode tiroir : la sidebar fixe est masquée sous 1024 px, le tiroir l'affiche en pleine hauteur */}
+              <DashboardSidebar {...sidebarProps} variant="drawer" onClose={() => setMobileNav(false)} />
             </div>
           </div>
         )}
