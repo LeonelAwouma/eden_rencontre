@@ -38,9 +38,6 @@ import {
   Star,
   CheckCircle2,
   X,
-  Instagram,
-  Facebook,
-  Youtube,
   MessageCircle,
   Plus,
   Search,
@@ -51,13 +48,7 @@ import {
   RotateCcw,
 } from "lucide-react";
 import { LoadingScreen } from "@/components/loading-screen";
-
-// TikTok Logo SVG
-const TikTokIcon = ({ className }: { className?: string }) => (
-  <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className={className}>
-    <path d="M12.525.02c1.31-.02 2.61-.01 3.91-.02.08 1.53.63 3.09 1.75 4.17 1.12 1.11 2.7 1.62 4.24 1.79v4.03c-1.44-.05-2.89-.35-4.2-.97-.06-.03-.11-.07-.17-.1v9.99c-.05 2.33-.85 4.59-2.63 6.18-2.25 2.01-5.51 2.53-8.23 1.5-2.73-1.02-4.75-3.66-4.93-6.63-.2-3.32 1.83-6.49 4.96-7.56.88-.3 1.82-.44 2.75-.43V11c-.99.04-1.95.33-2.8.85-1.19.72-1.99 1.94-2.14 3.32-.19 1.7.53 3.39 1.87 4.43 1.34 1.05 3.2 1.25 4.7 0.51 1.13-.56 1.88-1.68 1.96-2.93.02-1.6.01-3.21.01-4.81 0-3.37.01-6.74.01-10.11z"/>
-  </svg>
-);
+import { SocialLogo } from "@/components/social-logo";
 
 // Pays, villes et indicatifs : src/lib/geo.ts (commun aux deux formulaires d'inscription).
 
@@ -384,11 +375,12 @@ export default function RegisterPage() {
   const filteredCities = filterCities(formData.country, citySearch);
 
   const discoverySources = [
-    { name: "TikTok", icon: <TikTokIcon className="w-5 h-5 text-[#ff0050]" /> },
-    { name: "Instagram", icon: <Instagram className="w-5 h-5 text-[#E4405F]" /> },
-    { name: "Facebook", icon: <Facebook className="w-5 h-5 text-[#1877F2]" /> },
+    { name: "TikTok", icon: <SocialLogo name="tiktok" /> },
+    { name: "Instagram", icon: <SocialLogo name="instagram" /> },
+    { name: "Facebook", icon: <SocialLogo name="facebook" /> },
+    { name: "WhatsApp", icon: <SocialLogo name="whatsapp" /> },
     { name: t("register.wordOfMouth"), icon: <MessageCircle className="w-5 h-5 text-primary" /> },
-    { name: "YouTube", icon: <Youtube className="w-5 h-5 text-[#FF0000]" /> },
+    { name: "YouTube", icon: <SocialLogo name="youtube" /> },
     { name: t("register.other"), icon: <Plus className="w-5 h-5 text-foreground/40" /> },
   ];
 

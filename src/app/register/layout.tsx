@@ -1,4 +1,5 @@
 import { pageMetadata } from "@/lib/site";
+import { SupportFloat } from "@/components/support-float";
 
 export const metadata = pageMetadata({
   path: "/register",
@@ -7,5 +8,10 @@ export const metadata = pageMetadata({
 });
 
 export default function Layout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <>
+      {children}
+      <SupportFloat />
+    </>
+  );
 }

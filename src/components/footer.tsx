@@ -4,6 +4,8 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
+import { SocialLogo } from "@/components/social-logo";
+import { SOCIAL_LINKS } from "@/lib/contact";
 
 export function Footer() {
   const [year, setYear] = useState<number | null>(null);
@@ -38,16 +40,16 @@ export function Footer() {
               {t("footer.description")}
             </p>
             <div className="flex gap-4">
-              {/* Botanical-style social icons */}
-              <Link href="#" className="w-9 h-9 rounded-full bg-deep-eden/5 flex items-center justify-center text-foreground/50 hover:text-deep-eden hover:bg-deep-eden/10 transition-all" aria-label="Instagram">
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1"/></svg>
-              </Link>
-              <Link href="#" className="w-9 h-9 rounded-full bg-deep-eden/5 flex items-center justify-center text-foreground/50 hover:text-deep-eden hover:bg-deep-eden/10 transition-all" aria-label="Facebook">
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
-              </Link>
-              <Link href="#" className="w-9 h-9 rounded-full bg-deep-eden/5 flex items-center justify-center text-foreground/50 hover:text-deep-eden hover:bg-deep-eden/10 transition-all" aria-label="Twitter">
-                <svg viewBox="0 0 24 24" className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M23 3a10.9 10.9 0 01-3.14 1.53 4.48 4.48 0 00-7.86 3v1A10.66 10.66 0 013 4s-4 9 5 13a11.64 11.64 0 01-7 2c9 5 20 0 20-11.5a4.5 4.5 0 00-.08-.83A7.72 7.72 0 0023 3z"/></svg>
-              </Link>
+              {([
+                ["instagram", "Instagram", SOCIAL_LINKS.instagram],
+                ["facebook", "Facebook", SOCIAL_LINKS.facebook],
+                ["tiktok", "TikTok", SOCIAL_LINKS.tiktok],
+                ["whatsapp", "WhatsApp", SOCIAL_LINKS.whatsapp],
+              ] as const).map(([logo, label, href]) => (
+                <a key={logo} href={href} target="_blank" rel="noopener noreferrer" className="w-9 h-9 rounded-full bg-deep-eden/5 flex items-center justify-center hover:bg-deep-eden/10 hover:scale-110 transition-all" aria-label={label}>
+                  <SocialLogo name={logo} className="w-4 h-4" />
+                </a>
+              ))}
             </div>
           </div>
 
