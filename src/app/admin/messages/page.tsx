@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
+import { PageHeader } from "@/components/admin/page-header";
+import { MemberAvatar, Badge, btn } from "@/components/admin/admin-ui";
 
 // ── Types ─────────────────────────────────────────────────────
 interface Member {
@@ -77,30 +79,13 @@ function dayLabel(iso: string) {
 }
 
 function Avatar({ member, size = 40 }: { member: Member; size?: number }) {
-  const [broken, setBroken] = useState(false);
-  const style = { width: size, height: size };
-  if (member.avatar_url && !broken) {
-    return (
-      <img src={member.avatar_url} alt="" style={style} onError={() => setBroken(true)}
-        className="rounded-full object-cover shrink-0 border border-[#E5E7EB]" />
-    );
-  }
-  return (
-    <div style={style}
-      className="rounded-full shrink-0 flex items-center justify-center bg-[#EEF5EC] text-[#486B46] font-bold text-sm border border-[#E5E7EB]">
-      {initials(member.name)}
-    </div>
-  );
+  return <MemberAvatar name={initials(member.name)} url={member.avatar_url} size={size} />;
 }
 
 function StatusBadge({ status }: { status?: string | null }) {
   if (!status || status === "approved") return null;
   const label = status === "pending" ? "En attente" : status === "suspended" ? "Suspendu" : status === "rejected" ? "Refusé" : status;
-  return (
-    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
-      {label}
-    </span>
-  );
+  return <Badge tone={status === "pending" ? "amber" : status === "suspended" ? "red" : "neutral"} className="shrink-0">{label}</Badge>;
 }
 
 // ── Page ──────────────────────────────────────────────────────
@@ -394,20 +379,21 @@ export default function AdminMessagesPage() {
       : "Nouvelle conversation";
     return (
       <button key={t.conversation_id} onClick={() => openChat({ conversationId: t.conversation_id, user: t.user })}
-        className={cn("w-full flex items-center gap-3 px-4 py-3 text-left transition-colors border-l-2",
-          isActive ? "bg-[#486B46]/[0.06] border-[#486B46]" : "border-transparent hover:bg-[#F9FAFB]")}>
+        aria-current={isActive ? "true" : undefined}
+        className={cn("w-full flex items-center gap-3 px-4 py-3 text-left transition-colors duration-150 border-l-2 focus-visible:outline-none focus-visible:bg-primary/[0.06]",
+          isActive ? "bg-primary/[0.08] border-primary" : "border-transparent hover:bg-[#F5F3EF]")}>
         <Avatar member={t.user} size={44} />
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between gap-2">
-            <p className={cn("text-[13px] truncate", t.unread_count ? "font-bold text-[#1a1a1a]" : "font-semibold text-[#374151]")}>
+            <p className={cn("text-[14px] truncate", t.unread_count ? "font-bold text-[#1F2A23]" : "font-semibold text-[#3A443E]")}>
               {t.user.name}
             </p>
-            {t.last_message && <span className={cn("text-[11px] shrink-0", t.unread_count ? "text-[#486B46] font-semibold" : "text-[#9CA3AF]")}>{shortTime(t.last_message.created_at)}</span>}
+            {t.last_message && <span className={cn("text-[12px] shrink-0", t.unread_count ? "text-primary font-semibold" : "text-[#5F6B63]")}>{shortTime(t.last_message.created_at)}</span>}
           </div>
           <div className="flex items-center justify-between gap-2 mt-0.5">
-            <p className={cn("text-[12px] truncate", t.unread_count ? "text-[#374151] font-medium" : "text-[#9CA3AF]")}>{preview}</p>
+            <p className={cn("text-[13px] truncate", t.unread_count ? "text-[#3A443E] font-medium" : "text-[#5F6B63]")}>{preview}</p>
             {t.unread_count > 0 && (
-              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-[#486B46] text-white text-[10px] font-bold flex items-center justify-center shrink-0">
+              <span className="min-w-[20px] h-5 px-1.5 rounded-full bg-primary text-white text-[10px] font-bold flex items-center justify-center shrink-0">
                 {t.unread_count}
               </span>
             )}
@@ -429,43 +415,38 @@ export default function AdminMessagesPage() {
 
   // ── Rendu ───────────────────────────────────────────────────
   return (
-    <div className="flex flex-col h-[calc(100dvh-7.5rem)] min-h-[520px]">
-      <div className="mb-4 flex items-center gap-3">
-        <h1 className="text-[24px] font-bold text-[#1a1a1a] tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
-          Messagerie
-        </h1>
-        {totalUnread > 0 && (
-          <span className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-[#486B46] text-white text-[11px] font-bold flex items-center justify-center">
-            {totalUnread}
-          </span>
-        )}
-        <p className="hidden sm:block text-[13px] text-[#9CA3AF] font-medium">
-          Vous écrivez au nom du compte <span className="font-semibold text-[#486B46]">« Admin »</span>
-        </p>
-      </div>
+    <div className="flex flex-col h-[calc(100dvh-10rem)] lg:h-[calc(100dvh-11.5rem)] min-h-[520px]">
+      <PageHeader
+        className="mb-4 sm:mb-6"
+        title="Messagerie"
+        subtitle="Vous écrivez au nom du compte « Admin »."
+        actions={totalUnread > 0 ? (
+          <Badge tone="green">{totalUnread} non lu{totalUnread > 1 ? "s" : ""}</Badge>
+        ) : undefined}
+      />
 
-      <div className="flex-1 min-h-0 flex bg-white rounded-2xl border border-[#E5E7EB] shadow-sm overflow-hidden">
+      <div className="flex-1 min-h-0 flex bg-white rounded-2xl border border-[#E8E5E0] overflow-hidden">
         {/* ═══ Colonne des conversations ═══ */}
-        <aside className={cn("w-full md:w-[340px] shrink-0 flex-col border-r border-[#E5E7EB]", active ? "hidden md:flex" : "flex")}>
+        <aside className={cn("w-full md:w-[340px] shrink-0 flex-col border-r border-[#E8E5E0]", active ? "hidden md:flex" : "flex")}>
           {/* Une seule recherche : conversations existantes + tous les membres */}
-          <div className="p-3 flex items-center gap-2 border-b border-[#E5E7EB]">
+          <div className="p-3 flex items-center gap-2 border-b border-[#E8E5E0]">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B746E]" aria-hidden="true" />
               <input ref={searchInputRef} value={filter} onChange={(e) => setFilter(e.target.value)}
                 aria-label="Rechercher un membre ou une conversation"
                 placeholder="Rechercher un membre (nom, pseudo, e-mail)"
-                className="w-full h-10 pl-9 pr-9 rounded-xl bg-[#F9FAFB] text-[13px] text-[#374151] outline-none focus:ring-2 focus:ring-[#486B46]/15" />
+                className="w-full h-10 pl-9 pr-9 rounded-xl border border-[#E8E5E0] bg-[#FAF8F5] text-[14px] text-[#1F2A23] placeholder:text-[#8A938D] outline-none focus:bg-white focus:border-primary/60 focus:ring-2 focus:ring-primary/15 transition-colors duration-150" />
               {searching ? (
-                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF] animate-spin" />
+                <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#5F6B63] animate-spin" />
               ) : filter && (
                 <button onClick={() => { setFilter(""); searchInputRef.current?.focus(); }} aria-label="Effacer la recherche"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center text-[#9CA3AF] hover:text-[#374151]">
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 rounded-md flex items-center justify-center text-[#5F6B63] hover:text-[#3A443E]">
                   <X className="w-4 h-4" />
                 </button>
               )}
             </div>
             <button onClick={() => searchInputRef.current?.focus()} title="Écrire à un membre" aria-label="Écrire à un membre"
-              className="w-10 h-10 shrink-0 rounded-xl bg-[#486B46] hover:bg-[#3A5A3A] text-white flex items-center justify-center transition-colors">
+              className={cn(btn.primary, "w-10 px-0 shrink-0")}>
               <PenSquare className="w-4 h-4" />
             </button>
           </div>
@@ -473,48 +454,48 @@ export default function AdminMessagesPage() {
           <div className="flex-1 overflow-y-auto">
             {searchMode ? (
               <>
-                <p className="px-4 pt-3 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">Conversations</p>
+                <p className="px-4 pt-3 pb-1 text-[11px] font-semibold uppercase tracking-wide text-[#5F6B63]">Conversations</p>
                 {visibleThreads.length === 0
-                  ? <p className="px-4 pb-3 text-[12px] text-[#9CA3AF]">Aucune conversation ne correspond.</p>
+                  ? <p className="px-4 pb-3 text-[12px] text-[#5F6B63]">Aucune conversation ne correspond.</p>
                   : visibleThreads.map(renderThread)}
-                <p className="px-4 pt-4 pb-1 text-[10px] font-bold uppercase tracking-wider text-[#9CA3AF]">Autres membres</p>
+                <p className="px-4 pt-4 pb-1 text-[11px] font-semibold uppercase tracking-wide text-[#5F6B63]">Autres membres</p>
                 {searching && otherMembers.length === 0 ? (
-                  <p className="px-4 pb-3 text-[12px] text-[#9CA3AF]">Recherche…</p>
+                  <p className="px-4 pb-3 text-[12px] text-[#5F6B63]">Recherche…</p>
                 ) : otherMembers.length === 0 ? (
-                  <p className="px-4 pb-3 text-[12px] text-[#9CA3AF]">Aucun autre membre trouvé.</p>
+                  <p className="px-4 pb-3 text-[12px] text-[#5F6B63]">Aucun autre membre trouvé.</p>
                 ) : (
                   otherMembers.map((u) => (
                     <button key={u.id} onClick={() => startWith(u)}
-                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#F9FAFB] transition-colors">
+                      className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-[#FAF8F5] transition-colors">
                       <Avatar member={u} size={44} />
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2">
-                          <p className="text-[13px] font-semibold text-[#1a1a1a] truncate">
-                            {u.name}{u.pseudo && u.pseudo !== u.name && <span className="font-normal text-[#9CA3AF]"> · {u.pseudo}</span>}
+                          <p className="text-[13px] font-semibold text-[#1F2A23] truncate">
+                            {u.name}{u.pseudo && u.pseudo !== u.name && <span className="font-normal text-[#5F6B63]"> · {u.pseudo}</span>}
                           </p>
                           <StatusBadge status={u.status} />
                         </div>
-                        <p className="text-[12px] text-[#9CA3AF] truncate">{u.email}</p>
+                        <p className="text-[12px] text-[#5F6B63] truncate">{u.email}</p>
                       </div>
-                      <PenSquare className="w-4 h-4 text-[#9CA3AF] shrink-0" />
+                      <PenSquare className="w-4 h-4 text-[#5F6B63] shrink-0" />
                     </button>
                   ))
                 )}
               </>
             ) : inboxLoading ? (
-              <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-[#486B46]" /></div>
+              <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
             ) : inboxError ? (
               <div className="p-5 text-center">
                 <p className="text-[13px] text-red-600 mb-2">{inboxError}</p>
-                <button onClick={() => loadInbox()} className="text-[13px] font-semibold text-[#486B46] hover:underline">Réessayer</button>
+                <button onClick={() => loadInbox()} className="text-[13px] font-semibold text-primary hover:underline">Réessayer</button>
               </div>
             ) : threads.length === 0 ? (
               <div className="flex flex-col items-center text-center px-6 py-12">
-                <div className="w-12 h-12 rounded-2xl bg-[#EEF5EC] flex items-center justify-center mb-3">
-                  <MessageCircle className="w-6 h-6 text-[#486B46]" />
+                <div className="w-12 h-12 rounded-2xl bg-primary/10 flex items-center justify-center mb-3">
+                  <MessageCircle className="w-6 h-6 text-primary" />
                 </div>
-                <p className="text-[13px] font-semibold text-[#374151]">Aucune conversation pour l'instant</p>
-                <p className="text-[12px] text-[#9CA3AF] mt-1">Les messages des membres arriveront ici. Pour écrire à quelqu'un, recherchez-le ci-dessus.</p>
+                <p className="text-[13px] font-semibold text-[#3A443E]">Aucune conversation pour l'instant</p>
+                <p className="text-[12px] text-[#5F6B63] mt-1">Les messages des membres arriveront ici. Pour écrire à quelqu'un, recherchez-le ci-dessus.</p>
               </div>
             ) : (
               threads.map(renderThread)
@@ -527,23 +508,23 @@ export default function AdminMessagesPage() {
           {active ? (
             <>
               {/* En-tête */}
-              <header className="h-16 px-3 sm:px-4 flex items-center gap-3 border-b border-[#E5E7EB] shrink-0">
+              <header className="h-16 px-3 sm:px-4 flex items-center gap-3 border-b border-[#E8E5E0] shrink-0">
                 <button onClick={() => setActive(null)} aria-label="Retour aux conversations"
-                  className="md:hidden w-9 h-9 rounded-lg flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6]">
+                  className="md:hidden w-9 h-9 rounded-lg flex items-center justify-center text-[#56615A] hover:bg-[#F5F3EF]">
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <Avatar member={active.user} />
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="text-[14px] font-bold text-[#1a1a1a] truncate">{active.user.name}</p>
+                    <p className="text-[15px] font-semibold text-[#1F2A23] truncate">{active.user.name}</p>
                     <StatusBadge status={active.user.status} />
                   </div>
-                  <p className="text-[12px] text-[#9CA3AF] truncate">
+                  <p className="text-[12px] text-[#5F6B63] truncate">
                     {active.user.pseudo && active.user.pseudo !== active.user.name ? `${active.user.pseudo} · ` : ""}{active.user.email}
                   </p>
                 </div>
                 <Link href={`/admin/users/${active.user.id}`}
-                  className="hidden sm:flex items-center gap-1.5 px-3 h-9 rounded-xl border border-[#E5E7EB] text-[12px] font-semibold text-[#374151] hover:border-[#486B46]/40 hover:text-[#486B46] transition-colors">
+                  className={cn(btn.small, "hidden sm:inline-flex h-9")}>
                   <UserRound className="w-4 h-4" /> Fiche membre
                 </Link>
               </header>
@@ -551,12 +532,12 @@ export default function AdminMessagesPage() {
               {/* Messages */}
               <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto px-3 sm:px-6 py-4 bg-[#FAF9F6]">
                 {threadLoading ? (
-                  <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-[#486B46]" /></div>
+                  <div className="flex justify-center py-12"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>
                 ) : messages.length === 0 ? (
                   <div className="h-full flex flex-col items-center justify-center text-center px-6">
                     <Avatar member={active.user} size={56} />
-                    <p className="text-[14px] font-semibold text-[#374151] mt-3">Démarrez la conversation avec {active.user.name}</p>
-                    <p className="text-[12px] text-[#9CA3AF] mt-1 max-w-xs">Le message apparaîtra dans sa messagerie, de la part de « Admin ». Le membre pourra vous répondre.</p>
+                    <p className="text-[14px] font-semibold text-[#3A443E] mt-3">Démarrez la conversation avec {active.user.name}</p>
+                    <p className="text-[12px] text-[#5F6B63] mt-1 max-w-xs">Le message apparaîtra dans sa messagerie, de la part de « Admin ». Le membre pourra vous répondre.</p>
                     {active.user.status && active.user.status !== "approved" && (
                       <p className="text-[12px] text-amber-700 mt-3 max-w-xs">Ce compte n'est pas approuvé : le membre ne pourra lire ce message qu'une fois son compte validé.</p>
                     )}
@@ -572,16 +553,16 @@ export default function AdminMessagesPage() {
                         <Fragment key={m.id}>
                           {newDay && (
                             <div className="flex justify-center py-3">
-                              <span className="text-[11px] font-semibold text-[#6B7280] bg-white border border-[#E5E7EB] rounded-full px-3 py-1 first-letter:uppercase">
+                              <span className="text-[11px] font-semibold text-[#56615A] bg-white border border-[#E8E5E0] rounded-full px-3 py-1 first-letter:uppercase">
                                 {dayLabel(m.created_at)}
                               </span>
                             </div>
                           )}
                           <div className={cn("flex", m.from_admin ? "justify-end" : "justify-start", grouped ? "mt-0.5" : "mt-2")}>
                             <div className={cn("max-w-[78%] sm:max-w-[65%] flex flex-col", m.from_admin ? "items-end" : "items-start")}>
-                              <div className={cn("rounded-2xl text-[14px] leading-relaxed overflow-hidden shadow-sm",
+                              <div className={cn("rounded-2xl text-[14px] leading-relaxed overflow-hidden",
                                 m.image_url ? "p-1.5" : "px-4 py-2.5",
-                                m.from_admin ? "bg-[#486B46] text-white rounded-br-md" : "bg-white text-[#1a1a1a] border border-[#E5E7EB] rounded-bl-md",
+                                m.from_admin ? "bg-primary text-white rounded-br-md" : "bg-white text-[#1F2A23] border border-[#E8E5E0] rounded-bl-md",
                                 m.state === "sending" && "opacity-70",
                                 m.state === "failed" && "ring-2 ring-red-300")}>
                                 {m.image_url && (
@@ -591,7 +572,7 @@ export default function AdminMessagesPage() {
                                 )}
                                 {m.content && <p className={cn("whitespace-pre-wrap break-words", m.image_url && "px-2.5 pt-1.5 pb-1")}>{m.content}</p>}
                               </div>
-                              <div className={cn("flex items-center gap-1 mt-0.5 px-1 text-[10px]", m.state === "failed" ? "text-red-600" : "text-[#9CA3AF]")}>
+                              <div className={cn("flex items-center gap-1 mt-0.5 px-1 text-[11px]", m.state === "failed" ? "text-[#B83333]" : "text-[#5F6B63]")}>
                                 {m.state === "failed" ? (
                                   <button onClick={() => retry(m)} className="flex items-center gap-1 font-semibold hover:underline">
                                     <AlertCircle className="w-3 h-3" /> Non envoyé · <RotateCcw className="w-3 h-3" /> Réessayer
@@ -602,7 +583,7 @@ export default function AdminMessagesPage() {
                                     {m.from_admin && (m.state === "sending"
                                       ? <Loader2 className="w-3 h-3 animate-spin" />
                                       : m.id === lastSeenId
-                                        ? <span className="flex items-center gap-0.5 text-[#486B46] font-semibold"><CheckCheck className="w-3.5 h-3.5" /> Vu</span>
+                                        ? <span className="flex items-center gap-0.5 text-primary font-semibold"><CheckCheck className="w-3.5 h-3.5" /> Vu</span>
                                         : <Check className="w-3 h-3" />)}
                                   </>
                                 )}
@@ -617,20 +598,20 @@ export default function AdminMessagesPage() {
               </div>
 
               {/* Saisie */}
-              <div className="relative border-t border-[#E5E7EB] bg-white shrink-0">
+              <div className="relative border-t border-[#E8E5E0] bg-white shrink-0">
                 <AnimatePresence>
                   {showEmoji && (
                     <motion.div ref={emojiRef}
                       initial={{ opacity: 0, y: 8, scale: 0.97 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 8, scale: 0.97 }}
                       transition={{ duration: 0.15 }}
-                      className="absolute bottom-full left-3 mb-2 w-[300px] sm:w-[340px] max-h-[320px] overflow-y-auto rounded-2xl z-20 bg-white border border-[#E5E7EB] shadow-[0_8px_32px_rgba(72,107,70,0.12)]">
+                      className="absolute bottom-full left-3 mb-2 w-[300px] sm:w-[340px] max-h-[320px] overflow-y-auto rounded-2xl z-20 bg-white border border-[#E8E5E0] shadow-[0_8px_32px_rgba(72,107,70,0.12)]">
                       {EMOJI_CATEGORIES.map((group) => (
                         <div key={group.category} className="px-3 pt-3">
-                          <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5 text-[#9CA3AF]">{group.category}</p>
+                          <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5 text-[#5F6B63]">{group.category}</p>
                           <div className="grid grid-cols-7 gap-0.5 pb-1">
                             {group.emojis.map((e) => (
                               <button key={e.char} type="button" onClick={() => insertEmoji(e.char)}
-                                className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-[#F0FDF4]">
+                                className="w-9 h-9 rounded-lg flex items-center justify-center hover:bg-primary/[0.06]">
                                 <FluentEmoji char={e.char} url={e.url} className="w-6 h-6" />
                               </button>
                             ))}
@@ -652,13 +633,13 @@ export default function AdminMessagesPage() {
                 {pendingPreview && (
                   <div className="px-3 pt-3 flex items-center gap-3">
                     <div className="relative shrink-0">
-                      <img src={pendingPreview} alt="Aperçu" className="h-16 w-16 rounded-xl object-cover border border-[#E5E7EB]" />
+                      <img src={pendingPreview} alt="Aperçu" className="h-16 w-16 rounded-xl object-cover border border-[#E8E5E0]" />
                       <button type="button" onClick={clearPendingImage} aria-label="Retirer la photo"
-                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center bg-white border border-[#E5E7EB] text-[#6B7280]">
+                        className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full flex items-center justify-center bg-white border border-[#E8E5E0] text-[#56615A]">
                         <X className="w-3 h-3" />
                       </button>
                     </div>
-                    <p className="text-[12px] text-[#9CA3AF] flex items-center gap-1"><ImageIcon className="w-3.5 h-3.5" /> Ajoutez une légende si vous le souhaitez</p>
+                    <p className="text-[12px] text-[#5F6B63] flex items-center gap-1"><ImageIcon className="w-3.5 h-3.5" /> Ajoutez une légende si vous le souhaitez</p>
                   </div>
                 )}
 
@@ -666,35 +647,35 @@ export default function AdminMessagesPage() {
                   <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden"
                     onChange={(e) => { pickImage(e.target.files?.[0]); e.target.value = ""; }} />
                   <button type="button" onClick={() => fileInputRef.current?.click()} aria-label="Joindre une photo"
-                    className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-[#6B7280] hover:bg-[#F3F4F6] transition-colors">
+                    className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-[#56615A] hover:bg-[#F5F3EF] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
                     <ImagePlus className="w-5 h-5" />
                   </button>
                   <button type="button" onClick={() => setShowEmoji((v) => !v)} aria-label="Emojis"
-                    className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors",
-                      showEmoji ? "text-[#486B46] bg-[#EEF5EC]" : "text-[#6B7280] hover:bg-[#F3F4F6]")}>
+                    className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                      showEmoji ? "text-primary bg-primary/10" : "text-[#56615A] hover:bg-[#F5F3EF]")}>
                     <Smile className="w-5 h-5" />
                   </button>
                   <textarea ref={textareaRef} rows={1} value={text} maxLength={MAX_LENGTH}
                     onChange={(e) => setText(e.target.value)} onKeyDown={onKeyDown}
                     onPaste={(e) => { const f = Array.from(e.clipboardData.files).find((x) => x.type.startsWith("image/")); if (f) { e.preventDefault(); pickImage(f); } }}
                     placeholder={pendingImage ? "Ajouter une légende…" : `Écrire à ${active.user.name}…`}
-                    className="flex-1 min-h-[40px] max-h-40 resize-none rounded-2xl bg-[#F9FAFB] px-4 py-2.5 text-[14px] text-[#1a1a1a] leading-5 outline-none focus:ring-2 focus:ring-[#486B46]/15" />
+                    className="flex-1 min-h-[40px] max-h-40 resize-none rounded-2xl border border-[#E8E5E0] bg-[#FAF8F5] px-4 py-2.5 text-[14px] text-[#1F2A23] placeholder:text-[#8A938D] leading-5 outline-none focus:bg-white focus:border-primary/60 focus:ring-2 focus:ring-primary/15 transition-colors duration-150" />
                   <button type="button" onClick={send} disabled={!canSend} aria-label="Envoyer"
                     className={cn("w-10 h-10 rounded-full flex items-center justify-center shrink-0 transition-all",
-                      canSend ? "bg-[#486B46] hover:bg-[#3A5A3A] text-white shadow-sm" : "bg-[#E5E7EB] text-white cursor-not-allowed")}>
+                      canSend ? "bg-primary hover:bg-primary/90 text-white" : "bg-[#ECE8E1] text-[#8A938D] cursor-not-allowed")}>
                     <Send className="w-4 h-4" />
                   </button>
                 </div>
-                <p className="hidden sm:block px-4 pb-2 -mt-1 text-[10px] text-[#9CA3AF]">Entrée pour envoyer · Maj + Entrée pour aller à la ligne</p>
+                <p className="hidden sm:block px-4 pb-2 -mt-1 text-[12px] text-[#5F6B63]">Entrée pour envoyer · Maj + Entrée pour aller à la ligne</p>
               </div>
             </>
           ) : (
             <div className="flex-1 flex flex-col items-center justify-center text-center p-8 bg-[#FAF9F6]">
-              <div className="w-16 h-16 rounded-3xl bg-[#EEF5EC] flex items-center justify-center mb-4">
-                <MessageCircle className="w-8 h-8 text-[#486B46]" />
+              <div className="w-14 h-14 rounded-2xl bg-primary/10 flex items-center justify-center mb-4">
+                <MessageCircle className="w-8 h-8 text-primary" />
               </div>
-              <h3 className="text-[18px] font-bold text-[#1a1a1a] mb-1">Vos conversations</h3>
-              <p className="text-[13px] text-[#9CA3AF] max-w-xs">Choisissez une conversation à gauche, ou recherchez n'importe quel membre pour lui écrire.</p>
+              <h3 className="text-[18px] font-semibold text-[#1F2A23] mb-1" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>Vos conversations</h3>
+              <p className="text-[13px] text-[#5F6B63] max-w-xs">Choisissez une conversation à gauche, ou recherchez n'importe quel membre pour lui écrire.</p>
             </div>
           )}
         </section>

@@ -4,9 +4,14 @@
 // Marques en ligne : **gras** et *italique*.
 import type { Story } from "./types";
 
+// Couvertures : public/formation/histoires/<slug>.webp (version française).
+const cover = (slug: string, width: number, height: number, title: string) =>
+  ({ src: `/formation/histoires/${slug}.webp`, width, height, alt: `Couverture de l'histoire « ${title} »` });
+
 const quandLAmourRetrousseSesManches: Story = {
   slug: "quand-l-amour-retrousse-ses-manches",
   title: "Quand l'Amour Retrousse ses Manches",
+  cover: cover("quand-l-amour-retrousse-ses-manches", 900, 1152, "Quand l'Amour Retrousse ses Manches"),
   summary: "Nathalie, 26 ans, vit dans le rêve d'un amour romantique où la passion doit être naturelle, fluide et sans effort. Lorsqu'elle rencontre Éric, un jeune ingénieur passionné et dévoué, tout semble parfait lors des premiers mois. Mais lorsque les premières épreuves du quotidien surviennent — fatigue extrême, contraintes familiales et divergences de priorités —, Nathalie panique, interprétant ces frictions comme la fin de l'amour. À travers les enseignements du cursus *Bâtir sur le Roc* et l'exemple de maturité d'Éric, elle découvre que le véritable amour d'alliance ne s'arrête pas quand l'émotion baisse : c'est au contraire le moment où il retrousse ses manches pour bâtir.",
   lessons: ["1-1", "1-5"],
   chapters: [
@@ -76,6 +81,7 @@ const quandLAmourRetrousseSesManches: Story = {
 const lePasseportPourLAlliance: Story = {
   slug: "le-passeport-pour-l-alliance",
   title: "Le Passeport pour l'Alliance",
+  cover: cover("le-passeport-pour-l-alliance", 900, 932, "Le Passeport pour l'Alliance"),
   summary: "Kevin, 30 ans, vit dans l'obsession de quitter son pays pour trouver un « avenir meilleur » à l'étranger. Voyant le mariage comme un simple moyen de transport et un billet de sortie, il s'inscrit sur des plateformes en ligne dans l'espoir de trouver une partenaire résidant en Europe ou en Amérique. C'est en échangeant avec Grâce, une jeune femme vivant à l'étranger mais profondément ancrée dans la foi, que ses motivations vont être ébranlées. Grâce refuse de jouer le rôle d'un « passeport relationnel » et l'invite à suivre la formation *Bâtir sur le Roc* sur **Garden of Alliance**. Ce parcours transforme radicalement la vision de Kevin : d'un chercheur d'opportunités, il devient un homme de vision et d'alliance, prêt à bâtir un sanctuaire solide sur le Roc de Christ.",
   lessons: ["1-3", "1-4"],
   chapters: [
@@ -142,6 +148,7 @@ const lePasseportPourLAlliance: Story = {
 const lEchoDuSanctuaire: Story = {
   slug: "l-echo-du-sanctuaire",
   title: "L'Écho du Sanctuaire",
+  cover: cover("l-echo-du-sanctuaire", 848, 1264, "L'Écho du Sanctuaire"),
   summary: "Deux amis proches, David et Christian, s'engagent dans des fréquentations. David, un jeune homme impulsif et dynamique, fait la rencontre de Johanna, une femme posée, réfléchie et profondément à l'écoute. Malgré leurs différences de tempérament, ils apprennent à bâtir un espace de sécurité émotionnelle où l'on désarme. De leur côté, Christian et Héléna se ressemblent en tout point et partagent le même goût pour les sorties, mais leur relation repose sur la performance et le divertissement. Face à la première tempête et à la fatigue du quotidien, leurs deux visions s'affrontent : l'une transforme l'épreuve en un refuge de grâce, l'autre détruit l'alliance sur le ring des déceptions.",
   lessons: ["1-2", "1-1"],
   chapters: [
@@ -208,6 +215,7 @@ const lEchoDuSanctuaire: Story = {
 const auDelaDesParalleles: Story = {
   slug: "au-dela-des-paralleles",
   title: "Au-delà des Parallèles",
+  cover: cover("au-dela-des-paralleles", 848, 1264, "Au-delà des Parallèles"),
   summary: "Grace, 25 ans, vient d'obtenir son diplôme d'ingénieure en génie civil. Alors qu'elle cherche son premier emploi, sa vie devient le théâtre d'un dilemme : d'un côté, des prétendants aisés mais sans foi réelle lui offrent un avenir matériel confortable ; de l'autre, David, un jeune frère en Christ passionné, brillant mais encore sans opportunités concrètes, incarne une vision partagée. C'est en découvrant la vraie dimension de l'*Ezer Kenegdo* que Grace comprend que le mariage n'est pas une question de statut actuel, mais de destinée commune.",
   lessons: ["1-3", "1-4"],
   chapters: [

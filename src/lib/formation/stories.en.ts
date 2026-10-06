@@ -2,9 +2,14 @@
 // chapters and same number of takeaways (checked in development by ui.ts).
 import type { Story } from "./types";
 
+// Covers: public/formation/histoires/<slug>.en.webp (English artwork).
+const cover = (file: string, width: number, height: number, title: string) =>
+  ({ src: `/formation/histoires/${file}.webp`, width, height, alt: `Cover of the story “${title}”` });
+
 const whenLoveRollsUpItsSleeves: Story = {
   slug: "quand-l-amour-retrousse-ses-manches",
   title: "When Love Rolls Up Its Sleeves",
+  cover: cover("quand-l-amour-retrousse-ses-manches.en", 900, 1152, "When Love Rolls Up Its Sleeves"),
   summary: "Nathalie, 26, lives in the dream of romantic love where passion must be effortless, natural, and fluid. When she meets Éric, a passionate and dedicated young engineer, everything seems perfect during their first few months together. But when the first challenges of daily life arise—extreme fatigue, family obligations, and diverging priorities—Nathalie panics, interpreting these frictions as the end of love. Through the teachings of the *Build on the Rock* course and Éric's maturity, she discovers that true covenant love doesn't end when emotions fade: on the contrary, that is the exact moment it rolls up its sleeves to build.",
   lessons: ["1-1", "1-5"],
   chapters: [
@@ -74,6 +79,7 @@ const whenLoveRollsUpItsSleeves: Story = {
 const thePassportToTheCovenant: Story = {
   slug: "le-passeport-pour-l-alliance",
   title: "The Passport to the Covenant",
+  cover: cover("le-passeport-pour-l-alliance.en", 900, 932, "The Passport to the Covenant"),
   summary: "Kevin, 30, lives with an obsession to leave his home country in search of a \"better future\" abroad. Viewing marriage as a mere means of transportation and a ticket out, he joins online platforms in hopes of finding a partner living in Europe or America. As he begins chatting with Grace, a young woman living abroad who is deeply rooted in her faith, his motives are shaken. Grace refuses to play the role of a \"relational passport\" and invites him to take the *Build on the Rock* training course on **Garden of Alliance**. This journey radically transforms Kevin's vision: from a seeker of opportunities, he becomes a man of vision and covenant, ready to build a solid sanctuary on the Rock of Christ.",
   lessons: ["1-3", "1-4"],
   chapters: [
@@ -140,6 +146,7 @@ const thePassportToTheCovenant: Story = {
 const theEchoOfTheSanctuary: Story = {
   slug: "l-echo-du-sanctuaire",
   title: "The Echo of the Sanctuary",
+  cover: cover("l-echo-du-sanctuaire.en", 900, 1350, "The Echo of the Sanctuary"),
   summary: "Two close friends, David and Christian, embark on courtship journeys. David, an impulsive and dynamic young man, meets Johanna, a composed, thoughtful, and deeply attentive woman. Despite their personality differences, they learn to build a space of emotional safety where shields are dropped. On the other hand, Christian and Héléna are nearly identical in every way and share the same love for social life, but their relationship is built on performance and entertainment. Faced with their first storm and the weariness of daily life, their two perspectives collide: one turns the trial into a refuge of grace, while the other destroys the covenant on the battleground of disappointment.",
   lessons: ["1-2", "1-1"],
   chapters: [
@@ -206,6 +213,7 @@ const theEchoOfTheSanctuary: Story = {
 const beyondTheParallels: Story = {
   slug: "au-dela-des-paralleles",
   title: "Beyond the Parallels",
+  cover: cover("au-dela-des-paralleles.en", 848, 1264, "Beyond the Parallels"),
   summary: "Grace, 25, has just earned her degree in civil engineering. As she searches for her first job, her life becomes the stage for a dilemma: on one side, wealthy suitors with no genuine faith offer her a comfortable material future; on the other, David, an ambitious and brilliant young brother in Christ who currently lacks major opportunities, embodies a shared vision. By discovering the true meaning of *Ezer Kenegdo*, Grace comes to understand that marriage is not about current financial status, but about a shared destiny.",
   lessons: ["1-3", "1-4"],
   chapters: [

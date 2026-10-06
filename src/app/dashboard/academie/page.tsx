@@ -129,18 +129,26 @@ export default function AcademyIndexPage() {
           <div className="grid md:grid-cols-2 gap-4">
             {stories.map((st) => (
               <Link key={st.slug} href={`${STORIES_BASE_PATH}/${st.slug}`}
-                className="group flex flex-col rounded-3xl border border-border bg-card p-6 hover:border-primary/40 hover:shadow-[0_10px_32px_rgba(38,70,52,0.10)] transition-all">
-                <span className="inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.18em] text-primary">
-                  <BookOpen className="w-4 h-4" /> {ui.storyEyebrow} · {ui.readingTime(storyReadingMinutes(st))}
+                className="group flex gap-4 sm:gap-5 rounded-3xl border border-border bg-card p-4 sm:p-5 hover:border-primary/40 hover:shadow-[0_10px_32px_rgba(38,70,52,0.10)] transition-all">
+                {/* Couverture : affichée entière (le titre fait partie de l'illustration) */}
+                <span className="shrink-0 self-start w-[104px] sm:w-[128px]">
+                  <Image src={st.cover.src} alt={st.cover.alt} width={st.cover.width} height={st.cover.height}
+                    sizes="128px"
+                    className="w-full h-auto rounded-lg ring-1 ring-black/5 shadow-[0_6px_18px_rgba(38,70,52,0.16)] group-hover:-translate-y-0.5 transition-transform duration-200" />
                 </span>
-                <span className="mt-2 font-headline text-[24px] font-bold leading-tight text-foreground group-hover:text-primary transition-colors">
-                  {frenchSpacing(st.title)}
-                </span>
-                <span className="mt-2 text-[14.5px] leading-relaxed text-[#3F4A43] line-clamp-3">
-                  <RichText text={st.summary} />
-                </span>
-                <span className="mt-auto pt-5 inline-flex items-center gap-1.5 text-[14px] font-bold text-primary">
-                  {ui.readStory} <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                <span className="min-w-0 flex-1 flex flex-col">
+                  <span className="inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.18em] text-primary">
+                    <BookOpen className="w-4 h-4 shrink-0" /> {ui.storyEyebrow} · {ui.readingTime(storyReadingMinutes(st))}
+                  </span>
+                  <span className="mt-2 font-headline text-[21px] sm:text-[23px] font-bold leading-tight text-foreground group-hover:text-primary transition-colors">
+                    {frenchSpacing(st.title)}
+                  </span>
+                  <span className="mt-2 text-[14.5px] leading-relaxed text-[#3F4A43] line-clamp-3 sm:line-clamp-4">
+                    <RichText text={st.summary} />
+                  </span>
+                  <span className="mt-auto pt-4 inline-flex items-center gap-1.5 text-[14px] font-bold text-primary">
+                    {ui.readStory} <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                  </span>
                 </span>
               </Link>
             ))}

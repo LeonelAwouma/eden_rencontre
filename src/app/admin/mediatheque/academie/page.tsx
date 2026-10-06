@@ -96,7 +96,10 @@ export default function AdminAcademyPage() {
         <div className="grid md:grid-cols-2 gap-3">
           {STORIES.map((st) => (
             <Link key={st.slug} href={`${ADMIN_STORY_PREVIEW_PATH}/${st.slug}`}
-              className="group flex flex-col rounded-xl border border-[#E8E5E0] bg-white px-4 py-3.5 hover:border-[#C6D4C0] hover:shadow-[0_4px_16px_rgba(72,107,70,0.08)] transition-all">
+              className="group flex gap-3.5 rounded-xl border border-[#E8E5E0] bg-white px-4 py-3.5 hover:border-[#C6D4C0] hover:shadow-[0_4px_16px_rgba(72,107,70,0.08)] transition-all">
+              <Image src={st.cover.src} alt="" width={st.cover.width} height={st.cover.height} sizes="64px"
+                className="w-16 h-auto self-start rounded-md ring-1 ring-black/5 shrink-0" />
+              <span className="min-w-0 flex-1 flex flex-col">
               <span className="flex items-center justify-between gap-3">
                 <span className="text-[14px] font-semibold text-[#2F2F2F] group-hover:text-[#486B46]">{st.title}</span>
                 <ArrowRight className="w-4 h-4 text-[#486B46] shrink-0" />
@@ -106,6 +109,7 @@ export default function AdminAcademyPage() {
                 <span className="inline-flex items-center gap-1"><Clock className="w-3 h-3" /> {storyReadingMinutes(st)} min</span>
                 <span>{st.chapters.filter((c) => !c.epilogue).length} chapitres + épilogue</span>
                 <span>Leçons {st.lessons.map((s) => s.replace("-", ".")).join(" · ")}</span>
+              </span>
               </span>
             </Link>
           ))}

@@ -1,17 +1,10 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion } from "framer-motion";
-import {
-  Globe,
-  Bell,
-  Palette,
-  Save,
-  Loader2,
-  CheckCircle2,
-  AlertCircle,
-} from "lucide-react";
+import { Globe, Bell, Palette, Save, Loader2, CheckCircle2, AlertCircle, Check, Mail, ChevronDown, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { PageHeader } from "@/components/admin/page-header";
+import { Card, HEADING_FONT, LoadingBlock, btn, inputClass } from "@/components/admin/admin-ui";
 
 interface SettingValue {
   [key: string]: unknown;
@@ -23,9 +16,9 @@ interface SettingsData {
 
 // Chaque réglage affiché ici a un effet réel (cf. src/lib/platform-settings.ts).
 const SECTIONS = [
-  { id: "general", label: "Général", icon: Globe },
-  { id: "notifications", label: "Notifications", icon: Bell },
-  { id: "appearance", label: "Apparence", icon: Palette },
+  { id: "general", label: "Général", description: "Nom et contact", icon: Globe },
+  { id: "notifications", label: "Notifications", description: "E-mails envoyés", icon: Bell },
+  { id: "appearance", label: "Apparence", description: "Couleur et bandeau", icon: Palette },
 ];
 
 const DEFAULTS: Record<string, unknown> = {
@@ -35,6 +28,58 @@ const DEFAULTS: Record<string, unknown> = {
   "appearance.accent_color": "#486B46",
   "appearance.banner_text": "",
 };
+
+/** En-tête d'un panneau de réglages. */
+function PanelHeader({ title, description }: { title: string; description?: string }) {
+  return (
+    <div className="mb-2">
+      <h2 className="text-[18px] font-semibold text-[#1F2A23] tracking-tight" style={HEADING_FONT}>{title}</h2>
+      {description && <p className="text-[13px] text-[#5F6B63] mt-0.5">{description}</p>}
+    </div>
+  );
+}
+
+/** Ligne de réglage : libellé + aide à gauche, contrôle à droite (ou dessous sur mobile). */
+function FieldRow({ label, description, htmlFor, children, inline = false }: {
+  label: string; description?: string; htmlFor?: string; children: React.ReactNode; inline?: boolean;
+}) {
+  return (
+    <div className={cn("py-5 border-b border-[#F1EEE9] last:border-0", inline ? "flex items-start justify-between gap-6" : "grid gap-3 md:grid-cols-[minmax(0,240px)_1fr] md:gap-8")}>
+      <div className="min-w-0">
+        {htmlFor ? (
+          <label htmlFor={htmlFor} className="block text-[14px] font-semibold text-[#1F2A23]">{label}</label>
+        ) : (
+          <p className="text-[14px] font-semibold text-[#1F2A23]">{label}</p>
+        )}
+        {description && <p className="text-[13px] text-[#5F6B63] mt-1 leading-relaxed">{description}</p>}
+      </div>
+      <div className={cn("min-w-0", inline && "shrink-0")}>{children}</div>
+    </div>
+  );
+}
+
+function Switch({ checked, onChange, label }: { checked: boolean; onChange: (v: boolean) => void; label: string }) {
+  return (
+    <button type="button" role="switch" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)}
+      className={cn(
+        "relative w-11 h-6 shrink-0 rounded-full transition-colors duration-150",
+        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-2",
+        checked ? "bg-primary" : "bg-[#D9D4CC]"
+      )}>
+      <span className={cn("absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-[left] duration-150", checked ? "left-[22px]" : "left-0.5")} />
+    </button>
+  );
+}
+
+function ResultNote({ result }: { result: { ok: boolean; text: string } }) {
+  return (
+    <p role="status" className={cn("mt-3 flex items-start gap-2 rounded-xl px-3.5 py-2.5 text-[13px] font-medium",
+      result.ok ? "bg-primary/[0.08] text-[#2F5A2D]" : "bg-[#D64545]/[0.08] text-[#B83333]")}>
+      {result.ok ? <CheckCircle2 className="w-4 h-4 mt-0.5 shrink-0" /> : <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />}
+      {result.text}
+    </p>
+  );
+}
 
 export default function SettingsPage() {
   const [settings, setSettings] = useState<SettingsData>({});
@@ -72,11 +117,17 @@ export default function SettingsPage() {
 
   const setValue = (category: string, key: string, value: unknown) => {
     setSaveError(null);
+    setSaved(false);
     setEditedValues((prev) => ({ ...prev, [`${category}.${key}`]: value }));
   };
 
   const hasChanges = (category: string) =>
     Object.keys(editedValues).some((k) => k.startsWith(`${category}.`));
+
+  const discardSection = (category: string) => {
+    setSaveError(null);
+    setEditedValues((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => !k.startsWith(`${category}.`))));
+  };
 
   const saveSection = async (category: string) => {
     setSaving(true);
@@ -129,83 +180,44 @@ export default function SettingsPage() {
     setSaving(false);
   };
 
-  const renderField = (
-    category: string,
-    key: string,
-    label: string,
-    type: "text" | "email" | "toggle",
-    description?: string
-  ) => {
-    const value = getValue(category, key);
-
-    if (type === "toggle") {
-      const isOn = value === true || value === "true";
-      return (
-        <div key={`${category}-${key}`} className="flex items-center justify-between gap-6 py-4 border-b border-[#F3F4F6] last:border-0">
-          <div>
-            <p className="text-[13px] font-semibold text-[#1a1a1a]">{label}</p>
-            {description && <p className="text-[11px] text-[#9CA3AF] mt-0.5">{description}</p>}
-          </div>
-          <button
-            role="switch"
-            aria-checked={isOn}
-            aria-label={label}
-            onClick={() => setValue(category, key, !isOn)}
-            className={cn(
-              "relative w-11 h-6 shrink-0 rounded-full transition-all duration-200",
-              isOn ? "bg-[#38C172]" : "bg-[#E5E7EB]"
-            )}
-          >
-            <div className={cn(
-              "absolute top-0.5 w-5 h-5 rounded-full bg-white shadow-sm transition-all duration-200",
-              isOn ? "left-[22px]" : "left-0.5"
-            )} />
-          </button>
-        </div>
-      );
-    }
-
-    return (
-      <div key={`${category}-${key}`} className="py-4 border-b border-[#F3F4F6] last:border-0">
-        <label htmlFor={`${category}-${key}`} className="block text-[13px] font-semibold text-[#1a1a1a] mb-1">{label}</label>
-        {description && <p className="text-[11px] text-[#9CA3AF] mb-2">{description}</p>}
-        <input
-          id={`${category}-${key}`}
-          type={type}
-          value={String(value)}
-          onChange={(e) => setValue(category, key, e.target.value)}
-          className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all"
-        />
-      </div>
-    );
-  };
+  const renderTextField = (category: string, key: string, label: string, type: "text" | "email", description?: string) => (
+    <FieldRow label={label} description={description} htmlFor={`${category}-${key}`}>
+      <input
+        id={`${category}-${key}`}
+        type={type}
+        value={String(getValue(category, key))}
+        onChange={(e) => setValue(category, key, e.target.value)}
+        className={inputClass}
+      />
+    </FieldRow>
+  );
 
   const renderSection = () => {
     switch (activeSection) {
       case "general":
         return (
-          <div className="space-y-0">
-            <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-1">Paramètres généraux</h3>
-            <p className="text-[12px] text-[#9CA3AF] mb-2">Utilisés dans tous les e-mails envoyés aux membres.</p>
-            {renderField("general", "platform_name", "Nom de la plateforme", "text",
-              "Nom de l'expéditeur, et nom repris dans l'objet et le texte des e-mails.")}
-            {renderField("general", "contact_email", "E-mail de contact", "email",
-              "Adresse qui reçoit les réponses des membres et qui est indiquée comme contact dans les e-mails.")}
-          </div>
+          <>
+            <PanelHeader title="Paramètres généraux" description="Utilisés dans tous les e-mails envoyés aux membres." />
+            {renderTextField("general", "platform_name", "Nom de la plateforme", "text",
+              "Nom de l'expéditeur, repris dans l'objet et le texte des e-mails.")}
+            {renderTextField("general", "contact_email", "E-mail de contact", "email",
+              "Reçoit les réponses des membres et apparaît comme contact dans les e-mails.")}
+          </>
         );
-      case "notifications":
+      case "notifications": {
+        const isOn = getValue("notifications", "email_enabled") === true || getValue("notifications", "email_enabled") === "true";
         return (
-          <div className="space-y-0">
-            <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-4">Notifications par e-mail</h3>
-            {renderField("notifications", "email_enabled", "E-mails de réunion", "toggle",
-              "Invitations, reports et annulations de réunions. Désactivé, les invitations sont notées « non envoyées » et vous pourrez les renvoyer plus tard.")}
-            <p className="text-[11px] text-[#9CA3AF] pt-4">
-              Les e-mails liés au compte (inscription, validation, mot de passe, vérification) partent toujours.
-            </p>
+          <>
+            <PanelHeader title="Notifications par e-mail" description="Les e-mails liés au compte (inscription, validation, mot de passe, vérification) partent toujours." />
+            <FieldRow inline label="E-mails de réunion"
+              description="Invitations, reports et annulations de réunions. Désactivés, les invitations sont notées « non envoyées » et vous pourrez les renvoyer plus tard.">
+              <Switch checked={isOn} onChange={(v) => setValue("notifications", "email_enabled", v)} label="E-mails de réunion" />
+            </FieldRow>
             <TestEmailPanel />
             <ApprovalEmailsPanel />
-          </div>
+          </>
         );
+      }
       case "appearance":
         return <AppearanceSection getValue={getValue} setValue={setValue} />;
       default:
@@ -213,98 +225,97 @@ export default function SettingsPage() {
     }
   };
 
+  const dirty = hasChanges(activeSection);
+
   return (
-    <>
-      <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}>
-        <h1 className="text-[24px] font-bold text-[#1a1a1a] tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
-          Paramètres
-        </h1>
-        <p className="text-[13px] text-[#9CA3AF] mt-0.5 font-medium mb-6">Configuration de la plateforme</p>
-      </motion.div>
+    <div className="max-w-6xl mx-auto">
+      <PageHeader title="Paramètres" subtitle="Configuration de la plateforme" />
 
       {loading ? (
-        <div className="p-12 text-center">
-          <div className="w-8 h-8 border-[3px] border-[#38C172]/20 border-t-[#38C172] rounded-full animate-spin mx-auto" />
-          <p className="text-[13px] text-[#9CA3AF] mt-3 font-medium">Chargement…</p>
-        </div>
+        <Card><LoadingBlock label="Chargement des paramètres…" /></Card>
       ) : loadError ? (
-        <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-[13px] font-medium text-red-700 flex items-center gap-2">
+        <p role="alert" className="p-4 rounded-xl bg-[#D64545]/[0.08] border border-[#D64545]/20 text-[14px] font-medium text-[#B83333] flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" /> {loadError}
-        </div>
+        </p>
       ) : (
         <div className="flex flex-col lg:flex-row gap-6">
-          {/* Sidebar Navigation */}
-          <motion.div
-            initial={{ opacity: 0, x: -12 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.4 }}
-            className="lg:w-[240px] flex-shrink-0"
-          >
-            <div className="bg-white rounded-[20px] border border-[#E5E7EB] p-2">
-              {SECTIONS.map((section) => (
-                <button
-                  key={section.id}
-                  onClick={() => { setActiveSection(section.id); setSaveError(null); }}
-                  className={cn(
-                    "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-[13px] font-semibold transition-all",
-                    activeSection === section.id
-                      ? "bg-[#38C172]/10 text-[#38C172]"
-                      : "text-[#6B7280] hover:text-[#1a1a1a] hover:bg-[#F9FAFB]"
-                  )}
-                >
-                  <section.icon className="w-[18px] h-[18px]" />
-                  {section.label}
-                  {hasChanges(section.id) && <span className="ml-auto w-1.5 h-1.5 rounded-full bg-[#FF9E45]" aria-label="Modifications non enregistrées" />}
-                </button>
-              ))}
-            </div>
-          </motion.div>
+          {/* Navigation des sections : onglets horizontaux sur mobile, colonne sur desktop */}
+          <nav aria-label="Sections des paramètres" className="lg:w-[240px] shrink-0">
+            <Card className="p-1.5 flex lg:flex-col gap-1 overflow-x-auto">
+              {SECTIONS.map((section) => {
+                const active = activeSection === section.id;
+                return (
+                  <button
+                    key={section.id}
+                    type="button"
+                    aria-current={active ? "page" : undefined}
+                    onClick={() => { setActiveSection(section.id); setSaveError(null); setSaved(false); }}
+                    className={cn(
+                      "flex-1 lg:flex-none flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-colors duration-150 whitespace-nowrap",
+                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                      active ? "bg-primary/[0.08] text-[#2F5A2D]" : "text-[#4A534D] hover:bg-[#F5F3EF] hover:text-[#1F2A23]"
+                    )}
+                  >
+                    <section.icon className={cn("w-[18px] h-[18px] shrink-0", active ? "text-primary" : "text-[#6B746E]")} aria-hidden="true" />
+                    <span className="min-w-0">
+                      <span className={cn("block text-[14px]", active ? "font-semibold" : "font-medium")}>{section.label}</span>
+                      <span className="hidden lg:block text-[12px] text-[#5F6B63]">{section.description}</span>
+                    </span>
+                    {hasChanges(section.id) && (
+                      <span className="ml-auto w-2 h-2 rounded-full bg-[#F59E0B] shrink-0" title="Modifications non enregistrées">
+                        <span className="sr-only">Modifications non enregistrées</span>
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+            </Card>
+          </nav>
 
-          {/* Content */}
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.1 }}
-            className="flex-1 bg-white rounded-[20px] border border-[#E5E7EB] p-6"
-          >
+          <Card as="section" className="flex-1 min-w-0 p-5 sm:p-6">
             {renderSection()}
 
-            {(hasChanges(activeSection) || saved || saveError) && (
-              <motion.div
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="mt-6 pt-4 border-t border-[#F3F4F6] flex flex-wrap items-center gap-3"
-              >
-                {hasChanges(activeSection) && (
-                  <button
-                    onClick={() => saveSection(activeSection)}
-                    disabled={saving}
-                    className="flex items-center gap-2 px-6 py-3 rounded-xl bg-[#38C172] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(56,193,114,0.3)] hover:shadow-[0_6px_24px_rgba(56,193,114,0.4)] hover:-translate-y-0.5 transition-all disabled:opacity-50"
-                  >
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                    {saving ? "Sauvegarde…" : "Sauvegarder"}
-                  </button>
-                )}
-                {saved && !saveError && (
-                  <span role="status" className="flex items-center gap-1.5 text-[12px] font-semibold text-[#38C172]">
-                    <CheckCircle2 className="w-4 h-4" /> Sauvegardé avec succès
-                  </span>
-                )}
-                {saveError && (
-                  <span role="alert" className="flex items-center gap-1.5 text-[12px] font-semibold text-red-600">
+            {(dirty || saved || saveError) && (
+              <div className="sticky bottom-0 -mx-5 sm:-mx-6 -mb-5 sm:-mb-6 mt-6 px-5 sm:px-6 py-4 border-t border-[#F1EEE9] bg-white/95 backdrop-blur rounded-b-2xl flex flex-wrap items-center gap-3">
+                {saveError ? (
+                  <span role="alert" className="flex items-center gap-1.5 text-[13px] font-medium text-[#B83333] mr-auto">
                     <AlertCircle className="w-4 h-4 shrink-0" /> {saveError}
                   </span>
+                ) : saved && !dirty ? (
+                  <span role="status" className="flex items-center gap-1.5 text-[13px] font-semibold text-primary mr-auto">
+                    <CheckCircle2 className="w-4 h-4" /> Modifications enregistrées
+                  </span>
+                ) : (
+                  <span className="text-[13px] text-[#5F6B63] mr-auto">Modifications non enregistrées</span>
                 )}
-              </motion.div>
+                {dirty && (
+                  <>
+                    <button type="button" onClick={() => discardSection(activeSection)} disabled={saving} className={btn.secondary}>Annuler</button>
+                    <button type="button" onClick={() => saveSection(activeSection)} disabled={saving} className={btn.primary}>
+                      {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
+                      {saving ? "Enregistrement…" : "Enregistrer"}
+                    </button>
+                  </>
+                )}
+              </div>
             )}
-          </motion.div>
+          </Card>
         </div>
       )}
-    </>
+    </div>
   );
 }
 
-/* ───────────────────── Appearance Section ─────────────────────── */
+/* ───────────────────── Apparence ─────────────────────── */
+
+const ACCENT_COLORS = [
+  { color: "#486B46", label: "Vert Eden", note: "Recommandé" },
+  { color: "#38C172", label: "Vert vif" },
+  { color: "#FF9E45", label: "Orange" },
+  { color: "#4F7DF3", label: "Bleu" },
+  { color: "#8B5CF6", label: "Violet" },
+  { color: "#C6A15B", label: "Doré" },
+];
 
 function AppearanceSection({
   getValue,
@@ -315,52 +326,65 @@ function AppearanceSection({
 }) {
   const currentAccent = String(getValue("appearance", "accent_color") || "#486B46");
   const currentBanner = String(getValue("appearance", "banner_text") || "");
-
-  const accentColors = [
-    { color: "#486B46", label: "Vert Eden" },
-    { color: "#38C172", label: "Vert vif" },
-    { color: "#FF9E45", label: "Orange" },
-    { color: "#4F7DF3", label: "Bleu" },
-    { color: "#8B5CF6", label: "Violet" },
-    { color: "#C6A15B", label: "Doré" },
-  ];
+  const current = ACCENT_COLORS.find((c) => c.color.toLowerCase() === currentAccent.toLowerCase());
 
   return (
-    <div className="space-y-0">
-      <h3 className="text-[16px] font-bold text-[#1a1a1a] mb-4">Apparence</h3>
+    <>
+      <PanelHeader title="Apparence" description="Personnalisez la couleur d'accent et le message d'accueil de la plateforme." />
 
-      {/* Accent Color */}
-      <div className="py-4 border-b border-[#F3F4F6]">
-        <p className="text-[13px] font-semibold text-[#1a1a1a] mb-1">Couleur d'accent</p>
-        <p className="text-[11px] text-[#9CA3AF] mb-3">Couleur des menus, boutons et badges de l'interface admin et de l'espace membre.</p>
-        <div className="flex flex-wrap gap-3">
-          {accentColors.map((c) => (
-            <button
-              key={c.label}
-              onClick={() => setValue("appearance", "accent_color", c.color)}
-              className={cn(
-                "w-10 h-10 rounded-xl transition-all relative",
-                currentAccent === c.color
-                  ? "ring-2 ring-offset-2 ring-[#1a1a1a]/30 scale-110"
-                  : "hover:scale-105"
-              )}
-              style={{ backgroundColor: c.color }}
-              title={c.label}
-              aria-label={c.label}
-              aria-pressed={currentAccent === c.color}
-            >
-              {currentAccent === c.color && (
-                <CheckCircle2 className="w-4 h-4 text-white absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2" />
-              )}
-            </button>
-          ))}
+      <FieldRow label="Couleur d'accent" description="Couleur des menus, boutons et badges de l'interface admin et de l'espace membre.">
+        <div role="radiogroup" aria-label="Couleur d'accent" className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+          {ACCENT_COLORS.map((c) => {
+            const selected = currentAccent.toLowerCase() === c.color.toLowerCase();
+            return (
+              <button
+                key={c.color}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                onClick={() => setValue("appearance", "accent_color", c.color)}
+                className={cn(
+                  "flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-colors duration-150",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                  selected ? "border-[#1F2A23]/30 bg-[#FAF8F5]" : "border-[#E8E5E0] hover:border-[#D9D4CC] hover:bg-[#FAF8F5]"
+                )}
+              >
+                <span className="w-7 h-7 rounded-lg shrink-0 flex items-center justify-center ring-1 ring-black/5" style={{ backgroundColor: c.color }}>
+                  {selected && <Check className="w-4 h-4 text-white" aria-hidden="true" />}
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-[13px] font-semibold text-[#1F2A23] truncate">{c.label}</span>
+                  <span className="block text-[12px] text-[#5F6B63] font-mono">{c.note ?? c.color}</span>
+                </span>
+              </button>
+            );
+          })}
         </div>
-      </div>
 
-      {/* Banner Text */}
-      <div className="py-4">
-        <label htmlFor="appearance-banner_text" className="block text-[13px] font-semibold text-[#1a1a1a] mb-1">Texte du bandeau</label>
-        <p className="text-[11px] text-[#9CA3AF] mb-2">Message affiché en haut de la page d'accueil. Laissez vide pour ne rien afficher.</p>
+        {/* Aperçu en direct de la couleur choisie */}
+        <div className="mt-4 rounded-xl border border-[#F1EEE9] bg-[#FAF8F5] p-4">
+          <p className="text-[12px] font-semibold uppercase tracking-wide text-[#5F6B63] mb-3">Aperçu</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <span className="inline-flex items-center gap-2 h-9 px-4 rounded-xl text-white text-[13px] font-semibold" style={{ backgroundColor: currentAccent }}>
+              Bouton principal
+            </span>
+            <span className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[12px] font-semibold"
+              style={{ backgroundColor: `${currentAccent}1a`, color: currentAccent }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-current" /> Approuvé
+            </span>
+            <span className="inline-flex items-center gap-2 h-9 px-3 rounded-lg text-[13px] font-semibold"
+              style={{ backgroundColor: `${currentAccent}14`, color: currentAccent }}>
+              <Palette className="w-4 h-4" /> Menu actif
+            </span>
+          </div>
+          {current && current.color !== "#486B46" && (
+            <p className="mt-3 text-[12px] text-[#5F6B63]">Le logo reste toujours en vert Eden, quelle que soit la couleur d&apos;accent.</p>
+          )}
+        </div>
+      </FieldRow>
+
+      <FieldRow label="Texte du bandeau" htmlFor="appearance-banner_text"
+        description="Message affiché en haut de la page d'accueil. Laissez vide pour ne rien afficher.">
         <input
           id="appearance-banner_text"
           type="text"
@@ -368,10 +392,21 @@ function AppearanceSection({
           value={currentBanner}
           onChange={(e) => setValue("appearance", "banner_text", e.target.value)}
           placeholder="Bienvenue sur Garden of Alliance"
-          className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all"
+          className={inputClass}
         />
-      </div>
-    </div>
+        <div className="mt-1.5 flex justify-end text-[12px] text-[#5F6B63] tabular-nums">{currentBanner.length} / 200</div>
+        {currentBanner.trim() && (
+          <div className="mt-2 rounded-xl overflow-hidden border border-[#F1EEE9]">
+            <p className="px-3 py-1.5 text-[12px] font-semibold uppercase tracking-wide text-[#5F6B63] bg-[#FAF8F5] border-b border-[#F1EEE9]">Aperçu sur l&apos;accueil</p>
+            {/* Même rendu que src/components/garden/announcement-bar.tsx */}
+            <div className="relative bg-deep-eden text-background text-center text-[12px] font-semibold tracking-wide py-2.5 px-10">
+              {currentBanner.trim()}
+              <X className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 opacity-80" aria-hidden="true" />
+            </div>
+          </div>
+        )}
+      </FieldRow>
+    </>
   );
 }
 
@@ -404,27 +439,18 @@ function TestEmailPanel() {
   };
 
   return (
-    <div className="mt-6 pt-5 border-t border-[#F3F4F6]">
-      <h4 className="text-[14px] font-bold text-[#1a1a1a]">Tester l&apos;envoi des e-mails</h4>
-      <p className="text-[12px] text-[#6B7280] mt-1">
-        Si les membres ne reçoivent pas leurs e-mails (validation de compte…), envoyez un test : en cas d&apos;échec, la cause exacte s&apos;affiche.
-      </p>
-      <div className="mt-3 flex flex-col sm:flex-row gap-2">
-        <input type="email" value={to} onChange={(e) => setTo(e.target.value)} placeholder="Adresse de test (par défaut : la vôtre)"
-          aria-label="Adresse de test"
-          className="flex-1 h-10 px-3 rounded-xl border border-[#E5E7EB] text-[13px] outline-none focus:border-[#486B46] focus:ring-2 focus:ring-[#486B46]/10" />
-        <button onClick={send} disabled={busy}
-          className="h-10 px-4 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#3A5A38] disabled:opacity-60">
-          {busy ? "Envoi…" : "Envoyer un e-mail de test"}
+    <FieldRow label="Tester l'envoi des e-mails" htmlFor="test-email-to"
+      description="Si les membres ne reçoivent pas leurs e-mails, envoyez un test : en cas d'échec, la cause exacte s'affiche.">
+      <div className="flex flex-col sm:flex-row gap-2">
+        <input id="test-email-to" type="email" value={to} onChange={(e) => setTo(e.target.value)}
+          placeholder="Adresse de test (par défaut : la vôtre)" className={cn(inputClass, "flex-1")} />
+        <button type="button" onClick={send} disabled={busy} className={btn.secondary}>
+          {busy ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
+          {busy ? "Envoi…" : "Envoyer un test"}
         </button>
       </div>
-      {result && (
-        <p role="status" className={cn("mt-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium",
-          result.ok ? "bg-[#486B46]/10 text-[#2E4A36]" : "bg-[#B42318]/10 text-[#B42318]")}>
-          {result.text}
-        </p>
-      )}
-    </div>
+      {result && <ResultNote result={result} />}
+    </FieldRow>
   );
 }
 
@@ -487,48 +513,42 @@ function ApprovalEmailsPanel() {
   };
 
   return (
-    <div className="mt-6 pt-5 border-t border-[#F3F4F6]">
-      <h4 className="text-[14px] font-bold text-[#1a1a1a]">E-mail de validation non reçu</h4>
-      <p className="text-[12px] text-[#6B7280] mt-1">
-        Membres approuvés sans envoi enregistré de l&apos;e-mail « Votre profil est maintenant actif » : approuvés avant le suivi des envois, ou envoi échoué.
-      </p>
+    <FieldRow label="E-mail de validation non reçu"
+      description="Membres approuvés sans envoi enregistré de l'e-mail « Votre profil est maintenant actif » : approuvés avant le suivi des envois, ou envoi échoué.">
       {loadError ? (
-        <p role="alert" className="mt-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium bg-[#B42318]/10 text-[#B42318]">{loadError}</p>
+        <ResultNote result={{ ok: false, text: loadError }} />
       ) : members === null ? (
-        <p className="mt-3 text-[13px] text-[#9CA3AF]">Chargement…</p>
+        <p className="text-[13px] text-[#5F6B63] flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Chargement…</p>
       ) : members.length === 0 ? (
-        <p className="mt-3 text-[13px] font-medium text-[#2E4A36]">Tous les membres approuvés ont reçu leur e-mail de validation.</p>
+        <p className="flex items-center gap-2 text-[13px] font-medium text-primary">
+          <CheckCircle2 className="w-4 h-4" /> Tous les membres approuvés ont reçu leur e-mail de validation.
+        </p>
       ) : (
-        <div className="mt-3 space-y-2">
+        <div className="space-y-2">
           <div className="flex flex-col sm:flex-row sm:items-center gap-2">
             <button type="button" onClick={() => setShowList((v) => !v)} aria-expanded={showList}
-              className="text-left text-[13px] font-semibold text-[#486B46] hover:underline">
-              {members.length} membre(s) concerné(s) {showList ? "▴" : "▾"}
+              className="inline-flex items-center gap-1 text-left text-[13px] font-semibold text-primary hover:underline">
+              {members.length} membre(s) concerné(s)
+              <ChevronDown className={cn("w-4 h-4 transition-transform duration-150", showList && "rotate-180")} aria-hidden="true" />
             </button>
-            <button onClick={send} disabled={busy}
-              className="sm:ml-auto h-10 px-4 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#3A5A38] disabled:opacity-60 flex items-center justify-center gap-2">
+            <button type="button" onClick={send} disabled={busy} className={cn(btn.primary, "sm:ml-auto")}>
               {busy && <Loader2 className="w-4 h-4 animate-spin" />}
               {busy ? "Envoi…" : `Envoyer l'e-mail de validation (${members.length})`}
             </button>
           </div>
           {showList && (
-            <ul className="rounded-xl border border-[#F3F4F6] divide-y divide-[#F3F4F6] text-[12px] text-[#374151]">
+            <ul className="rounded-xl border border-[#F1EEE9] divide-y divide-[#F1EEE9] text-[13px] max-h-64 overflow-y-auto">
               {members.map((m) => (
                 <li key={m.email} className="px-3 py-2 flex flex-wrap gap-x-2">
-                  <span className="font-semibold">{m.name || "Membre"}</span>
-                  <span className="text-[#9CA3AF] break-all">{m.email}</span>
+                  <span className="font-semibold text-[#1F2A23]">{m.name || "Membre"}</span>
+                  <span className="text-[#5F6B63] break-all">{m.email}</span>
                 </li>
               ))}
             </ul>
           )}
         </div>
       )}
-      {result && (
-        <p role="status" className={cn("mt-3 rounded-xl px-3.5 py-2.5 text-[13px] font-medium",
-          result.ok ? "bg-[#486B46]/10 text-[#2E4A36]" : "bg-[#B42318]/10 text-[#B42318]")}>
-          {result.text}
-        </p>
-      )}
-    </div>
+      {result && <ResultNote result={result} />}
+    </FieldRow>
   );
 }

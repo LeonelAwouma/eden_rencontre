@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowLeft, ArrowRight, BookOpen, Clock, Eye, Lightbulb, Quote } from "lucide-react";
 import { Monogram, Flourish } from "@/components/ornaments";
 import { RichText, frenchSpacing } from "./rich-text";
@@ -101,6 +102,13 @@ export function StoryReader({ story: storyFr, preview = false }: { story: Story;
           <Flourish className="w-40 h-3 text-primary/40 mx-auto mt-6" />
         </div>
 
+        {/* Couverture, entière et dans la langue de lecture */}
+        <figure className="mt-8 flex justify-center">
+          <Image src={story.cover.src} alt={story.cover.alt} width={story.cover.width} height={story.cover.height}
+            priority sizes="(min-width: 640px) 340px, 78vw"
+            className="w-[78%] max-w-[340px] h-auto rounded-xl ring-1 ring-black/5 shadow-[0_18px_44px_rgba(38,70,52,0.18)]" />
+        </figure>
+
         <div
           className="mt-8 space-y-5 text-[17px] sm:text-[18px] leading-[1.75] text-[#2E3A33] select-none"
           style={{ WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
@@ -169,7 +177,8 @@ export function StoryReader({ story: storyFr, preview = false }: { story: Story;
               {others.map((st) => (
                 <Link key={st.slug} href={`${storyBase}/${st.slug}`}
                   className="group flex items-center gap-3 rounded-2xl border border-border bg-card px-4 py-3.5 hover:border-primary/40 transition-colors">
-                  <span className="w-10 h-10 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0"><BookOpen className="w-5 h-5" /></span>
+                  <Image src={st.cover.src} alt="" width={st.cover.width} height={st.cover.height} sizes="44px"
+                    className="w-11 h-auto rounded-md ring-1 ring-black/5 shrink-0" />
                   <span className="min-w-0 flex-1 text-[15px] font-semibold text-foreground leading-snug group-hover:text-primary">{frenchSpacing(st.title)}</span>
                   <ArrowRight className="w-4 h-4 text-primary shrink-0" />
                 </Link>

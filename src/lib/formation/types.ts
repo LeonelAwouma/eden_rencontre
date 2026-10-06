@@ -76,6 +76,11 @@ export interface Story {
   slug: string;
   title: string;
   summary: string;
+  /**
+   * Couverture illustrée, propre à chaque langue (le titre est dans l'image) :
+   * toujours affichée entière, jamais recadrée.
+   */
+  cover: { src: string; width: number; height: number; alt: string };
   /** Chapitres dans l'ordre ; le dernier peut être l'épilogue. */
   chapters: { title: string; epilogue?: boolean; blocks: StoryBlock[] }[];
   takeaways: { lead: string; text: string }[];
