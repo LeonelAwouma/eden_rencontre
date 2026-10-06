@@ -14,7 +14,7 @@ import {
   Heart,
   Crown,
   UserCircle,
-  LogOut, GraduationCap, MessagesSquare
+  LogOut, GraduationCap, MessagesSquare, Accessibility
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { avatarSrc } from "@/lib/avatar";
@@ -69,7 +69,7 @@ export function DashboardSidebar({
   onLogout,
 }: SidebarProps) {
   const router = useRouter();
-  const { t } = useI18n();
+  const { t, locale } = useI18n();
 
   const handleNavClick = (name: Tab) => {
     if (name === "Profile") {
@@ -145,6 +145,11 @@ export function DashboardSidebar({
         <Link href="/dashboard/forum" role="menuitem" className="sidebar-nav-item">
           <MessagesSquare className="w-5 h-5 shrink-0" />
           <span className="flex-1 text-left">{t("forum.title")}</span>
+        </Link>
+        {/* Avis sur l'accessibilité de la plateforme. */}
+        <Link href="/dashboard/accessibilite" role="menuitem" className="sidebar-nav-item">
+          <Accessibility className="w-5 h-5 shrink-0" />
+          <span className="flex-1 text-left">{locale === "fr" ? "Accessibilité" : "Accessibility"}</span>
         </Link>
         {/* Académie du mariage : une page à part entière (formation « Bâtir sur le roc »). */}
         <Link href="/dashboard/academie" role="menuitem" className="sidebar-nav-item">

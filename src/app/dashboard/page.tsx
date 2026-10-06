@@ -15,7 +15,8 @@ import {
   Pencil, Filter, ShieldCheck, CheckCircle2, LogOut, Camera,
   HeartHandshake, Hash, Share2, Video, CalendarDays, Church,
   Bookmark, ThumbsUp, Send, ArrowLeft, Smile, ImagePlus, Loader2,
-  Trash2, UserPlus, ChurchIcon, Sparkles, GraduationCap, Flag, MessagesSquare
+  Trash2, UserPlus, ChurchIcon, Sparkles, GraduationCap, Flag, MessagesSquare,
+  Accessibility
 } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
@@ -1234,6 +1235,10 @@ export default function DashboardPage() {
             <Link href="/dashboard/academie" onClick={() => setMobileMenuOpen(false)}
               className="flex items-center gap-3 text-2xl font-headline font-bold text-foreground/60 transition-colors">
               <GraduationCap className="w-6 h-6" style={{ color: "#486B46" }} /> {t("dashboard.academyTitle")}
+            </Link>
+            <Link href="/dashboard/accessibilite" onClick={() => setMobileMenuOpen(false)}
+              className="flex items-center gap-3 text-2xl font-headline font-bold text-foreground/60 transition-colors">
+              <Accessibility className="w-6 h-6" style={{ color: "#486B46" }} /> {locale === "en" ? "Accessibility" : "Accessibilité"}
             </Link>
           </div>
         )}
