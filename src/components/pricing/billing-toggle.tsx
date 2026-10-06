@@ -32,7 +32,7 @@ export function BillingToggle({ value, onChange, className }: {
       <span aria-hidden="true"
         className={cn(
           "absolute inset-y-1 left-1 w-[calc(50%-4px)] rounded-[9px] bg-[#1F4D3A] shadow-[0_2px_8px_rgba(20,40,30,0.18)]",
-          "transition-transform duration-[220ms] ease-out motion-reduce:transition-none",
+          "transition-transform [transition-duration:220ms] ease-out motion-reduce:transition-none",
           annual && "translate-x-full"
         )} />
       {options.map(({ v, label }) => {

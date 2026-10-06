@@ -129,7 +129,7 @@ export function PricingCard({
         aria-busy={loading || undefined}
         className={cn(
           "mt-8 inline-flex w-full items-center justify-center gap-2 h-12 rounded-xl text-[15px] font-semibold",
-          "transition-[background-color,border-color,filter] duration-[180ms] ease-out active:scale-[0.99] motion-reduce:active:scale-100",
+          "transition-[background-color,border-color,filter] [transition-duration:180ms] ease-out active:scale-[0.99] motion-reduce:active:scale-100",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#3F704D]/50",
           "disabled:cursor-not-allowed disabled:opacity-60",
           recommended && "bg-[#356447] text-white hover:bg-[#294F38]",

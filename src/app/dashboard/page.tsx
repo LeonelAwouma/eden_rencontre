@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import {
-  Home, Search, Users, Heart, MessageCircle, Crown, Zap, Star, LifeBuoy, RefreshCcw, Sprout,
+  Home, Search, Users, Heart, MessageCircle, Crown, Zap, Star, LifeBuoy, Sprout,
   MapPin, Briefcase, X, ChevronRight, Eye, BookOpen, ArrowUpRight,
   Quote, ScrollText, Menu, Check, Clock, Bell, Lock, Settings,
   Pencil, Filter, ShieldCheck, CheckCircle2, LogOut, Camera,
@@ -25,8 +25,6 @@ import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { canOptimizeImage, avatarSrc } from "@/lib/avatar";
 import { PhotoLightbox } from "@/components/photo-lightbox";
-import { BillingToggle } from "@/components/pricing/billing-toggle";
-import { planPricing, formatFcfa, type BillingPeriod, type PlanId } from "@/lib/pricing";
 import { useToast } from "@/hooks/use-toast";
 import { getSession, logout, updateProfile, ageFromBirthDate, authHeaders, type EdenUser } from "@/lib/auth";
 import { ALL_LESSONS, resumeLesson, isPillarOneComplete } from "@/lib/formation/batir-sur-le-roc";
@@ -55,7 +53,7 @@ import { Monogram, Flourish, VitrailPattern } from "@/components/ornaments";
 import { AvatarPicker } from "@/components/avatar-picker";
 import { ImposingFloralCorners, ImposingFloralSide } from "@/components/garden";
 import { DashboardSidebar, SIDEBAR_OFFSET_CLASS } from "@/components/dashboard/dashboard-sidebar";
-import { PricingCard } from "@/components/pricing/pricing-card";
+import { PricingHero, PricingPlans } from "@/components/pricing/pricing-plans";
 import { SUPPORT_WHATSAPP_URL } from "@/lib/contact";
 import { ChatGuide } from "@/components/dashboard/chat-guide";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
@@ -249,7 +247,6 @@ export default function DashboardPage() {
   const [showEngageConfirm, setShowEngageConfirm] = useState(false);
   // Parole du jour : un nouveau verset à chaque visite (rafraîchissement, nouvelle session).
   const [verse, setVerse] = useState<Verse | null>(null);
-  const [billingPeriod, setBillingPeriod] = useState<BillingPeriod>("monthly");
   // Signalement de l'interlocuteur depuis la messagerie → Admin → Signalements.
   const [showReport, setShowReport] = useState(false);
   const [reportType, setReportType] = useState<string>("");
@@ -2642,101 +2639,26 @@ export default function DashboardPage() {
           </div>
         );
 
-      case "Premium": {
-        // Mêmes formules et mêmes prix que la page publique /tarifs (src/lib/pricing.ts).
-        const annual = billingPeriod === "annual";
-        const maxSavings = planPricing("or", "annual").savings ?? 0;
-        const plans: {
-          id: PlanId; variant: "standard" | "recommended" | "exclusive"; badge?: string; features: string[];
-          /** Ordre mobile : la formule recommandée d'abord. */
-          mobileOrder: string;
-          className?: string;
-        }[] = [
-          { id: "bronze", variant: "standard", features: [t("tarifs.bronze.feature1"), t("tarifs.bronze.feature2"), t("tarifs.bronze.feature3")], mobileOrder: "order-3 md:order-1" },
-          { id: "argent", variant: "recommended", badge: t("tarifs.argent.badge"), features: [t("tarifs.argent.feature1"), t("tarifs.argent.feature2"), t("tarifs.argent.feature3")], mobileOrder: "order-1 md:order-2" },
-          { id: "or", variant: "exclusive", features: [t("tarifs.or.feature1"), t("tarifs.or.feature2"), t("tarifs.or.feature3"), t("tarifs.or.feature4")], mobileOrder: "order-2 md:order-3",
-            // Tablette : 2 + 1, la troisième carte centrée sous les deux autres.
-            className: "md:col-span-2 md:max-w-[400px] md:mx-auto md:w-full xl:col-span-1 xl:max-w-none" },
-        ];
+      case "Premium":
+        // Même bloc tarifaire que la page publique /tarifs (src/components/pricing/pricing-plans.tsx).
         return (
-          <div className="pb-6">
-            {/* En-tête éditorial */}
-            <header className="relative text-center max-w-2xl mx-auto pt-2 sm:pt-6">
-              <div aria-hidden="true" className="pointer-events-none absolute left-1/2 top-0 -translate-x-1/2 w-[520px] max-w-full h-[220px] rounded-full opacity-70"
-                style={{ background: "radial-gradient(closest-side, rgba(63,112,77,0.10), rgba(250,249,246,0))" }} />
-              <span className="relative inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white text-[12px] font-semibold uppercase tracking-[0.14em] text-[#3F704D] ring-1 ring-[#DCE6DA]">
-                <Crown className="w-3.5 h-3.5 text-[#C6A15B]" aria-hidden="true" /> {t("dashboard.ourPlans")}
-              </span>
-              <h2 className="relative mt-4 font-headline text-[34px] sm:text-[42px] lg:text-[48px] font-bold leading-[1.05] tracking-tight text-[#1C241F]">
-                {t("dashboard.elevateYourPath")}
-              </h2>
-              <p className="relative mt-4 text-[16px] sm:text-[17px] leading-relaxed text-[#5C665F]">{t("dashboard.accessFullMeasure")}</p>
-            </header>
-
-            {/* Période + formule actuelle */}
-            <div className="mt-8 flex flex-col items-center gap-3">
-              <BillingToggle value={billingPeriod} onChange={setBillingPeriod} />
-              <p className="min-h-[24px] text-[14px] text-[#5C665F]" aria-live="polite">
-                {annual ? (
-                  <span className="inline-flex items-center gap-1.5 font-semibold text-[#2F5A3D]">
-                    <Sparkles className="w-4 h-4 text-[#C6A15B]" aria-hidden="true" />
-                    {t("billing.saveUpTo", { amount: formatFcfa(maxSavings) })}
+          <div className="pb-6 pt-2 sm:pt-6">
+            <PricingHero eyebrow={t("dashboard.ourPlans")} title={t("dashboard.elevateYourPath")} subtitle={t("dashboard.accessFullMeasure")} />
+            <PricingPlans
+              className="mt-8"
+              onSelect={() => toast({ title: t("dashboard.toastSecurePaymentSoon") })}
+              currentPlan={
+                <p className="inline-flex items-center gap-2 h-8 pl-1.5 pr-3 rounded-full bg-white text-[13px] text-[#5C665F] ring-1 ring-[#E6EAE5]">
+                  <span className="w-5 h-5 rounded-full bg-[#EEF5EE] flex items-center justify-center" aria-hidden="true">
+                    <Sprout className="w-3 h-3 text-[#3F704D]" />
                   </span>
-                ) : t("billing.monthlyNote")}
-              </p>
-              <p className="inline-flex items-center gap-2 h-8 pl-1.5 pr-3 rounded-full bg-white text-[13px] text-[#5C665F] ring-1 ring-[#E6EAE5]">
-                <span className="w-5 h-5 rounded-full bg-[#EEF5EE] flex items-center justify-center" aria-hidden="true">
-                  <Sprout className="w-3 h-3 text-[#3F704D]" />
-                </span>
-                {t("dashboard.planCurrentPlan")} · <span className="font-semibold text-[#1C241F]">{t("dashboard.planDiscoveryName")}</span>
-                <span className="sr-only">({t("dashboard.planFree")})</span>
-              </p>
-            </div>
-
-            {/* Cartes */}
-            <div className="mt-10 sm:mt-12 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 xl:gap-7 max-w-[1080px] mx-auto items-stretch">
-              {plans.map((plan) => {
-                const pricing = planPricing(plan.id, billingPeriod);
-                return (
-                  <PricingCard
-                    key={plan.id}
-                    className={cn(plan.mobileOrder, plan.className)}
-                    name={t(`tarifs.${plan.id}.name`)}
-                    description={t(`tarifs.${plan.id}.description`)}
-                    pricing={pricing}
-                    period={billingPeriod}
-                    features={plan.features}
-                    cta={t(`tarifs.${plan.id}.cta`)}
-                    variant={plan.variant}
-                    badge={plan.badge}
-                    onSelect={() => toast({ title: t("dashboard.toastSecurePaymentSoon") })}
-                    labels={{
-                      currency: t("billing.currency"),
-                      perMonth: t("billing.perMonth"),
-                      perYear: t("billing.perYear"),
-                      perMonthEquivalent: pricing.perMonth !== null ? t("billing.perMonthEquivalent", { amount: formatFcfa(pricing.perMonth) }) : undefined,
-                      savings: pricing.savings !== null ? t("billing.savings", { amount: formatFcfa(pricing.savings) }) : undefined,
-                    }}
-                  />
-                );
-              })}
-            </div>
-
-            {/* Réassurance */}
-            <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-8 gap-y-3 text-[13px] text-[#5C665F]">
-              {[
-                { icon: Lock, label: t("tarifs.trustSecurePayment") },
-                { icon: RefreshCcw, label: t("tarifs.trustCancel") },
-                { icon: ShieldCheck, label: t("tarifs.trustProtected") },
-              ].map(({ icon: Icon, label }) => (
-                <li key={label} className="inline-flex items-center gap-2">
-                  <Icon className="w-4 h-4 text-[#3F704D]" aria-hidden="true" /> {label}
-                </li>
-              ))}
-            </ul>
+                  {t("dashboard.planCurrentPlan")} · <span className="font-semibold text-[#1C241F]">{t("dashboard.planDiscoveryName")}</span>
+                  <span className="sr-only">({t("dashboard.planFree")})</span>
+                </p>
+              }
+            />
           </div>
         );
-      }
 
       case "Profile":
       case "Profil":
