@@ -19,6 +19,7 @@ import {
   Accessibility
 } from "lucide-react";
 import Image from "next/image";
+import { FORMATION_COVER_SRC } from "@/lib/formation/paths";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -1299,7 +1300,7 @@ export default function DashboardPage() {
                         className="group flex items-center gap-3 rounded-2xl p-3 pr-4 bg-white transition-shadow hover:shadow-md"
                         style={{ border: "1px solid #E8E5E0" }}>
                         <span className="relative w-16 h-20 rounded-xl overflow-hidden shrink-0" style={{ background: "#EEF5EC" }}>
-                          <Image src="/batir_roc.png" alt="" fill sizes="64px" className="object-cover" />
+                          <Image src={FORMATION_COVER_SRC} alt="" fill sizes="64px" className="object-cover" />
                         </span>
                         <span className="flex-1 min-w-0">
                           <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider" style={{ color: "#486B46" }}>

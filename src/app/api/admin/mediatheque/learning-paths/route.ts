@@ -1,15 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { FORMATION_COVER_SRC } from "@/lib/formation/paths";
 
 /**
- * Couverture de la formation « Bâtir sur le roc » : /batir_roc.png.
- * Si la migration 20260929_batir_sur_le_roc_cover_png.sql n'a pas été exécutée,
- * la base pointe encore vers /batir_roc.webp (fichier supprimé) ou n'a pas
- * d'image : la couverture était alors vide dans la médiathèque.
+ * Couverture de la formation « Bâtir sur le roc » : FORMATION_COVER_SRC.
+ * Tant que 20261006_batir_sur_le_roc_cover_webp.sql n'a pas été exécutée, la
+ * base peut encore pointer vers /batir_roc.png ou /batir_roc.webp (fichiers
+ * supprimés), ou n'avoir aucune image.
  */
+const LEGACY_FORMATION_COVERS = ["/batir_roc.png", "/batir_roc.webp"];
 function formationCover(slug: string | null, cover: string | null): string | null {
-  if (slug?.startsWith("batir-sur-le-roc") && (!cover || cover === "/batir_roc.webp")) return "/batir_roc.png";
+  if (slug?.startsWith("batir-sur-le-roc") && (!cover || LEGACY_FORMATION_COVERS.includes(cover))) return FORMATION_COVER_SRC;
   return cover;
 }
 

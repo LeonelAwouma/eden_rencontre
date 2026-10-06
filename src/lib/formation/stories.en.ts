@@ -17,7 +17,7 @@ const whenLoveRollsUpItsSleeves: Story = {
       title: "The Trap of Butterflies in the Stomach",
       blocks: [
         { type: "p", text: "For Nathalie, love had always been a matter of instant chemistry. Raised on romantic comedies and idealized social media portrayals, she was convinced that when you find \"the one,\" everything ought to flow smoothly without the slightest hitch." },
-        { type: "p", text: "When she begins courting Éric on **Garden of Alliance**, she is captivated. Éric is attentive, brilliant, active in his community, and deeply rooted in faith. The first few weeks are idyllic: hours-long phone calls, shared laughter, and a unified vision of the Kingdom. Nathalie is persuaded that she has finally found perfection." },
+        { type: "p", text: "When she begins courting Éric, whom she met on Garden of Alliance, she is captivated. Éric is attentive, brilliant, active in his community, and deeply rooted in faith. The first few weeks are idyllic: hours-long phone calls, shared laughter, and a unified vision of the Kingdom. Nathalie is persuaded that she has finally found perfection." },
         { type: "p", text: "But two months later, reality catches up with the couple. Éric enters an extremely intense season: his company undergoes major restructuring, and his father suddenly falls ill. Exhausted and less available, Éric is occasionally preoccupied during their conversations and misses a scheduled date due to urgent family matters." },
         { type: "p", text: "For Nathalie, it is a shock. The freshness of the beginning fades, replaced by the weight of daily life. Overcome with panic, she confides in a friend:" },
         { type: "quote", text: "The feelings aren't the same as in the beginning. I don't feel those butterflies in my stomach anymore. If it's already this hard now, it's probably proof that he isn't the right person." },
@@ -63,7 +63,7 @@ const whenLoveRollsUpItsSleeves: Story = {
       title: "Anchored on the Rock",
       epilogue: true,
       blocks: [
-        { type: "p", text: "A year later, before their loved ones and the community on Garden of Alliance, Nathalie and Éric enter into the bonds of marriage." },
+        { type: "p", text: "A year later, surrounded by their loved ones and their community of faith, Nathalie and Éric enter into the bonds of marriage." },
         { type: "p", text: "In her vows, Nathalie speaks with a touched smile:" },
         { type: "quote", text: "For a long time, I searched for a perfect love that would make me happy without effort. Thanks to God and our journey, I understood that true love isn't found ready-made: it is built. Love is not a feeling that happens to us; it is a covenant that rolls up its sleeves every day to turn a home into a sanctuary." },
       ],
@@ -80,7 +80,7 @@ const thePassportToTheCovenant: Story = {
   slug: "le-passeport-pour-l-alliance",
   title: "The Passport to the Covenant",
   cover: cover("le-passeport-pour-l-alliance.en", 900, 932, "The Passport to the Covenant"),
-  summary: "Kevin, 30, lives with an obsession to leave his home country in search of a \"better future\" abroad. Viewing marriage as a mere means of transportation and a ticket out, he joins online platforms in hopes of finding a partner living in Europe or America. As he begins chatting with Grace, a young woman living abroad who is deeply rooted in her faith, his motives are shaken. Grace refuses to play the role of a \"relational passport\" and invites him to take the *Build on the Rock* training course on **Garden of Alliance**. This journey radically transforms Kevin's vision: from a seeker of opportunities, he becomes a man of vision and covenant, ready to build a solid sanctuary on the Rock of Christ.",
+  summary: "Kevin, 30, lives with an obsession to leave his home country in search of a \"better future\" abroad. Viewing marriage as a mere means of transportation and a ticket out, he joins online platforms in hopes of finding a partner living in Europe or America. As he begins chatting with Grace, a young woman living abroad who is deeply rooted in her faith, his motives are shaken. Grace refuses to play the role of a \"relational passport\" and invites him to first take the *Build on the Rock* course. Lesson by lesson, God radically transforms Kevin's heart: from a seeker of opportunities, he becomes a man of vision and covenant, ready to build a solid sanctuary on the Rock of Christ.",
   lessons: ["1-3", "1-4"],
   chapters: [
     {
@@ -94,12 +94,12 @@ const thePassportToTheCovenant: Story = {
     {
       title: "The Unsettling Conversation",
       blocks: [
-        { type: "p", text: "It is on the **Garden of Alliance** platform that Kevin connects with Grace, a 26-year-old Christian professional living in Canada. Grace is warm, intelligent, and passionate about the Lord." },
+        { type: "p", text: "It is on Garden of Alliance that Kevin connects with Grace, a 26-year-old Christian professional living in Canada. Grace is warm, intelligent, and passionate about the Lord." },
         { type: "p", text: "Very quickly during their initial chats, Kevin subtly turns the conversation toward life in Canada, the ease of obtaining papers, and his relocation plans. But Grace, gifted with deep spiritual discernment, immediately perceives the underlying motive." },
         { type: "p", text: "Instead of getting angry, she asks him a direct question that freezes him in his tracks:" },
         { type: "quote", text: "Kevin, if tomorrow I decided to leave Canada to come and settle permanently in your country, would you still want to get to know me? Or is it my postal address that you are marrying?" },
         { type: "p", text: "Trapped by his own hypocrisy, Kevin stammers. Grace continues with gentleness yet firmness:" },
-        { type: "quote", text: "I am not looking for a man who wants to use me as a passport. I am looking for a partner in faith with whom to build a sanctuary. Marriage is not an escape vehicle; it is an accelerator of destiny. If you want us to continue talking, I invite you to first take the **Build on the Rock** course available on the platform." },
+        { type: "quote", text: "I am not looking for a man who wants to use me as a passport. I am looking for a partner in faith with whom to build a sanctuary. Marriage is not an escape vehicle; it is an accelerator of destiny. If you want us to keep talking, take the **Build on the Rock** course first. Let God speak to you about covenant before you speak to me about visas." },
       ],
     },
     {
@@ -121,7 +121,7 @@ const thePassportToTheCovenant: Story = {
     {
       title: "From Transaction to Covenant",
       blocks: [
-        { type: "p", text: "Transformed by the training, Kevin reaches back out to Grace a few months later with a completely different posture. He no longer talks about plane tickets or visas. He speaks of Lordship, emotional maturity, mutual service, and the family altar." },
+        { type: "p", text: "The lessons opened his eyes; God did the rest. Changed from within, Kevin reaches back out to Grace a few months later with a completely different posture. He no longer talks about plane tickets or visas. He speaks of Lordship, emotional maturity, mutual service, and the family altar." },
         { type: "quote", text: "Grace, I want to thank you. You refused to be my opportunity so that I would be forced to become a man after God's own heart. Today, whether God calls me to stay here or go elsewhere, my priority is no longer to run away, but to fulfill His plan. I am no longer looking for a ride; I am looking for my Ezer Kenegdo." },
         { type: "p", text: "Touched by the sincerity of his repentance and the reality of his transformation, Grace agrees to let their relationship mature. They learn to know each other on healthy foundations: shared prayer, alignment of life visions, and emotional safety." },
       ],

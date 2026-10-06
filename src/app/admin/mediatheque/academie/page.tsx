@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight, BookOpen, GraduationCap, MessagesSquare, Clock } from "lucide-react";
 import { BATIR_SUR_LE_ROC, ALL_LESSONS } from "@/lib/formation/batir-sur-le-roc";
-import { ADMIN_LESSON_PREVIEW_PATH, ADMIN_STORY_PREVIEW_PATH } from "@/lib/formation/paths";
+import { ADMIN_LESSON_PREVIEW_PATH, ADMIN_STORY_PREVIEW_PATH, FORMATION_COVER_SRC } from "@/lib/formation/paths";
 import { STORIES, storyReadingMinutes } from "@/lib/formation/stories";
 import fr from "@/locales/fr.json";
 
@@ -49,7 +49,7 @@ export default function AdminAcademyPage() {
       <Link href={ADMIN_LESSON_PREVIEW_PATH}
         className="group grid md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] rounded-2xl border border-[#E8E5E0] bg-white overflow-hidden hover:shadow-[0_8px_32px_rgba(72,107,70,0.12)] hover:border-[#C6D4C0] transition-all">
         <span className="relative block aspect-[4/5] md:aspect-auto md:min-h-[380px] bg-[#F4F3EF] overflow-hidden">
-          <Image src="/batir_roc.png" alt="Un couple pose ensemble une pierre sur un rocher gravé « Jésus Christ, notre fondation — Matthieu 7:24-25 », devant une maison en construction."
+          <Image src={FORMATION_COVER_SRC} alt="Un couple pose ensemble une pierre sur un rocher gravé « Jésus Christ, notre fondation — Matthieu 7:24-25 », devant une maison en construction."
             fill priority sizes="(min-width: 768px) 40vw, 100vw"
             className="object-cover object-[center_45%] group-hover:scale-[1.03] transition-transform duration-700" />
           <span className="absolute top-3 left-3 px-2.5 py-1 rounded-md bg-white/95 text-[11px] font-bold text-[#486B46]">Pilier 1</span>

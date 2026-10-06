@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { FORMATION_COVER_SRC } from "@/lib/formation/paths";
 import { motion } from "framer-motion";
 import { Search, Library, Video, Headphones, BookOpen, FileText, File, Star, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -69,7 +70,7 @@ export default function MediathequePage() {
         <Link href="/dashboard/academie"
           className="group mb-10 grid md:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] rounded-3xl border border-[#E8E5E0] bg-white overflow-hidden shadow-sm hover:shadow-lg hover:border-[#C6D4C0] transition-all">
           <span className="relative block aspect-[4/3] md:aspect-auto md:min-h-[260px] bg-[#F4F3EF] overflow-hidden">
-            <Image src="/batir_roc.png" alt={t("mediatheque.formationAlt")} fill sizes="(min-width: 768px) 40vw, 100vw"
+            <Image src={FORMATION_COVER_SRC} alt={t("mediatheque.formationAlt")} fill sizes="(min-width: 768px) 40vw, 100vw"
               className="object-cover object-[center_45%] group-hover:scale-[1.03] transition-transform duration-700" />
           </span>
           <span className="flex flex-col justify-center p-6 sm:p-8">
@@ -121,7 +122,8 @@ export default function MediathequePage() {
                   <Link href={`/mediatheque/${r.slug}`}>
                     <div className="relative h-44 bg-gradient-to-br from-[#F8F5F2] to-[#EEF5EC] overflow-hidden">
                       {r.thumbnail_url || r.cover_url ? (
-                        <img src={r.thumbnail_url || r.cover_url || ""} alt={r.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"/>
+                        <img src={r.thumbnail_url || r.cover_url || ""} alt={r.title}
+                          className={`w-full h-full group-hover:scale-105 transition-transform duration-500 ${r.type === "book" ? "object-contain p-3" : "object-cover"}`}/>
                       ) : (
                         <div className="w-full h-full flex items-center justify-center"><TypeIcon type={r.type}/></div>
                       )}

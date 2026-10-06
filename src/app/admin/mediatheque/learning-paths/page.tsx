@@ -91,7 +91,7 @@ export default function LearningPathsPage() {
                       className="px-3 py-2 rounded-lg text-[13px] font-semibold text-[#B42318] hover:bg-[#B42318]/5">Retirer</button>
                   )}
                 </div>
-                <input value={form.cover_url} onChange={e => setForm(p => ({ ...p, cover_url: e.target.value }))} placeholder="/batir_roc.png ou https://…"
+                <input value={form.cover_url} onChange={e => setForm(p => ({ ...p, cover_url: e.target.value }))} placeholder="/formation/batir-sur-le-roc/images/couverture.webp ou https://…"
                   className="w-full p-2.5 border border-gray-200 rounded-xl text-xs font-mono outline-none focus:border-[#486B46]" />
                 <input ref={coverInputRef} type="file" accept="image/*" className="hidden"
                   onChange={e => { const f = e.target.files?.[0]; if (f) uploadCover(f); e.target.value = ""; }} />

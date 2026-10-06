@@ -190,9 +190,17 @@ export default function ResourceDetailPage() {
             </div>
           )}
           {!embed && (resource.thumbnail_url || resource.cover_url) && (
-            <div className="mb-8 rounded-2xl overflow-hidden">
-              <img src={resource.thumbnail_url || resource.cover_url || ""} alt={resource.title} className="w-full h-auto max-h-[500px] object-cover"/>
-            </div>
+            resource.type === "book" ? (
+              // Livre : la couverture entière, comme un livre posé, sans recadrage.
+              <div className="mb-8 flex justify-center">
+                <img src={resource.cover_url || resource.thumbnail_url || ""} alt={resource.title}
+                  className="w-[70%] max-w-[320px] h-auto rounded-xl ring-1 ring-black/5 shadow-[0_18px_44px_rgba(38,70,52,0.18)]"/>
+              </div>
+            ) : (
+              <div className="mb-8 rounded-2xl overflow-hidden">
+                <img src={resource.thumbnail_url || resource.cover_url || ""} alt={resource.title} className="w-full h-auto max-h-[500px] object-cover"/>
+              </div>
+            )
           )}
 
           {/* Content */}

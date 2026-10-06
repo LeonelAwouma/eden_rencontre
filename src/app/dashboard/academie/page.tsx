@@ -12,7 +12,7 @@ import { useI18n } from "@/lib/i18n";
 import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
 import { useFormationLocale } from "@/lib/formation/ui";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
-import { STORIES_BASE_PATH } from "@/lib/formation/paths";
+import { STORIES_BASE_PATH, FORMATION_COVER_SRC } from "@/lib/formation/paths";
 import { storyReadingMinutes } from "@/lib/formation/stories";
 import { RichText, frenchSpacing } from "@/components/formation/rich-text";
 
@@ -77,7 +77,7 @@ export default function AcademyIndexPage() {
           <Link href={FORMATION_BASE_PATH}
             className="group grid md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] rounded-3xl border border-border bg-card overflow-hidden shadow-[0_10px_40px_rgba(38,70,52,0.08)] hover:shadow-[0_16px_48px_rgba(38,70,52,0.14)] hover:border-primary/40 transition-all">
             <span className="relative block aspect-[4/5] md:aspect-auto md:min-h-[460px] bg-muted overflow-hidden">
-              <Image src="/batir_roc.png" alt={ui.coverAlt}
+              <Image src={FORMATION_COVER_SRC} alt={ui.coverAlt}
                 fill priority sizes="(min-width: 768px) 42vw, 100vw"
                 className="object-cover object-[center_45%] group-hover:scale-[1.03] transition-transform duration-700" />
               <span className="absolute top-4 left-4 h-8 px-3 rounded-full bg-white/95 text-[12px] font-bold text-foreground flex items-center shadow-sm">

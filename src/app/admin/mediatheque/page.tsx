@@ -9,7 +9,7 @@ import {
   CheckCircle2, PencilLine, Clock,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { ADMIN_FORMATION_PATH, ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
+import { ADMIN_FORMATION_PATH, ADMIN_LESSON_PREVIEW_PATH, ADMIN_STORY_PREVIEW_PATH } from "@/lib/formation/paths";
 import {
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
@@ -470,14 +470,21 @@ function StatusLabel({ status }: { status: ResourceStatus }) {
   );
 }
 
-/** Leçon de « Bâtir sur le roc » (slug batir-sur-le-roc-1-4-…) → aperçu admin /admin/mediatheque/academie/batir-sur-le-roc/1-4. */
-function lessonPreviewHref(slug: string): string | null {
-  const m = /^batir-sur-le-roc-(\d+)-(\d+)-/.exec(slug);
-  return m ? `${ADMIN_LESSON_PREVIEW_PATH}/${m[1]}-${m[2]}` : null;
+/**
+ * Contenus de l'Académie référencés dans la médiathèque → leur aperçu admin :
+ *  - leçon (slug batir-sur-le-roc-1-4-…) → /admin/mediatheque/academie/batir-sur-le-roc/1-4
+ *  - histoire (slug histoire-<slug>)     → /admin/mediatheque/academie/histoires/<slug>
+ */
+function academyPreview(slug: string): { href: string; label: string } | null {
+  const lesson = /^batir-sur-le-roc-(\d+)-(\d+)-/.exec(slug);
+  if (lesson) return { href: `${ADMIN_LESSON_PREVIEW_PATH}/${lesson[1]}-${lesson[2]}`, label: "Prévisualiser la leçon" };
+  const story = /^histoire-(.+)$/.exec(slug);
+  if (story) return { href: `${ADMIN_STORY_PREVIEW_PATH}/${story[1]}`, label: "Prévisualiser l'histoire" };
+  return null;
 }
 
 function ResourceMenu({ r, busyId, onStatus, onDelete }: { r: ResourceItem } & RowActions) {
-  const preview = lessonPreviewHref(r.slug);
+  const preview = academyPreview(r.slug);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -492,7 +499,7 @@ function ResourceMenu({ r, busyId, onStatus, onDelete }: { r: ResourceItem } & R
         </DropdownMenuItem>
         {preview && (
           <DropdownMenuItem asChild>
-            <Link href={preview}><Eye className="w-4 h-4 mr-2" /> Prévisualiser la leçon</Link>
+            <Link href={preview.href}><Eye className="w-4 h-4 mr-2" /> {preview.label}</Link>
           </DropdownMenuItem>
         )}
         {r.status === "published" && (
@@ -526,7 +533,8 @@ function Thumbnail({ r, className, iconSize = "w-7 h-7" }: { r: ResourceItem; cl
     <div className={cn("relative overflow-hidden flex items-center justify-center", r.thumbnail_url ? "bg-muted" : tc.bgColor, className)}>
       {r.thumbnail_url
         // eslint-disable-next-line @next/next/no-img-element
-        ? <img src={r.thumbnail_url} alt="" className="w-full h-full object-cover" loading="lazy" />
+        // Livres : couverture entière (titre dans l'image), sinon image recadrée.
+        ? <img src={r.thumbnail_url} alt="" className={cn("w-full h-full", r.type === "book" ? "object-contain p-1.5" : "object-cover")} loading="lazy" />
         : <Icon className={cn(iconSize, tc.color, "opacity-70")} />}
     </div>
   );

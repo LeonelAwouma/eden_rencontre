@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
     return [
       { source: '/admin/formation', destination: '/admin/mediatheque/academie', permanent: true },
       { source: '/admin/formation/:path*', destination: '/admin/mediatheque/academie/:path*', permanent: true },
+      // Anciennes couvertures de « Bâtir sur le roc », encore possibles dans
+      // mediatheque_learning_paths.cover_url (cf. 20261006_batir_sur_le_roc_cover_webp.sql).
+      { source: '/batir_roc.png', destination: '/formation/batir-sur-le-roc/images/couverture.webp', permanent: true },
+      { source: '/batir_roc.webp', destination: '/formation/batir-sur-le-roc/images/couverture.webp', permanent: true },
     ];
   },
   images: {

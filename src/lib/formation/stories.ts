@@ -19,7 +19,7 @@ const quandLAmourRetrousseSesManches: Story = {
       title: "Le Piège des Papillons dans le Ventre",
       blocks: [
         { type: "p", text: "Pour Nathalie, l'amour a toujours été une question d'alchimie instantanée. Élevée au rythme des comédies romantiques et des représentations idéalisées des réseaux sociaux, elle est convaincue que lorsque l'on trouve « l'âme sœur », tout doit couler de source sans le moindre accroc." },
-        { type: "p", text: "Lorsqu'elle commence à fréquenter Éric sur **Garden of Alliance**, elle est conquise. Éric est attentionné, brillant, actif dans sa communauté et profondément ancré dans la foi. Les premières semaines sont idylliques : conversations téléphoniques de plusieurs heures, rires partagés, vision commune du Royaume. Nathalie est persuadée d'avoir enfin trouvé la perfection." },
+        { type: "p", text: "Lorsqu'elle commence à fréquenter Éric, rencontré sur Garden of Alliance, elle est conquise. Éric est attentionné, brillant, actif dans sa communauté et profondément ancré dans la foi. Les premières semaines sont idylliques : conversations téléphoniques de plusieurs heures, rires partagés, vision commune du Royaume. Nathalie est persuadée d'avoir enfin trouvé la perfection." },
         { type: "p", text: "Mais deux mois plus tard, la réalité rattrape le couple. Éric traverse une saison d'une intensité extrême : son entreprise affronte une restructuration majeure et son père tombe subitement malade. Épuisé, moins disponible, Éric est parfois préoccupé lors de leurs échanges et manque un rendez-vous prévu pour des raisons urgentes." },
         { type: "p", text: "Pour Nathalie, c'est le choc. La fraîcheur des débuts s'estompe, remplacée par la lourdeur du quotidien. Prise de panique, elle se confie à une amie :" },
         { type: "quote", text: "Les sentiments ne sont plus les mêmes qu'au début. Je n'ai plus ces papillons dans le ventre. Si c'est déjà si difficile maintenant, c'est sûrement la preuve que ce n'est pas la bonne personne." },
@@ -65,7 +65,7 @@ const quandLAmourRetrousseSesManches: Story = {
       title: "Ancrés sur le Roc",
       epilogue: true,
       blocks: [
-        { type: "p", text: "Un an plus tard, devant leurs proches et la communauté sur Garden of Alliance, Nathalie et Éric s'engagent dans les liens du mariage." },
+        { type: "p", text: "Un an plus tard, entourés de leurs proches et de leur communauté de foi, Nathalie et Éric s'engagent dans les liens du mariage." },
         { type: "p", text: "Dans ses vœux, Nathalie prend la parole avec un sourire ému :" },
         { type: "quote", text: "J'ai longtemps cherché un amour parfait qui me rendrait heureuse sans effort. Grâce à Dieu et à notre parcours, j'ai compris que le véritable amour ne se trouve pas tout fait : il se construit. L'amour n'est pas un sentiment qui nous tombe dessus, c'est une alliance qui retrousse ses manches tous les jours pour faire du foyer un sanctuaire." },
       ],
@@ -82,7 +82,7 @@ const lePasseportPourLAlliance: Story = {
   slug: "le-passeport-pour-l-alliance",
   title: "Le Passeport pour l'Alliance",
   cover: cover("le-passeport-pour-l-alliance", 900, 932, "Le Passeport pour l'Alliance"),
-  summary: "Kevin, 30 ans, vit dans l'obsession de quitter son pays pour trouver un « avenir meilleur » à l'étranger. Voyant le mariage comme un simple moyen de transport et un billet de sortie, il s'inscrit sur des plateformes en ligne dans l'espoir de trouver une partenaire résidant en Europe ou en Amérique. C'est en échangeant avec Grâce, une jeune femme vivant à l'étranger mais profondément ancrée dans la foi, que ses motivations vont être ébranlées. Grâce refuse de jouer le rôle d'un « passeport relationnel » et l'invite à suivre la formation *Bâtir sur le Roc* sur **Garden of Alliance**. Ce parcours transforme radicalement la vision de Kevin : d'un chercheur d'opportunités, il devient un homme de vision et d'alliance, prêt à bâtir un sanctuaire solide sur le Roc de Christ.",
+  summary: "Kevin, 30 ans, vit dans l'obsession de quitter son pays pour trouver un « avenir meilleur » à l'étranger. Voyant le mariage comme un simple moyen de transport et un billet de sortie, il s'inscrit sur des plateformes en ligne dans l'espoir de trouver une partenaire résidant en Europe ou en Amérique. C'est en échangeant avec Grâce, une jeune femme vivant à l'étranger mais profondément ancrée dans la foi, que ses motivations vont être ébranlées. Grâce refuse de jouer le rôle d'un « passeport relationnel » et l'invite d'abord à suivre la formation *Bâtir sur le Roc*. Au fil des leçons, Dieu transforme radicalement le cœur de Kevin : d'un chercheur d'opportunités, il devient un homme de vision et d'alliance, prêt à bâtir un sanctuaire solide sur le Roc de Christ.",
   lessons: ["1-3", "1-4"],
   chapters: [
     {
@@ -96,12 +96,12 @@ const lePasseportPourLAlliance: Story = {
     {
       title: "L'Échange qui Dérange",
       blocks: [
-        { type: "p", text: "C'est sur la plateforme **Garden of Alliance** que Kevin entre en contact avec Grâce, une jeune professionnelle chrétienne de 26 ans résidant au Canada. Grâce est chaleureuse, intelligente et passionnée par le Seigneur." },
+        { type: "p", text: "C'est sur Garden of Alliance que Kevin entre en contact avec Grâce, une jeune professionnelle chrétienne de 26 ans résidant au Canada. Grâce est chaleureuse, intelligente et passionnée par le Seigneur." },
         { type: "p", text: "Très vite, lors de leurs premières discussions, Kevin oriente subtilement la conversation sur la vie au Canada, la facilité d'obtenir des papiers et ses démarches d'émigration. Mais Grâce, dotée d'un grand discernement spirituel, perçoit immédiatement l'intention sous-jacente." },
         { type: "p", text: "Au lieu de se fâcher, elle lui pose une question directe qui le fige :" },
         { type: "quote", text: "Kevin, si demain je décidais de quitter le Canada pour venir m'installer définitivement dans ton pays, est-ce que tu chercherais encore à apprendre à me connaître ? Ou est-ce que c'est mon adresse postale que tu épouses ?" },
         { type: "p", text: "Pris au piège de sa propre hypocrisie, Kevin bafouille. Grâce reprend avec douceur mais fermeté :" },
-        { type: "quote", text: "Je ne cherche pas un homme qui veut m'utiliser comme un passeport. Je cherche un partenaire de foi avec qui bâtir un sanctuaire. Le mariage n'est pas un véhicule d'évasion, c'est un accélérateur de destinée. Si tu veux que nous continuions à échanger, je t'invite à suivre d'abord le cursus **Bâtir sur le Roc** présent sur la plateforme." },
+        { type: "quote", text: "Je ne cherche pas un homme qui veut m'utiliser comme un passeport. Je cherche un partenaire de foi avec qui bâtir un sanctuaire. Le mariage n'est pas un véhicule d'évasion, c'est un accélérateur de destinée. Si tu veux que nous continuions à échanger, suis d'abord le cursus **Bâtir sur le Roc**. Laisse Dieu te parler de l'alliance avant de me parler de visa." },
       ],
     },
     {
@@ -123,7 +123,7 @@ const lePasseportPourLAlliance: Story = {
     {
       title: "De la Transaction à l'Alliance",
       blocks: [
-        { type: "p", text: "Transformé par la formation, Kevin réaborde Grâce quelques mois plus tard, mais avec une posture complètement différente. Il ne parle plus de billets d'avion ni de visas. Il parle de Seigneurie, de maturité émotionnelle, de service mutuel et d'autel familial." },
+        { type: "p", text: "Les leçons lui ont ouvert les yeux ; Dieu a fait le reste. Transformé de l'intérieur, Kevin réaborde Grâce quelques mois plus tard, mais avec une posture complètement différente. Il ne parle plus de billets d'avion ni de visas. Il parle de Seigneurie, de maturité émotionnelle, de service mutuel et d'autel familial." },
         { type: "quote", text: "Grâce, je veux te remercier. Tu as refusé d'être mon opportunité pour m'obliger à devenir un homme selon le cœur de Dieu. Aujourd'hui, que Dieu m'appelle à rester ici ou à aller ailleurs, ma priorité n'est plus de fuir, mais d'accomplir Son plan. Je ne cherche plus un moyen de transport, je cherche mon Ezer Kenegdo." },
         { type: "p", text: "Touchée par la sincérité de sa repentance et la réalité de sa transformation, Grâce accepte de laisser mûrir leur relation. Ils apprennent à se connaître sur des bases saines : la prière partagée, l'alignement des visions de vie et la sécurité émotionnelle." },
       ],
