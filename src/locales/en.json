@@ -1091,6 +1091,7 @@
   },
   "avatarPicker": {
     "myPhotosLabel": "My photos",
+    "edenLabel": "Eden avatars",
     "generatedLabel": "Generated avatar",
     "regenerate": "Regenerate"
   },
@@ -1100,6 +1101,10 @@
     "generateAvatarButton": "Generate an avatar",
     "avatarPickerConfirm": "Confirm",
     "avatarPickerCancel": "Cancel",
+    "welcomeAvatarTitle": "Add your profile photo",
+    "welcomeAvatarDesc": "Upload a photo of yourself or choose an Eden avatar. You can change it anytime from your profile.",
+    "avatarImportButton": "Upload an image",
+    "avatarLater": "Later",
     "choosePseudoTitle": "Choose your nickname",
     "phonePromptTitle": "Your phone number",
     "phonePromptDesc": "We now ask every member for a phone number. It is only visible to the Garden of Alliance team, to contact you if needed.",

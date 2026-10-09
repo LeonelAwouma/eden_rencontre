@@ -182,7 +182,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
         <div className="space-y-5">
           {/* Profile Header */}
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-5 pb-5 border-b border-[#F0EDE8] text-center sm:text-left">
-            <ProfilePhotoEditor userId={profile.id} name={profile.pseudo || profile.name} avatarUrl={profile.avatar_url} onUpdated={onRefresh} />
+            <ProfilePhotoEditor userId={profile.id} name={profile.pseudo || profile.name} gender={profile.gender} avatarUrl={profile.avatar_url} onUpdated={onRefresh} />
             <div className="min-w-0">
               <h4 className="text-xl font-bold text-[#2F2F2F] truncate inline-flex items-center gap-2">
                 {profile.pseudo || profile.name || "—"}

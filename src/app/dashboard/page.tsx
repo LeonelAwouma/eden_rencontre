@@ -82,6 +82,9 @@ const TAB_LABEL_KEY: Record<string, string> = {
 // lets the pinned Admin entry open a chat view without a conversation row in the DB.
 const ADMIN_VIRTUAL_ID = "__admin_virtual__";
 
+// Posé par « Plus tard » dans la fenêtre « Ajoutez votre photo de profil ».
+const AVATAR_PROMPT_DISMISSED_KEY = "eden_avatar_prompt_dismissed";
+
 // ── Helper ──
 function formatTime(iso: string) {
   try { return new Date(iso).toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }); }
@@ -270,6 +273,9 @@ export default function DashboardPage() {
   const [showAvatarPicker, setShowAvatarPicker] = useState(false);
   const [pickedAvatar, setPickedAvatar] = useState<string | null>(null);
   const [savingAvatar, setSavingAvatar] = useState(false);
+  // Fenêtre ouverte d'office à la connexion d'un membre sans photo de profil.
+  const [avatarWelcome, setAvatarWelcome] = useState(false);
+  const welcomeAvatarInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [profileForm, setProfileForm] = useState({ name: "", city: "", country: "", civilStatus: "", profession: "", bio: "", marriageVision: [] as string[] });
   const [questionnaireAnswers, setQuestionnaireAnswers] = useState<Record<string, any>>({});
@@ -640,23 +646,33 @@ export default function DashboardPage() {
     toast({ title: t("dashboard.toastProfileUpdated") });
   };
 
-  const handlePickAvatar = async (file: File | undefined) => {
-    if (!file || !user) return;
-    if (!file.type.startsWith("image/")) { toast({ title: t("dashboard.toastUnsupportedFormat"), variant: "destructive" }); return; }
-    if (file.size > 5 * 1024 * 1024) { toast({ title: t("dashboard.toastImageTooLarge"), variant: "destructive" }); return; }
+  const handlePickAvatar = async (file: File | undefined): Promise<boolean> => {
+    if (!file || !user) return false;
+    if (!file.type.startsWith("image/")) { toast({ title: t("dashboard.toastUnsupportedFormat"), variant: "destructive" }); return false; }
+    if (file.size > 5 * 1024 * 1024) { toast({ title: t("dashboard.toastImageTooLarge"), variant: "destructive" }); return false; }
     setUploadingAvatar(true);
     const up = await uploadAvatar(file, user.id || "anon");
     setUploadingAvatar(false);
-    if (up.error || !up.url) { toast({ title: t("dashboard.toastFailed"), description: up.error || t("dashboard.toastPleaseRetry"), variant: "destructive" }); return; }
+    if (up.error || !up.url) { toast({ title: t("dashboard.toastFailed"), description: up.error || t("dashboard.toastPleaseRetry"), variant: "destructive" }); return false; }
     const res = await updateProfile({ avatar_url: up.url });
-    if (!res.ok) { toast({ title: t("dashboard.toastFailed"), description: res.error, variant: "destructive" }); return; }
+    if (!res.ok) { toast({ title: t("dashboard.toastFailed"), description: res.error, variant: "destructive" }); return false; }
     setUser(res.user);
     toast({ title: t("dashboard.toastPhotoUpdated") });
+    return true;
   };
 
   const openAvatarPicker = () => {
     setPickedAvatar(user?.avatar_url || null);
+    setAvatarWelcome(false);
     setShowAvatarPicker(true);
+  };
+
+  // « Plus tard » : la fenêtre d'accueil ne revient qu'à la prochaine session.
+  const dismissAvatarPicker = () => {
+    if (avatarWelcome) {
+      try { sessionStorage.setItem(AVATAR_PROMPT_DISMISSED_KEY, "1"); } catch {}
+    }
+    setShowAvatarPicker(false);
   };
 
   const handleConfirmGeneratedAvatar = async () => {
@@ -905,11 +921,33 @@ export default function DashboardPage() {
     getMyOnboarding().then(({ answers, completed }) => {
       setQuestionnaireAnswers(answers);
       const skipped = typeof window !== "undefined" && localStorage.getItem("eden_onboarding_skipped") === "1";
-      if (!completed && !skipped) router.replace("/onboarding");
+      if (!completed && !skipped) { router.replace("/onboarding"); return; }
+      if (user.id) void promptAvatarIfMissing(user.id);
     });
 
     void refreshProfileCompletion(user.id);
   }, [user]);
+
+  // À la connexion, un membre sans photo de profil se voit proposer d'importer
+  // une image ou de choisir un avatar Eden. La table profiles fait foi : la
+  // session peut ne pas porter l'avatar enregistré. Une seule vérification par
+  // visite, et « Plus tard » la suspend jusqu'à la prochaine session.
+  const avatarPromptCheckedRef = useRef(false);
+  const promptAvatarIfMissing = async (userId: string) => {
+    if (avatarPromptCheckedRef.current) return;
+    avatarPromptCheckedRef.current = true;
+    try { if (sessionStorage.getItem(AVATAR_PROMPT_DISMISSED_KEY)) return; } catch {}
+    let avatar = user?.avatar_url || null;
+    if (supabase) {
+      const { data, error } = await supabase.from("profiles").select("avatar_url").eq("id", userId).maybeSingle();
+      if (error) return;
+      avatar = data?.avatar_url || null;
+    }
+    if (avatar) return;
+    setPickedAvatar(null);
+    setAvatarWelcome(true);
+    setShowAvatarPicker(true);
+  };
 
   // Le questionnaire ("me") arrive après le premier classement des profils (loadSocial) : on
   // reclasse la liste déjà chargée dès que les réponses sont disponibles, sans tout recharger.
@@ -1153,13 +1191,24 @@ export default function DashboardPage() {
         <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-5">
           <div className="w-full max-w-lg bg-white rounded-2xl p-6 sm:p-8 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto custom-scrollbar">
             <div>
-              <h2 className="text-xl font-bold text-[#2F2F2F]">{t("dashboard.chooseAvatarTitle")}</h2>
-              <p className="text-sm text-[#777777] mt-1">{t("dashboard.chooseAvatarDesc")}</p>
+              <h2 className="text-xl font-bold text-[#2F2F2F]">{t(avatarWelcome ? "dashboard.welcomeAvatarTitle" : "dashboard.chooseAvatarTitle")}</h2>
+              <p className="text-sm text-[#777777] mt-1">{t(avatarWelcome ? "dashboard.welcomeAvatarDesc" : "dashboard.chooseAvatarDesc")}</p>
             </div>
-            <AvatarPicker value={pickedAvatar} onChange={setPickedAvatar} />
+            <button type="button" onClick={() => welcomeAvatarInputRef.current?.click()} disabled={uploadingAvatar || savingAvatar}
+              className="w-full h-12 rounded-xl inline-flex items-center justify-center gap-2 text-sm font-bold text-white bg-[#486B46] hover:bg-[#3A5A38] disabled:opacity-60">
+              {uploadingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
+              {t("dashboard.avatarImportButton")}
+            </button>
+            <input ref={welcomeAvatarInputRef} type="file" accept="image/*" className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                e.target.value = "";
+                if (await handlePickAvatar(file)) setShowAvatarPicker(false);
+              }} />
+            <AvatarPicker gender={user?.gender} value={pickedAvatar} onChange={setPickedAvatar} />
             <div className="flex gap-3">
-              <Button variant="outline" onClick={() => setShowAvatarPicker(false)} disabled={savingAvatar} className="flex-1 h-12 rounded-xl">
-                {t("dashboard.avatarPickerCancel")}
+              <Button variant="outline" onClick={dismissAvatarPicker} disabled={savingAvatar || uploadingAvatar} className="flex-1 h-12 rounded-xl">
+                {t(avatarWelcome ? "dashboard.avatarLater" : "dashboard.avatarPickerCancel")}
               </Button>
               <Button onClick={handleConfirmGeneratedAvatar} disabled={savingAvatar || !pickedAvatar} className="flex-1 h-12 bg-primary text-primary-foreground font-bold rounded-xl">
                 {savingAvatar ? <Loader2 className="w-4 h-4 animate-spin" /> : t("dashboard.avatarPickerConfirm")}

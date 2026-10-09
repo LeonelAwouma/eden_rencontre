@@ -14,9 +14,10 @@ import { uploadAvatar } from "@/lib/chat";
  * Utilisé sur la page « Mon profil » (/dashboard/profile), où le lien « Profil »
  * de la barre latérale mène — elle n'offrait jusque-là aucun moyen de changer la photo.
  */
-export function ProfilePhotoEditor({ userId, name, avatarUrl, onUpdated }: {
+export function ProfilePhotoEditor({ userId, name, gender, avatarUrl, onUpdated }: {
   userId: string;
   name?: string | null;
+  gender?: string | null;
   avatarUrl?: string | null;
   onUpdated: (url: string) => void;
 }) {
@@ -85,7 +86,7 @@ export function ProfilePhotoEditor({ userId, name, avatarUrl, onUpdated }: {
               <h2 className="text-xl font-bold text-[#2F2F2F]">{t("dashboard.chooseAvatarTitle")}</h2>
               <p className="text-sm text-[#777777] mt-1">{t("dashboard.chooseAvatarDesc")}</p>
             </div>
-            <AvatarPicker value={picked} onChange={setPicked} />
+            <AvatarPicker gender={gender} value={picked} onChange={setPicked} />
             <div className="flex gap-3">
               <Button variant="outline" onClick={() => setShowPicker(false)} disabled={saving} className="flex-1 h-12 rounded-xl">
                 {t("dashboard.avatarPickerCancel")}

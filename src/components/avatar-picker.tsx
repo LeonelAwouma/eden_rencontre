@@ -3,17 +3,19 @@
 import { useMemo, useState } from "react";
 import { RefreshCw, Check } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { buildAvatarUrl, randomAvatarSeed } from "@/lib/avatar";
+import { avatarSrc, buildAvatarUrl, edenAvatarsFor, randomAvatarSeed } from "@/lib/avatar";
 
 const GRID_SIZE = 6;
 
 interface AvatarPickerProps {
   photos?: (string | null)[];
+  /** Genre du membre : les avatars Eden proposés sont ceux de son genre. */
+  gender?: string | null;
   value: string | null;
   onChange: (value: string) => void;
 }
 
-export function AvatarPicker({ photos, value, onChange }: AvatarPickerProps) {
+export function AvatarPicker({ photos, gender, value, onChange }: AvatarPickerProps) {
   const { t } = useI18n();
   // Graines toujours aléatoires : la graine part chez DiceBear et reste inscrite
   // dans l'URL de l'avatar public. Elle ne doit jamais dériver du pseudo, du nom
@@ -30,6 +32,7 @@ export function AvatarPicker({ photos, value, onChange }: AvatarPickerProps) {
   const regenerate = () => setSeeds(Array.from({ length: GRID_SIZE }, () => randomAvatarSeed()));
 
   const myPhotos = (photos || []).filter((p): p is string => !!p);
+  const edenAvatars = edenAvatarsFor(gender);
 
   return (
     <div className="space-y-5">
@@ -52,6 +55,24 @@ export function AvatarPicker({ photos, value, onChange }: AvatarPickerProps) {
           </div>
         </div>
       )}
+
+      <div className="space-y-2">
+        <p className="text-xs font-bold uppercase tracking-wider" style={{ color: "#486B46" }}>{t("avatarPicker.edenLabel")}</p>
+        <div className="grid grid-cols-3 sm:grid-cols-5 gap-3">
+          {edenAvatars.map((uri) => (
+            <button key={uri} type="button" onClick={() => onChange(uri)}
+              className="relative aspect-square rounded-xl overflow-hidden transition-all"
+              style={{ border: value === uri ? "3px solid #486B46" : "1px solid #E8E5E0", background: "#EEF5EC" }}>
+              <img src={avatarSrc(uri, 256)} alt="" loading="lazy" className="w-full h-full object-cover" />
+              {value === uri && (
+                <span className="absolute inset-0 flex items-center justify-center" style={{ background: "rgba(72,107,70,0.35)" }}>
+                  <Check className="w-6 h-6 text-white" />
+                </span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">

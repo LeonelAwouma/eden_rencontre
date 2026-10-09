@@ -4,6 +4,9 @@
 // désormais une URL de quelques dizaines d'octets dans avatar_url, au lieu d'une
 // data-URI de plusieurs kilo-octets répétée dans chaque ligne de profil.
 
+import { SITE_URL } from "@/lib/site";
+import { normalizeGender } from "@/lib/verses";
+
 const DICEBEAR_ENDPOINT = "https://api.dicebear.com/10.x/adventurer/svg";
 
 // Fonds alignés sur la direction artistique Eden (crème / sauge).
@@ -31,6 +34,31 @@ export function randomAvatarSeed(): string {
   return Array.from(bytes, (b) => (b % 36).toString(36)).join("");
 }
 
+// ── Avatars Eden ─────────────────────────────────────────────────
+// Portraits illustrés propres au site, servis depuis public/avatars (WebP 512 px).
+// avatar_url reçoit l'adresse relative (« /avatars/femme-1.webp ») : elle suit
+// le domaine du site, aperçus Vercel compris.
+
+const EDEN_AVATAR_COUNT = 5;
+
+export const EDEN_AVATARS: Record<"homme" | "femme", string[]> = {
+  homme: Array.from({ length: EDEN_AVATAR_COUNT }, (_, i) => `/avatars/homme-${i + 1}.webp`),
+  femme: Array.from({ length: EDEN_AVATAR_COUNT }, (_, i) => `/avatars/femme-${i + 1}.webp`),
+};
+
+/** Avatars Eden proposés à un membre : ceux de son genre, ou tous si le genre est inconnu. */
+export function edenAvatarsFor(gender?: string | null): string[] {
+  const g = normalizeGender(gender);
+  return g ? EDEN_AVATARS[g] : [...EDEN_AVATARS.femme, ...EDEN_AVATARS.homme];
+}
+
+/** Adresse absolue d'un avatar, pour les services externes (visioconférence…). */
+export function absoluteAvatarUrl(url?: string | null): string | null {
+  if (!url) return null;
+  if (url.startsWith("https://") || url.startsWith("http://")) return url;
+  return url.startsWith("/") ? `${SITE_URL}${url}` : null;
+}
+
 // ── Chargement rapide des photos de profil ───────────────────────
 // Les photos téléversées sont servies par Supabase Storage, parfois en pleine
 // résolution (plusieurs Mo). On les fait passer par l'optimiseur d'images de
@@ -39,9 +67,11 @@ export function randomAvatarSeed(): string {
 
 const SUPABASE_PUBLIC_IMAGE = /^https:\/\/[a-z0-9-]+\.supabase\.co\/storage\/v1\/object\/public\/.+\.(jpe?g|png|webp|avif|heic)(\?.*)?$/i;
 
-/** Vrai pour une photo Supabase que Next.js peut redimensionner (pas les SVG DiceBear). */
+const EDEN_AVATAR_IMAGE = /^\/avatars\/[a-z0-9-]+\.webp$/;
+
+/** Vrai pour une photo Supabase ou un avatar Eden que Next.js peut redimensionner (pas les SVG DiceBear). */
 export function canOptimizeImage(url?: string | null): boolean {
-  return !!url && SUPABASE_PUBLIC_IMAGE.test(url);
+  return !!url && (SUPABASE_PUBLIC_IMAGE.test(url) || EDEN_AVATAR_IMAGE.test(url));
 }
 
 /**

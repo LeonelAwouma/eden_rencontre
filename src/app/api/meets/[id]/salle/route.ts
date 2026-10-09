@@ -12,6 +12,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getAuthenticatedUser } from "@/lib/api-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { buildJoinInfo, isJitsiConfigured, roomOf } from "@/lib/jitsi";
+import { absoluteAvatarUrl } from "@/lib/avatar";
 
 const OPENS_BEFORE_MIN = 30;
 const CLOSES_AFTER_MIN = 60;
@@ -64,7 +65,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     id: user.id,
     name: profile?.name || user.email.split("@")[0],
     email: user.email,
-    avatar: profile?.avatar_url?.startsWith("http") ? profile.avatar_url : null,
+    avatar: absoluteAvatarUrl(profile?.avatar_url),
   }, false, ((meet.duration || 60) + CLOSES_AFTER_MIN + OPENS_BEFORE_MIN) * 60);
 
   return NextResponse.json({ meet: info, ...join });
