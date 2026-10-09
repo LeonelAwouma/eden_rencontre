@@ -254,7 +254,7 @@ export default function TemoignagesPage() {
                 onClick={() => setActiveTab("tous")}
                 className={`px-6 py-3 rounded-xl text-sm font-bold tracking-wide transition-all ${
                   activeTab === "tous"
-                    ? "bg-primary text-primary-foreground shadow-lg"
+                    ? "bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground shadow-lg"
                     : "text-foreground/60 hover:text-foreground"
                 }`}
               >
@@ -264,7 +264,7 @@ export default function TemoignagesPage() {
                 onClick={() => setActiveTab("mariage")}
                 className={`px-6 py-3 rounded-xl text-sm font-bold tracking-wide transition-all ${
                   activeTab === "mariage"
-                    ? "bg-primary text-primary-foreground shadow-lg"
+                    ? "bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground shadow-lg"
                     : "text-foreground/60 hover:text-foreground"
                 }`}
               >
@@ -274,7 +274,7 @@ export default function TemoignagesPage() {
                 onClick={() => setActiveTab("fiancailles")}
                 className={`px-6 py-3 rounded-xl text-sm font-bold tracking-wide transition-all ${
                   activeTab === "fiancailles"
-                    ? "bg-primary text-primary-foreground shadow-lg"
+                    ? "bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground shadow-lg"
                     : "text-foreground/60 hover:text-foreground"
                 }`}
               >
@@ -520,7 +520,7 @@ export default function TemoignagesPage() {
                     <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-primary text-primary-foreground font-black h-14 rounded-xl text-base shadow-xl shadow-primary/10 hover:bg-primary/90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      className="w-full bg-deep-eden text-primary-foreground font-black h-14 rounded-xl text-base shadow-xl shadow-deep-eden/10 hover:bg-deep-eden/90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                     >
                       {isSubmitting ? (
                         <span className="flex items-center gap-2">
@@ -558,7 +558,7 @@ export default function TemoignagesPage() {
                   </div>
                   <Button
                     onClick={resetForm}
-                    className="bg-primary text-primary-foreground font-bold px-8 h-12 rounded-xl mt-6"
+                    className="bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-bold px-8 h-12 rounded-xl mt-6"
                   >
                     {t("testimonials.closeBtn")}
                   </Button>
@@ -590,7 +590,7 @@ export default function TemoignagesPage() {
                 {t("testimonials.ctaDesc")}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
-                <Button size="lg" className="bg-primary text-primary-foreground font-black px-10 h-16 text-lg rounded-xl shadow-2xl shadow-primary/20 hover:scale-105 transition-transform" asChild>
+                <Button size="lg" className="bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-black px-10 h-16 text-lg rounded-xl shadow-2xl shadow-deep-eden/20 hover:scale-105 transition-transform" asChild>
                   <Link href="/login">{t("testimonials.ctaBtn")}</Link>
                 </Button>
                 <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 h-16 text-lg rounded-xl" asChild>

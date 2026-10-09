@@ -78,7 +78,7 @@ function ReunionPageContent({ params }: { params: Promise<{ id: string }> }) {
         {state.kind === "ready" && left && (
           <Notice icon={<Video className="w-6 h-6" />} title="Vous avez quitté la réunion"
             text="Vous pouvez la rejoindre de nouveau tant qu'elle est en cours.">
-            <button onClick={() => { setLeft(false); load(); }} className="h-10 px-5 rounded-full bg-primary text-white text-[14px] font-semibold hover:bg-primary/90">Rejoindre de nouveau</button>
+            <button onClick={() => { setLeft(false); load(); }} className="h-10 px-5 rounded-full bg-deep-eden text-white text-[14px] font-semibold hover:bg-deep-eden/90">Rejoindre de nouveau</button>
             <Link href="/dashboard" className="h-10 px-5 inline-flex items-center rounded-full text-[14px] font-semibold text-primary hover:bg-primary/10">Retour à mon espace</Link>
           </Notice>
         )}

@@ -48,7 +48,7 @@ function UnsubscribeContent() {
         <>
           <p className="text-muted-foreground font-body mb-2">{t("newsletterUnsubscribe.confirmDesc")}</p>
           <p className="font-semibold text-foreground mb-8 break-all">{email}</p>
-          <Button onClick={confirm} disabled={state === "loading"} size="lg" className="bg-accent text-background font-bold">
+          <Button onClick={confirm} disabled={state === "loading"} size="lg" className="bg-deep-eden hover:bg-deep-eden/90 text-background font-bold">
             {state === "loading" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {t("newsletterUnsubscribe.confirmButton")}
           </Button>

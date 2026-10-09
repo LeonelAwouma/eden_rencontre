@@ -79,20 +79,20 @@ export default function MediathequePage() {
               {t("mediatheque.formationTitle")}
             </span>
             <span className="mt-2 text-[15px] leading-relaxed text-[#56615A]">{t("mediatheque.formationDesc")}</span>
-            <span className="mt-5 inline-flex items-center gap-2 self-start h-11 px-5 rounded-full bg-[#486B46] text-white text-[14px] font-bold group-hover:bg-[#3A5A38] transition-colors">
+            <span className="mt-5 inline-flex items-center gap-2 self-start h-11 px-5 rounded-full bg-deep-eden text-white text-[14px] font-bold group-hover:bg-deep-eden/90 transition-colors">
               <BookOpen className="w-4 h-4" /> {t("mediatheque.formationCta")}
             </span>
           </span>
         </Link>
 
         <div className="flex flex-wrap gap-2 justify-center mb-8">
-          <button onClick={()=>{setCategoryFilter("all");setPage(1);}} className={cn("px-4 py-2 rounded-xl text-[13px] font-semibold", categoryFilter==="all"?"bg-[#486B46] text-white":"bg-white border border-[#E8E5E0]")}>{t("mediatheque.allContent")}</button>
-          {categories.map(c=>(<button key={c.id} onClick={()=>{setCategoryFilter(c.id);setPage(1);}} className={cn("px-4 py-2 rounded-xl text-[13px] font-semibold", categoryFilter===c.id?"bg-[#486B46] text-white":"bg-white border border-[#E8E5E0]")}>{c.name}</button>))}
+          <button onClick={()=>{setCategoryFilter("all");setPage(1);}} className={cn("px-4 py-2 rounded-xl text-[13px] font-semibold", categoryFilter==="all"?"bg-deep-eden hover:bg-deep-eden/90 text-white":"bg-white border border-[#E8E5E0]")}>{t("mediatheque.allContent")}</button>
+          {categories.map(c=>(<button key={c.id} onClick={()=>{setCategoryFilter(c.id);setPage(1);}} className={cn("px-4 py-2 rounded-xl text-[13px] font-semibold", categoryFilter===c.id?"bg-deep-eden hover:bg-deep-eden/90 text-white":"bg-white border border-[#E8E5E0]")}>{c.name}</button>))}
         </div>
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-8">
           <div className="flex items-center gap-1 bg-white rounded-xl border border-[#E8E5E0] p-1 overflow-x-auto">
-            {TYPES.map(t=>(<button key={t} onClick={()=>{setTypeFilter(t);setPage(1);}} className={cn("px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap", typeFilter===t?"bg-[#486B46] text-white":"text-[#6B7280] hover:bg-[#F9FAFB]")}>{t==="all"?"Tous":RESOURCE_TYPE_CONFIG[t]?.label||t}</button>))}
+            {TYPES.map(t=>(<button key={t} onClick={()=>{setTypeFilter(t);setPage(1);}} className={cn("px-3 py-1.5 rounded-lg text-[12px] font-semibold whitespace-nowrap", typeFilter===t?"bg-deep-eden text-white":"text-[#6B7280] hover:bg-[#F9FAFB]")}>{t==="all"?"Tous":RESOURCE_TYPE_CONFIG[t]?.label||t}</button>))}
           </div>
           <select value={levelFilter} onChange={e=>{setLevelFilter(e.target.value);setPage(1);}} className="px-3 py-2 bg-white border border-[#E8E5E0] rounded-xl text-[13px] font-medium outline-none">
             {LEVELS.map(l=>(<option key={l} value={l}>{l==="all"?"Niveaux":LEVEL_CONFIG[l]?.label||l}</option>))}

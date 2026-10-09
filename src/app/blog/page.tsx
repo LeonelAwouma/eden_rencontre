@@ -108,9 +108,9 @@ export default function BlogPage() {
 
           {categories.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-10">
-              <Badge onClick={() => setSelectedCategory("all")} className={`cursor-pointer ${selectedCategory==="all" ? "bg-accent text-background" : "bg-card text-foreground/60 hover:bg-accent/10"} border-none`}>{t("blog.allCategories")}</Badge>
+              <Badge onClick={() => setSelectedCategory("all")} className={`cursor-pointer ${selectedCategory==="all" ? "bg-deep-eden text-background" : "bg-card text-foreground/60 hover:bg-accent/10"} border-none`}>{t("blog.allCategories")}</Badge>
               {categories.map((c: any) => (
-                <Badge key={c.id} onClick={() => setSelectedCategory(c.slug)} className={`cursor-pointer ${selectedCategory===c.slug ? "bg-accent text-background" : "bg-card text-foreground/60 hover:bg-accent/10"} border-none`}>{c.name}</Badge>
+                <Badge key={c.id} onClick={() => setSelectedCategory(c.slug)} className={`cursor-pointer ${selectedCategory===c.slug ? "bg-deep-eden text-background" : "bg-card text-foreground/60 hover:bg-accent/10"} border-none`}>{c.name}</Badge>
               ))}
             </div>
           )}
@@ -178,7 +178,7 @@ export default function BlogPage() {
                     aria-label={t("blog.emailPlaceholder")} className="h-14 bg-background border-foreground/10" required type="email" autoComplete="email" />
                   {/* Champ piège pour les robots, invisible pour les visiteurs. */}
                   <input type="text" name="website" value={nlTrap} onChange={e => setNlTrap(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
-                  <Button type="submit" size="lg" disabled={nlState === "loading"} className="bg-accent text-background font-bold h-14 px-8 shrink-0">
+                  <Button type="submit" size="lg" disabled={nlState === "loading"} className="bg-deep-eden hover:bg-deep-eden/90 text-background font-bold h-14 px-8 shrink-0">
                     {nlState === "loading" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     {t("blog.subscribe")}
                   </Button>

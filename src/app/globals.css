@@ -320,8 +320,9 @@
   }
 
   /* ── Botanical Buttons ── */
+  /* Bouton plein des pages publiques : toujours le vert foncé (deep-eden). */
   .garden-btn-primary {
-    @apply bg-primary hover:bg-primary/90 text-primary-foreground;
+    @apply bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground;
     @apply shadow-botanical;
     @apply transition-all duration-200 ease-out;
     @apply hover:scale-[1.01] hover:shadow-botanical-lg;

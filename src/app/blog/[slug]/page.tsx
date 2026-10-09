@@ -56,7 +56,7 @@ export default function BlogPostPage() {
         <div className="text-center space-y-4">
           <BookOpen className="w-16 h-16 mx-auto text-foreground/20" />
           <h1 className="font-headline text-3xl font-bold">{t("blogPost.notFoundTitle")}</h1>
-          <Link href="/blog"><Button>{t("blogPost.backToBlog")}</Button></Link>
+          <Link href="/blog"><Button className="bg-deep-eden hover:bg-deep-eden/90">{t("blogPost.backToBlog")}</Button></Link>
         </div>
       </main><Footer />
     </div>

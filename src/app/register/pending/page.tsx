@@ -103,7 +103,7 @@ function PendingContent() {
           <button
             type="button"
             onClick={() => router.replace(MEMBER_HOME)}
-            className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors"
+            className="inline-flex items-center gap-2 rounded-full bg-deep-eden px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-deep-eden/90 transition-colors"
           >
             {t("registerPending.approvedCta")}
             <ArrowRight className="w-4 h-4" />
@@ -189,7 +189,7 @@ function PendingContent() {
             <button
               type="button"
               onClick={async () => { await logout().catch(() => {}); router.replace(`/login${email ? `?email=${encodeURIComponent(email)}` : ""}`); }}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center gap-2 rounded-full bg-deep-eden px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-deep-eden/90 transition-colors"
             >
               <LogIn className="w-4 h-4" />
               {t("registerPending.noSessionCta")}
@@ -204,7 +204,7 @@ function PendingContent() {
             <p className="text-sm text-foreground/60 leading-relaxed">{t("registerPending.noSessionHint")}</p>
             <Link
               href={`/login${email ? `?email=${encodeURIComponent(email)}` : ""}`}
-              className="inline-flex items-center gap-2 rounded-full bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-colors"
+              className="inline-flex items-center gap-2 rounded-full bg-deep-eden px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-deep-eden/90 transition-colors"
             >
               <LogIn className="w-4 h-4" />
               {t("registerPending.noSessionCta")}

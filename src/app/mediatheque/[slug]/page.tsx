@@ -172,7 +172,7 @@ export default function ResourceDetailPage() {
             )}
             {resource.file_url && (
               <a href={resource.file_url} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold bg-[#486B46] text-white hover:bg-[#3A5A38]">
+                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold bg-deep-eden text-white hover:bg-deep-eden/90">
                 <Download className="w-4 h-4"/> Télécharger
               </a>
             )}

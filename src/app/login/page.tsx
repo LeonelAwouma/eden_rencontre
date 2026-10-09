@@ -317,7 +317,7 @@ export default function LoginPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:shadow-primary/25 transition-all hover:scale-[1.02] disabled:opacity-70 disabled:hover:scale-100"
+              className="w-full h-14 bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-deep-eden/15 hover:shadow-deep-eden/25 transition-all hover:scale-[1.02] disabled:opacity-70 disabled:hover:scale-100"
             >
               {isLoading ? (
                 <span className="flex items-center gap-3">

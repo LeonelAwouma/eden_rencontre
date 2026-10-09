@@ -842,7 +842,7 @@ export default function RegisterPage() {
                   <Button
                     onClick={nextStep}
                     disabled={!formData.pseudo || !formData.firstName || !formData.lastName || !ageValid || !formData.email || formData.password.length < 8 || !toE164(dialOfIso(formData.phoneIso), formData.phoneLocal)}
-                    className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                    className="w-full h-14 bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-deep-eden/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                   >
                     {t("register.continue")} <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
@@ -885,7 +885,7 @@ export default function RegisterPage() {
                 <Button
                   onClick={nextStep}
                   disabled={formData.marriageVision.length === 0}
-                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                  className="w-full h-14 bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-deep-eden/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {t("register.continue")} <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
@@ -963,7 +963,7 @@ export default function RegisterPage() {
                 <Button
                   onClick={nextStep}
                   disabled={!formData.charterAuthorizeVerification || !formData.charterCommitRespectful || !formData.charterAcceptFull}
-                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                  className="w-full h-14 bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-deep-eden/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {t("register.acceptAndContinue")} <ShieldCheck className="w-5 h-5 ml-2" />
                 </Button>
@@ -1031,7 +1031,7 @@ export default function RegisterPage() {
                 <Button
                   onClick={nextStep}
                   disabled={!allPhotosUploaded}
-                  className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
+                  className="w-full h-16 bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-deep-eden/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
                 >
                   {t("register.continueToVerification")} <Camera className="w-5 h-5 ml-2" />
                 </Button>
@@ -1065,7 +1065,7 @@ export default function RegisterPage() {
                     <div className="w-full h-full flex flex-col items-center justify-center gap-4">
                       <Camera className="w-16 h-16 text-foreground/15" />
                       <p className="text-foreground/30 text-sm">{t("register.selfieActivatePrompt")}</p>
-                      <Button onClick={startCamera} className="bg-primary text-primary-foreground font-bold rounded-xl px-8">
+                      <Button onClick={startCamera} className="bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-bold rounded-xl px-8">
                         <Camera className="w-4 h-4 mr-2" /> {t("register.selfieActivateBtn")}
                       </Button>
                     </div>
@@ -1086,7 +1086,7 @@ export default function RegisterPage() {
                       </div>
                       <div className="absolute bottom-4 left-0 right-0 flex justify-center">
                         <Button onClick={captureSelfie} disabled={!videoPlaying}
-                          className="bg-primary text-primary-foreground font-bold rounded-full w-16 h-16 p-0 shadow-lg disabled:opacity-40">
+                          className="bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-bold rounded-full w-16 h-16 p-0 shadow-lg disabled:opacity-40">
                           <Camera className="w-6 h-6" />
                         </Button>
                       </div>
@@ -1117,7 +1117,7 @@ export default function RegisterPage() {
                 {selfieDataUri && (
                   <Button
                     onClick={nextStep}
-                    className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                    className="w-full h-14 bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-deep-eden/25 hover:scale-[1.02] active:scale-[0.98] transition-transform"
                   >
                     {t("register.selfieContinueBtn")} <ArrowRight className="w-5 h-5 ml-2" />
                   </Button>
@@ -1145,7 +1145,7 @@ export default function RegisterPage() {
                 <Button
                   onClick={nextStep}
                   disabled={!publicAvatar}
-                  className="w-full h-14 disabled:opacity-50 disabled:hover:scale-100 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                  className="w-full h-14 disabled:opacity-50 disabled:hover:scale-100 bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-deep-eden/25 hover:scale-[1.02] active:scale-[0.98] transition-transform"
                 >
                   {t("register.continueToCompletion")} <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
@@ -1180,7 +1180,7 @@ export default function RegisterPage() {
                 <Button
                   onClick={handleComplete}
                   disabled={creating}
-                  className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-70 disabled:hover:scale-100"
+                  className="w-full h-16 bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-deep-eden/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-70 disabled:hover:scale-100"
                 >
                   {creating ? (
                     <span className="flex items-center gap-3">
@@ -1249,7 +1249,7 @@ export default function RegisterPage() {
               </p>
             </div>
             <div className="flex flex-col w-full gap-3">
-              <Button onClick={confirmGender} className="w-full h-14 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors">
+              <Button onClick={confirmGender} className="w-full h-14 bg-deep-eden text-primary-foreground font-bold rounded-xl hover:bg-deep-eden/90 transition-colors">
                 {t("register.dialogConfirm")}
               </Button>
               <Button variant="ghost" onClick={() => setShowConfirmDialog(false)} className="w-full text-foreground/40 hover:text-primary transition-colors">

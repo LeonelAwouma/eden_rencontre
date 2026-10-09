@@ -132,8 +132,8 @@ export function PricingCard({
           "transition-[background-color,border-color,filter] [transition-duration:180ms] ease-out active:scale-[0.99] motion-reduce:active:scale-100",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#3F704D]/50",
           "disabled:cursor-not-allowed disabled:opacity-60",
-          recommended && "bg-[#356447] text-white hover:bg-[#294F38]",
-          exclusive && "bg-[#1F4D3A] text-white ring-1 ring-inset ring-[#C6A15B]/50 hover:bg-[#183D2E]",
+          recommended && "bg-deep-eden text-white hover:bg-deep-eden/90",
+          exclusive && "bg-deep-eden text-white ring-1 ring-inset ring-[#C6A15B]/50 hover:bg-deep-eden/90",
           variant === "standard" && "border border-[#CED8CE] bg-transparent text-[#315940] hover:bg-[#F3F8F2] hover:border-[#9AB89C]"
         )}
       >
