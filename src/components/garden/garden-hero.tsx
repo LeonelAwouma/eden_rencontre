@@ -2,7 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import { Globe2, HeartHandshake, ShieldCheck } from "lucide-react";
+import { Cross, HeartHandshake, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { OliveBirdDivider } from "./page-header";
@@ -39,10 +39,10 @@ function PollenParticles() {
   );
 }
 
-const GOAL_STATS = [
-  { icon: HeartHandshake, value: "hero.statCouplesValue", label: "hero.statCouplesLabel" },
-  { icon: Globe2, value: "hero.statCountriesValue", label: "hero.statCountriesLabel" },
-  { icon: ShieldCheck, value: "hero.statModeratedValue", label: "hero.statModeratedLabel" },
+const GOAL_VALUES = [
+  { icon: Cross, label: "hero.valueFaith" },
+  { icon: ShieldCheck, label: "hero.valueTrust" },
+  { icon: HeartHandshake, label: "hero.valueCommitment" },
 ] as const;
 
 /** Losange doré qui ponctue le sur-titre. */
@@ -51,7 +51,9 @@ function GoldDiamond() {
 }
 
 /**
- * « Notre objectif » : la mission en une phrase et trois repères en mini-cartes.
+ * « Notre objectif » : la mission en une phrase, puis les trois valeurs qui la
+ * portent. Les chiffres, eux, restent dans le bandeau sous le hero (StatsBar) :
+ * pas de cartes encadrées ici, pour ne pas confondre valeurs et indicateurs.
  * Apparition douce et échelonnée après les appels à l'action ; aucune animation
  * si le visiteur a demandé à les réduire.
  */
@@ -65,7 +67,7 @@ function GoalPanel({ reduced }: { reduced: boolean }) {
       initial={reduced ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 1.0, ease }}
-      className="relative rounded-[18px] border border-[#E8E5E0] bg-white/75 px-4 pt-6 pb-4 sm:px-6 sm:pt-7 sm:pb-5 text-center shadow-[0_1px_3px_rgba(72,107,70,0.04),0_4px_16px_rgba(72,107,70,0.06)]"
+      className="relative rounded-[18px] border border-[#E8E5E0] bg-white/75 px-5 pt-7 pb-6 sm:px-8 sm:pt-8 sm:pb-7 text-center shadow-[0_1px_3px_rgba(72,107,70,0.04),0_4px_16px_rgba(72,107,70,0.06)]"
     >
       {/* Filet doré en tête de carte */}
       <span
@@ -81,29 +83,41 @@ function GoalPanel({ reduced }: { reduced: boolean }) {
 
       <h2
         id="hero-goal-title"
-        className="mt-2.5 font-headline text-[1.4rem] sm:text-[1.65rem] lg:text-[1.75rem] font-bold leading-tight tracking-tight text-foreground"
+        className="mt-3 font-headline text-[1.55rem] sm:text-[1.85rem] lg:text-[2rem] font-bold leading-[1.15] tracking-tight text-foreground"
       >
         {t("hero.goalTitle1")}{" "}
         <span className="text-primary italic font-medium">{t("hero.goalTitle2")}</span>
       </h2>
 
-      <ul className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
-        {GOAL_STATS.map(({ icon: Icon, value, label }, i) => (
+      <p className="mt-3 mx-auto max-w-sm text-sm sm:text-[0.95rem] leading-relaxed text-muted-foreground font-body">
+        {t("hero.goalText")}
+      </p>
+
+      <span className="block mx-auto mt-5 sm:mt-6 h-px w-16 bg-sage/30" aria-hidden="true" />
+
+      <ul className="mt-5 sm:mt-6 grid grid-cols-3">
+        {GOAL_VALUES.map(({ icon: Icon, label }, i) => (
           <motion.li
-            key={value}
+            key={label}
             initial={reduced ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 1.2 + i * 0.1, ease }}
-            className="flex flex-col items-center rounded-xl border border-sage/25 bg-[hsl(42_35%_97%)] px-1.5 py-3.5 sm:px-3 sm:py-4 lg:py-3.5"
+            className="relative flex flex-col items-center gap-2.5 px-1 sm:px-3"
           >
-            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/[0.07] text-primary" aria-hidden="true">
-              <Icon className="w-4 h-4" strokeWidth={1.75} />
+            {/* Séparateur végétal entre les valeurs */}
+            {i > 0 && (
+              <span
+                className="absolute left-0 top-1 h-10 w-px bg-gradient-to-b from-transparent via-sage/30 to-transparent"
+                aria-hidden="true"
+              />
+            )}
+            <span
+              className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-primary/[0.07] ring-1 ring-[#D4A843]/35 text-primary"
+              aria-hidden="true"
+            >
+              <Icon className="w-[18px] h-[18px] sm:w-5 sm:h-5" strokeWidth={1.6} />
             </span>
-            <span className="mt-2 font-headline text-[1.4rem] sm:text-[1.65rem] font-bold leading-none text-primary [font-variant-numeric:lining-nums] whitespace-nowrap">
-              {t(value)}
-            </span>
-            <span className="my-2 h-px w-5 bg-[#D4A843]/60" aria-hidden="true" />
-            <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] sm:tracking-[0.16em] font-semibold text-foreground/70 leading-tight">
+            <span className="text-[11px] sm:text-xs uppercase tracking-[0.1em] sm:tracking-[0.14em] font-semibold text-foreground/75 leading-snug">
               {t(label)}
             </span>
           </motion.li>

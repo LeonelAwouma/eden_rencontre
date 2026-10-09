@@ -57,8 +57,18 @@ export default function AdminLoginPage() {
     setCapsLock(e.getModifierState?.("CapsLock") ?? false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Valeurs lues dans le formulaire, pas dans l'état React : le remplissage
+    // automatique (gestionnaire de mots de passe de Firefox notamment) remplit
+    // les champs sans toujours déclencher onChange — l'état restait vide et la
+    // requête partait sans identifiants (400 « Email et mot de passe requis »).
+    // À lire avant setLoading : un fieldset désactivé est exclu de FormData.
+    const form = new FormData(e.currentTarget);
+    const sentEmail = String(form.get("email") ?? email).trim();
+    const sentPassword = String(form.get("password") ?? password);
+    setEmail(sentEmail);
+    setPassword(sentPassword);
     setError("");
     setLoading(true);
 
@@ -66,7 +76,7 @@ export default function AdminLoginPage() {
       const res = await fetch("/api/admin/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email: sentEmail, password: sentPassword }),
       });
 
       const data = await res.json();
@@ -357,33 +367,41 @@ function ChangePasswordForm({ initialEmail, fieldClass, onCancel, onDone }: {
   ];
   const mismatch = confirm.length > 0 && confirm !== next;
 
-  const submit = async (e: React.FormEvent) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Comme pour la connexion : l'e-mail et le mot de passe actuel peuvent être
+    // remplis automatiquement sans passer par onChange.
+    const form = new FormData(e.currentTarget);
+    const sentEmail = String(form.get("email") ?? email).trim();
+    const sentCurrent = String(form.get("current") ?? current);
+    setEmail(sentEmail);
+    setCurrent(sentCurrent);
     setError("");
     if (rules.some((r) => !r.ok)) { setError("Le nouveau mot de passe ne respecte pas toutes les règles."); return; }
+    if (next === sentCurrent) { setError("Le nouveau mot de passe doit être différent de l'actuel."); return; }
     if (next !== confirm) { setError("La confirmation ne correspond pas au nouveau mot de passe."); return; }
     setLoading(true);
     try {
       const res = await fetch("/api/admin/auth/change-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, currentPassword: current, newPassword: next }),
+        body: JSON.stringify({ email: sentEmail, currentPassword: sentCurrent, newPassword: next }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setError(data.error || "Le mot de passe n'a pas pu être modifié."); setLoading(false); return; }
-      onDone(email.trim().toLowerCase());
+      onDone(sentEmail.toLowerCase());
     } catch {
       setError("Connexion au serveur impossible. Réessayez dans un instant.");
       setLoading(false);
     }
   };
 
-  const passwordField = (id: string, label: string, value: string, set: (v: string) => void, autoComplete: string, extra?: string) => (
+  const passwordField = (id: string, name: string, label: string, value: string, set: (v: string) => void, autoComplete: string, extra?: string) => (
     <div>
       <label htmlFor={id} className="block text-[12px] font-semibold text-[#2F2F2F] mb-2">{label}</label>
       <div className="relative">
         <Lock className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-[#6B746E]" aria-hidden="true" />
-        <input id={id} type={show ? "text" : "password"} autoComplete={autoComplete} required value={value}
+        <input id={id} name={name} type={show ? "text" : "password"} autoComplete={autoComplete} required value={value}
           onChange={(e) => set(e.target.value)} aria-describedby={extra}
           aria-invalid={id === "admin-new-confirm" && mismatch ? true : undefined}
           className={`${fieldClass} pr-4`} />
@@ -400,13 +418,13 @@ function ChangePasswordForm({ initialEmail, fieldClass, onCancel, onDone }: {
           <label htmlFor="admin-change-email" className="block text-[12px] font-semibold text-[#2F2F2F] mb-2">Adresse email</label>
           <div className="relative">
             <Mail className="absolute left-3.5 top-1/2 -translate-y-1/2 w-[18px] h-[18px] text-[#6B746E]" aria-hidden="true" />
-            <input id="admin-change-email" type="email" inputMode="email" autoComplete="username" required
+            <input id="admin-change-email" name="email" type="email" inputMode="email" autoComplete="username" required
               value={email} onChange={(e) => setEmail(e.target.value)} className={fieldClass} />
           </div>
         </div>
 
-        {passwordField("admin-current", "Mot de passe actuel", current, setCurrent, "current-password")}
-        {passwordField("admin-new", "Nouveau mot de passe", next, setNext, "new-password", "admin-new-rules")}
+        {passwordField("admin-current", "current", "Mot de passe actuel", current, setCurrent, "current-password")}
+        {passwordField("admin-new", "new", "Nouveau mot de passe", next, setNext, "new-password", "admin-new-rules")}
 
         <ul id="admin-new-rules" className="-mt-2 space-y-1">
           {rules.map((r) => (
@@ -418,7 +436,7 @@ function ChangePasswordForm({ initialEmail, fieldClass, onCancel, onDone }: {
           ))}
         </ul>
 
-        {passwordField("admin-new-confirm", "Confirmer le nouveau mot de passe", confirm, setConfirm, "new-password", mismatch ? "admin-mismatch" : undefined)}
+        {passwordField("admin-new-confirm", "confirm", "Confirmer le nouveau mot de passe", confirm, setConfirm, "new-password", mismatch ? "admin-mismatch" : undefined)}
         {mismatch && (
           <p id="admin-mismatch" className="-mt-3 flex items-center gap-1.5 text-[12px] font-medium text-[#B42318]">
             <AlertCircle className="w-3.5 h-3.5 shrink-0" aria-hidden="true" /> Les deux saisies ne correspondent pas.

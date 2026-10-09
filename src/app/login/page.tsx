@@ -62,8 +62,15 @@ export default function LoginPage() {
     });
   }, [router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    // Valeurs lues dans le formulaire, pas dans l'état React : le remplissage
+    // automatique (Firefox notamment) peut remplir les champs sans onChange,
+    // et la requête partait alors sans identifiants.
+    const form = new FormData(e.currentTarget);
+    const email = String(form.get("email") ?? formData.email).trim();
+    const password = String(form.get("password") ?? formData.password);
+    setFormData((prev) => ({ ...prev, email, password }));
     setError(null);
     setIsLoading(true);
 
@@ -71,7 +78,7 @@ export default function LoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: formData.email, password: formData.password }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await res.json();
@@ -82,9 +89,9 @@ export default function LoginPage() {
           // page d'attente fasse entrer le membre dès la validation.
           try {
             const { supabase } = await import("@/lib/supabase");
-            await supabase?.auth.signInWithPassword({ email: formData.email.trim().toLowerCase(), password: formData.password });
+            await supabase?.auth.signInWithPassword({ email: email.toLowerCase(), password });
           } catch { /* non bloquant */ }
-          router.push(`/register/pending?email=${encodeURIComponent(formData.email)}`);
+          router.push(`/register/pending?email=${encodeURIComponent(email)}`);
           return;
         }
         if (data.error === "rejected") {
@@ -107,8 +114,8 @@ export default function LoginPage() {
       const { supabase } = await import("@/lib/supabase");
       if (supabase) {
         await supabase.auth.signInWithPassword({
-          email: formData.email.trim().toLowerCase(),
-          password: formData.password,
+          email: email.toLowerCase(),
+          password,
         });
       }
 
@@ -257,6 +264,8 @@ export default function LoginPage() {
               </Label>
               <Input
                 type="email"
+                name="email"
+                autoComplete="username"
                 required
                 placeholder={t("login.emailPlaceholder")}
                 value={formData.email}
@@ -280,6 +289,8 @@ export default function LoginPage() {
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
+                  name="password"
+                  autoComplete="current-password"
                   required
                   placeholder="••••••••••"
                   value={formData.password}

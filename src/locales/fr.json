@@ -20,12 +20,10 @@
     "goalLabel": "Notre objectif",
     "goalTitle1": "Bâtir des unions",
     "goalTitle2": "qui ont du sens.",
-    "statCouplesValue": "2 500+",
-    "statCouplesLabel": "Couples",
-    "statCountriesValue": "15+",
-    "statCountriesLabel": "Pays",
-    "statModeratedValue": "100 %",
-    "statModeratedLabel": "Modéré",
+    "goalText": "Réunir des célibataires chrétiens qui veulent bâtir un foyer solide, fondé sur Dieu.",
+    "valueFaith": "Foi partagée",
+    "valueTrust": "Confiance",
+    "valueCommitment": "Engagement",
     "imageAlt": "Couples chrétiens unis — Garden of Alliance"
   },
   "features": {
