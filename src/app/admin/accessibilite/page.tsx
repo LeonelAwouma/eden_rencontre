@@ -101,7 +101,7 @@ export default function AdminAccessibilityPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Accessibilité de la plateforme" subtitle="Avis des membres sur la facilité d'utilisation de Garden of Alliance." />
+      <PageHeader title="Accessibilité du parcours d'inscription" subtitle="Notes et commentaires laissés par les membres à l'approbation de leur inscription." />
 
       {error && <p role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">{error}</p>}
       {notice && <p role="status" className="rounded-xl bg-primary/10 px-4 py-2.5 text-sm font-medium text-primary">{notice}</p>}
@@ -144,7 +144,7 @@ export default function AdminAccessibilityPage() {
 
           {summary.count === 0 ? (
             <div className="rounded-2xl border border-dashed border-border bg-card">
-              <EmptyState icon={Accessibility} title="Aucun avis pour le moment" description="Dès qu'un membre évaluera l'accessibilité de la plateforme, son avis apparaîtra ici." />
+              <EmptyState icon={Accessibility} title="Aucun avis pour le moment" description="Dès qu'un membre approuvé notera son parcours d'inscription, sa note et son commentaire apparaîtront ici." />
             </div>
           ) : (
             <section aria-label="Avis des membres" className="space-y-4">

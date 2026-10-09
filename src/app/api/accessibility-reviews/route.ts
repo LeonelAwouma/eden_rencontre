@@ -1,37 +1,30 @@
 /**
- * Avis d'accessibilité de la plateforme — côté membre (compte approuvé).
- * GET    /api/accessibility-reviews — { summary, mine }
- * PUT    /api/accessibility-reviews — { rating: 1-5, comment? } : publie ou modifie MON avis (un seul par membre)
- * DELETE /api/accessibility-reviews — supprime mon avis
+ * Note du parcours d'inscription — côté membre (compte approuvé).
+ * Demandée une seule fois, à l'arrivée du membre approuvé dans son espace
+ * (components/registration-feedback-dialog.tsx). Lue dans Admin → Accessibilité.
+ * GET /api/accessibility-reviews — { mine } : ma note, ou null
+ * PUT /api/accessibility-reviews — { rating: 1-5, comment? } : enregistre MA note (une seule par membre)
  * L'identité vient du jeton, jamais du corps de la requête.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { getApprovedUser } from "@/lib/api-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { REVIEWS_MIGRATION_MISSING, REVIEW_COMMENT_MAX, isReviewsMissing, summarize } from "@/lib/accessibility-reviews";
+import { REVIEWS_MIGRATION_MISSING, REVIEW_COMMENT_MAX, isReviewsMissing } from "@/lib/accessibility-reviews";
 
 const fail = (error: { code?: string; message?: string }) =>
   isReviewsMissing(error)
     ? NextResponse.json({ error: REVIEWS_MIGRATION_MISSING }, { status: 409 })
     : NextResponse.json({ error: "Erreur serveur" }, { status: 500 });
 
-async function readSummary() {
-  const { data, error } = await getSupabaseAdmin().from("accessibility_reviews").select("rating").limit(100000);
-  if (error) return { error };
-  return { summary: summarize((data || []).map((r) => r.rating)) };
-}
-
 export async function GET(req: NextRequest) {
   const user = await getApprovedUser(req);
   if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
 
-  const s = await readSummary();
-  if (s.error) return fail(s.error);
   const { data: mine, error } = await getSupabaseAdmin().from("accessibility_reviews")
     .select("rating, comment, created_at, updated_at").eq("user_id", user.id).maybeSingle();
   if (error) return fail(error);
-  return NextResponse.json({ summary: s.summary, mine: mine ?? null });
+  return NextResponse.json({ mine: mine ?? null });
 }
 
 export async function PUT(req: NextRequest) {
@@ -62,18 +55,5 @@ export async function PUT(req: NextRequest) {
         .insert({ user_id: user.id, rating, comment }).select("rating, comment, created_at, updated_at").single();
   if (error) return fail(error);
 
-  const s = await readSummary();
-  if (s.error) return fail(s.error);
-  return NextResponse.json({ review: data, created: !existing, summary: s.summary });
-}
-
-export async function DELETE(req: NextRequest) {
-  const user = await getApprovedUser(req);
-  if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
-
-  const { error } = await getSupabaseAdmin().from("accessibility_reviews").delete().eq("user_id", user.id);
-  if (error) return fail(error);
-  const s = await readSummary();
-  if (s.error) return fail(s.error);
-  return NextResponse.json({ summary: s.summary });
+  return NextResponse.json({ review: data, created: !existing });
 }

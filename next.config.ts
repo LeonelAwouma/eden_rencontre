@@ -18,6 +18,9 @@ const nextConfig: NextConfig = {
     return [
       { source: '/admin/formation', destination: '/admin/mediatheque/academie', permanent: true },
       { source: '/admin/formation/:path*', destination: '/admin/mediatheque/academie/:path*', permanent: true },
+      // L'ancienne page membre « Accessibilité » : la note se donne désormais une
+      // seule fois, dans une fenêtre, à l'arrivée du membre approuvé.
+      { source: '/dashboard/accessibilite', destination: '/dashboard', permanent: true },
       // Anciennes couvertures de « Bâtir sur le roc », encore possibles dans
       // mediatheque_learning_paths.cover_url (cf. 20261006_batir_sur_le_roc_cover_webp.sql).
       { source: '/batir_roc.png', destination: '/formation/batir-sur-le-roc/images/couverture.webp', permanent: true },

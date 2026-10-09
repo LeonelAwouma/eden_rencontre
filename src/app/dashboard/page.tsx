@@ -16,7 +16,6 @@ import {
   HeartHandshake, Hash, Share2, Video, CalendarDays, Church,
   Bookmark, ThumbsUp, Send, ArrowLeft, Smile, ImagePlus, Loader2,
   Trash2, UserPlus, ChurchIcon, Sparkles, GraduationCap, Flag, MessagesSquare,
-  Accessibility
 } from "lucide-react";
 import Image from "next/image";
 import { FORMATION_COVER_SRC } from "@/lib/formation/paths";
@@ -51,6 +50,7 @@ import { getEngagementStatus, sendEngagementRequest, respondToEngagementRequest,
 import { motion, AnimatePresence } from "framer-motion";
 import { Monogram, Flourish, VitrailPattern } from "@/components/ornaments";
 import { AvatarPicker } from "@/components/avatar-picker";
+import { RegistrationFeedbackDialog, needsRegistrationFeedback } from "@/components/registration-feedback-dialog";
 import { ImposingFloralCorners, ImposingFloralSide } from "@/components/garden";
 import { DashboardSidebar, SIDEBAR_OFFSET_CLASS } from "@/components/dashboard/dashboard-sidebar";
 import { PricingHero, PricingPlans } from "@/components/pricing/pricing-plans";
@@ -922,7 +922,7 @@ export default function DashboardPage() {
       setQuestionnaireAnswers(answers);
       const skipped = typeof window !== "undefined" && localStorage.getItem("eden_onboarding_skipped") === "1";
       if (!completed && !skipped) { router.replace("/onboarding"); return; }
-      if (user.id) void promptAvatarIfMissing(user.id);
+      if (user.id) void runArrivalPrompts(user.id);
     });
 
     void refreshProfileCompletion(user.id);
@@ -933,6 +933,21 @@ export default function DashboardPage() {
   // session peut ne pas porter l'avatar enregistré. Une seule vérification par
   // visite, et « Plus tard » la suspend jusqu'à la prochaine session.
   const avatarPromptCheckedRef = useRef(false);
+
+  // Fenêtres d'arrivée, l'une après l'autre : d'abord la note du parcours
+  // d'inscription (une seule fois, après l'approbation), puis la photo de profil.
+  const arrivalCheckedRef = useRef(false);
+  const [showRegistrationFeedback, setShowRegistrationFeedback] = useState(false);
+  const runArrivalPrompts = async (userId: string) => {
+    if (arrivalCheckedRef.current) return;
+    arrivalCheckedRef.current = true;
+    if (await needsRegistrationFeedback(userId)) setShowRegistrationFeedback(true);
+    else void promptAvatarIfMissing(userId);
+  };
+  const closeRegistrationFeedback = () => {
+    setShowRegistrationFeedback(false);
+    if (user?.id) void promptAvatarIfMissing(user.id);
+  };
   const promptAvatarIfMissing = async (userId: string) => {
     if (avatarPromptCheckedRef.current) return;
     avatarPromptCheckedRef.current = true;
@@ -1186,6 +1201,9 @@ export default function DashboardPage() {
             </div>
           </div>
         </div>
+      )}
+      {showRegistrationFeedback && user?.id && (
+        <RegistrationFeedbackDialog userId={user.id} onClose={closeRegistrationFeedback} />
       )}
       {showAvatarPicker && (
         <div className="fixed inset-0 z-[100] bg-black/50 backdrop-blur-sm flex items-center justify-center p-5">
