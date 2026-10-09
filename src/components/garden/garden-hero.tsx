@@ -2,7 +2,6 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
-import { Cross, HeartHandshake, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { OliveBirdDivider } from "./page-header";
@@ -39,94 +38,6 @@ function PollenParticles() {
   );
 }
 
-const GOAL_VALUES = [
-  { icon: Cross, label: "hero.valueFaith" },
-  { icon: ShieldCheck, label: "hero.valueTrust" },
-  { icon: HeartHandshake, label: "hero.valueCommitment" },
-] as const;
-
-/** Losange doré qui ponctue le sur-titre. */
-function GoldDiamond() {
-  return <span className="inline-block w-1.5 h-1.5 rotate-45 bg-[#D4A843]/70" aria-hidden="true" />;
-}
-
-/**
- * « Notre objectif » : la mission en une phrase, puis les trois valeurs qui la
- * portent. Les chiffres, eux, restent dans le bandeau sous le hero (StatsBar) :
- * pas de cartes encadrées ici, pour ne pas confondre valeurs et indicateurs.
- * Apparition douce et échelonnée après les appels à l'action ; aucune animation
- * si le visiteur a demandé à les réduire.
- */
-function GoalPanel({ reduced }: { reduced: boolean }) {
-  const { t } = useI18n();
-  const ease = [0.22, 1, 0.36, 1] as const;
-
-  return (
-    <motion.section
-      aria-labelledby="hero-goal-title"
-      initial={reduced ? false : { opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.8, delay: 1.0, ease }}
-      className="relative rounded-[18px] border border-[#E8E5E0] bg-white/75 px-5 pt-7 pb-6 sm:px-8 sm:pt-8 sm:pb-7 text-center shadow-[0_1px_3px_rgba(72,107,70,0.04),0_4px_16px_rgba(72,107,70,0.06)]"
-    >
-      {/* Filet doré en tête de carte */}
-      <span
-        className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-24 bg-gradient-to-r from-transparent via-[#D4A843]/70 to-transparent"
-        aria-hidden="true"
-      />
-
-      <p className="eden-eyebrow text-[10px] sm:text-[11px] justify-center">
-        <GoldDiamond />
-        {t("hero.goalLabel")}
-        <GoldDiamond />
-      </p>
-
-      <h2
-        id="hero-goal-title"
-        className="mt-3 font-headline text-[1.55rem] sm:text-[1.85rem] lg:text-[2rem] font-bold leading-[1.15] tracking-tight text-foreground"
-      >
-        {t("hero.goalTitle1")}{" "}
-        <span className="text-primary italic font-medium">{t("hero.goalTitle2")}</span>
-      </h2>
-
-      <p className="mt-3 mx-auto max-w-sm text-sm sm:text-[0.95rem] leading-relaxed text-muted-foreground font-body">
-        {t("hero.goalText")}
-      </p>
-
-      <span className="block mx-auto mt-5 sm:mt-6 h-px w-16 bg-sage/30" aria-hidden="true" />
-
-      <ul className="mt-5 sm:mt-6 grid grid-cols-3">
-        {GOAL_VALUES.map(({ icon: Icon, label }, i) => (
-          <motion.li
-            key={label}
-            initial={reduced ? false : { opacity: 0, y: 10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, delay: 1.2 + i * 0.1, ease }}
-            className="relative flex flex-col items-center gap-2.5 px-1 sm:px-3"
-          >
-            {/* Séparateur végétal entre les valeurs */}
-            {i > 0 && (
-              <span
-                className="absolute left-0 top-1 h-10 w-px bg-gradient-to-b from-transparent via-sage/30 to-transparent"
-                aria-hidden="true"
-              />
-            )}
-            <span
-              className="flex items-center justify-center w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-primary/[0.07] ring-1 ring-[#D4A843]/35 text-primary"
-              aria-hidden="true"
-            >
-              <Icon className="w-[18px] h-[18px] sm:w-5 sm:h-5" strokeWidth={1.6} />
-            </span>
-            <span className="text-[11px] sm:text-xs uppercase tracking-[0.1em] sm:tracking-[0.14em] font-semibold text-foreground/75 leading-snug">
-              {t(label)}
-            </span>
-          </motion.li>
-        ))}
-      </ul>
-    </motion.section>
-  );
-}
-
 export function GardenHero() {
   const reduced = useReducedMotion();
   const { t } = useI18n();
@@ -149,7 +60,7 @@ export function GardenHero() {
       <div className="relative z-10 flex flex-col lg:grid lg:grid-cols-[52fr_48fr] xl:grid-cols-2 min-h-[100vh] lg:min-h-[92vh]">
         {/* ═══ COLONNE GAUCHE : le texte, sur le ciel du jardin ═══ */}
         <div className="flex items-center relative eden-sky">
-          <div className="container mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 py-20 sm:py-24 lg:pt-12 lg:pb-16">
+          <div className="container mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 py-20 sm:py-24 lg:py-0">
             <motion.div
               initial={reduced ? false : { opacity: 0, y: 36 }}
               animate={{ opacity: 1, y: 0 }}
@@ -216,11 +127,6 @@ export function GardenHero() {
                   <span className="group-hover:translate-x-1.5 transition-transform duration-300 text-sm">&rarr;</span>
                 </Link>
               </motion.div>
-
-              {/* Notre objectif — repères présentés comme un objectif, non comme un bilan */}
-              <div className="pt-3 sm:pt-5">
-                <GoalPanel reduced={!!reduced} />
-              </div>
             </motion.div>
           </div>
         </div>
