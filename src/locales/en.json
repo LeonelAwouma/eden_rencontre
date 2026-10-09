@@ -17,10 +17,15 @@
     "subtitle": "Garden of Alliance is the digital sanctuary dedicated to Christian singles from Africa and the diaspora. An elite community to build families on the foundations of faith.",
     "cta": "Seek your alliance",
     "visionLink": "Our Sacred Vision",
-    "couples": "2,500+ Couples",
-    "countries": "15+ Countries",
-    "moderated": "100% Moderated",
     "goalLabel": "Our goal",
+    "goalTitle1": "Building unions",
+    "goalTitle2": "that truly matter.",
+    "statCouplesValue": "2,500+",
+    "statCouplesLabel": "Couples",
+    "statCountriesValue": "15+",
+    "statCountriesLabel": "Countries",
+    "statModeratedValue": "100%",
+    "statModeratedLabel": "Moderated",
     "imageAlt": "United Christian couples — Garden of Alliance"
   },
   "features": {

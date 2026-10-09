@@ -2,6 +2,7 @@
 
 import { motion, useReducedMotion } from "framer-motion";
 import Link from "next/link";
+import { Globe2, HeartHandshake, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { OliveBirdDivider } from "./page-header";
@@ -38,6 +39,80 @@ function PollenParticles() {
   );
 }
 
+const GOAL_STATS = [
+  { icon: HeartHandshake, value: "hero.statCouplesValue", label: "hero.statCouplesLabel" },
+  { icon: Globe2, value: "hero.statCountriesValue", label: "hero.statCountriesLabel" },
+  { icon: ShieldCheck, value: "hero.statModeratedValue", label: "hero.statModeratedLabel" },
+] as const;
+
+/** Losange doré qui ponctue le sur-titre. */
+function GoldDiamond() {
+  return <span className="inline-block w-1.5 h-1.5 rotate-45 bg-[#D4A843]/70" aria-hidden="true" />;
+}
+
+/**
+ * « Notre objectif » : la mission en une phrase et trois repères en mini-cartes.
+ * Apparition douce et échelonnée après les appels à l'action ; aucune animation
+ * si le visiteur a demandé à les réduire.
+ */
+function GoalPanel({ reduced }: { reduced: boolean }) {
+  const { t } = useI18n();
+  const ease = [0.22, 1, 0.36, 1] as const;
+
+  return (
+    <motion.section
+      aria-labelledby="hero-goal-title"
+      initial={reduced ? false : { opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.8, delay: 1.0, ease }}
+      className="relative rounded-[18px] border border-[#E8E5E0] bg-white/75 px-4 pt-6 pb-4 sm:px-6 sm:pt-7 sm:pb-5 text-center shadow-[0_1px_3px_rgba(72,107,70,0.04),0_4px_16px_rgba(72,107,70,0.06)]"
+    >
+      {/* Filet doré en tête de carte */}
+      <span
+        className="absolute top-0 left-1/2 -translate-x-1/2 h-px w-24 bg-gradient-to-r from-transparent via-[#D4A843]/70 to-transparent"
+        aria-hidden="true"
+      />
+
+      <p className="eden-eyebrow text-[10px] sm:text-[11px] justify-center">
+        <GoldDiamond />
+        {t("hero.goalLabel")}
+        <GoldDiamond />
+      </p>
+
+      <h2
+        id="hero-goal-title"
+        className="mt-2.5 font-headline text-[1.4rem] sm:text-[1.65rem] lg:text-[1.75rem] font-bold leading-tight tracking-tight text-foreground"
+      >
+        {t("hero.goalTitle1")}{" "}
+        <span className="text-primary italic font-medium">{t("hero.goalTitle2")}</span>
+      </h2>
+
+      <ul className="mt-5 grid grid-cols-3 gap-2 sm:gap-3">
+        {GOAL_STATS.map(({ icon: Icon, value, label }, i) => (
+          <motion.li
+            key={value}
+            initial={reduced ? false : { opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 1.2 + i * 0.1, ease }}
+            className="flex flex-col items-center rounded-xl border border-sage/25 bg-[hsl(42_35%_97%)] px-1.5 py-3.5 sm:px-3 sm:py-4 lg:py-3.5"
+          >
+            <span className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/[0.07] text-primary" aria-hidden="true">
+              <Icon className="w-4 h-4" strokeWidth={1.75} />
+            </span>
+            <span className="mt-2 font-headline text-[1.4rem] sm:text-[1.65rem] font-bold leading-none text-primary [font-variant-numeric:lining-nums] whitespace-nowrap">
+              {t(value)}
+            </span>
+            <span className="my-2 h-px w-5 bg-[#D4A843]/60" aria-hidden="true" />
+            <span className="text-[10px] sm:text-[11px] uppercase tracking-[0.12em] sm:tracking-[0.16em] font-semibold text-foreground/70 leading-tight">
+              {t(label)}
+            </span>
+          </motion.li>
+        ))}
+      </ul>
+    </motion.section>
+  );
+}
+
 export function GardenHero() {
   const reduced = useReducedMotion();
   const { t } = useI18n();
@@ -60,7 +135,7 @@ export function GardenHero() {
       <div className="relative z-10 flex flex-col lg:grid lg:grid-cols-[52fr_48fr] xl:grid-cols-2 min-h-[100vh] lg:min-h-[92vh]">
         {/* ═══ COLONNE GAUCHE : le texte, sur le ciel du jardin ═══ */}
         <div className="flex items-center relative eden-sky">
-          <div className="container mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 py-20 sm:py-24 lg:py-0">
+          <div className="container mx-auto px-5 sm:px-8 lg:px-12 xl:px-16 py-20 sm:py-24 lg:pt-12 lg:pb-16">
             <motion.div
               initial={reduced ? false : { opacity: 0, y: 36 }}
               animate={{ opacity: 1, y: 0 }}
@@ -128,34 +203,10 @@ export function GardenHero() {
                 </Link>
               </motion.div>
 
-              {/* Repères — présentés comme un objectif, non comme un bilan */}
-              <motion.p
-                initial={reduced ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.7, delay: 1.05 }}
-                className="pt-4 -mb-2 text-center text-[10px] sm:text-[11px] uppercase tracking-[0.24em] font-semibold text-primary"
-              >
-                {t("hero.goalLabel")}
-              </motion.p>
-              <motion.div
-                initial={reduced ? false : { opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ duration: 0.7, delay: 1.1 }}
-                className="flex items-center justify-center gap-5 sm:gap-7 pt-4 text-[10px] sm:text-[11px] uppercase tracking-[0.18em] text-foreground/70 font-medium"
-              >
-                <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-natural-sage/60" />
-                  {t("hero.couples")}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-sage/60" />
-                  {t("hero.countries")}
-                </span>
-                <span className="flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-deep-eden/35" />
-                  {t("hero.moderated")}
-                </span>
-              </motion.div>
+              {/* Notre objectif — repères présentés comme un objectif, non comme un bilan */}
+              <div className="pt-3 sm:pt-5">
+                <GoalPanel reduced={!!reduced} />
+              </div>
             </motion.div>
           </div>
         </div>
