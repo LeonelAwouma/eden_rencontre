@@ -8,6 +8,8 @@ import { CheckCircle2, Heart, ScrollText, ShieldCheck, Users } from "lucide-reac
 import { motion, useReducedMotion } from "framer-motion";
 import { PageHeader, OliveBirdDivider, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 
 export default function ParcoursPage() {
   const { t } = useI18n();
@@ -157,10 +159,10 @@ export default function ParcoursPage() {
               </p>
 
               <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center pt-4">
-                <Button size="lg" className="garden-btn-primary px-9 h-13 sm:h-14 text-base font-semibold rounded-xl" asChild>
+                <Button size="lg" className={cn("px-9 h-12 sm:h-14 text-base", EDEN_SOLID_BUTTON)} asChild>
                   <Link href="/register">{t("parcours.ctaButton")}</Link>
                 </Button>
-                <Button size="lg" variant="outline" className="eden-btn-ghost px-9 h-13 sm:h-14 text-base font-semibold rounded-xl" asChild>
+                <Button size="lg" variant="outline" className="eden-btn-ghost px-9 h-12 sm:h-14 text-base font-semibold rounded-xl" asChild>
                   <Link href="/concept">{t("parcours.ctaLink")}</Link>
                 </Button>
               </div>

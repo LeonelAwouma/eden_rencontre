@@ -14,6 +14,8 @@ import Link from "next/link";
 import { PageHeader, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 import { getMyAccountStatus } from "@/lib/auth";
+import { cn } from "@/lib/utils";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 
 interface BlogPostItem {
   id: string; title: string; slug: string; excerpt: string | null;
@@ -178,7 +180,7 @@ export default function BlogPage() {
                     aria-label={t("blog.emailPlaceholder")} className="h-14 bg-background border-foreground/10" required type="email" autoComplete="email" />
                   {/* Champ piège pour les robots, invisible pour les visiteurs. */}
                   <input type="text" name="website" value={nlTrap} onChange={e => setNlTrap(e.target.value)} tabIndex={-1} autoComplete="off" aria-hidden="true" className="hidden" />
-                  <Button type="submit" size="lg" disabled={nlState === "loading"} className="bg-deep-eden hover:bg-deep-eden/90 text-background font-bold h-14 px-8 shrink-0">
+                  <Button type="submit" size="lg" disabled={nlState === "loading"} className={cn("h-14 px-8 shrink-0", EDEN_SOLID_BUTTON)}>
                     {nlState === "loading" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
                     {t("blog.subscribe")}
                   </Button>

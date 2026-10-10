@@ -15,6 +15,7 @@ import { getSession } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 
 interface Resource {
   id: string; title: string; slug: string; description: string; content: string | null;
@@ -172,7 +173,7 @@ export default function ResourceDetailPage() {
             )}
             {resource.file_url && (
               <a href={resource.file_url} target="_blank" rel="noopener noreferrer"
-                className="flex items-center gap-2 px-4 py-2.5 rounded-xl text-[13px] font-semibold bg-deep-eden text-white hover:bg-deep-eden/90">
+                className={cn("flex items-center gap-2 px-4 py-2.5 text-[13px]", EDEN_SOLID_BUTTON)}>
                 <Download className="w-4 h-4"/> Télécharger
               </a>
             )}

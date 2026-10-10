@@ -7,6 +7,8 @@ import { GardenSection } from "./garden-section";
 import { OliveBirdDivider } from "./page-header";
 import { GardenIllustration } from "./illustration";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 
 export function QuoteSection() {
   const reduced = useReducedMotion();
@@ -48,7 +50,7 @@ export function QuoteSection() {
           <div className="pt-4 sm:pt-6">
             <Button
               size="lg"
-              className="garden-btn-primary px-9 sm:px-14 h-14 sm:h-16 text-base sm:text-xl font-bold rounded-xl w-full sm:w-auto"
+              className={cn("px-9 sm:px-14 h-14 sm:h-16 text-base sm:text-xl w-full sm:w-auto", EDEN_SOLID_BUTTON)}
               asChild
             >
               <Link href="/login">{t("quote.cta")}</Link>

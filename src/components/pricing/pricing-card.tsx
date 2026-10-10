@@ -2,6 +2,7 @@
 
 import { Check, Crown, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 import { formatFcfa, type BillingPeriod, type PlanPricing } from "@/lib/pricing";
 
 /**
@@ -128,12 +129,12 @@ export function PricingCard({
         disabled={current || loading}
         aria-busy={loading || undefined}
         className={cn(
-          "mt-8 inline-flex w-full items-center justify-center gap-2 h-12 rounded-xl text-[15px] font-semibold",
-          "transition-[background-color,border-color,filter] [transition-duration:180ms] ease-out active:scale-[0.99] motion-reduce:active:scale-100",
+          "mt-8 inline-flex w-full items-center justify-center gap-2 h-12 rounded-full text-[15px] font-semibold transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#3F704D]/50",
           "disabled:cursor-not-allowed disabled:opacity-60",
-          recommended && "bg-deep-eden text-white hover:bg-deep-eden/90",
-          exclusive && "bg-deep-eden text-white ring-1 ring-inset ring-[#C6A15B]/50 hover:bg-deep-eden/90",
+          (recommended || exclusive) && EDEN_SOLID_BUTTON,
+          // Liseré doré : l'offre exclusive se distingue sans changer de texture.
+          exclusive && "ring-1 ring-inset ring-[#C6A15B]/50",
           variant === "standard" && "border border-[#CED8CE] bg-transparent text-[#315940] hover:bg-[#F3F8F2] hover:border-[#9AB89C]"
         )}
       >

@@ -8,6 +8,8 @@ import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { logout, reportIncident } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { cn } from "@/lib/utils";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 
 /** Intervalle de vérification du statut pendant que la page reste ouverte. */
 const POLL_MS = 20_000;
@@ -103,7 +105,7 @@ function PendingContent() {
           <button
             type="button"
             onClick={() => router.replace(MEMBER_HOME)}
-            className="inline-flex items-center gap-2 rounded-full bg-deep-eden px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-deep-eden/90 transition-colors"
+            className={cn("inline-flex items-center gap-2 px-6 py-3 text-sm", EDEN_SOLID_BUTTON)}
           >
             {t("registerPending.approvedCta")}
             <ArrowRight className="w-4 h-4" />
@@ -189,7 +191,7 @@ function PendingContent() {
             <button
               type="button"
               onClick={async () => { await logout().catch(() => {}); router.replace(`/login${email ? `?email=${encodeURIComponent(email)}` : ""}`); }}
-              className="inline-flex items-center gap-2 rounded-full bg-deep-eden px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-deep-eden/90 transition-colors"
+              className={cn("inline-flex items-center gap-2 px-6 py-3 text-sm", EDEN_SOLID_BUTTON)}
             >
               <LogIn className="w-4 h-4" />
               {t("registerPending.noSessionCta")}
@@ -204,7 +206,7 @@ function PendingContent() {
             <p className="text-sm text-foreground/60 leading-relaxed">{t("registerPending.noSessionHint")}</p>
             <Link
               href={`/login${email ? `?email=${encodeURIComponent(email)}` : ""}`}
-              className="inline-flex items-center gap-2 rounded-full bg-deep-eden px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-deep-eden/90 transition-colors"
+              className={cn("inline-flex items-center gap-2 px-6 py-3 text-sm", EDEN_SOLID_BUTTON)}
             >
               <LogIn className="w-4 h-4" />
               {t("registerPending.noSessionCta")}

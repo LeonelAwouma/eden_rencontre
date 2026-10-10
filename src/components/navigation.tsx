@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -58,7 +59,7 @@ export function Navigation() {
             <Button variant="ghost" asChild className="text-foreground hover:text-primary font-bold text-sm tracking-wide transition-colors px-2 xl:px-4">
               <Link href="/login">{t("nav.login")}</Link>
             </Button>
-            <Button className="garden-btn-primary font-black px-5 xl:px-7 h-10 xl:h-12 rounded-xl text-xs xl:text-sm tracking-tight group" asChild>
+            <Button className={cn("px-5 xl:px-7 h-10 xl:h-12 text-xs xl:text-sm group", EDEN_SOLID_BUTTON)} asChild>
               <Link href="/login" className="flex items-center justify-center">
                 {t("nav.start")}
               </Link>
@@ -112,7 +113,7 @@ export function Navigation() {
             <Button variant="outline" className="w-full border-primary text-primary h-12 sm:h-14 text-sm sm:text-base font-bold rounded-xl sm:rounded-2xl" asChild>
               <Link href="/login" onClick={() => setIsOpen(false)}>{t("nav.signIn")}</Link>
             </Button>
-            <Button className="w-full garden-btn-primary h-12 sm:h-14 text-sm sm:text-base font-black rounded-xl sm:rounded-2xl" asChild>
+            <Button className={cn("w-full h-12 sm:h-14 text-sm sm:text-base", EDEN_SOLID_BUTTON)} asChild>
               <Link href="/login" onClick={() => setIsOpen(false)}>{t("nav.startStory")}</Link>
             </Button>
           </div>

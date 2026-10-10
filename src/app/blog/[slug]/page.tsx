@@ -12,6 +12,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { sanitizeHtml } from "@/lib/sanitize";
 import { useI18n } from "@/lib/i18n";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 
 interface BlogPostData {
   id: string; title: string; slug: string; excerpt: string | null; content: string | null;
@@ -56,7 +57,7 @@ export default function BlogPostPage() {
         <div className="text-center space-y-4">
           <BookOpen className="w-16 h-16 mx-auto text-foreground/20" />
           <h1 className="font-headline text-3xl font-bold">{t("blogPost.notFoundTitle")}</h1>
-          <Link href="/blog"><Button className="bg-deep-eden hover:bg-deep-eden/90">{t("blogPost.backToBlog")}</Button></Link>
+          <Link href="/blog"><Button className={EDEN_SOLID_BUTTON}>{t("blogPost.backToBlog")}</Button></Link>
         </div>
       </main><Footer />
     </div>

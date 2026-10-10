@@ -18,6 +18,8 @@ import {
 import { Monogram } from "@/components/ornaments";
 import { ImposingFloralCorners } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 
 export default function ForgotPasswordPage() {
   const { t } = useI18n();
@@ -200,7 +202,7 @@ export default function ForgotPasswordPage() {
                 <Button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full h-14 bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-deep-eden/15 hover:shadow-deep-eden/25 transition-all hover:scale-[1.02] disabled:opacity-70 disabled:hover:scale-100"
+                  className={cn("w-full h-14 text-base disabled:opacity-70", EDEN_SOLID_BUTTON)}
                 >
                   {isLoading ? (
                     <span className="flex items-center gap-3">
@@ -233,7 +235,7 @@ export default function ForgotPasswordPage() {
 
               <div className="space-y-4 pt-4">
                 <Link href={`/verify-otp?email=${encodeURIComponent(email.trim().toLowerCase())}`}>
-                  <Button className="w-full h-14 bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-deep-eden/15 hover:shadow-deep-eden/25 transition-all hover:scale-[1.02]">
+                  <Button className={cn("w-full h-14 text-base", EDEN_SOLID_BUTTON)}>
                     <span className="flex items-center gap-2">
                       {t("forgotPassword.enterCode")}
                       <ArrowRight className="w-5 h-5" />

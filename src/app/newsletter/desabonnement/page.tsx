@@ -9,6 +9,7 @@ import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { GardenSection, PageHeader } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 
 // Confirmation explicite (bouton) plutôt qu'un désabonnement au simple chargement :
 // les antivirus de messagerie ouvrent les liens et désabonneraient à tort.
@@ -48,7 +49,7 @@ function UnsubscribeContent() {
         <>
           <p className="text-muted-foreground font-body mb-2">{t("newsletterUnsubscribe.confirmDesc")}</p>
           <p className="font-semibold text-foreground mb-8 break-all">{email}</p>
-          <Button onClick={confirm} disabled={state === "loading"} size="lg" className="bg-deep-eden hover:bg-deep-eden/90 text-background font-bold">
+          <Button onClick={confirm} disabled={state === "loading"} size="lg" className={EDEN_SOLID_BUTTON}>
             {state === "loading" && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
             {t("newsletterUnsubscribe.confirmButton")}
           </Button>

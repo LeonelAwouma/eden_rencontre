@@ -11,6 +11,7 @@ import { useI18n } from "@/lib/i18n";
 import { RESOURCE_TYPE_CONFIG, LEVEL_CONFIG, type ResourceType, type ResourceLevel } from "@/lib/mediatheque";
 import { Navigation } from "@/components/navigation";
 import { Footer } from "@/components/footer";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 
 interface Resource { id: string; title: string; slug: string; description: string; type: ResourceType; author: string | null; thumbnail_url: string | null; cover_url: string | null; duration: string | null; page_count: number | null; level: ResourceLevel; category: { id: string; name: string; slug: string; icon: string | null; color: string } | null; tags: { id: string; name: string; slug: string }[]; view_count: number; featured: boolean; }
 interface Category { id: string; name: string; slug: string; icon: string | null; }
@@ -79,7 +80,7 @@ export default function MediathequePage() {
               {t("mediatheque.formationTitle")}
             </span>
             <span className="mt-2 text-[15px] leading-relaxed text-[#56615A]">{t("mediatheque.formationDesc")}</span>
-            <span className="mt-5 inline-flex items-center gap-2 self-start h-11 px-5 rounded-full bg-deep-eden text-white text-[14px] font-bold group-hover:bg-deep-eden/90 transition-colors">
+            <span className={cn("mt-5 inline-flex items-center gap-2 self-start h-11 px-5 text-[14px] group-hover:bg-deep-eden/90", EDEN_SOLID_BUTTON)}>
               <BookOpen className="w-4 h-4" /> {t("mediatheque.formationCta")}
             </span>
           </span>

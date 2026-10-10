@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/button";
 import { useI18n } from "@/lib/i18n";
 import { OliveBirdDivider } from "./page-header";
 import { HeroFlipCard } from "./hero-flip-card";
+import { cn } from "@/lib/utils";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 
 /** Pollen porté par l'air — quelques grains, jamais une pluie. */
 function PollenParticles() {
@@ -114,7 +116,7 @@ export function GardenHero() {
               >
                 <Button
                   size="lg"
-                  className="garden-btn-primary px-8 sm:px-9 h-13 sm:h-14 text-[0.95rem] sm:text-base font-semibold rounded-xl w-full sm:w-auto tracking-wide"
+                  className={cn("px-8 sm:px-9 h-12 sm:h-14 text-[0.95rem] sm:text-base w-full sm:w-auto", EDEN_SOLID_BUTTON)}
                   asChild
                 >
                   <Link href="/login">{t("hero.cta")}</Link>

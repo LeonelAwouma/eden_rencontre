@@ -9,6 +9,8 @@ import { Heart, MessageCircleCode, CheckCircle2, MapPin, Calendar, X, Check, Ima
 import { getSession, authHeaders } from "@/lib/auth";
 import { PageHeader, GardenIllustration } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 
 interface Testimonial {
   id: number;
@@ -520,7 +522,7 @@ export default function TemoignagesPage() {
                     <Button
                       type="submit"
                       disabled={isSubmitting}
-                      className="w-full bg-deep-eden text-primary-foreground font-black h-14 rounded-xl text-base shadow-xl shadow-deep-eden/10 hover:bg-deep-eden/90 transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                      className={cn("w-full h-14 text-base disabled:opacity-60 disabled:cursor-not-allowed", EDEN_SOLID_BUTTON)}
                     >
                       {isSubmitting ? (
                         <span className="flex items-center gap-2">
@@ -558,7 +560,7 @@ export default function TemoignagesPage() {
                   </div>
                   <Button
                     onClick={resetForm}
-                    className="bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-bold px-8 h-12 rounded-xl mt-6"
+                    className={cn("px-8 h-12 mt-6", EDEN_SOLID_BUTTON)}
                   >
                     {t("testimonials.closeBtn")}
                   </Button>
@@ -590,7 +592,7 @@ export default function TemoignagesPage() {
                 {t("testimonials.ctaDesc")}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center pt-6">
-                <Button size="lg" className="bg-deep-eden hover:bg-deep-eden/90 text-primary-foreground font-black px-10 h-16 text-lg rounded-xl shadow-2xl shadow-deep-eden/20 hover:scale-105 transition-transform" asChild>
+                <Button size="lg" className={cn("px-10 h-16 text-lg", EDEN_SOLID_BUTTON)} asChild>
                   <Link href="/login">{t("testimonials.ctaBtn")}</Link>
                 </Button>
                 <Button size="lg" variant="outline" className="border-primary text-primary hover:bg-primary/10 h-16 text-lg rounded-xl" asChild>

@@ -4,7 +4,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { motion, useReducedMotion } from "framer-motion";
 import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
 import { GardenIllustration } from "./illustration";
+import { EDEN_SOLID_BUTTON } from "./button-styles";
 
 /** Promotional banner showcasing Garden of Alliance value proposition */
 export function PromoBanner() {
@@ -62,7 +64,7 @@ export function PromoBanner() {
             <div className="flex flex-col sm:flex-row gap-4 pt-2 justify-center lg:justify-start">
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center px-8 py-3 rounded-full bg-deep-eden text-white font-semibold hover:bg-deep-eden/90 transition-colors shadow-lg shadow-deep-eden/20"
+                className={cn("inline-flex items-center justify-center px-8 py-3", EDEN_SOLID_BUTTON)}
               >
                 {t("promo.cta")}
               </Link>
