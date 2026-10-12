@@ -260,6 +260,10 @@
     "autoSaveError": "Enregistrement automatique impossible — nouvel essai à la prochaine réponse.",
     "saveFailed": "Échec de l'enregistrement",
     "retry": "Réessayez.",
+    "loadErrorTitle": "Impossible de charger votre questionnaire",
+    "loadErrorDesc": "Vos réponses sont en sécurité. La connexion semble instable : réessayez dans un instant.",
+    "loadErrorRetry": "Réessayer",
+    "loadErrorBack": "Retour à mon espace",
     "profileCompleted": "Profil complété 🙏",
     "profileCompletedDesc": "Vos réponses guideront vos suggestions d'affinité."
   },

@@ -398,17 +398,31 @@ export function getOnboardingSteps(locale: SupportedLocale = "fr"): OnboardingSt
 }
 
 // ── Sauvegarde / chargement Supabase ──
-export async function getMyOnboarding(): Promise<{ answers: Record<string, any>; completed: boolean }> {
-  if (!supabase) return { answers: {}, completed: false };
-  const { data: auth } = await supabase.auth.getUser();
-  const me = auth.user?.id;
-  if (!me) return { answers: {}, completed: false };
-  const { data } = await supabase.from("profiles").select("questionnaire, onboarding_completed").eq("id", me).maybeSingle();
-  const answers = (data?.questionnaire as Record<string, any>) || {};
+/**
+ * Questionnaire du membre connecté.
+ *
+ * `unavailable` : la lecture a échoué (réseau, session…). L'état est alors
+ * INCONNU — l'appelant ne doit ni conclure « pas terminé » (on renvoyait au
+ * questionnaire des membres qui l'avaient fini), ni ouvrir un questionnaire
+ * vide (la sauvegarde automatique y écraserait leurs réponses).
+ */
+export async function getMyOnboarding(): Promise<{ answers: Record<string, any>; completed: boolean; unavailable: boolean }> {
+  if (!supabase) return { answers: {}, completed: false, unavailable: false };
+  // Session locale (rafraîchie si besoin) plutôt que getUser(), qui interroge
+  // Supabase Auth à chaque appel et échoue sur une connexion instable.
+  const { data: auth, error: authError } = await supabase.auth.getSession();
+  const me = auth.session?.user?.id;
+  if (authError || !me) return { answers: {}, completed: false, unavailable: true };
+  const { data, error } = await supabase.from("profiles").select("questionnaire, onboarding_completed").eq("id", me).maybeSingle();
+  if (error || !data) {
+    if (error) console.error("[Eden] lecture du questionnaire impossible:", error.message);
+    return { answers: {}, completed: false, unavailable: true };
+  }
+  const answers = (data.questionnaire as Record<string, any>) || {};
   // Des comptes Google ont été marqués « terminé » sans aucune réponse (ancien bug
   // de /api/auth/google-onboarding) : un questionnaire vide n'est jamais terminé.
-  const completed = !!(data as any)?.onboarding_completed && Object.keys(answers).length > 0;
-  return { answers, completed };
+  const completed = !!(data as any).onboarding_completed && Object.keys(answers).length > 0;
+  return { answers, completed, unavailable: false };
 }
 
 export async function saveOnboarding(answers: Record<string, any>, completed: boolean): Promise<{ ok: boolean; error?: string }> {

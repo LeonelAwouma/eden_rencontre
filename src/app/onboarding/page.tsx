@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getSession } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { MemberGate } from "@/components/member-gate";
-import { getOnboardingSteps, getMyOnboarding, saveOnboarding, completeOnboarding, applyAnswer, isFieldVisible, type Field, type SupportedLocale } from "@/lib/onboarding";
+import { getOnboardingSteps, getMyOnboarding, saveQuestionnaireAnswers, completeOnboarding, applyAnswer, isFieldVisible, type Field, type SupportedLocale } from "@/lib/onboarding";
 import { LoadingScreen } from "@/components/loading-screen";
 
 const SKIP_KEY = "eden_onboarding_skipped";
@@ -43,6 +43,9 @@ function OnboardingPageContent() {
   const { locale, t } = useI18n();
 
   const [loading, setLoading] = useState(true);
+  // Lecture du questionnaire impossible : écran « réessayer », jamais un questionnaire vide.
+  const [loadError, setLoadError] = useState(false);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [stepIndex, setStepIndex] = useState(0);
@@ -67,8 +70,12 @@ function OnboardingPageContent() {
     (async () => {
       const session = await getSession();
       if (!session) { router.replace("/login"); return; }
-      const { answers: saved, completed } = await getMyOnboarding();
+      const { answers: saved, completed, unavailable } = await getMyOnboarding();
       if (!active) return;
+      // État inconnu : afficher un questionnaire vide ferait croire au membre
+      // qu'il doit tout recommencer, et sa première réponse écraserait les autres.
+      if (unavailable) { setLoadError(true); setLoading(false); return; }
+      setLoadError(false);
       if (completed) { router.replace("/dashboard"); return; }
       const initial = saved || {};
       // Reprise : étape mémorisée, sinon dernière étape contenant une réponse.
@@ -88,14 +95,16 @@ function OnboardingPageContent() {
     })();
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router]);
+  }, [router, loadAttempt]);
 
   const flush = useCallback(async () => {
     if (timerRef.current) { clearTimeout(timerRef.current); timerRef.current = null; }
     if (!dirtyRef.current || finishingRef.current) return;
     dirtyRef.current = false;
     setAutoSave("saving");
-    const request = saveOnboarding(answersRef.current, false);
+    // Ne touche jamais à onboarding_completed : une ancienne fenêtre restée
+    // ouverte ne doit pas « dé-terminer » un questionnaire déjà validé.
+    const request = saveQuestionnaireAnswers(answersRef.current);
     inflightRef.current = request;
     const res = await request;
     if (inflightRef.current === request) inflightRef.current = null;
@@ -169,7 +178,8 @@ function OnboardingPageContent() {
       }
       return true;
     }
-    const res = await saveOnboarding(answers, completed);
+    // Étape intermédiaire : réponses seulement, le drapeau « terminé » n'est posé que par le serveur.
+    const res = await saveQuestionnaireAnswers(answers);
     setSaving(false);
     if (!res.ok) {
       toast({ title: t("onboarding.saveFailed"), description: res.error || t("onboarding.retry"), variant: "destructive" });
@@ -208,6 +218,28 @@ function OnboardingPageContent() {
   if (loading) {
     return (
       <LoadingScreen label={t("onboarding.preparing")} />
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center px-4 sm:px-5">
+        <div role="alert" className="w-full max-w-md bg-card rounded-3xl border border-foreground/5 shadow-xl px-5 py-8 sm:p-9 space-y-6 text-center">
+          <Monogram className="w-11 h-9 text-primary mx-auto" />
+          <div className="space-y-2">
+            <h1 className="font-headline text-2xl sm:text-3xl font-bold text-foreground">{t("onboarding.loadErrorTitle")}</h1>
+            <p className="text-sm text-foreground/60">{t("onboarding.loadErrorDesc")}</p>
+          </div>
+          <div className="flex flex-col gap-3">
+            <Button type="button" onClick={() => { setLoading(true); setLoadAttempt((n) => n + 1); }} className="w-full h-12 rounded-xl font-bold">
+              {t("onboarding.loadErrorRetry")}
+            </Button>
+            <Button type="button" variant="outline" onClick={() => router.push("/dashboard")} className="w-full h-12 rounded-xl font-semibold">
+              {t("onboarding.loadErrorBack")}
+            </Button>
+          </div>
+        </div>
+      </div>
     );
   }
 

@@ -260,6 +260,10 @@
     "autoSaveError": "Auto-save failed — we will retry with your next answer.",
     "saveFailed": "Save failed",
     "retry": "Please try again.",
+    "loadErrorTitle": "We couldn't load your questionnaire",
+    "loadErrorDesc": "Your answers are safe. The connection seems unstable — please try again in a moment.",
+    "loadErrorRetry": "Try again",
+    "loadErrorBack": "Back to my space",
     "profileCompleted": "Profile completed 🙏",
     "profileCompletedDesc": "Your answers will guide your compatibility suggestions."
   },

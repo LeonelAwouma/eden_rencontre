@@ -918,7 +918,10 @@ export default function DashboardPage() {
       else loadSocial();
     });
     loadConversations();
-    getMyOnboarding().then(({ answers, completed }) => {
+    getMyOnboarding().then(({ answers, completed, unavailable }) => {
+      // Lecture ratée : état inconnu. On ne renvoie surtout pas au questionnaire
+      // un membre qui l'a peut-être déjà fini ; on réessaiera au prochain chargement.
+      if (unavailable) return;
       setQuestionnaireAnswers(answers);
       const skipped = typeof window !== "undefined" && localStorage.getItem("eden_onboarding_skipped") === "1";
       if (!completed && !skipped) { router.replace("/onboarding"); return; }
