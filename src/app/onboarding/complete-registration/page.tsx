@@ -25,6 +25,7 @@ import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { uploadRegistrationMedia } from "@/lib/registration-media-client";
 import { useFormProgress } from "@/hooks/use-form-progress";
+import { SUPPORT_PHONE_DISPLAY } from "@/lib/contact";
 import { AvatarPicker } from "@/components/avatar-picker";
 import { filterCountries, filterCities, countryLabel, phoneIsoFor, dialOfIso, toE164 } from "@/lib/geo";
 import { PhoneInput } from "@/components/phone-input";
@@ -1319,7 +1320,7 @@ export default function CompleteRegistrationPage() {
             </div>
             <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl flex gap-3 text-left">
               <AlertTriangle className="w-5 h-5 text-primary shrink-0" />
-              <p className="text-xs text-foreground/60">{t("register.photosDeferSupport")}</p>
+              <p className="text-xs text-foreground/60">{t("register.photosDeferSupport", { phone: SUPPORT_PHONE_DISPLAY })}</p>
             </div>
             <div className="flex flex-col w-full gap-3">
               <Button onClick={deferPhotos} className={"w-full h-14 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors"}>

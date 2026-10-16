@@ -10,14 +10,14 @@ import { logout, reportIncident } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
 import { cn } from "@/lib/utils";
 import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
+import { SocialLogo } from "@/components/social-logo";
+import { SUPPORT_PHONE_DISPLAY, SUPPORT_WHATSAPP_URL } from "@/lib/contact";
 
 /** Intervalle de vérification du statut pendant que la page reste ouverte. */
 const POLL_MS = 20_000;
 /** Délai d'affichage de « Votre profil a été validé » avant d'entrer dans l'espace membre. */
 const ENTER_DELAY_MS = 3_500;
 const MEMBER_HOME = "/searching";
-/** Adresse où envoyer ses photos quand l'import a échoué à l'inscription (voir /contact). */
-const SUPPORT_EMAIL = "support@gardenofalliance.com";
 
 type AccountStatus = "pending" | "approved" | "rejected" | "suspended";
 
@@ -171,10 +171,13 @@ function PendingContent() {
               {t("registerPending.photosNeededBody", { email: email || t("registerPending.yourEmail") })}
             </p>
             <a
-              href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t("registerPending.photosNeededSubject"))}&body=${encodeURIComponent(t("registerPending.photosNeededMailBody", { email: email || "" }))}`}
-              className="inline-flex items-center gap-2 text-sm font-semibold text-amber-900 underline underline-offset-4"
+              href={`${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(t("registerPending.photosNeededWhatsappText", { email: email || "" }))}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn("inline-flex items-center gap-2 px-5 py-2.5 text-sm", EDEN_SOLID_BUTTON)}
             >
-              <Mail className="w-4 h-4" /> {SUPPORT_EMAIL}
+              <SocialLogo name="whatsapp" className="w-4 h-4" />
+              {t("registerPending.photosNeededCta", { phone: SUPPORT_PHONE_DISPLAY })}
             </a>
           </div>
         )}
