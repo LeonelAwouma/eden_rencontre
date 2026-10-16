@@ -172,6 +172,8 @@ export async function resolveRegistrationAvatar(
   const url = body.avatarUrl;
   if (typeof url !== "string" || !url) return null;
   if (/^https:\/\//.test(url) && url.length < 2000) return url;
+  // Avatar Eden (public/avatars) : adresse relative, voir EDEN_AVATARS dans src/lib/avatar.ts.
+  if (/^\/avatars\/[a-z0-9-]+\.webp$/.test(url)) return url;
   if (url.startsWith("data:")) return publishAvatarFromDataUri(db, url);
   return null;
 }

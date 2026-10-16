@@ -28,9 +28,11 @@ export async function uploadRegistrationMedia(input: {
   photos: string[];
   selfie: string | null;
   frames: string[];
+  /** Route qui délivre les adresses d'envoi (l'admin a la sienne : /api/admin/photos/:id/slots). */
+  slotsUrl?: string;
 }): Promise<UploadedRegistrationMedia> {
   if (!supabase) throw new Error("Stockage indisponible.");
-  const res = await fetch("/api/registration/media", { method: "POST" });
+  const res = await fetch(input.slotsUrl ?? "/api/registration/media", { method: "POST" });
   const slots = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(slots.error || "Envoi des photos indisponible. Réessayez.");
 

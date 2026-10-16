@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Clock, Mail, ArrowLeft, CheckCircle2, ArrowRight, LogIn } from "lucide-react";
+import { Clock, Mail, ArrowLeft, CheckCircle2, ArrowRight, LogIn, ImagePlus } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { logout, reportIncident } from "@/lib/auth";
@@ -16,6 +16,8 @@ const POLL_MS = 20_000;
 /** Délai d'affichage de « Votre profil a été validé » avant d'entrer dans l'espace membre. */
 const ENTER_DELAY_MS = 3_500;
 const MEMBER_HOME = "/searching";
+/** Adresse où envoyer ses photos quand l'import a échoué à l'inscription (voir /contact). */
+const SUPPORT_EMAIL = "support@gardenofalliance.com";
 
 type AccountStatus = "pending" | "approved" | "rejected" | "suspended";
 
@@ -24,6 +26,8 @@ function PendingContent() {
   const router = useRouter();
   const { t } = useI18n();
   const email = searchParams.get("email") || "";
+  /** Inscription terminée sans photos : consignes pour les envoyer à l'équipe. */
+  const photosPending = searchParams.get("photos") === "pending";
   const [approved, setApproved] = useState(false);
   /** null : vérification en cours ; false : aucune session, la page ne peut pas suivre le statut. */
   const [hasSession, setHasSession] = useState<boolean | null>(null);
@@ -155,6 +159,25 @@ function PendingContent() {
             {t("registerPending.confirmationBody", { email: email || t("registerPending.yourEmail") })}
           </p>
         </div>
+
+        {/* Inscription terminée sans photos (issue de secours) : le membre les envoie à l'équipe. */}
+        {photosPending && (
+          <div role="status" className="bg-amber-50 border border-amber-200 rounded-2xl p-6 text-left space-y-3">
+            <div className="flex items-center gap-3">
+              <ImagePlus className="w-5 h-5 text-amber-700" />
+              <p className="font-bold text-sm text-amber-900">{t("registerPending.photosNeededTitle")}</p>
+            </div>
+            <p className="text-sm text-amber-900/80 leading-relaxed">
+              {t("registerPending.photosNeededBody", { email: email || t("registerPending.yourEmail") })}
+            </p>
+            <a
+              href={`mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent(t("registerPending.photosNeededSubject"))}&body=${encodeURIComponent(t("registerPending.photosNeededMailBody", { email: email || "" }))}`}
+              className="inline-flex items-center gap-2 text-sm font-semibold text-amber-900 underline underline-offset-4"
+            >
+              <Mail className="w-4 h-4" /> {SUPPORT_EMAIL}
+            </a>
+          </div>
+        )}
 
         {/* What happens next */}
         <div className="space-y-3 text-left">

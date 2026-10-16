@@ -208,6 +208,12 @@
     "photosMandatory": "All 3 photos are required to verify the authenticity of your profile.",
     "progressRestored": "We picked up your registration where you left off.",
     "progressRetypePassword": "For your security, just re-enter your password: your other answers and your photos have been kept.",
+    "photosDeferLink": "I can't upload my photos",
+    "photosDeferTitle": "Continue without your photos?",
+    "photosDeferDesc": "You can finish your registration now. Your account will remain pending until our team has received and added your 3 photos.",
+    "photosDeferSupport": "After registering, send your 3 photos to support@gardenofalliance.com, mentioning the email address you registered with. Only use this if uploading really doesn't work.",
+    "photosDeferConfirm": "Continue without photos",
+    "photosDeferCancel": "Try uploading again",
     "continueToVerification": "Continue to verification",
     "selfieBadge": "Identity verification",
     "selfieConfirmPhotos": "Confirm that your photos are indeed yours.",
@@ -817,6 +823,10 @@
     "reconnect": "Log in again"
   },
   "registerPending": {
+    "photosNeededTitle": "Send us your photos",
+    "photosNeededBody": "You finished your registration without photos. Email your 3 photos to our team, mentioning your address {email}: we will add them to your profile before approving it.",
+    "photosNeededSubject": "My registration photos",
+    "photosNeededMailBody": "Hello,\n\nI couldn't upload my photos during registration. Please find my 3 photos attached.\n\nEmail address used to register: {email}\n\nThank you!",
     "title": "Registration under review",
     "subtitle": "Thank you for registering with Garden of Alliance. Your account is currently being reviewed by our team.",
     "confirmationSent": "Confirmation sent",

@@ -10,7 +10,7 @@ import {
   LayoutDashboard, Users, CalendarDays, ShieldCheck, BarChart3,
   CreditCard, Settings, LogOut, X, Heart, MessageSquare,
   MessageCircle, PanelLeftClose, PanelLeftOpen, Video, Library,
-  BookOpen, Send, Keyboard, MessagesSquare, Accessibility,
+  BookOpen, Send, Keyboard, MessagesSquare, Accessibility, ImagePlus,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -27,6 +27,7 @@ const BRAND_GREEN = "#486B46";
 const NAV_ITEMS = [
   { label: "Tableau de bord", href: "/admin/dashboard", icon: LayoutDashboard, section: "main", shortcut: "⌘D" },
   { label: "Utilisateurs", href: "/admin/users", icon: Users, section: "main", shortcut: "⌘U" },
+  { label: "Import de photos", href: "/admin/photos", icon: ImagePlus, section: "main" },
   { label: "Matching", href: "/admin/matching", icon: Heart, section: "main" },
   { label: "Témoignages", href: "/admin/testimonials", icon: MessageSquare, section: "content" },
   { label: "Surveillance de la discussion", href: "/admin/chat-monitoring", icon: MessageCircle, section: "content" },

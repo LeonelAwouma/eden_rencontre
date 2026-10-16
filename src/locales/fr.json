@@ -208,6 +208,12 @@
     "photosMandatory": "Les 3 photos sont obligatoires pour vérifier l'authenticité de votre profil.",
     "progressRestored": "Nous avons repris votre inscription là où vous l'aviez laissée.",
     "progressRetypePassword": "Pour votre sécurité, ressaisissez simplement votre mot de passe : vos autres réponses et vos photos sont conservées.",
+    "photosDeferLink": "Je n'arrive pas à importer mes photos",
+    "photosDeferTitle": "Continuer sans vos photos ?",
+    "photosDeferDesc": "Vous pouvez terminer votre inscription maintenant. Votre compte restera en attente tant que notre équipe n'aura pas reçu et ajouté vos 3 photos.",
+    "photosDeferSupport": "Après l'inscription, envoyez vos 3 photos à support@gardenofalliance.com en indiquant l'adresse e-mail de votre inscription. À n'utiliser que si l'import ne fonctionne vraiment pas.",
+    "photosDeferConfirm": "Continuer sans photos",
+    "photosDeferCancel": "Réessayer l'import",
     "continueToVerification": "Continuer vers la vérification",
     "selfieBadge": "Vérification d'identité",
     "selfieConfirmPhotos": "Confirmez que vos photos sont bien les vôtres.",
@@ -817,6 +823,10 @@
     "reconnect": "Se reconnecter"
   },
   "registerPending": {
+    "photosNeededTitle": "Envoyez-nous vos photos",
+    "photosNeededBody": "Vous avez terminé votre inscription sans photos. Envoyez vos 3 photos par e-mail à notre équipe, en indiquant votre adresse {email} : nous les ajouterons à votre profil avant de le valider.",
+    "photosNeededSubject": "Mes photos d'inscription",
+    "photosNeededMailBody": "Bonjour,\n\nJe n'ai pas réussi à importer mes photos lors de mon inscription. Vous trouverez mes 3 photos en pièces jointes.\n\nAdresse e-mail de mon inscription : {email}\n\nMerci !",
     "title": "Inscription en cours de vérification",
     "subtitle": "Merci pour votre inscription sur Garden of Alliance. Votre compte est actuellement en cours de validation par notre équipe.",
     "confirmationSent": "Confirmation envoyée",

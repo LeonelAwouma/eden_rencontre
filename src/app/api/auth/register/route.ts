@@ -227,6 +227,22 @@ export async function POST(request: NextRequest) {
       console.error("Failed to create registration notification:", notifErr);
     }
 
+    // Issue de secours « Je n'arrive pas à importer mes photos » : l'admin les importera
+    // (Admin → Import de photos) une fois reçues du membre.
+    if (body.photosDeferred === true && registration.photoRefs.length === 0) {
+      try {
+        await db.from("admin_notifications").insert({
+          type: "user",
+          title: "Photos à importer",
+          message: `${name} (${cleanEmail}) n'a pas réussi à importer ses photos et s'est inscrit sans. Importez-les dès que vous les recevez.`,
+          link: `/admin/photos?user=${userId}`,
+          metadata: { user_id: userId, name, email: cleanEmail, photos_deferred: true },
+        });
+      } catch (notifErr) {
+        console.error("Failed to create photos-deferred notification:", notifErr);
+      }
+    }
+
     return NextResponse.json({
       ok: true,
       message: "Inscription réussie. Votre compte est en attente de validation.",

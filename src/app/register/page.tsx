@@ -138,7 +138,19 @@ export default function RegisterPage() {
   // brutes d'un téléphone dépassaient la limite de 4,5 Mo des fonctions Vercel.
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [processingSlot, setProcessingSlot] = useState<number | null>(null);
-  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  // Issue de secours : inscription terminée sans photos, que l'admin importera
+  // (Admin → Import de photos) une fois envoyées par le membre. Exceptionnel.
+  const [photosDeferred, setPhotosDeferred] = useState(false);
+  const [showDeferDialog, setShowDeferDialog] = useState(false);
+  const deferPhotos = () => {
+    setPhotos([null, null, null]);
+    // Une photo publique prise parmi les photos n'a plus lieu d'être.
+    setPublicAvatar((prev) => (prev && prev.startsWith("data:") ? null : prev));
+    setPhotoError(null);
+    setPhotosDeferred(true);
+    setShowDeferDialog(false);
+    nextStep();
+  };  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     const slot = activePhotoSlot;
     // Reset input so the same file can be re-selected
@@ -156,6 +168,7 @@ export default function RegisterPage() {
       void reportIncident("registration_photo_failed", `${res.reason} — ${res.detail}`);
       return;
     }
+    setPhotosDeferred(false);
     setPhotos((prev) => {
       const next = [...prev];
       next[slot] = res.dataUrl;
@@ -196,8 +209,8 @@ export default function RegisterPage() {
   const [passwordToRetype, setPasswordToRetype] = useState(false);
   const progressSnapshot = useMemo(() => {
     const { password: _password, ...answers } = formData;
-    return { step, formData: answers, photos, publicAvatar, selfieDataUri };
-  }, [step, formData, photos, publicAvatar, selfieDataUri]);
+    return { step, formData: answers, photos, publicAvatar, selfieDataUri, photosDeferred };
+  }, [step, formData, photos, publicAvatar, selfieDataUri, photosDeferred]);
   const { clear: clearProgress } = useFormProgress({
     key: "eden_register_progress",
     snapshot: progressSnapshot,
@@ -207,6 +220,7 @@ export default function RegisterPage() {
       if (Array.isArray(saved.photos) && saved.photos.length === 3) setPhotos(saved.photos);
       if (typeof saved.publicAvatar === "string") setPublicAvatar(saved.publicAvatar);
       if (typeof saved.selfieDataUri === "string") setSelfieDataUri(saved.selfieDataUri);
+      if (saved.photosDeferred === true) setPhotosDeferred(true);
       const savedStep = typeof saved.step === "number" ? Math.max(0, Math.min(totalSteps - 1, saved.step)) : 0;
       const target = savedStep > PASSWORD_STEP ? PASSWORD_STEP : savedStep;
       setPasswordToRetype(savedStep > PASSWORD_STEP);
@@ -301,6 +315,8 @@ export default function RegisterPage() {
           charterAuthorizeVerification: formData.charterAuthorizeVerification,
           charterCommitRespectful: formData.charterCommitRespectful,
           charterAcceptFull: formData.charterAcceptFull,
+          // Inscription sans photos (issue de secours) : l'admin est prévenu et les importera.
+          photosDeferred: photosDeferred && photos.every((p) => !p),
           ...(media ?? { selfieImage: selfieDataUri, profilePhotos: photos.filter(Boolean) }),
           // Avatar pris parmi les photos : le serveur le copie dans le stockage public des avatars.
           avatarPhotoIndex: media && publicAvatar ? (photos.filter(Boolean) as string[]).indexOf(publicAvatar) : -1,
@@ -337,7 +353,7 @@ export default function RegisterPage() {
       // Inscription aboutie : la progression sauvegardée n'a plus lieu d'être.
       clearProgress();
       // Redirect to pending approval page
-      router.push(`/register/pending?email=${encodeURIComponent(formData.email)}`);
+      router.push(`/register/pending?email=${encodeURIComponent(formData.email)}${photosDeferred ? "&photos=pending" : ""}`);
     } catch {
       setCreateError("Erreur de connexion au serveur.");
       setCreating(false);
@@ -1091,6 +1107,14 @@ export default function RegisterPage() {
                 >
                   {t("register.continueToVerification")} <Camera className="w-5 h-5 ml-2" />
                 </Button>
+                <button
+                  type="button"
+                  onClick={() => setShowDeferDialog(true)}
+                  className={cn("w-full text-center text-sm underline underline-offset-4 transition-colors py-1",
+                    photoError ? "text-destructive font-semibold" : "text-foreground/40 hover:text-primary")}
+                >
+                  {t("register.photosDeferLink")}
+                </button>
                 <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
                   <ChevronLeft className="w-4 h-4" /> {t("register.back")}
                 </button>
@@ -1195,7 +1219,7 @@ export default function RegisterPage() {
                   <p className="text-foreground/50 text-sm">{t("register.avatarSubtitle")}</p>
                 </div>
 
-                <AvatarPicker photos={photos} value={publicAvatar} onChange={setPublicAvatar} />
+                <AvatarPicker photos={photos} gender={formData.gender} value={publicAvatar} onChange={setPublicAvatar} />
 
                 {!publicAvatar && <p className="text-xs text-foreground/50 text-center">{t("register.avatarChooseHint")}</p>}
                 <Button
@@ -1284,6 +1308,32 @@ export default function RegisterPage() {
       </div>
 
       {/* Gender Confirmation Dialog */}
+      <Dialog open={showDeferDialog} onOpenChange={setShowDeferDialog}>
+        <DialogContent className="max-w-md bg-card text-foreground border-foreground/5 rounded-[2rem] p-8 sm:p-10">
+          <div className="flex flex-col items-center text-center space-y-5">
+            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
+              <Upload className="w-7 h-7 text-primary" />
+            </div>
+            <div className="space-y-2">
+              <DialogTitle className="text-xl sm:text-2xl font-bold text-foreground">{t("register.photosDeferTitle")}</DialogTitle>
+              <DialogDescription className="text-foreground/60 text-sm">{t("register.photosDeferDesc")}</DialogDescription>
+            </div>
+            <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl flex gap-3 text-left">
+              <AlertTriangle className="w-5 h-5 text-primary shrink-0" />
+              <p className="text-xs text-foreground/60">{t("register.photosDeferSupport")}</p>
+            </div>
+            <div className="flex flex-col w-full gap-3">
+              <Button onClick={deferPhotos} className={cn("w-full h-14", EDEN_SOLID_BUTTON)}>
+                {t("register.photosDeferConfirm")}
+              </Button>
+              <Button variant="ghost" onClick={() => setShowDeferDialog(false)} className="w-full text-foreground/50 hover:text-primary transition-colors">
+                {t("register.photosDeferCancel")}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
         <DialogContent className="max-w-md bg-card text-foreground border-foreground/5 rounded-[2rem] p-10">
           <div className="flex flex-col items-center text-center space-y-6">
