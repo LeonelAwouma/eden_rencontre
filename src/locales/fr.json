@@ -206,6 +206,8 @@
     "photosRequired": "Photos requises",
     "photosRequiredDesc": "Vous devez ajouter 3 photos pour continuer.",
     "photosMandatory": "Les 3 photos sont obligatoires pour vérifier l'authenticité de votre profil.",
+    "progressRestored": "Nous avons repris votre inscription là où vous l'aviez laissée.",
+    "progressRetypePassword": "Pour votre sécurité, ressaisissez simplement votre mot de passe : vos autres réponses et vos photos sont conservées.",
     "continueToVerification": "Continuer vers la vérification",
     "selfieBadge": "Vérification d'identité",
     "selfieConfirmPhotos": "Confirmez que vos photos sont bien les vôtres.",
@@ -1558,6 +1560,8 @@
     "verifyError": "Erreur lors de la vérification. Veuillez réessayer.",
     "photoUnsupported": "Ce format de photo n’a pas pu être lu. Choisissez une photo en JPEG ou PNG (par exemple une capture d’écran de la photo).",
     "photosTooLarge": "Vos photos sont trop lourdes pour être envoyées. Remplacez-les par d’autres photos puis réessayez.",
+    "photoHeic": "Cette photo est au format HEIC, que votre navigateur ne sait pas lire. Choisissez une autre photo, ou faites une capture d’écran de celle-ci et importez la capture.",
+    "photoProcessing": "Préparation de la photo…",
     "livenessInstruction": "Tournez lentement la tête vers la gauche, puis vers la droite…"
   },
   "completeRegistration": {

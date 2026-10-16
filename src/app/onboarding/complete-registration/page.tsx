@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,7 +16,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { getSession, logout, ageFromBirthDate, MIN_AGE } from "@/lib/auth";
+import { getSession, logout, ageFromBirthDate, MIN_AGE, reportIncident } from "@/lib/auth";
 import { isRegistrationComplete } from "@/lib/registration-rules";
 import { supabase } from "@/lib/supabase";
 import { MARRIAGE_VALUES } from "@/lib/values";
@@ -24,11 +24,12 @@ import { cameraErrorKey } from "@/lib/camera-error";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { uploadRegistrationMedia } from "@/lib/registration-media-client";
+import { useFormProgress } from "@/hooks/use-form-progress";
 import { AvatarPicker } from "@/components/avatar-picker";
 import { filterCountries, filterCities, countryLabel, phoneIsoFor, dialOfIso, toE164 } from "@/lib/geo";
 import { PhoneInput } from "@/components/phone-input";
 import { Flag } from "@/components/flag";
-import { fileToCompressedDataUrl, videoFrameToDataUrl, MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
+import { preparePhoto, videoFrameToDataUrl, MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
 import { useMobileContinueGate, MobileContinueGate } from "@/components/mobile-continue-gate";
 import {
   AlertTriangle,
@@ -47,6 +48,7 @@ import {
   RotateCcw,
   Upload,
   X,
+  Loader2,
 } from "lucide-react";
 import { LoadingScreen } from "@/components/loading-screen";
 import { SocialLogo } from "@/components/social-logo";
@@ -67,6 +69,8 @@ export default function CompleteRegistrationPage() {
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
   const [userName, setUserName] = useState("");
+  /** Compte Google connecté : la progression sauvegardée lui est propre. */
+  const [userId, setUserId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     pseudo: "",
@@ -99,23 +103,34 @@ export default function CompleteRegistrationPage() {
   // Photo réduite dès le choix (1280 px, JPEG) : envoyées en base64, les photos
   // brutes d'un téléphone dépassaient la limite de 4,5 Mo des fonctions Vercel.
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [processingSlot, setProcessingSlot] = useState<number | null>(null);
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     const slot = activePhotoSlot;
     // Reset input so the same file can be re-selected
     e.target.value = "";
     if (!file || slot === null) return;
-    const dataUrl = await fileToCompressedDataUrl(file);
-    if (!dataUrl) { setPhotoError(t("camera.photoUnsupported")); return; }
     setPhotoError(null);
+    // Une grande photo peut prendre plusieurs secondes à réduire sur un téléphone
+    // modeste : sans indicateur, le membre croyait l'import raté et recommençait.
+    setProcessingSlot(slot);
+    const res = await preparePhoto(file);
+    setProcessingSlot(null);
+    if (!res.ok) {
+      setPhotoError(t(res.reason === "heic" ? "camera.photoHeic" : "camera.photoUnsupported"));
+      // Échec vécu dans le navigateur, invisible côté serveur : signalé à l'admin.
+      void reportIncident("registration_photo_failed", `${res.reason} — ${res.detail}`);
+      return;
+    }
     setPhotos((prev) => {
       const next = [...prev];
-      next[slot] = dataUrl;
+      next[slot] = res.dataUrl;
       return next;
     });
   };
 
   const openPhotoPicker = (slotIndex: number) => {
+    if (processingSlot !== null) return;
     setActivePhotoSlot(slotIndex);
     photoInputRef.current?.click();
   };
@@ -167,13 +182,47 @@ export default function CompleteRegistrationPage() {
       if (existingPseudo) setFormData((prev) => ({ ...prev, pseudo: existingPseudo }));
       setUserEmail(session.email || "");
       setUserName(session.name || "");
+      setUserId(session.id || null);
       setLoading(false);
     })();
   }, [router]);
 
+  // Progression gardée si le téléphone recharge l'onglet (ouverture de la galerie,
+  // de l'appareil photo…). Clé propre au compte : un autre compte ouvert dans le
+  // même onglet ne retrouve jamais les photos de quelqu'un d'autre.
+  const LAST_STEP = 11;
+  const PHOTO_STEP = 9;
+  const SELFIE_STEP = 10;
+  const [restoreNoticeStep, setRestoreNoticeStep] = useState<number | null>(null);
+  const progressSnapshot = useMemo(
+    () => ({ pseudoDone, step, formData, photos, publicAvatar, selfieDataUri }),
+    [pseudoDone, step, formData, photos, publicAvatar, selfieDataUri]
+  );
+  const { clear: clearProgress } = useFormProgress({
+    key: userId ? `eden_complete_registration_progress:${userId}` : null,
+    snapshot: progressSnapshot,
+    heavyKeys: ["photos", "publicAvatar", "selfieDataUri"],
+    onRestore: (saved) => {
+      if (saved.formData) setFormData((prev) => ({ ...prev, ...saved.formData }));
+      const savedPhotos = Array.isArray(saved.photos) && saved.photos.length === 3 ? saved.photos : null;
+      if (savedPhotos) setPhotos(savedPhotos);
+      if (typeof saved.publicAvatar === "string") setPublicAvatar(saved.publicAvatar);
+      const savedSelfie = typeof saved.selfieDataUri === "string" ? saved.selfieDataUri : null;
+      if (savedSelfie) setSelfieDataUri(savedSelfie);
+      // Photos ou selfie non retrouvés (quota du navigateur) : on revient à l'étape qui les demande.
+      let target = typeof saved.step === "number" ? Math.max(0, Math.min(LAST_STEP, saved.step)) : 0;
+      if (target > PHOTO_STEP && !(savedPhotos && savedPhotos.every(Boolean))) target = PHOTO_STEP;
+      if (target > SELFIE_STEP && !savedSelfie) target = SELFIE_STEP;
+      setStep(target);
+      if (saved.pseudoDone) {
+        setPseudoDone(true);
+        setRestoreNoticeStep(target);
+      }
+    },
+  });
+
   const nextStep = () => setStep((prev) => prev + 1);
   const prevStep = () => setStep((prev) => prev - 1);
-
   const handleGenderSelection = (gender: "homme" | "femme") => {
     setPendingGender(gender);
     setShowConfirmDialog(true);
@@ -304,6 +353,7 @@ export default function CompleteRegistrationPage() {
         media = await uploadRegistrationMedia({ photos: photos.filter(Boolean) as string[], selfie: selfieDataUri, frames: [] });
       } catch (uploadErr) {
         const message = uploadErr instanceof Error ? uploadErr.message : "";
+        void reportIncident("registration_upload_failed", `${message || "erreur inconnue"} — ua=${navigator.userAgent.slice(0, 220)}`);
         // Stockage pas encore installé (migration non exécutée) : on revient à l'ancien envoi.
         if (!/non configuré/i.test(message)) {
           setSaveError(message || t("camera.photosTooLarge"));
@@ -353,6 +403,8 @@ export default function CompleteRegistrationPage() {
       }
 
       // Compte déjà approuvé : direction le questionnaire. Sinon, attente de validation par l'admin.
+      // Inscription complétée : la progression sauvegardée n'a plus lieu d'être.
+      clearProgress();
       if (data.status === "approved") router.push("/onboarding");
       else router.push(`/register/pending?email=${encodeURIComponent(userEmail)}`);
     } catch {
@@ -489,6 +541,12 @@ export default function CompleteRegistrationPage() {
                   </span>
                 </div>
               </div>
+            )}
+
+            {pseudoDone && restoreNoticeStep === step && (
+              <p role="status" className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
+                {t("register.progressRestored")}
+              </p>
             )}
 
             <AnimatePresence mode="wait">
@@ -942,7 +1000,7 @@ export default function CompleteRegistrationPage() {
                   className="hidden"
                   onChange={handlePhotoSelect}
                 />
-                {photoError && <p role="alert" className="mt-2 text-xs text-destructive">{photoError}</p>}
+                {photoError && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive">{photoError}</p>}
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                     <Upload className="w-6 h-6 text-primary" />
@@ -973,10 +1031,17 @@ export default function CompleteRegistrationPage() {
                           )}
                         </>
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-3 hover:bg-foreground/5 transition-colors">
-                          <Upload className="w-6 h-6 text-foreground/20" />
-                          <span className="text-[9px] font-bold text-foreground/20 uppercase tracking-widest">Photo {i + 1}</span>
-                        </div>
+                        processingSlot === i ? (
+                          <div role="status" className="w-full h-full flex flex-col items-center justify-center gap-3 bg-primary/5 px-2 text-center">
+                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                            <span className="text-[10px] font-semibold text-primary leading-tight">{t("camera.photoProcessing")}</span>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center gap-3 hover:bg-foreground/5 transition-colors">
+                            <Upload className="w-6 h-6 text-foreground/20" />
+                            <span className="text-[9px] font-bold text-foreground/20 uppercase tracking-widest">Photo {i + 1}</span>
+                          </div>
+                        )
                       )}
                     </div>
                   ))}

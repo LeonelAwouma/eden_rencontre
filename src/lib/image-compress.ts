@@ -17,12 +17,20 @@ const JPEG_QUALITY = 0.82;
 /** Limite Vercel 4,5 Mo, avec une marge pour le reste du formulaire. */
 export const MAX_UPLOAD_PAYLOAD = 4_000_000;
 
-async function decode(file: Blob): Promise<ImageBitmap | HTMLImageElement> {
+/** Taille maximale acceptée par le bucket registration-media (3 Mo), avec une marge. */
+const ORIGINAL_MAX_BYTES = 2_900_000;
+
+async function decode(file: Blob, maxSide: number): Promise<ImageBitmap | HTMLImageElement> {
   if (typeof createImageBitmap === "function") {
     try {
       // Respecte l'orientation EXIF (photos de téléphone prises en portrait).
       return await createImageBitmap(file, { imageOrientation: "from-image" });
-    } catch { /* format non pris en charge par createImageBitmap : repli sur <img> */ }
+    } catch { /* mémoire insuffisante ou format inconnu : essais suivants */ }
+    try {
+      // Décodage directement réduit : une photo de 48 Mpx décodée en entier
+      // sature la mémoire des téléphones d'entrée de gamme.
+      return await createImageBitmap(file, { imageOrientation: "from-image", resizeWidth: maxSide, resizeQuality: "high" });
+    } catch { /* repli sur <img> */ }
   }
   const url = URL.createObjectURL(file);
   try {
@@ -53,28 +61,54 @@ function drawToJpeg(source: CanvasImageSource, width: number, height: number, ma
   return canvas.toDataURL("image/jpeg", JPEG_QUALITY);
 }
 
+export type PhotoFailure = "heic" | "unreadable";
+
+export type PreparedPhoto =
+  | { ok: true; dataUrl: string }
+  | { ok: false; reason: PhotoFailure; detail: string };
+
+const isHeic = (file: File) => /hei[cf]/i.test(file.type) || /\.hei[cf]$/i.test(file.name);
+
+const readOriginal = (file: File) => new Promise<string | null>((resolve) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
+  reader.onerror = () => resolve(null);
+  reader.readAsDataURL(file);
+});
+
+/** Description courte d'un fichier, pour le signalement à l'admin (jamais le nom du fichier). */
+export function describePhotoFile(file: File): string {
+  const ua = typeof navigator !== "undefined" ? navigator.userAgent : "";
+  return `type=${file.type || "inconnu"} taille=${Math.round(file.size / 1024)}Ko ua=${ua.slice(0, 220)}`;
+}
+
 /**
- * Fichier image choisi par le membre → data URI JPEG réduite.
- * Si le navigateur ne sait pas décoder le format (HEIC sur certains Android…),
- * l'original est gardé tant qu'il reste raisonnable ; sinon `null` (à signaler).
+ * Fichier image choisi par le membre → data URI JPEG réduite, ou la cause de l'échec.
+ * Si le navigateur ne sait pas décoder l'image, un JPEG/PNG/WebP est gardé tel
+ * quel tant qu'il tient dans le bucket (3 Mo) ; un HEIC est signalé à part.
  */
-export async function fileToCompressedDataUrl(file: File, maxSide = PHOTO_MAX_SIDE): Promise<string | null> {
+export async function preparePhoto(file: File, maxSide = PHOTO_MAX_SIDE): Promise<PreparedPhoto> {
   try {
-    const img = await decode(file);
+    const img = await decode(file, maxSide);
     const width = "naturalWidth" in img ? img.naturalWidth : img.width;
     const height = "naturalHeight" in img ? img.naturalHeight : img.height;
     const out = drawToJpeg(img, width, height, maxSide);
     if ("close" in img) img.close();
-    return out;
-  } catch {
-    if (file.size > 1_500_000) return null;
-    return await new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(typeof reader.result === "string" ? reader.result : null);
-      reader.onerror = () => resolve(null);
-      reader.readAsDataURL(file);
-    });
+    return { ok: true, dataUrl: out };
+  } catch (err) {
+    const why = err instanceof Error ? err.message : String(err);
+    if (/^image\/(jpeg|png|webp)$/i.test(file.type) && file.size <= ORIGINAL_MAX_BYTES) {
+      const original = await readOriginal(file);
+      if (original) return { ok: true, dataUrl: original };
+    }
+    return { ok: false, reason: isHeic(file) ? "heic" : "unreadable", detail: `${why.slice(0, 120)} ${describePhotoFile(file)}` };
   }
+}
+
+/** Ancienne signature : data URI, ou `null` si la photo n'a pas pu être préparée. */
+export async function fileToCompressedDataUrl(file: File, maxSide = PHOTO_MAX_SIDE): Promise<string | null> {
+  const res = await preparePhoto(file, maxSide);
+  return res.ok ? res.dataUrl : null;
 }
 
 /** Image de la caméra (selfie) → data URI JPEG réduite, miroir appliqué. */

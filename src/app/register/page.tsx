@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,7 +15,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { registerUser, ageFromBirthDate, MIN_AGE } from "@/lib/auth";
+import { registerUser, ageFromBirthDate, MIN_AGE, reportIncident } from "@/lib/auth";
 import { MARRIAGE_VALUES } from "@/lib/values";
 import { cameraErrorKey } from "@/lib/camera-error";
 import { Monogram } from "@/components/ornaments";
@@ -23,10 +23,11 @@ import { AvatarPicker } from "@/components/avatar-picker";
 import { useRouter } from "next/navigation";
 import { useI18n } from "@/lib/i18n";
 import { uploadRegistrationMedia } from "@/lib/registration-media-client";
+import { useFormProgress } from "@/hooks/use-form-progress";
 import { filterCountries, filterCities, countryLabel, phoneIsoFor, dialOfIso, toE164 } from "@/lib/geo";
 import { PhoneInput } from "@/components/phone-input";
 import { Flag } from "@/components/flag";
-import { fileToCompressedDataUrl, videoFrameToDataUrl, MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
+import { preparePhoto, videoFrameToDataUrl, MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
 import { useMobileContinueGate, MobileContinueGate } from "@/components/mobile-continue-gate";
 import {
   AlertTriangle,
@@ -46,6 +47,7 @@ import {
   Heart,
   Camera,
   RotateCcw,
+  Loader2,
 } from "lucide-react";
 import { LoadingScreen } from "@/components/loading-screen";
 import { SocialLogo } from "@/components/social-logo";
@@ -135,23 +137,34 @@ export default function RegisterPage() {
   // Photo réduite dès le choix (1280 px, JPEG) : envoyées en base64, les photos
   // brutes d'un téléphone dépassaient la limite de 4,5 Mo des fonctions Vercel.
   const [photoError, setPhotoError] = useState<string | null>(null);
+  const [processingSlot, setProcessingSlot] = useState<number | null>(null);
   const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     const slot = activePhotoSlot;
     // Reset input so the same file can be re-selected
     e.target.value = "";
     if (!file || slot === null) return;
-    const dataUrl = await fileToCompressedDataUrl(file);
-    if (!dataUrl) { setPhotoError(t("camera.photoUnsupported")); return; }
     setPhotoError(null);
+    // Une grande photo peut prendre plusieurs secondes à réduire sur un téléphone
+    // modeste : sans indicateur, le membre croyait l'import raté et recommençait.
+    setProcessingSlot(slot);
+    const res = await preparePhoto(file);
+    setProcessingSlot(null);
+    if (!res.ok) {
+      setPhotoError(t(res.reason === "heic" ? "camera.photoHeic" : "camera.photoUnsupported"));
+      // Échec vécu dans le navigateur, invisible côté serveur : signalé à l'admin.
+      void reportIncident("registration_photo_failed", `${res.reason} — ${res.detail}`);
+      return;
+    }
     setPhotos((prev) => {
       const next = [...prev];
-      next[slot] = dataUrl;
+      next[slot] = res.dataUrl;
       return next;
     });
   };
 
   const openPhotoPicker = (slotIndex: number) => {
+    if (processingSlot !== null) return;
     setActivePhotoSlot(slotIndex);
     photoInputRef.current?.click();
   };
@@ -175,6 +188,32 @@ export default function RegisterPage() {
 
   const [publicAvatar, setPublicAvatar] = useState<string | null>(null);
 
+  // Progression gardée si le téléphone recharge l'onglet (ouverture de la galerie,
+  // de l'appareil photo…). Le mot de passe n'est jamais sauvegardé : une inscription
+  // reprise après l'étape d'identité y revient pour le faire ressaisir.
+  const PASSWORD_STEP = 6;
+  const [restoreNoticeStep, setRestoreNoticeStep] = useState<number | null>(null);
+  const [passwordToRetype, setPasswordToRetype] = useState(false);
+  const progressSnapshot = useMemo(() => {
+    const { password: _password, ...answers } = formData;
+    return { step, formData: answers, photos, publicAvatar, selfieDataUri };
+  }, [step, formData, photos, publicAvatar, selfieDataUri]);
+  const { clear: clearProgress } = useFormProgress({
+    key: "eden_register_progress",
+    snapshot: progressSnapshot,
+    heavyKeys: ["photos", "publicAvatar", "selfieDataUri"],
+    onRestore: (saved) => {
+      if (saved.formData) setFormData((prev) => ({ ...prev, ...saved.formData, password: "" }));
+      if (Array.isArray(saved.photos) && saved.photos.length === 3) setPhotos(saved.photos);
+      if (typeof saved.publicAvatar === "string") setPublicAvatar(saved.publicAvatar);
+      if (typeof saved.selfieDataUri === "string") setSelfieDataUri(saved.selfieDataUri);
+      const savedStep = typeof saved.step === "number" ? Math.max(0, Math.min(totalSteps - 1, saved.step)) : 0;
+      const target = savedStep > PASSWORD_STEP ? PASSWORD_STEP : savedStep;
+      setPasswordToRetype(savedStep > PASSWORD_STEP);
+      setStep(target);
+      if (savedStep > 0) setRestoreNoticeStep(target);
+    },
+  });
   const totalSteps = 12;
   const progress = ((step + 1) / totalSteps) * 100;
 
@@ -233,6 +272,7 @@ export default function RegisterPage() {
         media = await uploadRegistrationMedia({ photos: photos.filter(Boolean) as string[], selfie: selfieDataUri, frames: [] });
       } catch (uploadErr) {
         const message = uploadErr instanceof Error ? uploadErr.message : "";
+        void reportIncident("registration_upload_failed", `${message || "erreur inconnue"} — ua=${navigator.userAgent.slice(0, 220)}`);
         // Stockage pas encore installé (migration non exécutée) : on revient à l'ancien envoi.
         if (!/non configuré/i.test(message)) {
           setCreateError(message || t("camera.photosTooLarge"));
@@ -294,6 +334,8 @@ export default function RegisterPage() {
         await supabase?.auth.signInWithPassword({ email: formData.email.trim().toLowerCase(), password: formData.password });
       } catch { /* non bloquant */ }
 
+      // Inscription aboutie : la progression sauvegardée n'a plus lieu d'être.
+      clearProgress();
       // Redirect to pending approval page
       router.push(`/register/pending?email=${encodeURIComponent(formData.email)}`);
     } catch {
@@ -501,6 +543,12 @@ export default function RegisterPage() {
                   </span>
                 </div>
               </div>
+            )}
+
+            {restoreNoticeStep === step && (
+              <p role="status" className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
+                {t("register.progressRestored")}{passwordToRetype ? ` ${t("register.progressRetypePassword")}` : ""}
+              </p>
             )}
 
             <AnimatePresence mode="wait">
@@ -984,7 +1032,7 @@ export default function RegisterPage() {
                   className="hidden"
                   onChange={handlePhotoSelect}
                 />
-                {photoError && <p role="alert" className="mt-2 text-xs text-destructive">{photoError}</p>}
+                {photoError && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive">{photoError}</p>}
                 <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
                   <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
                     <Upload className="w-6 h-6 text-primary" />
@@ -1015,10 +1063,17 @@ export default function RegisterPage() {
                           )}
                         </>
                       ) : (
-                        <div className="w-full h-full flex flex-col items-center justify-center gap-3 hover:bg-foreground/5 transition-colors">
-                          <Upload className="w-6 h-6 text-foreground/20" />
-                          <span className="text-[9px] font-bold text-foreground/20 uppercase tracking-widest">Photo {i + 1}</span>
-                        </div>
+                        processingSlot === i ? (
+                          <div role="status" className="w-full h-full flex flex-col items-center justify-center gap-3 bg-primary/5 px-2 text-center">
+                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
+                            <span className="text-[10px] font-semibold text-primary leading-tight">{t("camera.photoProcessing")}</span>
+                          </div>
+                        ) : (
+                          <div className="w-full h-full flex flex-col items-center justify-center gap-3 hover:bg-foreground/5 transition-colors">
+                            <Upload className="w-6 h-6 text-foreground/20" />
+                            <span className="text-[9px] font-bold text-foreground/20 uppercase tracking-widest">Photo {i + 1}</span>
+                          </div>
+                        )
                       )}
                     </div>
                   ))}

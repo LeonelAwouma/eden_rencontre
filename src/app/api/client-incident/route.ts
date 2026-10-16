@@ -20,7 +20,11 @@ const KINDS: Record<string, string> = {
   account_status_unreadable: "Statut du compte illisible",
   session_check_failed: "Vérification de session en échec",
   pending_status_unreadable: "Page d'attente : statut illisible",
+  // Inscription : ces échecs se produisent dans le navigateur, sans jamais atteindre le serveur.
+  registration_photo_failed: "Inscription : photo impossible à préparer",
+  registration_upload_failed: "Inscription : envoi des photos en échec",
 };
+const REGISTRATION_KINDS = new Set(["registration_photo_failed", "registration_upload_failed"]);
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const MAX_PER_IP_PER_HOUR = 20;
 const DEDUPE_SECONDS = 6 * 3600;
@@ -58,11 +62,15 @@ export async function POST(req: NextRequest) {
     const { data } = await db.from("profiles").select("email, status").eq("id", userId).maybeSingle();
     known = data ? { email: data.email, status: data.status } : null;
   }
+  const who = `${known?.email || email || "Membre non identifié"}${known?.status ? ` (compte ${known.status})` : ""}`;
+  const message = REGISTRATION_KINDS.has(kind)
+    ? `${who} est bloqué à l'étape des photos de l'inscription (${path || "page inconnue"}). Détail : ${detail || "—"}.`
+    : `${who} n'a pas pu accéder à son espace (${path || "page inconnue"}). Détail : ${detail || "—"}. Lancez le contrôle des comptes dans Admin → Utilisateurs → À traiter.`;
   try {
     await db.from("admin_notifications").insert({
       type: "system",
       title: `Panne vécue par un membre : ${KINDS[kind]}`,
-      message: `${known?.email || email || "Membre non identifié"}${known?.status ? ` (compte ${known.status})` : ""} n'a pas pu accéder à son espace (${path || "page inconnue"}). Détail : ${detail || "—"}. Lancez le contrôle des comptes dans Admin → Utilisateurs → À traiter.`,
+      message,
       link: known && userId ? `/admin/users/${userId}` : "/admin/users",
       metadata: { kind, user_id: userId, email, path, detail, ip },
     });
