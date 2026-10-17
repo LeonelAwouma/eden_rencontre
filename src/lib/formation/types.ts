@@ -5,7 +5,25 @@ export type LessonBlock =
   | { type: "p"; text: string }
   | { type: "verse"; text: string; ref: string }
   | { type: "points"; items: { lead: string; text: string }[] }
-  | { type: "steps"; items: string[] };
+  | { type: "steps"; items: string[] }
+  /** Citation d'un auteur (les versets bibliques passent par `verse`). */
+  | { type: "authorQuote"; text: string; author: string }
+  /** Tableau ; sur mobile, chaque ligne devient une carte. */
+  | { type: "table"; head: string[]; rows: string[][] }
+  /** Encadré : `info` pour un éclairage, `warning` pour une mise en garde, `neutral` pour un aparté. */
+  | { type: "callout"; tone: "info" | "warning" | "neutral"; title?: string; blocks: LessonBlock[] }
+  /** Étapes numérotées avec un titre chacune (un chemin, un protocole). */
+  | { type: "titledSteps"; items: { title: string; text: string }[] }
+  /** Fiche pratique : des questions à travailler, regroupées par section. */
+  | { type: "worksheet"; title: string; intro?: string; sections: { title: string; intro?: string; items: string[] }[] };
+
+/** Affiche illustrée (le texte fait partie de l'image) : toujours montrée entière. */
+export interface Poster {
+  src: string;
+  width: number;
+  height: number;
+  alt: string;
+}
 
 export interface LessonPart {
   heading: string;
@@ -27,18 +45,21 @@ export interface Lesson {
   slug: string;
   title: string;
   image: { src: string; card: string; alt: string; position?: string };
+  /** Affiche de la leçon : remplace la bannière recadrée en tête de lecture. */
+  poster?: Poster;
   pdf: string;
   readingMinutes: number;
   intro: { heading: string; blocks: LessonBlock[] };
   /** « L'objectif de cette leçon », quand la leçon en formule un. */
   objective?: string;
   parts: LessonPart[];
-  caseStudy: {
+  /** Cas pratique et boussole : présents au pilier 1, absents des leçons du pilier 2. */
+  caseStudy?: {
     title: string;
     context: string;
     responses: { label: string; text: string; right?: boolean }[];
   };
-  compass: { title: string; blocks: LessonBlock[] };
+  compass?: { title: string; blocks: LessonBlock[] };
   quizIntro: string;
   quiz: QuizQuestion[];
   reflection: { title: string; prompt: string };
@@ -49,6 +70,8 @@ export interface Pillar {
   slug: string;
   title: string;
   summary?: string;
+  /** Affiche du pilier, montrée en tête de sa section dans la liste des leçons. */
+  poster?: Poster;
   lessons: Lesson[];
 }
 

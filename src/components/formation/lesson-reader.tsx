@@ -6,10 +6,12 @@ import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Compass, Feather, HelpCircle,
   Lightbulb, RotateCcw, Target, X, BookOpenCheck, Quote, Eye, ArrowDown, MessagesSquare,
+  ClipboardList, Info, TriangleAlert,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
 import { RichText, frenchSpacing } from "./rich-text";
+import { PosterFigure } from "./poster";
 import { useFormationProgress } from "@/lib/formation/progress";
 import { FORMATION_BASE_PATH, ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
 import type { Lesson, LessonBlock, Pillar } from "@/lib/formation/types";
@@ -56,6 +58,112 @@ export function Blocks({ blocks }: { blocks: LessonBlock[] }) {
                   </li>
                 ))}
               </ol>
+            );
+          case "authorQuote":
+            return (
+              <figure key={i} className="my-8 rounded-r-2xl border-l-2 border-[#C9A24A]/70 bg-[#FBF7EC] px-5 py-4 sm:px-6">
+                <blockquote className="italic text-[16.5px] sm:text-[17px] leading-relaxed text-[#3F3A2E]">
+                  {frenchSpacing(ui.quote(b.text))}
+                </blockquote>
+                <figcaption className="mt-2 text-[13px] font-semibold text-[#6E4A00]">— <RichText text={b.author} /></figcaption>
+              </figure>
+            );
+          case "table":
+            return (
+              <div key={i} className="my-6">
+                {/* Grand écran : tableau */}
+                <div className="hidden sm:block rounded-2xl border border-border overflow-hidden">
+                <table className="w-full border-collapse text-[15px] leading-snug">
+                  <thead>
+                    <tr className="bg-primary/[0.08] text-left">
+                      {b.head.map((h, j) => <th key={j} scope="col" className="px-4 py-3 text-[12px] font-bold uppercase tracking-[0.12em] text-primary">{h}</th>)}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {b.rows.map((row, r) => (
+                      <tr key={r} className="border-t border-border bg-card align-top">
+                        {row.map((cell, c) => (
+                          c === 0
+                            ? <th key={c} scope="row" className="px-4 py-3.5 text-left font-semibold text-foreground whitespace-nowrap">{cell}</th>
+                            : <td key={c} className="px-4 py-3.5 text-[#3F4A43]"><RichText text={cell} /></td>
+                        ))}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                </div>
+                {/* Mobile : une carte par ligne */}
+                <div className="sm:hidden space-y-3">
+                  {b.rows.map((row, r) => (
+                    <div key={r} className="rounded-2xl border border-border bg-card px-4 py-3.5 text-[15px] leading-snug">
+                      <p className="font-semibold text-foreground">{row[0]}</p>
+                      {row.slice(1).map((cell, c) => (
+                        <p key={c} className="mt-2 text-[#3F4A43]">
+                          <span className="block text-[11px] font-bold uppercase tracking-[0.12em] text-primary mb-0.5">{b.head[c + 1]}</span>
+                          <RichText text={cell} />
+                        </p>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          case "callout": {
+            const warning = b.tone === "warning", neutral = b.tone === "neutral";
+            const Icon = warning ? TriangleAlert : Info;
+            return (
+              <aside key={i} className={cn("my-8 rounded-2xl border px-5 py-5 sm:px-6",
+                warning ? "border-[#E2C9A6] bg-[#FBF3E8]" : neutral ? "border-border bg-card" : "border-primary/20 bg-primary/[0.06]")}>
+                {b.title && (
+                  <p className={cn("flex items-start gap-2.5 font-semibold text-[16px] leading-snug mb-3", warning ? "text-[#6E4A00]" : "text-foreground", neutral && "font-headline text-[19px] font-bold")}>
+                    {!neutral && <Icon className={cn("w-5 h-5 shrink-0 mt-0.5", warning ? "text-[#8A5A00]" : "text-primary")} />}
+                    <span><RichText text={b.title} /></span>
+                  </p>
+                )}
+                <div className="space-y-4 text-[16px] leading-[1.7]"><Blocks blocks={b.blocks} /></div>
+              </aside>
+            );
+          }
+          case "titledSteps":
+            return (
+              <ol key={i} className="my-6 space-y-3">
+                {b.items.map((it, j) => (
+                  <li key={j} className="flex gap-4 rounded-2xl border border-border bg-card px-5 py-4">
+                    <span className="w-8 h-8 mt-0.5 rounded-full bg-primary text-white text-[14px] font-bold flex items-center justify-center shrink-0">{j + 1}</span>
+                    <span className="min-w-0">
+                      <span className="block font-semibold text-foreground leading-snug"><RichText text={it.title} /></span>
+                      <span className="block mt-1.5 text-[16px] leading-[1.7] text-[#3F4A43]"><RichText text={it.text} /></span>
+                    </span>
+                  </li>
+                ))}
+              </ol>
+            );
+          case "worksheet":
+            return (
+              <section key={i} className="my-10 rounded-3xl border-2 border-primary/25 bg-card px-5 py-6 sm:px-7 sm:py-7">
+                <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-primary">{ui.worksheet}</p>
+                <p className="mt-1.5 flex items-start gap-2.5 font-headline text-[21px] sm:text-[23px] font-bold leading-snug text-foreground">
+                  <ClipboardList className="w-6 h-6 text-primary shrink-0 mt-0.5" /> <span><RichText text={b.title} /></span>
+                </p>
+                {b.intro && <p className="mt-3 italic text-[15.5px] leading-relaxed text-[#56615A]"><RichText text={b.intro} /></p>}
+                <div className="mt-5 space-y-5">
+                  {b.sections.map((sec, j) => (
+                    <div key={j} className="rounded-2xl bg-primary/[0.05] px-4 py-4 sm:px-5">
+                      <p className="text-[14.5px] font-bold text-foreground"><RichText text={sec.title} /></p>
+                      {sec.intro && <p className="mt-1.5 text-[14.5px] italic text-[#56615A]"><RichText text={sec.intro} /></p>}
+                      <ol className="mt-2.5 space-y-2.5 text-[15.5px] leading-relaxed text-[#3F4A43]">
+                        {sec.items.map((it, k) => (
+                          <li key={k} className="flex gap-2.5">
+                            <span className="text-primary font-bold shrink-0">{k + 1}.</span>
+                            <span><RichText text={it} /></span>
+                          </li>
+                        ))}
+                      </ol>
+                    </div>
+                  ))}
+                </div>
+                <p className="mt-4 text-[13px] text-[#56615A]">{ui.worksheetHint}</p>
+              </section>
             );
         }
       })}
@@ -301,8 +409,8 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
   const toc = [
     { id: "introduction", label: ui.introduction },
     ...lesson.parts.map((p, i) => ({ id: `partie-${i + 1}`, label: p.heading })),
-    { id: "cas-pratique", label: ui.caseStudy },
-    { id: "boussole", label: lesson.compass.title },
+    ...(lesson.caseStudy ? [{ id: "cas-pratique", label: ui.caseStudy }] : []),
+    ...(lesson.compass ? [{ id: "boussole", label: lesson.compass.title }] : []),
     { id: "validation", label: ui.quizEyebrow },
     { id: "reflexion", label: lesson.reflection.title },
   ];
@@ -348,13 +456,22 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
         </div>
       </header>
 
-      {/* Image de la leçon — nette jusqu'au bord, sans voile */}
-      <div className="max-w-6xl mx-auto sm:px-6 sm:pt-6">
-        <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] sm:rounded-3xl overflow-hidden bg-muted">
-          <Image src={lesson.image.src} alt={lesson.image.alt} fill priority sizes="(min-width: 1152px) 1104px, 100vw"
-            className="object-cover" style={{ objectPosition: lesson.image.position || "center" }} />
+      {lesson.poster ? (
+        /* Affiche de la leçon — entière, jamais recadrée : son texte fait partie de l'image */
+        <div className="max-w-6xl mx-auto px-4 pt-5 sm:px-6 sm:pt-8">
+          <PosterFigure poster={lesson.poster} priority
+            className={cn("mx-auto", lesson.poster.width > lesson.poster.height ? "max-w-[920px]" : "max-w-[560px]")}
+            sizes={lesson.poster.width > lesson.poster.height ? "(min-width: 960px) 920px, 100vw" : "(min-width: 600px) 560px, 100vw"} />
         </div>
-      </div>
+      ) : (
+        /* Image de la leçon — nette jusqu'au bord, sans voile */
+        <div className="max-w-6xl mx-auto sm:px-6 sm:pt-6">
+          <div className="relative w-full aspect-[16/9] sm:aspect-[21/9] sm:rounded-3xl overflow-hidden bg-muted">
+            <Image src={lesson.image.src} alt={lesson.image.alt} fill priority sizes="(min-width: 1152px) 1104px, 100vw"
+              className="object-cover" style={{ objectPosition: lesson.image.position || "center" }} />
+          </div>
+        </div>
+      )}
 
       <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_240px] lg:gap-14">
         <article className="max-w-[68ch] mx-auto lg:mx-0 lg:ml-auto w-full pb-20">
@@ -400,6 +517,7 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
             ))}
 
             {/* Cas pratique */}
+            {lesson.caseStudy && (
             <section>
               <SectionTitle id="cas-pratique" eyebrow={ui.caseStudy}>{lesson.caseStudy.title}</SectionTitle>
               <p className="text-[#3F4A43]"><RichText text={lesson.caseStudy.context} /></p>
@@ -417,8 +535,10 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
                 ))}
               </div>
             </section>
+            )}
 
             {/* Boussole */}
+            {lesson.compass && (
             <section>
               <div id="boussole" className="scroll-mt-28 mt-14 rounded-3xl border border-[#D9C9A3] bg-[#FBF7EC] px-6 py-6 sm:px-8 sm:py-7">
                 <p className="flex items-center gap-2.5 font-headline text-[22px] font-bold text-[#6E4A00]">
@@ -427,6 +547,7 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
                 <div className="mt-3 space-y-4 text-[16.5px] leading-[1.75] text-[#3F3A2E]"><Blocks blocks={lesson.compass.blocks} /></div>
               </div>
             </section>
+            )}
 
             {/* Validation des acquis */}
             <section>

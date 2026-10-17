@@ -40,7 +40,6 @@ const fr = {
   backToAcademy: "Académie du mariage",
   courseEyebrow: "Académie du mariage · Formation",
   resume: "Reprendre",
-  pillarDone: (n: number) => `Pilier ${n} terminé`,
   lessonTitle: (number: string, title: string) => `Leçon ${number} — ${title}`,
   bravo: "Bravo, toutes les leçons sont terminées.",
   autosaved: "Ta progression est enregistrée automatiquement.",
@@ -103,6 +102,10 @@ const fr = {
   deviceOnly: "gardé uniquement sur cet appareil, jamais partagé.",
   // Guillemets des citations bibliques
   quote: (text: string) => `« ${text} »`,
+  // Affiches et fiches pratiques
+  openPoster: "Voir l'affiche en grand",
+  worksheet: "Fiche pratique",
+  worksheetHint: "Prends le temps d'y répondre par écrit, dans ton journal ou dans le champ de réflexion en bas de la leçon.",
   // Histoires
   storiesTitle: "Histoires",
   storiesDesc: "Des récits pour voir la vision de l'alliance à l'œuvre dans la vie de celles et ceux qui se préparent au mariage.",
@@ -145,7 +148,6 @@ const en: FormationUi = {
   backToAcademy: "Marriage Academy",
   courseEyebrow: "Marriage Academy · Course",
   resume: "Resume",
-  pillarDone: (n) => `Pillar ${n} completed`,
   lessonTitle: (number, title) => `Lesson ${number} — ${title}`,
   bravo: "Well done, all lessons are completed.",
   autosaved: "Your progress is saved automatically.",
@@ -204,6 +206,9 @@ const en: FormationUi = {
   autosave: "Saved automatically",
   deviceOnly: "kept only on this device, never shared.",
   quote: (text) => `“${text}”`,
+  openPoster: "View the poster full size",
+  worksheet: "Worksheet",
+  worksheetHint: "Take time to answer in writing, in your journal or in the reflection box at the bottom of the lesson.",
   storiesTitle: "Stories",
   storiesDesc: "Stories that show the vision of the covenant at work in the lives of people preparing for marriage.",
   storyEyebrow: "Story",
@@ -228,7 +233,8 @@ const FORMATIONS: Record<"fr" | "en", Formation> = { fr: BATIR_SUR_LE_ROC, en: B
 // côté, ou une bonne réponse déplacée, fausserait la progression et le quiz.
 if (process.env.NODE_ENV !== "production") {
   const shape = (f: Formation) => JSON.stringify(f.pillars.map((p) => [p.slug, p.lessons.map((l) => [
-    l.slug, l.number, l.quiz.map((q) => [q.options.length, q.answer]), l.caseStudy.responses.map((r) => !!r.right),
+    l.slug, l.number, l.quiz.map((q) => [q.options.length, q.answer]), l.caseStudy?.responses.map((r) => !!r.right) ?? null,
+    !!l.compass, !!l.poster, l.parts.map((p) => p.blocks.map((b) => b.type)),
   ])]));
   if (shape(BATIR_SUR_LE_ROC) !== shape(BATIR_SUR_LE_ROC_EN)) {
     console.error("[Académie] Les versions FR et EN de « Bâtir sur le roc » ne correspondent plus (leçons, slugs ou réponses du quiz). Voir batir-sur-le-roc.en.ts.");

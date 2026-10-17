@@ -8,6 +8,7 @@ import { Monogram } from "@/components/ornaments";
 import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
 import { useFormationLocale } from "@/lib/formation/ui";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
+import { PosterFigure } from "@/components/formation/poster";
 
 /**
  * « Bâtir sur le roc » : liste des leçons (Académie → Bâtir sur le roc → leçon).
@@ -55,7 +56,7 @@ export default function BatirSurLeRocLessonsPage() {
 
           <div className="rounded-3xl border border-border bg-card p-6 shadow-[0_10px_40px_rgba(38,70,52,0.08)]">
             <p className="text-[12px] font-bold uppercase tracking-[0.16em] text-[#56615A]">
-              {!ready ? ui.progressLabel : started ? (nextLesson ? ui.resume : ui.pillarDone(1)) : ui.start}
+              {!ready ? ui.progressLabel : started ? (nextLesson ? ui.resume : ui.allDone) : ui.start}
             </p>
             <p className="mt-1.5 font-headline text-[21px] font-bold leading-tight text-foreground">
               {nextLesson ? ui.lessonTitle(nextLesson.number, nextLesson.title) : ui.bravo}
@@ -84,8 +85,11 @@ export default function BatirSurLeRocLessonsPage() {
           const done = pillar.lessons.filter((l) => progress.completed.includes(l.slug)).length;
           return (
             <section key={pillar.slug} aria-labelledby={`pilier-${pillar.number}`} className="space-y-6">
-              <div className="flex flex-wrap items-end justify-between gap-4">
-                <div className="max-w-2xl">
+              <div className={cn("flex flex-wrap items-end justify-between gap-4", pillar.poster && "sm:flex-nowrap sm:items-center sm:gap-8")}>
+                {pillar.poster && (
+                  <PosterFigure poster={pillar.poster} sizes="(min-width: 640px) 240px, 100vw" className="w-full max-w-[360px] mx-auto sm:mx-0 sm:w-[240px] shrink-0 sm:order-first" />
+                )}
+                <div className="max-w-2xl sm:flex-1">
                   <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-primary">{ui.pillarBadge(pillar.number)}</p>
                   <h2 id={`pilier-${pillar.number}`} className="mt-1 font-headline text-[28px] sm:text-[32px] font-bold text-foreground leading-tight">{pillar.title}</h2>
                   {pillar.summary && <p className="mt-2 text-[15px] leading-relaxed text-[#3F4A43]">{pillar.summary}</p>}

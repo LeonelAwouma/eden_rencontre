@@ -280,7 +280,7 @@ export const STORIES: Story[] = [
 /** Durée de lecture estimée (≈ 200 mots par minute). */
 export function storyReadingMinutes(story: Story): number {
   const text = [story.summary, ...story.chapters.flatMap((c) => c.blocks.map((b) =>
-    "text" in b ? b.text : "items" in b ? b.items.map((it) => (typeof it === "string" ? it : `${it.lead} ${it.text}`)).join(" ") : "")),
+    "text" in b ? b.text : "items" in b ? b.items.map((it) => (typeof it === "string" ? it : `${"lead" in it ? it.lead : it.title} ${it.text}`)).join(" ") : "")),
     ...story.takeaways.map((t) => `${t.lead} ${t.text}`)].join(" ");
   return Math.max(1, Math.round(text.split(/\s+/).length / 200));
 }
