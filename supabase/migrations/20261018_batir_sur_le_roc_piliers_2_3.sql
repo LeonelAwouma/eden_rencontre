@@ -6,20 +6,28 @@
 --  Même principe que 20260922_batir_sur_le_roc_pilier1.sql : chaque leçon est
 --  référencée comme ressource (type « Guide ») et chaque pilier devient un parcours.
 --  Généré depuis src/lib/formation/pilier-2.ts et pilier-3.ts : titres, durées,
---  vignettes et PDF identiques à l'Académie.
+--  vignettes et PDF identiques à l'Académie. Chaque parcours a pour image
+--  l'affiche de son pilier (le pilier 1 garde la couverture de la formation).
 -- ============================================================
 
 -- ───────────── Pilier 2 — Connaissance de soi, tempéraments & guérison intérieure ─────────────
 
-INSERT INTO mediatheque_learning_paths (title, slug, description, objective, level, estimated_duration, sort_order, status, published_at)
+INSERT INTO mediatheque_learning_paths (title, slug, description, objective, cover_url, level, estimated_duration, sort_order, status, published_at)
 VALUES (
   'Bâtir sur le roc · Pilier 2 — Connaissance de soi, tempéraments & guérison intérieure',
   'batir-sur-le-roc-pilier-2',
   'Se connaître en vérité — tempérament, style d''attachement, blessures et schémas hérités — pour clarifier ses besoins et ses valeurs, pardonner, briser les liens du passé et entrer libre dans l''alliance.',
   'Se connaître, guérir et entrer libre dans l''alliance.',
+  '/formation/batir-sur-le-roc/images/pilier-2.webp',
   'beginner', 'environ 1 h', 1, 'published', now()
 )
 ON CONFLICT (slug) DO NOTHING;
+
+-- Parcours déjà créé sans image (première version de ce fichier) : affiche du pilier.
+UPDATE mediatheque_learning_paths
+SET cover_url = '/formation/batir-sur-le-roc/images/pilier-2.webp', updated_at = now()
+WHERE slug = 'batir-sur-le-roc-pilier-2'
+  AND (cover_url IS NULL OR cover_url = '' OR cover_url IN ('/formation/batir-sur-le-roc/images/couverture.webp', '/batir_roc.png', '/batir_roc.webp'));
 
 WITH lessons(n, slug, title, description, minutes, page, pdf, thumb, cover) AS (
   VALUES
@@ -70,15 +78,22 @@ ON CONFLICT (learning_path_id, resource_id) DO NOTHING;
 
 -- ───────────── Pilier 3 — Bilan de maturité & préparation multidimensionnelle ─────────────
 
-INSERT INTO mediatheque_learning_paths (title, slug, description, objective, level, estimated_duration, sort_order, status, published_at)
+INSERT INTO mediatheque_learning_paths (title, slug, description, objective, cover_url, level, estimated_duration, sort_order, status, published_at)
 VALUES (
   'Bâtir sur le roc · Pilier 3 — Bilan de maturité & préparation multidimensionnelle',
   'batir-sur-le-roc-pilier-3',
   'Faire le point, dimension par dimension — spirituelle, émotionnelle, financière, sociale, physique et affective — pour savoir en vérité si l''on est prêt(e) à assumer la responsabilité d''un foyer.',
   'Faire le bilan de sa maturité avant de choisir un conjoint.',
+  '/formation/batir-sur-le-roc/images/pilier-3.webp',
   'beginner', 'environ 1 h', 2, 'published', now()
 )
 ON CONFLICT (slug) DO NOTHING;
+
+-- Parcours déjà créé sans image (première version de ce fichier) : affiche du pilier.
+UPDATE mediatheque_learning_paths
+SET cover_url = '/formation/batir-sur-le-roc/images/pilier-3.webp', updated_at = now()
+WHERE slug = 'batir-sur-le-roc-pilier-3'
+  AND (cover_url IS NULL OR cover_url = '' OR cover_url IN ('/formation/batir-sur-le-roc/images/couverture.webp', '/batir_roc.png', '/batir_roc.webp'));
 
 WITH lessons(n, slug, title, description, minutes, page, pdf, thumb, cover) AS (
   VALUES

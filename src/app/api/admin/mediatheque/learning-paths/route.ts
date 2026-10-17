@@ -2,17 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { FORMATION_COVER_SRC } from "@/lib/formation/paths";
+import { BATIR_SUR_LE_ROC } from "@/lib/formation/batir-sur-le-roc";
 
 /**
- * Couverture de la formation « Bâtir sur le roc » : FORMATION_COVER_SRC.
- * Tant que 20261006_batir_sur_le_roc_cover_webp.sql n'a pas été exécutée, la
- * base peut encore pointer vers /batir_roc.png ou /batir_roc.webp (fichiers
- * supprimés), ou n'avoir aucune image.
+ * Couverture d'un parcours « Bâtir sur le roc » sans image (ou avec une ancienne
+ * image supprimée, /batir_roc.png ou /batir_roc.webp) : l'affiche du pilier
+ * (slug batir-sur-le-roc-pilier-N) quand il en a une, sinon la couverture de la
+ * formation. Une image choisie dans l'admin est toujours respectée.
  */
 const LEGACY_FORMATION_COVERS = ["/batir_roc.png", "/batir_roc.webp"];
 function formationCover(slug: string | null, cover: string | null): string | null {
-  if (slug?.startsWith("batir-sur-le-roc") && (!cover || LEGACY_FORMATION_COVERS.includes(cover))) return FORMATION_COVER_SRC;
-  return cover;
+  if (!slug?.startsWith("batir-sur-le-roc") || (cover && !LEGACY_FORMATION_COVERS.includes(cover))) return cover;
+  const pillar = /^batir-sur-le-roc-pilier-(\d+)$/.exec(slug);
+  const poster = pillar && BATIR_SUR_LE_ROC.pillars.find((p) => p.number === Number(pillar[1]))?.poster;
+  return poster?.src ?? FORMATION_COVER_SRC;
 }
 
 export async function GET(request: NextRequest) {
