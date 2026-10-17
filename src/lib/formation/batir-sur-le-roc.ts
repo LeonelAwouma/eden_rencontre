@@ -3,6 +3,7 @@
 // Les PDF et les images sont servis depuis public/formation/batir-sur-le-roc/.
 import type { Formation, Lesson, Pillar } from "./types";
 import { pillar2 } from "./pilier-2";
+import { pillar3 } from "./pilier-3";
 
 const BASE = "/formation/batir-sur-le-roc";
 const img = (n: string) => ({ src: `${BASE}/images/lecon-${n}.webp`, card: `${BASE}/images/lecon-${n}-carte.webp` });
@@ -697,7 +698,7 @@ const pillar1: Pillar = {
   lessons: [lecon11, lecon12, lecon13, lecon14, lecon15, lecon16],
 };
 
-// Les piliers 3 à 6 sont en cours de rédaction : ils s'affichent « en préparation ».
+// Les piliers 4 à 6 sont en cours de rédaction : ils s'affichent « en préparation ».
 const upcoming = (n: number): Pillar => ({ number: n, slug: `pilier-${n}`, title: `Pilier ${n}`, lessons: [] });
 
 export const BATIR_SUR_LE_ROC: Formation = {
@@ -714,7 +715,7 @@ export const BATIR_SUR_LE_ROC: Formation = {
     alt: "Des mains posent une pierre au sommet d'un cairn de pierres empilées.",
     position: "center 30%",
   },
-  pillars: [pillar1, pillar2, upcoming(3), upcoming(4), upcoming(5), upcoming(6)],
+  pillars: [pillar1, pillar2, pillar3, upcoming(4), upcoming(5), upcoming(6)],
 };
 
 export { FORMATION_BASE_PATH, ADMIN_FORMATION_PATH, ADMIN_LESSON_PREVIEW_PATH } from "./paths";

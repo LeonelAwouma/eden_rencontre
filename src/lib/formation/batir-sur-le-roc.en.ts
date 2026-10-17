@@ -11,6 +11,7 @@
 // Scripture: World English Bible (public domain), with "the LORD".
 import type { Formation, Lesson, Pillar } from "./types";
 import { pillar2En } from "./pilier-2.en";
+import { pillar3En } from "./pilier-3.en";
 
 const BASE = "/formation/batir-sur-le-roc";
 const img = (n: string) => ({ src: `${BASE}/images/lecon-${n}.webp`, card: `${BASE}/images/lecon-${n}-carte.webp` });
@@ -705,7 +706,7 @@ const pillar1: Pillar = {
   lessons: [lesson11, lesson12, lesson13, lesson14, lesson15, lesson16],
 };
 
-// Pillars 3 to 6 are still being written: they are shown as "in preparation".
+// Pillars 4 to 6 are still being written: they are shown as "in preparation".
 const upcoming = (n: number): Pillar => ({ number: n, slug: `pilier-${n}`, title: `Pillar ${n}`, lessons: [] });
 
 export const BATIR_SUR_LE_ROC_EN: Formation = {
@@ -722,5 +723,5 @@ export const BATIR_SUR_LE_ROC_EN: Formation = {
     alt: "Hands placing a stone on top of a cairn of stacked stones.",
     position: "center 30%",
   },
-  pillars: [pillar1, pillar2En, upcoming(3), upcoming(4), upcoming(5), upcoming(6)],
+  pillars: [pillar1, pillar2En, pillar3En, upcoming(4), upcoming(5), upcoming(6)],
 };
