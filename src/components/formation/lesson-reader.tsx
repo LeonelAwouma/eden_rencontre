@@ -69,6 +69,7 @@ export function Blocks({ blocks }: { blocks: LessonBlock[] }) {
               </figure>
             );
           case "table":
+            if (b.variant === "compare") return <CompareTable key={i} head={b.head} rows={b.rows} />;
             return (
               <div key={i} className="my-6">
                 {/* Grand écran : tableau */}
@@ -168,6 +169,55 @@ export function Blocks({ blocks }: { blocks: LessonBlock[] }) {
         }
       })}
     </>
+  );
+}
+
+/**
+ * « Diagnostic miroir » : la posture à éviter (colonne 1) face à la posture
+ * mûre (colonne 2), ligne par ligne. Sur mobile, une carte par ligne.
+ */
+function CompareTable({ head, rows }: { head: string[]; rows: string[][] }) {
+  const Label = ({ col, children }: { col: number; children: React.ReactNode }) => (
+    <span className={cn("inline-flex items-start gap-1.5 font-bold", col === 0 ? "text-[#8A5A00]" : "text-primary")}>
+      {col === 0 ? <X className="w-4 h-4 shrink-0 mt-px" /> : <Check className="w-4 h-4 shrink-0 mt-px" />}
+      <span>{children}</span>
+    </span>
+  );
+  return (
+    <div className="my-6">
+      <div className="hidden sm:block rounded-2xl border border-border overflow-hidden">
+        <table className="w-full table-fixed border-collapse text-[15px] leading-snug">
+          <thead>
+            <tr className="text-left text-[13px]">
+              <th scope="col" className="px-4 py-3 bg-[#FBF3E8]"><Label col={0}>{head[0]}</Label></th>
+              <th scope="col" className="px-4 py-3 bg-primary/[0.08] border-l border-border"><Label col={1}>{head[1]}</Label></th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row, r) => (
+              <tr key={r} className="border-t border-border bg-card align-top">
+                <td className="px-4 py-3.5 text-[#56615A]"><RichText text={row[0]} /></td>
+                <td className="px-4 py-3.5 text-foreground border-l border-border"><RichText text={row[1]} /></td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <div className="sm:hidden space-y-3">
+        {rows.map((row, r) => (
+          <div key={r} className="rounded-2xl border border-border bg-card overflow-hidden text-[15px] leading-snug">
+            <p className="px-4 py-3 bg-[#FBF3E8] text-[#56615A]">
+              <span className="block text-[12px] mb-1"><Label col={0}>{head[0]}</Label></span>
+              <RichText text={row[0]} />
+            </p>
+            <p className="px-4 py-3 bg-primary/[0.06] text-foreground">
+              <span className="block text-[12px] mb-1"><Label col={1}>{head[1]}</Label></span>
+              <RichText text={row[1]} />
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
   );
 }
 

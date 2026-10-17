@@ -8,8 +8,11 @@ export type LessonBlock =
   | { type: "steps"; items: string[] }
   /** Citation d'un auteur (les versets bibliques passent par `verse`). */
   | { type: "authorQuote"; text: string; author: string }
-  /** Tableau ; sur mobile, chaque ligne devient une carte. */
-  | { type: "table"; head: string[]; rows: string[][] }
+  /**
+   * Tableau ; sur mobile, chaque ligne devient une carte. `compare` : deux colonnes
+   * de même poids, la posture à éviter puis la posture à cultiver (« diagnostic miroir »).
+   */
+  | { type: "table"; head: string[]; rows: string[][]; variant?: "compare" }
   /** Encadré : `info` pour un éclairage, `warning` pour une mise en garde, `neutral` pour un aparté. */
   | { type: "callout"; tone: "info" | "warning" | "neutral"; title?: string; blocks: LessonBlock[] }
   /** Étapes numérotées avec un titre chacune (un chemin, un protocole). */
