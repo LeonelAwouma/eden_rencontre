@@ -127,7 +127,39 @@ export default function RegisterPage() {
   const age = ageFromBirthDate(formData.birthDate);
   const ageValid = age !== null && age >= MIN_AGE;
   const emailValid = EMAIL_REGEX.test(formData.email);
-  const passwordStrength = getPasswordStrength(formData.password, t);
+
+  // Adresse déjà utilisée par un compte : vérifiée dès l'étape « identité »,
+  // au lieu d'être découverte à l'envoi final, après les photos et le selfie.
+  const [emailTaken, setEmailTaken] = useState(false);
+  const [checkingEmail, setCheckingEmail] = useState(false);
+  const emailCheckCache = useRef<Map<string, boolean>>(new Map());
+  /** Vrai si l'adresse est libre — ou si la vérification est indisponible (l'envoi final tranchera). */
+  const checkEmailAvailable = async (value: string): Promise<boolean> => {
+    const clean = value.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(clean)) return true;
+    const cached = emailCheckCache.current.get(clean);
+    if (cached !== undefined) { setEmailTaken(!cached); return cached; }
+    setCheckingEmail(true);
+    try {
+      const res = await fetch("/api/auth/check-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: clean }),
+      });
+      if (!res.ok) return true;
+      const { available } = await res.json();
+      emailCheckCache.current.set(clean, !!available);
+      setEmailTaken(!available);
+      return !!available;
+    } catch {
+      return true;
+    } finally {
+      setCheckingEmail(false);
+    }
+  };
+  const continueFromIdentity = async () => {
+    if (await checkEmailAvailable(formData.email)) nextStep();
+  };  const passwordStrength = getPasswordStrength(formData.password, t);
 
   const [photos, setPhotos] = useState<(string | null)[]>([
     null, null, null
@@ -339,6 +371,13 @@ export default function RegisterPage() {
       const data = await res.json();
 
       if (!res.ok) {
+        // Adresse prise entre-temps : retour à l'étape « identité », réponses et photos conservées.
+        if (res.status === 409) {
+          setEmailTaken(true);
+          setCreating(false);
+          setStep(PASSWORD_STEP);
+          return;
+        }
         setCreateError(data.error || t("register.errorGeneric"));
         setCreating(false);
         return;
@@ -856,13 +895,27 @@ export default function RegisterPage() {
                         type="email"
                         placeholder={t("register.emailPlaceholder")}
                         value={formData.email}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
-                        className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30 pr-12"
+                        onChange={(e) => { setFormData({...formData, email: e.target.value}); setEmailTaken(false); }}
+                        onBlur={() => { void checkEmailAvailable(formData.email); }}
+                        aria-invalid={emailTaken || undefined}
+                        aria-describedby={emailTaken ? "register-email-taken" : undefined}
+                        className={cn("h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30 pr-12",
+                          emailTaken && "border-destructive/60 focus:border-destructive")}
                       />
-                      {emailValid && (
+                      {checkingEmail ? (
+                        <Loader2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary animate-spin" />
+                      ) : emailValid && !emailTaken && (
                         <CheckCircle2 className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-primary animate-in zoom-in duration-200" />
                       )}
                     </div>
+                    {emailTaken && (
+                      <p id="register-email-taken" role="alert" className="text-sm text-destructive">
+                        {t("register.emailTaken")}{" "}
+                        <Link href={`/login?email=${encodeURIComponent(formData.email.trim())}`} className="font-semibold underline underline-offset-2">
+                          {t("register.emailTakenLogin")}
+                        </Link>
+                      </p>
+                    )}
                   </div>
                   <PhoneInput
                     iso={formData.phoneIso}
@@ -906,8 +959,8 @@ export default function RegisterPage() {
                     )}
                   </div>
                   <Button
-                    onClick={nextStep}
-                    disabled={!formData.pseudo || !formData.firstName || !formData.lastName || !ageValid || !formData.email || formData.password.length < 8 || !toE164(dialOfIso(formData.phoneIso), formData.phoneLocal)}
+                    onClick={continueFromIdentity}
+                    disabled={emailTaken || checkingEmail || !formData.pseudo || !formData.firstName || !formData.lastName || !ageValid || !formData.email || formData.password.length < 8 || !toE164(dialOfIso(formData.phoneIso), formData.phoneLocal)}
                     className={cn("w-full h-14 text-base disabled:opacity-50", EDEN_SOLID_BUTTON)}
                   >
                     {t("register.continue")} <ArrowRight className="w-5 h-5 ml-2" />

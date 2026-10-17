@@ -208,6 +208,8 @@
     "photosMandatory": "All 3 photos are required to verify the authenticity of your profile.",
     "progressRestored": "We picked up your registration where you left off.",
     "progressRetypePassword": "For your security, just re-enter your password: your other answers and your photos have been kept.",
+    "emailTaken": "An account already exists with this email address.",
+    "emailTakenLogin": "Sign in",
     "photosDeferLink": "I can't upload my photos",
     "photosDeferTitle": "Continue without your photos?",
     "photosDeferDesc": "You can finish your registration now. Your account will remain pending until our team has received and added your 3 photos.",

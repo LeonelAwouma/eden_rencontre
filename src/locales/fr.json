@@ -208,6 +208,8 @@
     "photosMandatory": "Les 3 photos sont obligatoires pour vérifier l'authenticité de votre profil.",
     "progressRestored": "Nous avons repris votre inscription là où vous l'aviez laissée.",
     "progressRetypePassword": "Pour votre sécurité, ressaisissez simplement votre mot de passe : vos autres réponses et vos photos sont conservées.",
+    "emailTaken": "Un compte existe déjà avec cette adresse e-mail.",
+    "emailTakenLogin": "Se connecter",
     "photosDeferLink": "Je n'arrive pas à importer mes photos",
     "photosDeferTitle": "Continuer sans vos photos ?",
     "photosDeferDesc": "Vous pouvez terminer votre inscription maintenant. Votre compte restera en attente tant que notre équipe n'aura pas reçu et ajouté vos 3 photos.",
