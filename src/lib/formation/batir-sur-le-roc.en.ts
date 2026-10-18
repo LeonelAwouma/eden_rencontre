@@ -22,7 +22,7 @@ const lesson11: Lesson = {
   number: "1.1",
   slug: "1-1",
   title: "Between praise and reality",
-  image: { ...img("1-1"), alt: "A bride and groom side by side during the ceremony, the bride holding a bouquet of pale roses." },
+  image: { ...img("1-1"), position: "center top", alt: "A bride and groom walk hand in hand through a garden in front of a church. In thought bubbles crossed out in red, the bride imagines a perfect prince on a white horse (idealisation) and the groom imagines a woman hiding a menacing face (cynicism)." },
   pdf: `${BASE}/pdf/lecon-1-1-entre-eloge-et-realite.pdf`,
   readingMinutes: 8,
   intro: {

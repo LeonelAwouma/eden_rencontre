@@ -14,7 +14,7 @@ const lecon11: Lesson = {
   number: "1.1",
   slug: "1-1",
   title: "Entre éloge et réalité",
-  image: { ...img("1-1"), alt: "Des mariés côte à côte pendant la cérémonie, la mariée tenant un bouquet de roses pâles." },
+  image: { ...img("1-1"), position: "center top", alt: "Des mariés marchent main dans la main dans un jardin, devant une église. Dans des bulles de pensée barrées d'une croix rouge : la mariée imagine un prince parfait sur un cheval blanc (l'idéalisation), le marié imagine une femme qui cache un visage menaçant (le cynisme)." },
   pdf: `${BASE}/pdf/lecon-1-1-entre-eloge-et-realite.pdf`,
   readingMinutes: 8,
   intro: {
