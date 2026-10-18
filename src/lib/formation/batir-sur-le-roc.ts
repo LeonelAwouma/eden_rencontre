@@ -740,7 +740,39 @@ export function findLesson(slug: string) {
  * pas terminée, sinon la première leçon non terminée (null si tout est lu).
  */
 export function resumeLesson(progress: { completed: string[]; lastLesson: string | null }) {
-  const last = progress.lastLesson ? findLesson(progress.lastLesson)?.lesson : undefined;
-  if (last && !progress.completed.includes(last.slug)) return last;
+  const last = progress.lastLesson ? findLesson(progress.lastLesson) : null;
+  if (last && !progress.completed.includes(last.lesson.slug) && isPillarUnlocked(last.pillar.number, progress.completed)) return last.lesson;
+  // Les piliers s'ouvrent dans l'ordre : la première leçon non terminée est toujours dans un pilier ouvert.
   return ALL_LESSONS.find(({ lesson }) => !progress.completed.includes(lesson.slug))?.lesson ?? null;
+}
+
+/* ─────────────── Déblocage progressif des piliers ───────────────
+   Le pilier N s'ouvre quand le pilier N-1 est terminé. Fonctions sur les numéros
+   et les slugs, communs au français et à l'anglais. */
+
+export type PillarStatus = "locked" | "todo" | "inProgress" | "done";
+
+export function isPillarComplete(pillar: Pillar, completed: string[]): boolean {
+  return pillar.lessons.length > 0 && pillar.lessons.every((l) => completed.includes(l.slug));
+}
+
+export function isPillarUnlocked(pillarNumber: number, completed: string[]): boolean {
+  const previous = BATIR_SUR_LE_ROC.pillars.filter((p) => p.number < pillarNumber && p.lessons.length > 0);
+  return previous.every((p) => isPillarComplete(p, completed));
+}
+
+export function pillarStatus(pillar: Pillar, completed: string[]): PillarStatus {
+  if (!isPillarUnlocked(pillar.number, completed)) return "locked";
+  if (isPillarComplete(pillar, completed)) return "done";
+  return pillar.lessons.some((l) => completed.includes(l.slug)) ? "inProgress" : "todo";
+}
+
+/** Pilier rédigé qui doit être terminé avant celui-ci (null s'il est ouvert). */
+export function blockingPillar(pillarNumber: number, completed: string[]): Pillar | null {
+  return BATIR_SUR_LE_ROC.pillars.find((p) => p.number < pillarNumber && p.lessons.length > 0 && !isPillarComplete(p, completed)) ?? null;
+}
+
+/** Pilier rédigé suivant (null pour le dernier). */
+export function nextPillar(pillarNumber: number): Pillar | null {
+  return BATIR_SUR_LE_ROC.pillars.find((p) => p.number > pillarNumber && p.lessons.length > 0) ?? null;
 }

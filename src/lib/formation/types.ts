@@ -75,6 +75,8 @@ export interface Pillar {
   summary?: string;
   /** Affiche du pilier, montrée en tête de sa section dans la liste des leçons. */
   poster?: Poster;
+  /** Vignette paysage du pilier (720×450), pour sa carte sur la page de l'Académie. */
+  card?: string;
   lessons: Lesson[];
 }
 

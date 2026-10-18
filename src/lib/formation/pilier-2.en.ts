@@ -1176,5 +1176,6 @@ export const pillar2En: Pillar = {
   title: "Self-knowledge, temperaments & inner healing",
   summary: "Knowing yourself in truth — temperament, attachment style, wounds and inherited patterns — to clarify your needs and values, forgive, break the ties of the past and enter the covenant free.",
   poster: PILLAR_2_POSTER,
+  card: `${BASE}/images/pilier-2-carte.webp`,
   lessons: [lesson21, lesson22, lesson23, lesson24, lesson25, lesson26, lesson27],
 };

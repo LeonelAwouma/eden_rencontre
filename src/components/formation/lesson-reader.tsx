@@ -6,7 +6,7 @@ import Link from "next/link";
 import {
   ArrowLeft, ArrowRight, Check, CheckCircle2, Clock, Compass, Feather, HelpCircle,
   Lightbulb, RotateCcw, Target, X, BookOpenCheck, Quote, Eye, ArrowDown, MessagesSquare,
-  ClipboardList, Info, TriangleAlert,
+  ClipboardList, Info, TriangleAlert, Lock, PartyPopper,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
@@ -14,6 +14,7 @@ import { RichText, frenchSpacing } from "./rich-text";
 import { PosterFigure } from "./poster";
 import { useFormationProgress } from "@/lib/formation/progress";
 import { FORMATION_BASE_PATH, ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
+import { isPillarUnlocked, blockingPillar, nextPillar, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
 import type { Lesson, LessonBlock, Pillar } from "@/lib/formation/types";
 import { useFormationLocale } from "@/lib/formation/ui";
 
@@ -376,6 +377,15 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
   const homeHref = preview ? ADMIN_LESSON_PREVIEW_PATH : FORMATION_BASE_PATH;
   const [scroll, setScroll] = useState(0);
   const isDone = progress.completed.includes(lesson.slug);
+  // Déblocage progressif : un pilier s'ouvre quand le précédent est terminé. L'aperçu admin
+  // n'est jamais verrouillé, et rien ne l'est avant la lecture de la progression.
+  const locked = !preview && ready && !isPillarUnlocked(pillar.number, progress.completed);
+  // Fin de pilier : la leçon courante compte comme lue (l'atteindre la marque terminée).
+  const isLastOfPillar = pillar.lessons[pillar.lessons.length - 1]?.slug === lesson.slug;
+  const following = isLastOfPillar ? localize(nextPillar(pillar.number)) : null;
+  const readSoFar = [...progress.completed, lesson.slug];
+  const leftInPillar = pillar.lessons.filter((l) => !readSoFar.includes(l.slug));
+  const nextOpen = preview || !following || isPillarUnlocked(following.number, readSoFar);
   const answers = progress.quiz[lesson.slug] || {};
 
   // ── Sauvegarde au fil de la lecture ──────────────────────────
@@ -422,7 +432,7 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
 
   // À l'ouverture : proposer de reprendre là où la lecture s'était arrêtée.
   useEffect(() => {
-    if (!ready) return;
+    if (!ready || locked) return; // leçon verrouillée : ni position ni « leçon en cours »
     const saved = progress.positions[lesson.slug];
     setResumeAt(!progress.completed.includes(lesson.slug) && saved > 0.05 && saved < 0.95 ? saved : null);
     autoCompleted.current = false;
@@ -455,6 +465,8 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
     obs.observe(el);
     return () => obs.disconnect();
   }, [ready, lesson.slug, isDone, setCompleted]);
+
+  if (locked) return <LockedPillar pillar={pillar} completed={progress.completed} />;
 
   const toc = [
     { id: "introduction", label: ui.introduction },
@@ -648,12 +660,18 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
               </div>
             </div>
 
+            {/* Fin de pilier : proposer le pilier suivant */}
+            {isLastOfPillar && (
+              <PillarEnd pillar={pillar} following={following} left={leftInPillar} basePath={basePath} homeHref={homeHref}
+                onContinue={() => !isDone && setCompleted(lesson.slug, true)} />
+            )}
+
             {/* Navigation entre leçons */}
             <nav aria-label={ui.neighbours} className="mt-8 grid sm:grid-cols-2 gap-3">
               {previous ? (
                 <LessonLink lesson={previous} direction="previous" basePath={basePath} />
               ) : <span className="hidden sm:block" />}
-              {next ? (
+              {next && nextOpen ? (
                 <LessonLink lesson={next} direction="next" basePath={basePath} onNavigate={() => !isDone && setCompleted(lesson.slug, true)} />
               ) : (
                 <Link href={homeHref} className="group flex items-center justify-end gap-3 rounded-2xl border border-border bg-card p-4 text-right hover:border-primary/40">
@@ -698,6 +716,95 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Fin de la dernière leçon d'un pilier : félicitations et passage au pilier suivant. */
+function PillarEnd({ pillar, following, left, basePath, homeHref, onContinue }: {
+  pillar: Pillar; following: Pillar | null; left: Lesson[]; basePath: string; homeHref: string; onContinue: () => void;
+}) {
+  const { ui } = useFormationLocale();
+  if (left.length > 0) {
+    return (
+      <aside className="mt-8 rounded-3xl border border-[#E2C9A6] bg-[#FBF3E8] p-6 sm:p-7">
+        <p className="font-headline text-[21px] font-bold text-[#6E4A00]">{ui.pillarAlmostTitle(pillar.number)}</p>
+        <p className="mt-1.5 text-[15px] leading-relaxed text-[#3F3A2E]">
+          {following ? ui.pillarAlmostDesc(left.length, following.number) : ui.markHint}
+        </p>
+        <Link href={`${basePath}/${left[0].slug}`} className="mt-4 inline-flex items-center gap-2 h-11 px-5 rounded-full bg-primary text-white text-[14px] font-bold hover:bg-primary/90">
+          {ui.readLesson(left[0].number)} <ArrowRight className="w-4 h-4" />
+        </Link>
+      </aside>
+    );
+  }
+  const first = following?.lessons[0];
+  return (
+    <aside className="mt-8 rounded-3xl border border-primary/30 bg-primary/[0.06] overflow-hidden">
+      <div className={cn("grid", following?.card && "sm:grid-cols-[minmax(0,1fr)_220px]")}>
+        <div className="p-6 sm:p-8">
+          <p className="inline-flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.18em] text-primary">
+            <PartyPopper className="w-4 h-4" /> {ui.pillarCompleteEyebrow(pillar.number)}
+          </p>
+          <p className="mt-2 font-headline text-[24px] sm:text-[26px] font-bold leading-tight text-foreground">
+            {following ? ui.pillarCompleteTitle : ui.lastPillarDoneTitle}
+          </p>
+          <p className="mt-2 text-[15.5px] leading-relaxed text-[#3F4A43]">
+            {following ? ui.pillarCompleteDesc(following.number, following.title) : ui.lastPillarDoneDesc}
+          </p>
+          {following && first ? (
+            <Link href={`${basePath}/${first.slug}`} onClick={onContinue}
+              className="mt-5 inline-flex items-center gap-2 h-12 px-6 rounded-full bg-primary text-white text-[15px] font-bold hover:bg-primary/90">
+              {ui.goToPillar(following.number)} <ArrowRight className="w-4 h-4" />
+            </Link>
+          ) : (
+            <Link href={homeHref} className="mt-5 inline-flex items-center gap-2 h-11 px-5 rounded-full border border-border bg-card text-[14px] font-bold text-foreground hover:border-primary/40">
+              {ui.backToCourse} <ArrowRight className="w-4 h-4" />
+            </Link>
+          )}
+        </div>
+        {following?.card && (
+          <span className="relative hidden sm:block bg-muted">
+            <Image src={following.card} alt="" fill sizes="220px" className="object-cover" />
+          </span>
+        )}
+      </div>
+    </aside>
+  );
+}
+
+/** Leçon d'un pilier encore fermé (ouverte par son adresse) : on renvoie vers le pilier à terminer. */
+function LockedPillar({ pillar, completed }: { pillar: Pillar; completed: string[] }) {
+  const { ui, localize } = useFormationLocale();
+  const blocker = localize(blockingPillar(pillar.number, completed));
+  const resume = localize(resumeLesson({ completed, lastLesson: null }));
+  return (
+    <div className="eden-public min-h-screen bg-background text-foreground flex flex-col">
+      <header className="border-b border-border">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center">
+          <Link href={FORMATION_BASE_PATH} className="flex items-center gap-2 text-[14px] font-semibold text-foreground hover:text-primary">
+            <ArrowLeft className="w-4 h-4" /> {ui.backToCourse}
+          </Link>
+        </div>
+      </header>
+      <main className="flex-1 flex items-center justify-center px-5 py-16">
+        <div className="max-w-md text-center">
+          <span className="w-14 h-14 mx-auto rounded-2xl bg-card border border-border text-[#56615A] flex items-center justify-center"><Lock className="w-6 h-6" /></span>
+          <p className="mt-5 text-[12px] font-bold uppercase tracking-[0.18em] text-primary">{ui.pillarEyebrow(pillar.number, pillar.title)}</p>
+          <h1 className="mt-2 font-headline text-[28px] font-bold leading-tight text-foreground">{ui.pillarLockedTitle(pillar.number)}</h1>
+          {blocker && <p className="mt-3 text-[15.5px] leading-relaxed text-[#3F4A43]">{ui.pillarLockedDesc(blocker.number, blocker.title)}</p>}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+            {blocker && resume && (
+              <Link href={`${FORMATION_BASE_PATH}/${resume.slug}`} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-primary text-white text-[14px] font-bold hover:bg-primary/90">
+                {ui.resumePillar(blocker.number)} <ArrowRight className="w-4 h-4" />
+              </Link>
+            )}
+            <Link href={FORMATION_BASE_PATH} className="inline-flex items-center h-11 px-5 rounded-full border border-border bg-card text-[14px] font-bold text-foreground hover:border-primary/40">
+              {ui.backToCourse}
+            </Link>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }

@@ -2,14 +2,15 @@
 
 import {
   Heart, MessageSquare, Wallet, Users, Flame, Briefcase, Church, Baby, Clock, Star, ScrollText,
-  ArrowLeft, ArrowRight, Mountain, Sprout, HeartHandshake, CheckCircle2, BookOpen, MessagesSquare,
+  ArrowLeft, ArrowRight, Mountain, Sprout, HeartHandshake, CheckCircle2, BookOpen, MessagesSquare, Lock,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Monogram, Flourish } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
-import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
+import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson, pillarStatus, blockingPillar } from "@/lib/formation/batir-sur-le-roc";
+import { cn } from "@/lib/utils";
 import { useFormationLocale } from "@/lib/formation/ui";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
 import { STORIES_BASE_PATH, FORMATION_COVER_SRC } from "@/lib/formation/paths";
@@ -80,9 +81,6 @@ export default function AcademyIndexPage() {
               <Image src={FORMATION_COVER_SRC} alt={ui.coverAlt}
                 fill priority sizes="(min-width: 768px) 42vw, 100vw"
                 className="object-cover object-[center_45%] group-hover:scale-[1.03] transition-transform duration-700" />
-              <span className="absolute top-4 left-4 h-8 px-3 rounded-full bg-white/95 text-[12px] font-bold text-foreground flex items-center shadow-sm">
-                {ui.pillarBadge(1)}
-              </span>
             </span>
             <span className="flex flex-col p-6 sm:p-8 lg:p-10">
               <span className="text-[12px] font-bold uppercase tracking-[0.2em] text-primary">{ui.lessonsAvailable(available)}</span>
@@ -118,6 +116,94 @@ export default function AcademyIndexPage() {
               </span>
             </span>
           </Link>
+        </section>
+
+        {/* ───── Les piliers : chacun s'ouvre quand le précédent est terminé ───── */}
+        <section aria-labelledby="piliers" className="space-y-5">
+          <div>
+            <h2 id="piliers" className="font-headline text-[26px] font-bold text-foreground">{ui.pillarsTitle}</h2>
+            <p className="mt-1 text-[15px] text-[#56615A]">{ui.pillarsDesc}</p>
+          </div>
+          <ol className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {formation.pillars.filter((p) => p.lessons.length > 0).map((pillar) => {
+              // Tant que la progression n'est pas lue, aucun pilier n'est affiché verrouillé à tort.
+              const status = ready ? pillarStatus(pillar, progress.completed) : "todo";
+              const locked = status === "locked";
+              const done = pillar.lessons.filter((l) => progress.completed.includes(l.slug)).length;
+              const total = pillar.lessons.length;
+              const blocker = locked ? localize(blockingPillar(pillar.number, progress.completed)) : null;
+              const target = pillar.lessons.find((l) => !progress.completed.includes(l.slug));
+              const href = status === "done" || !target ? `${FORMATION_BASE_PATH}#pilier-${pillar.number}` : `${FORMATION_BASE_PATH}/${target.slug}`;
+              const card = pillar.card ?? formation.coverImage.card;
+              const body = (
+                <>
+                  <span className="relative block aspect-[16/10] bg-muted overflow-hidden">
+                    <Image src={card} alt="" fill sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw"
+                      className={cn("object-cover transition-transform duration-500", locked ? "grayscale-[60%] opacity-60" : "group-hover:scale-[1.03]")} />
+                    <span className="absolute top-3 left-3 h-7 px-2.5 rounded-full bg-white/95 text-[12px] font-bold text-foreground flex items-center shadow-sm">
+                      {ui.pillarBadge(pillar.number)}
+                    </span>
+                    {status === "done" && (
+                      <span className="absolute top-3 right-3 h-7 px-2.5 rounded-full bg-primary text-white text-[12px] font-bold flex items-center gap-1 shadow-sm">
+                        <CheckCircle2 className="w-3.5 h-3.5" /> {ui.pillarDoneBadge}
+                      </span>
+                    )}
+                    {locked && (
+                      <span className="absolute inset-0 flex items-center justify-center">
+                        <span className="w-12 h-12 rounded-full bg-white/95 text-[#56615A] flex items-center justify-center shadow-md" aria-label={ui.lockedBadge}>
+                          <Lock className="w-5 h-5" />
+                        </span>
+                      </span>
+                    )}
+                  </span>
+                  <span className="flex flex-col flex-1 p-5">
+                    <span className={cn("font-headline text-[20px] font-bold leading-snug transition-colors", locked ? "text-[#56615A]" : "text-foreground group-hover:text-primary")}>
+                      {pillar.title}
+                    </span>
+                    {pillar.summary && <span className="mt-2 text-[14px] leading-relaxed text-[#56615A] line-clamp-3">{pillar.summary}</span>}
+                    <span className="mt-auto pt-4 block">
+                      {locked ? (
+                        <span className="flex items-start gap-2 text-[13px] font-semibold text-[#6E4A00]">
+                          <Lock className="w-4 h-4 shrink-0 mt-px" /> {ui.pillarLocked(blocker?.number ?? pillar.number - 1)}
+                        </span>
+                      ) : (
+                        <>
+                          <span className="flex justify-between text-[12.5px] text-[#56615A] mb-1.5">
+                            <span>{ui.lessonsCount(done, total)}</span>
+                            <span>{Math.round((done / total) * 100)} %</span>
+                          </span>
+                          <span className="block h-1.5 rounded-full bg-muted overflow-hidden" role="progressbar" aria-valuemin={0} aria-valuemax={total} aria-valuenow={done} aria-label={`${ui.progressLabel} · ${ui.pillarBadge(pillar.number)}`}>
+                            <span className="block h-full bg-primary rounded-full" style={{ width: `${(done / total) * 100}%` }} />
+                          </span>
+                          <span className="mt-4 inline-flex items-center gap-1.5 text-[14px] font-bold text-primary">
+                            {status === "done" ? ui.rereadPillar : status === "inProgress" ? ui.continuePillar : ui.startPillar}
+                            <ArrowRight className="w-4 h-4 group-hover:translate-x-0.5 transition-transform" />
+                          </span>
+                        </>
+                      )}
+                    </span>
+                  </span>
+                </>
+              );
+              const box = "group flex flex-col h-full rounded-3xl border overflow-hidden bg-card transition-all";
+              return (
+                <li key={pillar.slug}>
+                  {locked ? (
+                    <div className={cn(box, "border-dashed border-[#CFC9BE]")} aria-disabled>{body}</div>
+                  ) : (
+                    <Link href={href} className={cn(box, "border-border hover:border-primary/40 hover:shadow-[0_10px_32px_rgba(38,70,52,0.10)]",
+                      status === "inProgress" && "ring-1 ring-primary/25 border-primary/40")}>{body}</Link>
+                  )}
+                </li>
+              );
+            })}
+          </ol>
+          {formation.pillars.some((p) => p.lessons.length === 0) && (
+            <p className="flex flex-wrap items-center gap-2 text-[13px] text-[#56615A]">
+              <Lock className="w-3.5 h-3.5" />
+              {formation.pillars.filter((p) => p.lessons.length === 0).map((p) => ui.pillarBadge(p.number)).join(" · ")} — {ui.inPreparation}
+            </p>
+          )}
         </section>
 
         {/* ───── Histoires ───── */}

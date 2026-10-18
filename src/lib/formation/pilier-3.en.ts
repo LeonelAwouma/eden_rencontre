@@ -903,5 +903,6 @@ export const pillar3En: Pillar = {
   title: "Maturity review & multidimensional preparation",
   summary: "Taking stock, dimension by dimension — spiritual, emotional, financial, social, physical and relational — to know truthfully whether you are ready to take on the responsibility of a home.",
   poster: PILLAR_3_POSTER,
+  card: `${BASE}/images/pilier-3-carte.webp`,
   lessons: [lesson31, lesson32, lesson33, lesson34, lesson35, lesson36, lesson37],
 };

@@ -1172,5 +1172,6 @@ export const pillar2: Pillar = {
   title: "Connaissance de soi, tempéraments & guérison intérieure",
   summary: "Se connaître en vérité — tempérament, style d'attachement, blessures et schémas hérités — pour clarifier ses besoins et ses valeurs, pardonner, briser les liens du passé et entrer libre dans l'alliance.",
   poster: PILLAR_2_POSTER,
+  card: `${BASE}/images/pilier-2-carte.webp`,
   lessons: [lecon21, lecon22, lecon23, lecon24, lecon25, lecon26, lecon27],
 };

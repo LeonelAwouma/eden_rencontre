@@ -899,5 +899,6 @@ export const pillar3: Pillar = {
   title: "Bilan de maturité & préparation multidimensionnelle",
   summary: "Faire le point, dimension par dimension — spirituelle, émotionnelle, financière, sociale, physique et affective — pour savoir en vérité si l'on est prêt(e) à assumer la responsabilité d'un foyer.",
   poster: PILLAR_3_POSTER,
+  card: `${BASE}/images/pilier-3-carte.webp`,
   lessons: [lecon31, lecon32, lecon33, lecon34, lecon35, lecon36, lecon37],
 };

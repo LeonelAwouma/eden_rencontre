@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Lock, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
-import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
+import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson, isPillarUnlocked, blockingPillar } from "@/lib/formation/batir-sur-le-roc";
 import { useFormationLocale } from "@/lib/formation/ui";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
 import { PosterFigure } from "@/components/formation/poster";
@@ -83,6 +83,9 @@ export default function BatirSurLeRocLessonsPage() {
         {/* ───── Leçons, par pilier ───── */}
         {formation.pillars.filter((p) => p.lessons.length > 0).map((pillar) => {
           const done = pillar.lessons.filter((l) => progress.completed.includes(l.slug)).length;
+          // Pilier ouvert quand le précédent est terminé (jamais verrouillé à tort avant la lecture de la progression).
+          const locked = ready && !isPillarUnlocked(pillar.number, progress.completed);
+          const blocker = locked ? localize(blockingPillar(pillar.number, progress.completed)) : null;
           return (
             <section key={pillar.slug} aria-labelledby={`pilier-${pillar.number}`} className="space-y-6">
               <div className={cn("flex flex-wrap items-end justify-between gap-4", pillar.poster && "sm:flex-nowrap sm:items-center sm:gap-8")}>
@@ -91,15 +94,28 @@ export default function BatirSurLeRocLessonsPage() {
                 )}
                 <div className="max-w-2xl sm:flex-1">
                   <p className="text-[12px] font-bold uppercase tracking-[0.18em] text-primary">{ui.pillarBadge(pillar.number)}</p>
-                  <h2 id={`pilier-${pillar.number}`} className="mt-1 font-headline text-[28px] sm:text-[32px] font-bold text-foreground leading-tight">{pillar.title}</h2>
+                  <h2 id={`pilier-${pillar.number}`} className="scroll-mt-28 mt-1 font-headline text-[28px] sm:text-[32px] font-bold text-foreground leading-tight">{pillar.title}</h2>
                   {pillar.summary && <p className="mt-2 text-[15px] leading-relaxed text-[#3F4A43]">{pillar.summary}</p>}
                 </div>
                 <span className={cn("inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[13px] font-semibold",
-                  done === pillar.lessons.length ? "bg-primary text-white" : "bg-primary/10 text-primary")}>
-                  {done === pillar.lessons.length && <CheckCircle2 className="w-4 h-4" />}
-                  {ui.lessonsCount(done, pillar.lessons.length)}
+                  locked ? "bg-muted text-[#56615A]" : done === pillar.lessons.length ? "bg-primary text-white" : "bg-primary/10 text-primary")}>
+                  {locked ? <Lock className="w-3.5 h-3.5" /> : done === pillar.lessons.length && <CheckCircle2 className="w-4 h-4" />}
+                  {locked ? ui.lockedBadge : ui.lessonsCount(done, pillar.lessons.length)}
                 </span>
               </div>
+
+              {locked && blocker && (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E2C9A6] bg-[#FBF3E8] px-5 py-4">
+                  <p className="flex items-start gap-2.5 text-[14.5px] text-[#6E4A00]">
+                    <Lock className="w-4 h-4 shrink-0 mt-0.5" /> {ui.pillarLocked(blocker.number)}
+                  </p>
+                  {nextLesson && (
+                    <Link href={`${FORMATION_BASE_PATH}/${nextLesson.slug}`} className="inline-flex items-center gap-1.5 text-[14px] font-bold text-primary hover:underline">
+                      {ui.resumePillar(blocker.number)} <ArrowRight className="w-4 h-4" />
+                    </Link>
+                  )}
+                </div>
+              )}
 
               <ol className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {pillar.lessons.map((l) => {
@@ -109,9 +125,12 @@ export default function BatirSurLeRocLessonsPage() {
                   const inProgress = !isDone && position > 0.05;
                   return (
                     <li key={l.slug}>
-                      <Link href={`${FORMATION_BASE_PATH}/${l.slug}`}
-                        className={cn("group flex flex-col h-full rounded-2xl border overflow-hidden bg-card transition-all hover:shadow-[0_8px_28px_rgba(38,70,52,0.10)]",
-                          isNext ? "border-primary/50 ring-1 ring-primary/20" : "border-border hover:border-primary/35")}>
+                      <Link href={`${FORMATION_BASE_PATH}/${l.slug}`} aria-disabled={locked || undefined} tabIndex={locked ? -1 : undefined}
+                        onClick={locked ? (e) => e.preventDefault() : undefined}
+                        className={cn("group flex flex-col h-full rounded-2xl border overflow-hidden bg-card transition-all",
+                          locked ? "border-dashed border-[#CFC9BE] opacity-60 grayscale-[50%] cursor-not-allowed pointer-events-none"
+                            : isNext ? "border-primary/50 ring-1 ring-primary/20 hover:shadow-[0_8px_28px_rgba(38,70,52,0.10)]"
+                            : "border-border hover:border-primary/35 hover:shadow-[0_8px_28px_rgba(38,70,52,0.10)]")}>
                         <span className="relative block aspect-[16/10] bg-muted">
                           <Image src={l.image.card} alt={l.image.alt} fill sizes="(min-width: 1024px) 360px, (min-width: 640px) 50vw, 100vw" className="object-cover" />
                           <span className="absolute top-3 left-3 h-7 px-2.5 rounded-full bg-white/95 text-[12px] font-bold text-foreground flex items-center shadow-sm">
