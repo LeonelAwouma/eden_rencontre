@@ -13,6 +13,9 @@ import { STORIES_EN } from "./stories.en";
 import type { Formation, Lesson, Pillar, Story } from "./types";
 
 const s = (n: number, one: string, many: string) => (n > 1 ? many : one);
+/** « 1 et 2 », « 1, 2 et 3 » / “1 and 2”. */
+const list = (and: string) => (ns: number[]) => ns.length > 1 ? `${ns.slice(0, -1).join(", ")} ${and} ${ns[ns.length - 1]}` : String(ns[0] ?? "");
+const listFr = list("et"), listEn = list("and");
 
 const fr = {
   // Académie
@@ -53,9 +56,9 @@ const fr = {
   // Piliers et déblocage progressif
   pillarsTitle: "Les piliers de la formation",
   pillarsDesc: "Chaque pilier s'ouvre quand le précédent est terminé : avance pas à pas, à ton rythme.",
-  pillarLocked: (prev: number) => `Termine le pilier ${prev} pour ouvrir ce pilier.`,
+  pillarLocked: (prevs: number[]) => `Termine ${prevs.length > 1 ? `les piliers ${listFr(prevs)}` : `le pilier ${prevs[0]}`} pour ouvrir ce pilier.`,
   pillarLockedTitle: (n: number) => `Le pilier ${n} n'est pas encore ouvert`,
-  pillarLockedDesc: (prev: number, title: string) => `Il s'ouvrira dès que tu auras terminé le pilier ${prev} — « ${title} ». Chaque pilier prépare le suivant.`,
+  pillarLockedDesc: (prevs: number[]) => `Il s'ouvrira dès que tu auras terminé ${prevs.length > 1 ? `les piliers ${listFr(prevs)}` : `le pilier ${prevs[0]}`}. Chaque pilier prépare le suivant.`,
   resumePillar: (prev: number) => `Reprendre le pilier ${prev}`,
   pillarDoneBadge: "Terminé",
   startPillar: "Commencer",
@@ -181,9 +184,9 @@ const en: FormationUi = {
   inPreparation: "In preparation",
   pillarsTitle: "The pillars of the course",
   pillarsDesc: "Each pillar opens once the previous one is completed: move forward step by step, at your own pace.",
-  pillarLocked: (prev) => `Complete pillar ${prev} to open this pillar.`,
+  pillarLocked: (prevs) => `Complete ${prevs.length > 1 ? `pillars ${listEn(prevs)}` : `pillar ${prevs[0]}`} to open this pillar.`,
   pillarLockedTitle: (n) => `Pillar ${n} isn't open yet`,
-  pillarLockedDesc: (prev, title) => `It will open as soon as you have completed pillar ${prev} — “${title}”. Each pillar prepares the next.`,
+  pillarLockedDesc: (prevs) => `It will open as soon as you have completed ${prevs.length > 1 ? `pillars ${listEn(prevs)}` : `pillar ${prevs[0]}`}. Each pillar prepares the next.`,
   resumePillar: (prev) => `Resume pillar ${prev}`,
   pillarDoneBadge: "Completed",
   startPillar: "Start",

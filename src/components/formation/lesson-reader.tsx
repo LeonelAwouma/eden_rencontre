@@ -14,7 +14,7 @@ import { RichText, frenchSpacing } from "./rich-text";
 import { PosterFigure } from "./poster";
 import { useFormationProgress } from "@/lib/formation/progress";
 import { FORMATION_BASE_PATH, ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
-import { isPillarUnlocked, blockingPillar, nextPillar, resumeLesson } from "@/lib/formation/batir-sur-le-roc";
+import { isPillarUnlocked, blockingPillar, nextPillar, resumeLesson, requiredPillars } from "@/lib/formation/batir-sur-le-roc";
 import type { Lesson, LessonBlock, Pillar } from "@/lib/formation/types";
 import { useFormationLocale } from "@/lib/formation/ui";
 
@@ -792,7 +792,7 @@ function LockedPillar({ pillar, completed }: { pillar: Pillar; completed: string
           <span className="w-14 h-14 mx-auto rounded-2xl bg-card border border-border text-[#56615A] flex items-center justify-center"><Lock className="w-6 h-6" /></span>
           <p className="mt-5 text-[12px] font-bold uppercase tracking-[0.18em] text-primary">{ui.pillarEyebrow(pillar.number, pillar.title)}</p>
           <h1 className="mt-2 font-headline text-[28px] font-bold leading-tight text-foreground">{ui.pillarLockedTitle(pillar.number)}</h1>
-          {blocker && <p className="mt-3 text-[15.5px] leading-relaxed text-[#3F4A43]">{ui.pillarLockedDesc(blocker.number, blocker.title)}</p>}
+          {blocker && <p className="mt-3 text-[15.5px] leading-relaxed text-[#3F4A43]">{ui.pillarLockedDesc(requiredPillars(pillar.number))}</p>}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
             {blocker && resume && (
               <Link href={`${FORMATION_BASE_PATH}/${resume.slug}`} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-primary text-white text-[14px] font-bold hover:bg-primary/90">

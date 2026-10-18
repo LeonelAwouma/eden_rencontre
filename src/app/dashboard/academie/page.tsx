@@ -9,7 +9,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Monogram, Flourish } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
-import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson, pillarStatus, blockingPillar } from "@/lib/formation/batir-sur-le-roc";
+import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson, pillarStatus, requiredPillars } from "@/lib/formation/batir-sur-le-roc";
 import { cn } from "@/lib/utils";
 import { useFormationLocale } from "@/lib/formation/ui";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
@@ -131,7 +131,6 @@ export default function AcademyIndexPage() {
               const locked = status === "locked";
               const done = pillar.lessons.filter((l) => progress.completed.includes(l.slug)).length;
               const total = pillar.lessons.length;
-              const blocker = locked ? localize(blockingPillar(pillar.number, progress.completed)) : null;
               const target = pillar.lessons.find((l) => !progress.completed.includes(l.slug));
               const href = status === "done" || !target ? `${FORMATION_BASE_PATH}#pilier-${pillar.number}` : `${FORMATION_BASE_PATH}/${target.slug}`;
               const card = pillar.card ?? formation.coverImage.card;
@@ -164,7 +163,7 @@ export default function AcademyIndexPage() {
                     <span className="mt-auto pt-4 block">
                       {locked ? (
                         <span className="flex items-start gap-2 text-[13px] font-semibold text-[#6E4A00]">
-                          <Lock className="w-4 h-4 shrink-0 mt-px" /> {ui.pillarLocked(blocker?.number ?? pillar.number - 1)}
+                          <Lock className="w-4 h-4 shrink-0 mt-px" /> {ui.pillarLocked(requiredPillars(pillar.number))}
                         </span>
                       ) : (
                         <>

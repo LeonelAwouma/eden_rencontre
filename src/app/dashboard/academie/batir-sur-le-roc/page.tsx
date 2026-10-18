@@ -5,7 +5,7 @@ import Image from "next/image";
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Lock, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
-import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson, isPillarUnlocked, blockingPillar } from "@/lib/formation/batir-sur-le-roc";
+import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson, isPillarUnlocked, blockingPillar, requiredPillars } from "@/lib/formation/batir-sur-le-roc";
 import { useFormationLocale } from "@/lib/formation/ui";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
 import { PosterFigure } from "@/components/formation/poster";
@@ -107,7 +107,7 @@ export default function BatirSurLeRocLessonsPage() {
               {locked && blocker && (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E2C9A6] bg-[#FBF3E8] px-5 py-4">
                   <p className="flex items-start gap-2.5 text-[14.5px] text-[#6E4A00]">
-                    <Lock className="w-4 h-4 shrink-0 mt-0.5" /> {ui.pillarLocked(blocker.number)}
+                    <Lock className="w-4 h-4 shrink-0 mt-0.5" /> {ui.pillarLocked(requiredPillars(pillar.number))}
                   </p>
                   {nextLesson && (
                     <Link href={`${FORMATION_BASE_PATH}/${nextLesson.slug}`} className="inline-flex items-center gap-1.5 text-[14px] font-bold text-primary hover:underline">

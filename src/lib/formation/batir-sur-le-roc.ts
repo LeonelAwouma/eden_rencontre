@@ -768,7 +768,12 @@ export function pillarStatus(pillar: Pillar, completed: string[]): PillarStatus 
   return pillar.lessons.some((l) => completed.includes(l.slug)) ? "inProgress" : "todo";
 }
 
-/** Pilier rédigé qui doit être terminé avant celui-ci (null s'il est ouvert). */
+/** Numéros de tous les piliers rédigés à terminer pour ouvrir celui-ci (pilier 3 → [1, 2]). */
+export function requiredPillars(pillarNumber: number): number[] {
+  return BATIR_SUR_LE_ROC.pillars.filter((p) => p.number < pillarNumber && p.lessons.length > 0).map((p) => p.number);
+}
+
+/** Premier pilier rédigé encore à terminer avant celui-ci (null s'il est ouvert). */
 export function blockingPillar(pillarNumber: number, completed: string[]): Pillar | null {
   return BATIR_SUR_LE_ROC.pillars.find((p) => p.number < pillarNumber && p.lessons.length > 0 && !isPillarComplete(p, completed)) ?? null;
 }
