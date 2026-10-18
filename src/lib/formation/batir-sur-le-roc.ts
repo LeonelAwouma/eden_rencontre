@@ -695,6 +695,7 @@ const pillar1: Pillar = {
   slug: "vision-sacree",
   title: "La vision sacrée du mariage",
   summary: "Déposer nos illusions pour embrasser la vision que Dieu a de l'alliance : un sanctuaire, un but commun, un engagement sans retour, un service mutuel et la présence de Dieu au centre.",
+  card: `${BASE}/images/pilier-1-carte.webp`,
   lessons: [lecon11, lecon12, lecon13, lecon14, lecon15, lecon16],
 };
 
@@ -710,10 +711,10 @@ export const BATIR_SUR_LE_ROC: Formation = {
     ref: "Matthieu 7.24",
   },
   coverImage: {
-    src: `${BASE}/images/module-cover.webp`,
-    card: `${BASE}/images/module-cover-carte.webp`,
-    alt: "Des mains posent une pierre au sommet d'un cairn de pierres empilées.",
-    position: "center 30%",
+    src: `${BASE}/images/couverture.webp`,
+    card: `${BASE}/images/pilier-1-carte.webp`,
+    alt: "Un couple pose ensemble une pierre sur un rocher gravé « Jésus Christ, notre fondation — Matthieu 7:24-25 », devant une maison en construction.",
+    position: "center 45%",
   },
   pillars: [pillar1, pillar2, pillar3, upcoming(4), upcoming(5), upcoming(6)],
 };

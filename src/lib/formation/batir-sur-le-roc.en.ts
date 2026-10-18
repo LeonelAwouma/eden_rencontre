@@ -703,6 +703,7 @@ const pillar1: Pillar = {
   slug: "vision-sacree",
   title: "The sacred vision of marriage",
   summary: "Laying down our illusions to embrace God's vision of the covenant: a sanctuary, a shared purpose, a commitment with no way back, mutual service and God's presence at the centre.",
+  card: `${BASE}/images/pilier-1-carte.webp`,
   lessons: [lesson11, lesson12, lesson13, lesson14, lesson15, lesson16],
 };
 
@@ -718,10 +719,10 @@ export const BATIR_SUR_LE_ROC_EN: Formation = {
     ref: "Matthew 7:24",
   },
   coverImage: {
-    src: `${BASE}/images/module-cover.webp`,
-    card: `${BASE}/images/module-cover-carte.webp`,
-    alt: "Hands placing a stone on top of a cairn of stacked stones.",
-    position: "center 30%",
+    src: `${BASE}/images/couverture.webp`,
+    card: `${BASE}/images/pilier-1-carte.webp`,
+    alt: "A couple setting a stone together on a rock engraved “Jesus Christ, our foundation — Matthew 7:24-25”, in front of a house under construction.",
+    position: "center 45%",
   },
   pillars: [pillar1, pillar2En, pillar3En, upcoming(4), upcoming(5), upcoming(6)],
 };
