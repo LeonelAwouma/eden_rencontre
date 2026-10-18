@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getSession, updateProfile, logout, EdenUser } from "@/lib/auth";
-import { completeOnboarding, getQuestionnaires, applyAnswer, isFieldVisible, Questionnaire, Section, Field } from "@/lib/onboarding";
+import { completeOnboarding, getQuestionnaires, applyAnswer, isFieldVisible, checkQuestionnaireCompletion, describeMissingQuestions, Questionnaire, Section, Field, type SupportedLocale } from "@/lib/onboarding";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import type { Tab } from "@/components/dashboard/dashboard-types";
 import {
@@ -401,7 +401,9 @@ function EditField({ label, value, onChange, type = "text", options, optionLabel
 
 function FaithJourneyCard({ profileId, answers, completed, onRefresh }: { profileId: string; answers: Record<string, any>; completed: boolean; onRefresh: () => void }) {
   const { t, locale } = useI18n();
-  const [expanded, setExpanded] = useState<string | null>(null);
+  // Ouvert d'emblée sur le premier questionnaire où des questions obligatoires (badge) restent sans réponse.
+  const [expanded, setExpanded] = useState<string | null>(() =>
+    describeMissingQuestions(checkQuestionnaireCompletion(answers || {}, { excludeOptional: true }).unansweredIds, locale as SupportedLocale)[0]?.questionnaireKey || null);
   const [editingQ, setEditingQ] = useState<string | null>(null);
   const [localAnswers, setLocalAnswers] = useState<Record<string, any>>(answers || {});
   const [saving, setSaving] = useState(false);
@@ -703,6 +705,10 @@ export default function ProfilePage() {
   const router = useRouter();
   const { t } = useI18n();
   const [tab, setTab] = useState<"profile" | "faith">("profile");
+  // ?tab=faith : arrivée depuis la carte du badge, directement sur le questionnaire.
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get("tab") === "faith") setTab("faith");
+  }, []);
   const [mobileNav, setMobileNav] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);

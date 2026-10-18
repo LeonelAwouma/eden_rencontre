@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getSession } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { MemberGate } from "@/components/member-gate";
-import { getOnboardingSteps, getMyOnboarding, saveQuestionnaireAnswers, completeOnboarding, applyAnswer, isFieldVisible, type Field, type SupportedLocale } from "@/lib/onboarding";
+import { getOnboardingSteps, getMyOnboarding, saveQuestionnaireAnswers, completeOnboarding, applyAnswer, isFieldVisible, checkQuestionnaireCompletion, describeMissingQuestions, type Field, type SupportedLocale } from "@/lib/onboarding";
 import { LoadingScreen } from "@/components/loading-screen";
 
 const SKIP_KEY = "eden_onboarding_skipped";
@@ -298,6 +298,31 @@ function OnboardingPageContent() {
             </div>
           ))}
         </div>
+
+        {/* Dernière étape : questions obligatoires restées sans réponse (on peut terminer quand même,
+            mais le badge « Profil vérifié » les attend). */}
+        {stepIndex === total - 1 && (() => {
+          const groups = describeMissingQuestions(checkQuestionnaireCompletion(answers, { excludeOptional: true }).unansweredIds, locale as SupportedLocale)
+            .filter((g) => g.stepIndex !== stepIndex);
+          if (!groups.length) return null;
+          const count = groups.reduce((n, g) => n + g.questions.length, 0);
+          return (
+            <div className="mt-10 rounded-2xl border border-[#E2C9A6] bg-[#FBF3E8] px-5 py-4">
+              <p className="text-sm font-bold text-[#6E4A00]">{t("onboarding.missingTitle", { count })}</p>
+              <p className="text-xs mt-1 leading-relaxed text-[#3F3A2E]">{t("onboarding.missingDesc")}</p>
+              <ul className="mt-3 flex flex-wrap gap-2">
+                {groups.map((g) => (
+                  <li key={g.stepIndex}>
+                    <button type="button" onClick={() => { void flush(); setStepIndex(g.stepIndex); window.scrollTo({ top: 0, behavior: "smooth" }); }}
+                      className="h-8 px-3 rounded-full bg-white border border-[#E2C9A6] text-xs font-semibold text-foreground hover:border-primary/50">
+                      {g.title} · {g.questions.length}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          );
+        })()}
 
         {/* Navigation */}
         <div className="flex items-center justify-between gap-3 mt-10 pt-6 border-t border-primary/15">

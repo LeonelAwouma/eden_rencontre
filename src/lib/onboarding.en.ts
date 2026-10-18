@@ -53,6 +53,7 @@ export const QUESTIONNAIRES_EN: Questionnaire[] = [
           { id: "niveauEtudes", label: "Highest level of education", type: "single", options: ["High school", "Bachelor's degree", "Master's degree", "Doctorate", "Professional training", "Other"] },
           { id: "statut", label: "Current situation", type: "single", options: ["Student", "Employed", "Entrepreneur", "Job seeking", "Other"] },
           { id: "professionDetail", label: "Profession or field of study", type: "text", placeholder: "Ex: Nurse, Civil Engineering…" },
+          { id: "bio", label: "Introduce yourself in a few lines", type: "textarea", placeholder: "Who you are, what drives you, what you are looking for…", help: "This text will be the introduction on your profile. You can change it at any time." },
           { id: "ambitions", label: "Your ambitions for the next 5 years", type: "textarea", placeholder: "A few lines about your plans…" },
         ],
       },

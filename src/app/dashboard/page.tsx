@@ -33,7 +33,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { PROFILES } from "@/lib/profiles";
 import { MARRIAGE_VALUES, getValue } from "@/lib/values";
 import { computeDisplayMatch, filterAndRankByReciprocalMatch } from "@/lib/matching/adapter";
-import { getMyOnboarding, getQuestionnaires, completeOnboarding, applyAnswer, isFieldVisible, type Questionnaire, type Field } from "@/lib/onboarding";
+import { getMyOnboarding, getQuestionnaires, completeOnboarding, applyAnswer, isFieldVisible, describeMissingQuestions, type Questionnaire, type Field, type SupportedLocale } from "@/lib/onboarding";
 import { supabase } from "@/lib/supabase";
 import {
   upsertMyProfile, searchUsers, listConversations, getMessages,
@@ -356,7 +356,7 @@ export default function DashboardPage() {
   // Verification status
   const [verificationStatus, setVerificationStatus] = useState<string>("none");
   // Avancement vers le badge « Profil vérifié » (attribué automatiquement quand tout est rempli).
-  const [badgeProgress, setBadgeProgress] = useState<{ profile: { completed: number; total: number; missing: string[] }; questionnaire: { answered: number; total: number } } | null>(null);
+  const [badgeProgress, setBadgeProgress] = useState<{ profile: { completed: number; total: number; missing: string[] }; questionnaire: { answered: number; total: number; missing?: string[] } } | null>(null);
   const [verificationRejectionReason, setVerificationRejectionReason] = useState<string | null>(null);
 
   // Upcoming events
@@ -1688,10 +1688,28 @@ export default function DashboardPage() {
                         {t("dashboard.badgeMissing")} {badgeProgress.profile.missing.join(", ")}
                       </p>
                     )}
-                    <Button onClick={() => router.push("/dashboard/profile")} variant="outline"
+                    {/* Questions obligatoires restées sans réponse, par étape du questionnaire */}
+                    {(() => {
+                      const groups = describeMissingQuestions(badgeProgress.questionnaire.missing ?? [], locale as SupportedLocale);
+                      if (!groups.length) return null;
+                      const shown = groups.slice(0, 3);
+                      const more = groups.length - shown.length;
+                      return (
+                        <div className="text-[11.5px] mt-1.5" style={{ color: "#6B746E" }}>
+                          <p>{t("dashboard.badgeQuestionsMissing")}</p>
+                          <ul className="mt-0.5 space-y-0.5">
+                            {shown.map((g) => (
+                              <li key={g.stepIndex}>• {g.title} ({g.questions.length})</li>
+                            ))}
+                            {more > 0 && <li>• {t("dashboard.badgeQuestionsMore", { count: more })}</li>}
+                          </ul>
+                        </div>
+                      );
+                    })()}
+                    <Button onClick={() => router.push(badgeProgress.profile.missing.length === 0 && (badgeProgress.questionnaire.missing?.length ?? 0) > 0 ? "/dashboard/profile?tab=faith" : "/dashboard/profile")} variant="outline"
                       className="w-full mt-3 h-9 rounded-xl font-bold text-xs"
                       style={{ borderColor: "#C6D4C0", color: "#486B46", background: "#FFFFFF" }}>
-                      {t("dashboard.badgeComplete")}
+                      {badgeProgress.profile.missing.length === 0 && (badgeProgress.questionnaire.missing?.length ?? 0) > 0 ? t("dashboard.badgeAnswerQuestions") : t("dashboard.badgeComplete")}
                     </Button>
                   </div>
                 )}

@@ -91,6 +91,8 @@ export const QUESTIONNAIRES: Questionnaire[] = [
           { id: "niveauEtudes", label: "Niveau d'études le plus élevé", type: "single", options: ["Secondaire", "Licence / Bachelor", "Master", "Doctorat", "Formation professionnelle", "Autre"] },
           { id: "statut", label: "Situation actuelle", type: "single", options: ["Étudiant(e)", "Employé(e)", "Entrepreneur(e)", "En recherche", "Autre"] },
           { id: "professionDetail", label: "Profession ou domaine d'études", type: "text", placeholder: "Ex : Infirmière, Génie civil…" },
+          // Recopiée dans profiles.bio : c'est la présentation affichée sur le profil (src/lib/verification-badge.ts).
+          { id: "bio", label: "Présentez-vous en quelques lignes", type: "textarea", placeholder: "Qui êtes-vous, ce qui vous anime, ce que vous recherchez…", help: "Ce texte sera votre présentation sur votre profil. Vous pourrez le modifier à tout moment." },
           { id: "ambitions", label: "Vos ambitions pour les 5 prochaines années", type: "textarea", placeholder: "Quelques lignes sur vos projets…" },
         ],
       },
@@ -395,6 +397,22 @@ export function getOnboardingSteps(locale: SupportedLocale = "fr"): OnboardingSt
   return questionnaires.flatMap((q) =>
     q.sections.map((s) => ({ ...s, qTitle: q.title, qSubtitle: q.subtitle, note: q.note }))
   );
+}
+
+/**
+ * Questions restantes, regroupées par étape (section), dans la langue demandée :
+ * pour dire au membre ce qu'il manque pour le badge et l'y renvoyer.
+ */
+export function describeMissingQuestions(ids: string[], locale: SupportedLocale = "fr") {
+  const wanted = new Set(ids);
+  return getOnboardingSteps(locale)
+    .map((step, stepIndex) => ({
+      stepIndex,
+      questionnaireKey: getQuestionnaires(locale).find((q) => q.sections.some((s) => s.key === step.key))?.key ?? "",
+      title: step.title,
+      questions: step.fields.filter((f) => wanted.has(f.id)).map((f) => ({ id: f.id, label: f.label })),
+    }))
+    .filter((s) => s.questions.length > 0);
 }
 
 // ── Sauvegarde / chargement Supabase ──

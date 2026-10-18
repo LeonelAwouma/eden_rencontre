@@ -20,17 +20,37 @@ export interface BadgeProgress {
   /** Badge attribué lors de cet appel. */
   granted: boolean;
   profile: { completed: number; total: number; missing: string[] };
-  questionnaire: { answered: number; total: number };
+  /** missing : identifiants des questions obligatoires encore sans réponse (libellés côté client, selon la langue). */
+  questionnaire: { answered: number; total: number; missing: string[] };
   rejectionReason: string | null;
 }
+
+const text = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
 export async function evaluateVerificationBadge(db: Db, userId: string): Promise<BadgeProgress | null> {
   const { data: p } = await db.from("profiles").select("*").eq("id", userId).maybeSingle();
   if (!p) return null;
 
-  const profile = getProfileCompletion(p);
   const answers = (p.questionnaire && typeof p.questionnaire === "object" ? p.questionnaire : {}) as Record<string, unknown>;
-  const questionnaire = checkQuestionnaireCompletion(answers, { excludeOptional: true });
+
+  // Le questionnaire demande la profession (professionDetail) et une présentation (bio) :
+  // on les recopie sur le profil quand ces champs sont vides, sans jamais écraser ce que
+  // le membre a écrit lui-même sur sa fiche.
+  // À l'inverse, une présentation déjà écrite sur la fiche répond à la question « Présentez-vous ».
+  const fill: Record<string, unknown> = {};
+  if (!text(p.profession) && text(answers.professionDetail)) fill.profession = text(answers.professionDetail);
+  if (!text(p.bio) && text(answers.bio)) fill.bio = text(answers.bio);
+  // (seulement si le questionnaire est commencé : on ne crée pas de questionnaire à partir de rien)
+  const filledAnswers = Object.keys(answers).length > 0 && !text(answers.bio) && text(p.bio) ? { ...answers, bio: text(p.bio) } : answers;
+  if (filledAnswers !== answers) fill.questionnaire = filledAnswers;
+  if (Object.keys(fill).length) {
+    const { error } = await db.from("profiles").update(fill).eq("id", userId);
+    if (!error) Object.assign(p, fill);
+    else console.error("[Badge] profession/bio non recopiées:", error.message);
+  }
+
+  const profile = getProfileCompletion(p);
+  const questionnaire = checkQuestionnaireCompletion(filledAnswers, { excludeOptional: true });
 
   const status: string = p.verification_status || "none";
   const complete = profile.percentage === 100 && questionnaire.total > 0 && questionnaire.percentage === 100;
@@ -75,7 +95,8 @@ export async function evaluateVerificationBadge(db: Db, userId: string): Promise
     status: granted ? "verified" : status,
     granted,
     profile: { completed: profile.completed, total: profile.total, missing: profile.missing },
-    questionnaire: { answered: questionnaire.answered, total: questionnaire.total },
+    // « Présentez-vous » et la Bio du profil se remplissent l'un l'autre : on ne la signale qu'une fois.
+    questionnaire: { answered: questionnaire.answered, total: questionnaire.total, missing: questionnaire.unansweredIds.filter((id) => !(id === "bio" && !text(p.bio))) },
     rejectionReason: status === "rejected" ? p.verification_rejection_reason ?? null : null,
   };
 }
