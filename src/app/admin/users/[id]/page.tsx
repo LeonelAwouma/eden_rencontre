@@ -29,6 +29,8 @@ import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { cn } from "@/lib/utils";
 import { EMAIL_NOT_SENT } from "@/lib/admin-email-warning";
 import { SelfieCheckPanel, type SelfieDetails } from "@/components/admin/selfie-check-panel";
+import { FormationProgressPanel } from "@/components/admin/formation-progress-panel";
+import type { FormationSummary } from "@/lib/formation/admin-summary";
 
 interface UserProfile {
   id: string;
@@ -82,6 +84,7 @@ export default function AdminUserDetailPage() {
   const userId = params.id as string;
 
   const [user, setUser] = useState<UserProfile | null>(null);
+  const [formation, setFormation] = useState<FormationSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<{ tone: "warning" | "error"; text: string } | null>(null);
@@ -112,6 +115,7 @@ export default function AdminUserDetailPage() {
       .then((res) => res.json())
       .then((data) => {
         if (data.user) setUser(data.user);
+        setFormation(data.formation ?? null);
       })
       .catch(console.error)
       .finally(() => setLoading(false));
@@ -398,6 +402,9 @@ export default function AdminUserDetailPage() {
               <InfoItem icon={Briefcase} label="Profession" value={user.profession} />
             </div>
           </div>
+
+          {/* Progression dans la formation « Bâtir sur le roc » */}
+          <FormationProgressPanel summary={formation} />
 
           {/* Location */}
           <div className="bg-white rounded-xl border border-gray-100 shadow-sm p-6">

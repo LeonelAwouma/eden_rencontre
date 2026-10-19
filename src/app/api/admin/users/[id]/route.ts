@@ -3,6 +3,7 @@ import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { resolveMediaUrl, resolveMediaUrls, isMediaPath, deleteMedia } from "@/lib/registration-media";
 import { clientIp } from "@/lib/api-auth";
+import { summarizeFormation } from "@/lib/formation/admin-summary";
 
 export async function GET(
   _request: NextRequest,
@@ -31,7 +32,10 @@ export async function GET(
       resolveMediaUrl(db, user.selfie_url),
       resolveMediaUrls(db, user.profile_photos),
     ]);
-    return NextResponse.json({ user: { ...user, selfie_url: selfieUrl, profile_photos: profilePhotos } });
+    return NextResponse.json({
+      user: { ...user, selfie_url: selfieUrl, profile_photos: profilePhotos },
+      formation: summarizeFormation(user.formation_completed),
+    });
   } catch (error) {
     if (error instanceof Error && error.message === "UNAUTHORIZED") {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
