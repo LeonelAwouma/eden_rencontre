@@ -29,6 +29,14 @@ interface AdminNotification {
   link: string | null;
   is_read: boolean;
   created_at: string;
+  metadata?: Record<string, unknown> | null;
+}
+
+/** Pannes vécues par les membres : le détail est dans Paramètres → Pannes (le lien de la notification mène à la fiche du membre). */
+function notificationHref(n: AdminNotification): string | null {
+  const m = n.metadata;
+  const isIncident = n.type === "system" && !!m && (typeof m.kind === "string" || (typeof m.step === "string" && n.title.startsWith("Inscription en échec")));
+  return isIncident ? "/admin/settings?section=incidents" : n.link;
 }
 
 function notificationIcon(type: string) {
@@ -201,7 +209,8 @@ export function AdminTopbar({ adminName = "Administrateur" }: { adminName?: stri
                         key={n.id}
                         onClick={() => {
                           if (!n.is_read) markAsRead(n.id);
-                          if (n.link) router.push(n.link);
+                          const href = notificationHref(n);
+                          if (href) router.push(href);
                           setIsOpen(false);
                         }}
                         className={cn(

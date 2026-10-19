@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Globe, Bell, Palette, Save, Loader2, CheckCircle2, AlertCircle, Check, Mail, ChevronDown, X } from "lucide-react";
+import { Globe, Bell, Palette, Save, Loader2, CheckCircle2, AlertCircle, Check, Mail, ChevronDown, X, TriangleAlert } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, HEADING_FONT, LoadingBlock, btn, inputClass } from "@/components/admin/admin-ui";
+import { IncidentsPanel } from "@/components/admin/incidents-panel";
 
 interface SettingValue {
   [key: string]: unknown;
@@ -19,6 +20,7 @@ const SECTIONS = [
   { id: "general", label: "Général", description: "Nom et contact", icon: Globe },
   { id: "notifications", label: "Notifications", description: "E-mails envoyés", icon: Bell },
   { id: "appearance", label: "Apparence", description: "Couleur et bandeau", icon: Palette },
+  { id: "incidents", label: "Pannes", description: "Problèmes vécus par les membres", icon: TriangleAlert },
 ];
 
 const DEFAULTS: Record<string, unknown> = {
@@ -86,6 +88,11 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [activeSection, setActiveSection] = useState("general");
+  // ?section=incidents : arrivée depuis une notification de panne.
+  useEffect(() => {
+    const wanted = new URLSearchParams(window.location.search).get("section");
+    if (wanted && SECTIONS.some((s) => s.id === wanted)) setActiveSection(wanted);
+  }, []);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -220,6 +227,8 @@ export default function SettingsPage() {
       }
       case "appearance":
         return <AppearanceSection getValue={getValue} setValue={setValue} />;
+      case "incidents":
+        return <IncidentsPanel />;
       default:
         return null;
     }
