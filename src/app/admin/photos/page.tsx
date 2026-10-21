@@ -6,21 +6,23 @@
  * Procédure EXCEPTIONNELLE pour les membres qui n'ont pas réussi à terminer leur
  * inscription en ligne : ils envoient sur WhatsApp la fiche d'inscription Word
  * remplie (src/lib/registration-form.ts) ou leurs photos, et l'admin les importe
- * ici. La fiche complète le parcours (identité, situation, pays, ville, valeurs,
- * téléphone) et les 3 photos de profil. Elle ne remplace pas l'inscription
- * normale : le compte doit exister, et le selfie, le mot de passe, la charte et
- * la photo publique restent faits par le membre lui-même.
+ * ici (c'est le seul endroit où la fiche vierge se télécharge). La fiche crée le
+ * compte s'il n'existe pas (l'admin envoie alors le mot de passe provisoire sur
+ * WhatsApp) ou complète le parcours (identité, situation, pays, ville, valeurs,
+ * téléphone). Les 3 photos arrivent à part sur WhatsApp, pas dans le document.
+ * Le selfie, la charte et la photo publique restent faits par le membre.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { FileUp, FileText, Download, ImagePlus, Loader2, Search, Upload, X, ExternalLink, CheckCircle2, AlertTriangle } from "lucide-react";
+import { FileUp, FileText, Download, ImagePlus, KeyRound, UserPlus, Copy, Loader2, Search, Upload, X, ExternalLink, CheckCircle2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/admin/empty-state";
 import { preparePhoto } from "@/lib/image-compress";
 import { uploadRegistrationMedia } from "@/lib/registration-media-client";
 import { getValue } from "@/lib/values";
+import { SUPPORT_PHONE_DISPLAY } from "@/lib/contact";
 import {
   FORM_FIELDS, PROFILE_FORM_KEYS, REGISTRATION_FORM_URL, parseRegistrationForm,
   type FormFieldKey, type FormValue, type ParsedRegistrationForm,
@@ -96,6 +98,11 @@ export default function AdminFileImportPage() {
   const [formError, setFormError] = useState<string | null>(null);
   const [readingForm, setReadingForm] = useState(false);
   const formInputRef = useRef<HTMLInputElement | null>(null);
+  // Fiche d'un membre sans compte : l'admin le crée, puis transmet le mot de passe.
+  const [newAccountForm, setNewAccountForm] = useState<LoadedForm | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [created, setCreated] = useState<{ id: string; email: string; password: string; phone?: string } | null>(null);
+  const [copied, setCopied] = useState(false);
 
   const loadList = useCallback(async () => {
     try {
@@ -133,6 +140,8 @@ export default function AdminFileImportPage() {
   const importForm = async (file: File | undefined) => {
     if (!file) return;
     setFormError(null);
+    setNewAccountForm(null);
+    setCreated(null);
     if (!isWordFile(file)) { setFormError("Déposez la fiche au format Word (.docx). Les photos s'importent après avoir choisi le membre."); return; }
     setReadingForm(true);
     try {
@@ -142,10 +151,7 @@ export default function AdminFileImportPage() {
       const res = await fetch(`/api/admin/users/search?scope=all&limit=5&q=${encodeURIComponent(email)}`);
       const data = await res.json().catch(() => ({}));
       const match = (Array.isArray(data.users) ? data.users as MemberRow[] : []).find((u) => u.email?.toLowerCase() === email);
-      if (!match) {
-        setFormError(`Aucun compte avec l'adresse ${email}. Le membre doit d'abord créer son compte (ou vérifier l'adresse indiquée dans la fiche).`);
-        return;
-      }
+      if (!match) { setNewAccountForm(form); return; }
       setPendingForm(form);
       setSelectedId(match.id);
     } catch (err) {
@@ -155,13 +161,39 @@ export default function AdminFileImportPage() {
     }
   };
 
+  const createAccount = async () => {
+    if (!newAccountForm) return;
+    setCreating(true);
+    setFormError(null);
+    try {
+      const res = await fetch("/api/admin/photos", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fields: newAccountForm.values }),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) { setFormError(data.error || "Création du compte impossible."); return; }
+      setCreated(data);
+      setNewAccountForm(null);
+      setPendingForm(null);
+      setSelectedId(data.id);
+      loadList();
+    } catch { setFormError("Création du compte impossible."); }
+    finally { setCreating(false); }
+  };
+
+  const passwordMessage = created
+    ? `Bonjour, votre compte Garden of Alliance est créé. Adresse e-mail : ${created.email} — mot de passe provisoire : ${created.password}. Vous pourrez le changer depuis « Mot de passe oublié ». Envoyez-nous vos 3 photos sur ce numéro (${SUPPORT_PHONE_DISPLAY}) si ce n'est pas déjà fait.`
+    : "";
+  const whatsappUrl = created ? `https://wa.me/${(created.phone || "").replace(/\D/g, "")}?text=${encodeURIComponent(passwordMessage)}` : "";
+
   const list = results ?? members;
 
   return (
     <div className="space-y-6">
       <PageHeader
         title="Import de fichiers"
-        subtitle="Procédure exceptionnelle pour les membres qui n'ont pas réussi à terminer leur inscription en ligne. Importez la fiche d'inscription Word ou les photos que le membre vous a envoyées sur WhatsApp : son parcours est complété avec ses réponses."
+        subtitle="Procédure exceptionnelle pour les membres qui n'ont pas réussi à terminer leur inscription en ligne. Envoyez la fiche vierge au membre ; importez-la ici une fois remplie, puis ses 3 photos reçues sur WhatsApp : son compte et son parcours sont complétés."
         actions={
           <a href={REGISTRATION_FORM_URL} download className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 h-10 text-sm font-semibold text-foreground hover:bg-muted">
             <Download className="w-4 h-4" /> Fiche vierge (.docx)
@@ -184,7 +216,7 @@ export default function AdminFileImportPage() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-foreground">Fiche d'inscription reçue sur WhatsApp</p>
-            <p className="text-xs text-muted-foreground">Déposez le fichier .docx ici : le membre est retrouvé par l'adresse e-mail de la fiche, puis vous vérifiez ses réponses avant de les enregistrer.</p>
+            <p className="text-xs text-muted-foreground">Déposez le fichier .docx ici : le membre est retrouvé par l'adresse e-mail de la fiche (son compte est créé s'il n'existe pas), puis vous vérifiez ses réponses avant de les enregistrer. Ses 3 photos arrivent à part sur WhatsApp.</p>
           </div>
           <button type="button" onClick={() => formInputRef.current?.click()} disabled={readingForm}
             className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#3D5C3C] disabled:opacity-50">
@@ -193,6 +225,49 @@ export default function AdminFileImportPage() {
           </button>
         </div>
         {formError && <p role="alert" className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-2.5 text-sm font-medium text-destructive">{formError}</p>}
+
+        {newAccountForm && (
+          <div className="mt-4 rounded-xl border border-border bg-card p-4 space-y-3">
+            <p className="flex items-start gap-2 text-sm text-foreground">
+              <UserPlus className="w-4 h-4 mt-0.5 text-primary shrink-0" />
+              <span>Aucun compte avec l'adresse <strong>{newAccountForm.values.email as string}</strong>. Créer le compte de {newAccountForm.values.firstName as string} {newAccountForm.values.lastName as string} à partir de la fiche ?</span>
+            </p>
+            <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground">
+              {FORM_FIELDS.filter((f) => f.key !== "email" && newAccountForm.values[f.key] !== undefined).map((f) => (
+                <li key={f.key}><span className="font-semibold text-foreground">{f.label} :</span> {displayValue(f.key, newAccountForm.values[f.key])}</li>
+              ))}
+            </ul>
+            {newAccountForm.issues.length > 0 && (
+              <p className="text-xs text-amber-700">À vérifier avec le membre : {newAccountForm.issues.map((i) => FORM_FIELDS.find((f) => f.key === i.key)?.label).join(", ")}. Ces réponses ne seront pas enregistrées ; la création exige que les champs obligatoires soient lisibles.</p>
+            )}
+            <div className="flex gap-2">
+              <button type="button" onClick={createAccount} disabled={creating}
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#3D5C3C] disabled:opacity-50">
+                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />} Créer le compte
+              </button>
+              <button type="button" onClick={() => setNewAccountForm(null)} disabled={creating} className="h-10 px-4 rounded-xl border border-border text-sm font-semibold hover:bg-muted">Annuler</button>
+            </div>
+          </div>
+        )}
+
+        {created && (
+          <div role="status" className="mt-4 rounded-xl border border-primary/30 bg-card p-4 space-y-3">
+            <p className="flex items-center gap-2 text-sm font-semibold text-foreground"><KeyRound className="w-4 h-4 text-primary" /> Compte créé — envoyez le mot de passe au membre</p>
+            <p className="text-sm text-muted-foreground">{created.email} · mot de passe provisoire : <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">{created.password}</code></p>
+            <p className="text-xs text-amber-700">Ce mot de passe ne sera plus affiché après cette page. Importez ensuite ses 3 photos (reçues à part sur WhatsApp) dans le panneau ci-dessous.</p>
+            <div className="flex flex-wrap gap-2">
+              {created.phone && (
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#3D5C3C]">
+                  Envoyer sur WhatsApp
+                </a>
+              )}
+              <button type="button" onClick={() => { void navigator.clipboard?.writeText(passwordMessage).then(() => setCopied(true)); }}
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl border border-border text-sm font-semibold hover:bg-muted">
+                <Copy className="w-4 h-4" /> {copied ? "Message copié" : "Copier le message"}
+              </button>
+            </div>
+          </div>
+        )}
       </section>
 
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-6 items-start">

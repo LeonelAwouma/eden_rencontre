@@ -1,12 +1,14 @@
 /**
  * Fiche d'inscription Word (public/formulaires/fiche-inscription-garden-of-alliance.docx).
  *
- * Procédure de secours : un membre qui n'arrive pas à terminer son parcours
- * d'inscription en ligne remplit la fiche (informations + 3 photos), l'envoie
- * sur WhatsApp à l'équipe, et l'admin l'importe dans Admin → Import de fichiers.
- * Le compte doit exister : l'adresse e-mail de la fiche désigne le membre.
- * Ni le mot de passe, ni le selfie, ni la charte ne passent par la fiche :
- * ils restent faits par le membre lui-même.
+ * Procédure de secours : un membre qui n'arrive pas à s'inscrire en ligne reçoit
+ * la fiche de l'admin (c'est le seul endroit où elle se télécharge : Admin →
+ * Import de fichiers), la remplit, et la renvoie sur WhatsApp à l'équipe avec ses
+ * 3 photos, envoyées à part (pas dans le document). L'admin importe la fiche :
+ * l'adresse e-mail désigne le membre, ou son compte est créé s'il n'existe pas
+ * encore, et l'admin lui envoie son mot de passe. Ni le mot de passe, ni le
+ * selfie, ni la charte ne viennent de la fiche : le selfie et la charte restent
+ * faits par le membre lui-même.
  *
  * Ce module définit les champs de la fiche (libellés repris par
  * scripts/generate-registration-form.mjs), lit la fiche dans le navigateur de

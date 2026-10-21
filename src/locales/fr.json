@@ -831,8 +831,6 @@
     "photosNeededBody": "Vous avez terminé votre inscription sans photos. Envoyez vos 3 photos à notre équipe sur WhatsApp, en indiquant votre adresse {email} : nous les ajouterons à votre profil avant de le valider.",
     "photosNeededCta": "Envoyer mes photos sur WhatsApp ({phone})",
     "photosNeededWhatsappText": "Bonjour, je n'ai pas réussi à importer mes photos lors de mon inscription sur Garden of Alliance. Je vous les envoie ici. Adresse e-mail de mon inscription : {email}",
-    "formHint": "Vous préférez tout envoyer en une fois ? Téléchargez la fiche d'inscription, complétez-la avec vos informations et vos 3 photos, puis envoyez le fichier sur WhatsApp.",
-    "formCta": "Télécharger la fiche d'inscription (Word)",
     "title": "Inscription en cours de vérification",
     "subtitle": "Merci pour votre inscription sur Garden of Alliance. Votre compte est actuellement en cours de validation par notre équipe.",
     "confirmationSent": "Confirmation envoyée",

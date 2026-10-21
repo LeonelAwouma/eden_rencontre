@@ -15,7 +15,7 @@ import { createRequire } from "node:module";
 const require = createRequire(import.meta.url);
 const {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ShadingType,
-  AlignmentType, BorderStyle, HeadingLevel, LevelFormat, Footer, PageNumber, HeightRule, VerticalAlign,
+  AlignmentType, BorderStyle, HeadingLevel, LevelFormat, Footer, PageNumber, VerticalAlign,
 } = require("docx");
 
 const GREEN = "486B46";
@@ -40,7 +40,7 @@ const fieldRow = (label, hint) => new TableRow({
       borders,
       width: { size: LABEL_W, type: WidthType.DXA },
       shading: { fill: LIGHT, type: ShadingType.CLEAR, color: "auto" },
-      margins: { top: 100, bottom: 100, left: 140, right: 140 },
+      margins: { top: 70, bottom: 70, left: 140, right: 140 },
       verticalAlign: VerticalAlign.CENTER,
       children: [
         new Paragraph({ children: [new TextRun({ text: label, bold: true, color: DARK, size: 21 })] }),
@@ -50,7 +50,7 @@ const fieldRow = (label, hint) => new TableRow({
     new TableCell({
       borders,
       width: { size: VALUE_W, type: WidthType.DXA },
-      margins: { top: 100, bottom: 100, left: 140, right: 140 },
+      margins: { top: 70, bottom: 70, left: 140, right: 140 },
       verticalAlign: VerticalAlign.CENTER,
       children: [new Paragraph({ children: [new TextRun({ text: "", size: 22 })] })],
     }),
@@ -65,34 +65,8 @@ const fieldTable = (rows) => new Table({
 
 const heading = (text) => new Paragraph({
   heading: HeadingLevel.HEADING_2,
-  spacing: { before: 300, after: 140 },
+  spacing: { before: 200, after: 100 },
   children: [new TextRun({ text, bold: true, color: GREEN, size: 26 })],
-});
-
-const PHOTO_W = Math.floor(PAGE_WIDTH / 3);
-const photoTable = new Table({
-  width: { size: PHOTO_W * 3, type: WidthType.DXA },
-  columnWidths: [PHOTO_W, PHOTO_W, PHOTO_W],
-  rows: [
-    new TableRow({
-      children: ["Photo 1 — visage", "Photo 2", "Photo 3"].map((t) => new TableCell({
-        borders,
-        width: { size: PHOTO_W, type: WidthType.DXA },
-        shading: { fill: LIGHT, type: ShadingType.CLEAR, color: "auto" },
-        margins: { top: 80, bottom: 80, left: 100, right: 100 },
-        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: t, bold: true, color: DARK, size: 20 })] })],
-      })),
-    }),
-    new TableRow({
-      height: { value: 3400, rule: HeightRule.ATLEAST },
-      children: [0, 1, 2].map(() => new TableCell({
-        borders,
-        width: { size: PHOTO_W, type: WidthType.DXA },
-        verticalAlign: VerticalAlign.CENTER,
-        children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: "Collez votre photo ici", color: MUTED, size: 16, italics: true })] })],
-      })),
-    }),
-  ],
 });
 
 const doc = new Document({
@@ -106,7 +80,7 @@ const doc = new Document({
     }],
   },
   sections: [{
-    properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1134, bottom: 1134, left: 1134, right: 1134 } } },
+    properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 850, bottom: 850, left: 1134, right: 1134 } } },
     footers: {
       default: new Footer({
         children: [new Paragraph({
@@ -132,16 +106,16 @@ const doc = new Document({
         children: [new TextRun({ text: "Garden of Alliance — à n'utiliser que si l'inscription en ligne ne fonctionne pas", color: MUTED, size: 20 })],
       }),
 
-      p("Vous avez créé votre compte mais n'arrivez pas à terminer votre inscription (photos, informations) ? Remplissez cette fiche : notre équipe complétera votre profil pour vous."),
+      p("Vous n'arrivez pas à vous inscrire en ligne ? Remplissez cette fiche : notre équipe créera votre compte et complétera votre profil pour vous."),
       ...[
         "Remplissez la colonne de droite. Ne modifiez pas la colonne de gauche.",
-        "Collez vos 3 photos dans les cases prévues (Insertion › Image), visage bien visible, sans filtre.",
+        "N'ajoutez PAS vos photos dans ce document : envoyez-les séparément sur WhatsApp (étape 4).",
         `Enregistrez le fichier et envoyez-le sur WhatsApp au ${SUPPORT_PHONE}.`,
       ].map((text) => new Paragraph({ numbering: { reference: "steps", level: 0 }, spacing: { after: 80 }, children: [new TextRun(text)] })),
 
       heading("1. Votre compte"),
       fieldTable([
-        ["Adresse e-mail de l'inscription", "Celle utilisée pour créer votre compte (obligatoire)"],
+        ["Adresse e-mail de l'inscription", "Celle de votre futur compte (obligatoire)"],
       ]),
 
       heading("2. Votre identité"),
@@ -163,13 +137,11 @@ const doc = new Document({
         ["Vos valeurs (3 au maximum)", "Prière Quotidienne, Foyer Uni, Ambition & Travail, Respect Mutuel, Éducation Chrétienne, Service à l'Église"],
       ]),
 
-      new Paragraph({ pageBreakBefore: true, children: [] }),
-      heading("4. Vos photos"),
-      p("Trois photos récentes de vous, seul(e), visage bien visible. Elles restent privées jusqu'à la validation de votre profil.", { run: { color: MUTED, size: 18 } }),
-      photoTable,
+      heading("4. Vos photos — à envoyer sur WhatsApp"),
+      p(`Ne collez pas vos photos dans ce document. Envoyez 3 photos récentes de vous, seul(e), visage bien visible et sans filtre, directement sur WhatsApp au ${SUPPORT_PHONE}, avec la fiche remplie et l'adresse e-mail de votre inscription. Elles restent privées jusqu'à la validation de votre profil.`),
 
-      heading("Ce qui reste à faire par vous-même"),
-      p("Pour votre sécurité, l'équipe ne fait jamais à votre place : votre mot de passe, votre selfie de vérification et l'acceptation de la charte. Une fois votre profil complété, connectez-vous sur Garden of Alliance pour choisir votre photo publique.", { run: { size: 19 } }),
+      heading("Et ensuite ?"),
+      p("Une fois votre compte créé, un administrateur vous enverra votre mot de passe sur WhatsApp. Vous pourrez le changer depuis « Mot de passe oublié ». Pour votre sécurité, votre selfie de vérification et l'acceptation de la charte restent à faire par vous-même, et vous choisirez votre photo publique à votre première connexion.", { run: { size: 19 } }),
     ],
   }],
 });

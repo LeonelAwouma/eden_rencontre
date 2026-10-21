@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Clock, Mail, ArrowLeft, CheckCircle2, ArrowRight, LogIn, ImagePlus, FileDown } from "lucide-react";
+import { Clock, Mail, ArrowLeft, CheckCircle2, ArrowRight, LogIn, ImagePlus } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { logout, reportIncident } from "@/lib/auth";
@@ -12,7 +12,6 @@ import { cn } from "@/lib/utils";
 import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 import { SocialLogo } from "@/components/social-logo";
 import { SUPPORT_PHONE_DISPLAY, SUPPORT_WHATSAPP_URL } from "@/lib/contact";
-import { REGISTRATION_FORM_URL } from "@/lib/registration-form";
 
 /** Intervalle de vérification du statut pendant que la page reste ouverte. */
 const POLL_MS = 20_000;
@@ -179,12 +178,6 @@ function PendingContent() {
             >
               <SocialLogo name="whatsapp" className="w-4 h-4" />
               {t("registerPending.photosNeededCta", { phone: SUPPORT_PHONE_DISPLAY })}
-            </a>
-            {/* Fiche Word : réponses + photos en un seul fichier, importé par l'admin (Admin → Import de fichiers). */}
-            <p className="text-xs text-amber-900/70 leading-relaxed">{t("registerPending.formHint")}</p>
-            <a href={REGISTRATION_FORM_URL} download className="inline-flex items-center gap-2 text-sm font-semibold text-amber-900 underline underline-offset-2 hover:text-amber-700">
-              <FileDown className="w-4 h-4" />
-              {t("registerPending.formCta")}
             </a>
           </div>
         )}
