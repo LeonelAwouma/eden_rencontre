@@ -9,14 +9,18 @@
  * (src/lib/registration-form.ts) : c'est par eux que l'admin retrouve les réponses.
  */
 
-import { writeFileSync, mkdirSync } from "node:fs";
+import { writeFileSync, mkdirSync, readFileSync } from "node:fs";
 import { createRequire } from "node:module";
 
 const require = createRequire(import.meta.url);
 const {
   Document, Packer, Paragraph, TextRun, Table, TableRow, TableCell, WidthType, ShadingType,
-  AlignmentType, BorderStyle, HeadingLevel, LevelFormat, Footer, PageNumber, VerticalAlign,
+  AlignmentType, BorderStyle, HeadingLevel, LevelFormat, Footer, PageNumber, VerticalAlign, ImageRun,
 } = require("docx");
+
+// Monogramme du site (public/logo.svg) en PNG haute définition, de 56:48.
+const sharp = (await import("sharp")).default;
+const logoPng = await sharp(readFileSync("public/logo.svg"), { density: 600 }).resize({ width: 560 }).png().toBuffer();
 
 const GREEN = "486B46";
 const DARK = "2E4A36";
@@ -40,7 +44,7 @@ const fieldRow = (label, hint) => new TableRow({
       borders,
       width: { size: LABEL_W, type: WidthType.DXA },
       shading: { fill: LIGHT, type: ShadingType.CLEAR, color: "auto" },
-      margins: { top: 70, bottom: 70, left: 140, right: 140 },
+      margins: { top: 55, bottom: 55, left: 140, right: 140 },
       verticalAlign: VerticalAlign.CENTER,
       children: [
         new Paragraph({ children: [new TextRun({ text: label, bold: true, color: DARK, size: 21 })] }),
@@ -50,7 +54,7 @@ const fieldRow = (label, hint) => new TableRow({
     new TableCell({
       borders,
       width: { size: VALUE_W, type: WidthType.DXA },
-      margins: { top: 70, bottom: 70, left: 140, right: 140 },
+      margins: { top: 55, bottom: 55, left: 140, right: 140 },
       verticalAlign: VerticalAlign.CENTER,
       children: [new Paragraph({ children: [new TextRun({ text: "", size: 22 })] })],
     }),
@@ -65,7 +69,7 @@ const fieldTable = (rows) => new Table({
 
 const heading = (text) => new Paragraph({
   heading: HeadingLevel.HEADING_2,
-  spacing: { before: 200, after: 100 },
+  spacing: { before: 140, after: 80 },
   children: [new TextRun({ text, bold: true, color: GREEN, size: 26 })],
 });
 
@@ -80,7 +84,7 @@ const doc = new Document({
     }],
   },
   sections: [{
-    properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 850, bottom: 850, left: 1134, right: 1134 } } },
+    properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 600, bottom: 600, left: 1134, right: 1134 } } },
     footers: {
       default: new Footer({
         children: [new Paragraph({
@@ -93,6 +97,16 @@ const doc = new Document({
       }),
     },
     children: [
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 60 },
+        children: [new ImageRun({ type: "png", data: logoPng, transformation: { width: 56, height: 48 }, altText: { title: "Garden of Alliance", description: "Logo Garden of Alliance", name: "logo" } })],
+      }),
+      new Paragraph({
+        alignment: AlignmentType.CENTER,
+        spacing: { after: 20 },
+        children: [new TextRun({ text: "GARDEN OF ALLIANCE", bold: true, color: GREEN, size: 22, characterSpacing: 60 })],
+      }),
       new Paragraph({
         heading: HeadingLevel.HEADING_1,
         alignment: AlignmentType.CENTER,
