@@ -831,6 +831,8 @@
     "photosNeededBody": "You finished your registration without photos. Send your 3 photos to our team on WhatsApp, mentioning your address {email}: we will add them to your profile before approving it.",
     "photosNeededCta": "Send my photos on WhatsApp ({phone})",
     "photosNeededWhatsappText": "Hello, I couldn't upload my photos while registering on Garden of Alliance. I'm sending them to you here. Email address used to register: {email}",
+    "formHint": "Prefer to send everything at once? Download the registration form, fill it in with your details and 3 photos, then send the file on WhatsApp.",
+    "formCta": "Download the registration form (Word)",
     "title": "Registration under review",
     "subtitle": "Thank you for registering with Garden of Alliance. Your account is currently being reviewed by our team.",
     "confirmationSent": "Confirmation sent",

@@ -172,7 +172,7 @@ export default function RegisterPage() {
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [processingSlot, setProcessingSlot] = useState<number | null>(null);
   // Issue de secours : inscription terminée sans photos, que l'admin importera
-  // (Admin → Import de photos) une fois envoyées par le membre. Exceptionnel.
+  // (Admin → Import de fichiers) une fois envoyées par le membre. Exceptionnel.
   const [photosDeferred, setPhotosDeferred] = useState(false);
   const [showDeferDialog, setShowDeferDialog] = useState(false);
   const deferPhotos = () => {

@@ -1,24 +1,30 @@
 "use client";
 
 /**
- * Admin → Import de photos.
+ * Admin → Import de fichiers.
  *
- * Procédure EXCEPTIONNELLE : pour les membres qui n'ont pas réussi à importer
- * leurs photos à l'inscription (issue de secours « Je n'arrive pas à importer
- * mes photos »), l'admin importe les photos que le membre lui a envoyées.
- * Elle ne remplace pas l'inscription normale. Seules les 3 photos de profil sont
- * concernées : le selfie reste pris par le membre, et la photo publique est
- * choisie par le membre à sa connexion.
+ * Procédure EXCEPTIONNELLE pour les membres qui n'ont pas réussi à terminer leur
+ * inscription en ligne : ils envoient sur WhatsApp la fiche d'inscription Word
+ * remplie (src/lib/registration-form.ts) ou leurs photos, et l'admin les importe
+ * ici. La fiche complète le parcours (identité, situation, pays, ville, valeurs,
+ * téléphone) et les 3 photos de profil. Elle ne remplace pas l'inscription
+ * normale : le compte doit exister, et le selfie, le mot de passe, la charte et
+ * la photo publique restent faits par le membre lui-même.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ImagePlus, Loader2, Search, Upload, X, ExternalLink, CheckCircle2 } from "lucide-react";
+import { FileUp, FileText, Download, ImagePlus, Loader2, Search, Upload, X, ExternalLink, CheckCircle2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/admin/empty-state";
 import { preparePhoto } from "@/lib/image-compress";
 import { uploadRegistrationMedia } from "@/lib/registration-media-client";
+import { getValue } from "@/lib/values";
+import {
+  FORM_FIELDS, PROFILE_FORM_KEYS, REGISTRATION_FORM_URL, parseRegistrationForm,
+  type FormFieldKey, type FormValue, type ParsedRegistrationForm,
+} from "@/lib/registration-form";
 
 interface MemberRow {
   id: string;
@@ -28,9 +34,17 @@ interface MemberRow {
   status: string | null;
   created_at?: string | null;
   photoCount?: number;
+  missing?: string[];
 }
 
+type ProfileKey = (typeof PROFILE_FORM_KEYS)[number];
+type Answers = Partial<Record<ProfileKey, FormValue | null>>;
+
+/** Fiche lue, en attente d'être appliquée au membre. */
+interface LoadedForm extends ParsedRegistrationForm { fileName: string }
+
 const SLOTS = 3;
+const WORD_ACCEPT = ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 const STATUS: Record<string, { label: string; className: string }> = {
   pending: { label: "En attente", className: "bg-amber-50 text-amber-700 border-amber-200" },
@@ -41,13 +55,34 @@ const STATUS: Record<string, { label: string; className: string }> = {
 
 const labelOf = (m: MemberRow) => m.pseudo || m.name || m.email || "Membre";
 const formatDate = (iso?: string | null) => (iso ? new Date(iso).toLocaleDateString("fr-FR", { day: "numeric", month: "short", year: "numeric" }) : "");
+const isWordFile = (f: File) => /\.docx$/i.test(f.name) || f.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+
+function displayValue(key: FormFieldKey, value: FormValue | null | undefined): string {
+  if (value === null || value === undefined || value === "" || (Array.isArray(value) && value.length === 0)) return "";
+  if (key === "gender") return value === "homme" ? "Homme" : value === "femme" ? "Femme" : String(value);
+  if (key === "birthDate" && typeof value === "string" && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    return new Date(`${value.slice(0, 10)}T00:00:00Z`).toLocaleDateString("fr-FR", { day: "2-digit", month: "2-digit", year: "numeric", timeZone: "UTC" });
+  }
+  if (key === "marriageVision") return (Array.isArray(value) ? value : [value]).map((id) => getValue(id).label).join(", ");
+  return Array.isArray(value) ? value.join(", ") : String(value);
+}
+
+const sameValue = (a: FormValue | null | undefined, b: FormValue | null | undefined) =>
+  JSON.stringify(Array.isArray(a) ? [...a].sort() : typeof a === "string" ? a.slice(0, 10) : a ?? null)
+  === JSON.stringify(Array.isArray(b) ? [...b].sort() : typeof b === "string" ? b.slice(0, 10) : b ?? null);
 
 function StatusBadge({ status }: { status: string | null }) {
   const s = STATUS[status || ""] ?? { label: status || "—", className: "bg-gray-100 text-gray-600 border-gray-200" };
   return <span className={cn("inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold", s.className)}>{s.label}</span>;
 }
 
-export default function AdminPhotoImportPage() {
+async function readForm(file: File): Promise<LoadedForm> {
+  const parsed = await parseRegistrationForm(file);
+  if (parsed.recognized === 0) throw new Error("Ce document n'est pas la fiche d'inscription Garden of Alliance.");
+  return { ...parsed, fileName: file.name };
+}
+
+export default function AdminFileImportPage() {
   const [members, setMembers] = useState<MemberRow[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState<string | null>(null);
@@ -56,6 +91,11 @@ export default function AdminPhotoImportPage() {
   const [results, setResults] = useState<MemberRow[] | null>(null);
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // Fiche déposée avant d'avoir choisi un membre : il est retrouvé par son e-mail.
+  const [pendingForm, setPendingForm] = useState<LoadedForm | null>(null);
+  const [formError, setFormError] = useState<string | null>(null);
+  const [readingForm, setReadingForm] = useState(false);
+  const formInputRef = useRef<HTMLInputElement | null>(null);
 
   const loadList = useCallback(async () => {
     try {
@@ -76,7 +116,7 @@ export default function AdminPhotoImportPage() {
     if (user) setSelectedId(user);
   }, []);
 
-  // Recherche de n'importe quel membre (même avec ses 3 photos, pour les remplacer).
+  // Recherche de n'importe quel membre (même au parcours complet, pour le corriger).
   useEffect(() => {
     const q = query.trim();
     if (q.length < 2) { setResults(null); return; }
@@ -90,19 +130,73 @@ export default function AdminPhotoImportPage() {
     return () => clearTimeout(id);
   }, [query]);
 
+  const importForm = async (file: File | undefined) => {
+    if (!file) return;
+    setFormError(null);
+    if (!isWordFile(file)) { setFormError("Déposez la fiche au format Word (.docx). Les photos s'importent après avoir choisi le membre."); return; }
+    setReadingForm(true);
+    try {
+      const form = await readForm(file);
+      const email = form.values.email as string | undefined;
+      if (!email) { setFormError("La fiche ne contient pas d'adresse e-mail lisible : choisissez le membre dans la liste, puis importez la fiche."); return; }
+      const res = await fetch(`/api/admin/users/search?scope=all&limit=5&q=${encodeURIComponent(email)}`);
+      const data = await res.json().catch(() => ({}));
+      const match = (Array.isArray(data.users) ? data.users as MemberRow[] : []).find((u) => u.email?.toLowerCase() === email);
+      if (!match) {
+        setFormError(`Aucun compte avec l'adresse ${email}. Le membre doit d'abord créer son compte (ou vérifier l'adresse indiquée dans la fiche).`);
+        return;
+      }
+      setPendingForm(form);
+      setSelectedId(match.id);
+    } catch (err) {
+      setFormError(err instanceof Error && err.message ? err.message : "Fiche illisible.");
+    } finally {
+      setReadingForm(false);
+    }
+  };
+
   const list = results ?? members;
 
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Import de photos"
-        subtitle="Procédure exceptionnelle pour les membres qui n'ont pas réussi à importer leurs photos à l'inscription. Elle ne remplace pas l'inscription normale : importez uniquement les photos que le membre vous a envoyées."
+        title="Import de fichiers"
+        subtitle="Procédure exceptionnelle pour les membres qui n'ont pas réussi à terminer leur inscription en ligne. Importez la fiche d'inscription Word ou les photos que le membre vous a envoyées sur WhatsApp : son parcours est complété avec ses réponses."
+        actions={
+          <a href={REGISTRATION_FORM_URL} download className="inline-flex items-center gap-2 rounded-xl border border-border bg-card px-4 h-10 text-sm font-semibold text-foreground hover:bg-muted">
+            <Download className="w-4 h-4" /> Fiche vierge (.docx)
+          </a>
+        }
       />
 
       {listError && <p role="alert" className="rounded-2xl border border-destructive/30 bg-destructive/5 p-4 text-sm text-destructive">{listError}</p>}
 
+      {/* ── Dépôt d'une fiche : le membre est retrouvé par l'e-mail qu'elle contient ── */}
+      <section aria-label="Importer une fiche d'inscription" className="rounded-2xl border border-dashed border-primary/40 bg-primary/5 p-5">
+        <input ref={formInputRef} type="file" accept={WORD_ACCEPT} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void importForm(f); }} />
+        <div
+          className="flex flex-col sm:flex-row sm:items-center gap-4"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => { e.preventDefault(); void importForm(e.dataTransfer.files?.[0]); }}
+        >
+          <div className="w-11 h-11 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-foreground">Fiche d'inscription reçue sur WhatsApp</p>
+            <p className="text-xs text-muted-foreground">Déposez le fichier .docx ici : le membre est retrouvé par l'adresse e-mail de la fiche, puis vous vérifiez ses réponses avant de les enregistrer.</p>
+          </div>
+          <button type="button" onClick={() => formInputRef.current?.click()} disabled={readingForm}
+            className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#3D5C3C] disabled:opacity-50">
+            {readingForm ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
+            {readingForm ? "Lecture…" : "Importer une fiche"}
+          </button>
+        </div>
+        {formError && <p role="alert" className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-2.5 text-sm font-medium text-destructive">{formError}</p>}
+      </section>
+
       <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)] gap-6 items-start">
-        {/* ── Membres sans photos / recherche ── */}
+        {/* ── Membres au parcours incomplet / recherche ── */}
         <section aria-label="Membres" className="rounded-2xl border border-border bg-card overflow-hidden">
           <div className="p-4 border-b border-border">
             <label htmlFor="photo-member-search" className="sr-only">Rechercher un membre</label>
@@ -117,7 +211,7 @@ export default function AdminPhotoImportPage() {
               />
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              {results ? `${results.length} résultat${results.length > 1 ? "s" : ""}` : `${members.length} membre${members.length > 1 ? "s" : ""} sans ses 3 photos`}
+              {results ? `${results.length} résultat${results.length > 1 ? "s" : ""}` : `${members.length} membre${members.length > 1 ? "s" : ""} au parcours incomplet`}
             </p>
           </div>
 
@@ -126,8 +220,8 @@ export default function AdminPhotoImportPage() {
           ) : list.length === 0 ? (
             <EmptyState
               icon={ImagePlus}
-              title={results ? "Aucun membre trouvé" : "Tout le monde a ses photos"}
-              description={results ? "Essayez avec une autre partie du nom ou de l'adresse e-mail." : "Aucun membre n'attend d'import de photos pour le moment."}
+              title={results ? "Aucun membre trouvé" : "Tous les parcours sont complets"}
+              description={results ? "Essayez avec une autre partie du nom ou de l'adresse e-mail." : "Aucun membre n'attend d'import pour le moment."}
             />
           ) : (
             <ul className="divide-y divide-border max-h-[65vh] overflow-y-auto">
@@ -135,7 +229,7 @@ export default function AdminPhotoImportPage() {
                 <li key={m.id}>
                   <button
                     type="button"
-                    onClick={() => setSelectedId(m.id)}
+                    onClick={() => { setPendingForm(null); setSelectedId(m.id); }}
                     className={cn(
                       "w-full text-left px-4 py-3 flex items-center gap-3 hover:bg-muted/60 transition-colors",
                       selectedId === m.id && "bg-primary/5"
@@ -146,6 +240,9 @@ export default function AdminPhotoImportPage() {
                       <span className="block text-xs text-muted-foreground truncate">
                         {m.email}{m.created_at ? ` · inscrit le ${formatDate(m.created_at)}` : ""}
                       </span>
+                      {m.missing && m.missing.length > 0 && (
+                        <span className="block text-[11px] text-amber-700 truncate">Manque : {m.missing.join(", ")}</span>
+                      )}
                     </span>
                     <span className="flex flex-col items-end gap-1 shrink-0">
                       <StatusBadge status={m.status} />
@@ -160,10 +257,16 @@ export default function AdminPhotoImportPage() {
 
         {/* ── Import pour le membre choisi ── */}
         {selectedId ? (
-          <MemberPhotoImport key={selectedId} memberId={selectedId} onImported={loadList} onClose={() => setSelectedId(null)} />
+          <MemberImport
+            key={`${selectedId}:${pendingForm?.fileName ?? ""}`}
+            memberId={selectedId}
+            initialForm={pendingForm}
+            onImported={loadList}
+            onClose={() => { setSelectedId(null); setPendingForm(null); }}
+          />
         ) : (
           <div className="rounded-2xl border border-dashed border-border bg-card">
-            <EmptyState icon={Upload} title="Choisissez un membre" description="Sélectionnez un membre dans la liste pour importer les photos qu'il vous a envoyées." />
+            <EmptyState icon={Upload} title="Choisissez un membre" description="Sélectionnez un membre dans la liste, ou importez directement sa fiche d'inscription." />
           </div>
         )}
       </div>
@@ -171,17 +274,23 @@ export default function AdminPhotoImportPage() {
   );
 }
 
-function MemberPhotoImport({ memberId, onImported, onClose }: { memberId: string; onImported: () => void; onClose: () => void }) {
+function MemberImport({ memberId, initialForm, onImported, onClose }: { memberId: string; initialForm: LoadedForm | null; onImported: () => void; onClose: () => void }) {
   const [member, setMember] = useState<MemberRow | null>(null);
   const [current, setCurrent] = useState<string[]>([]);
+  const [answers, setAnswers] = useState<Answers>({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+
+  const [form, setForm] = useState<LoadedForm | null>(initialForm);
+  const [apply, setApply] = useState<Partial<Record<ProfileKey, boolean>>>({});
+  const [readingForm, setReadingForm] = useState(false);
 
   const [prepared, setPrepared] = useState<(string | null)[]>(() => Array(SLOTS).fill(null));
   const [processing, setProcessing] = useState<number | null>(null);
   const [saving, setSaving] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const formInputRef = useRef<HTMLInputElement | null>(null);
   const slotRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -194,13 +303,53 @@ function MemberPhotoImport({ memberId, onImported, onClose }: { memberId: string
         if (!res.ok) { setError(data.error || "Membre introuvable."); return; }
         setMember(data.member);
         setCurrent(data.photos || []);
+        setAnswers(data.answers || {});
       } catch { if (active) setError("Membre introuvable."); }
       finally { if (active) setLoading(false); }
     })();
     return () => { active = false; };
   }, [memberId]);
 
+  // Réponses de la fiche : cochées d'office quand le profil n'a rien, à confirmer quand elles remplacent une réponse.
+  const formRows = useMemo(() => {
+    if (!form) return [];
+    return PROFILE_FORM_KEYS
+      .filter((key) => form.values[key] !== undefined)
+      .map((key) => ({ key, next: form.values[key]!, prev: answers[key] ?? null, same: sameValue(form.values[key], answers[key]) }));
+  }, [form, answers]);
+
+  useEffect(() => {
+    if (loading || !form) return;
+    setApply(Object.fromEntries(formRows.map((r) => [r.key, !r.same && !displayValue(r.key, r.prev)])));
+    // Seulement à l'arrivée d'une fiche (ou une fois le membre chargé), pas après chaque enregistrement.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, loading]);
+
+  // Photos collées dans la fiche : préparées comme une photo choisie à la main.
+  useEffect(() => {
+    if (!form || form.photos.length === 0) return;
+    let active = true;
+    (async () => {
+      const next: (string | null)[] = Array(SLOTS).fill(null);
+      let failed = 0;
+      for (const [i, file] of form.photos.slice(0, SLOTS).entries()) {
+        if (!active) return;
+        setProcessing(i);
+        const res = await preparePhoto(file);
+        if (res.ok) next[i] = res.dataUrl; else failed++;
+      }
+      if (!active) return;
+      setProcessing(null);
+      setPrepared(next);
+      if (failed) setError(`${failed} photo${failed > 1 ? "s" : ""} de la fiche illisible${failed > 1 ? "s" : ""} : demandez-la au membre en JPEG.`);
+    })();
+    return () => { active = false; };
+  }, [form]);
+
   const ready = useMemo(() => prepared.filter((p): p is string => !!p), [prepared]);
+  const selectedFields = formRows.filter((r) => apply[r.key] && !r.same);
+  const formEmail = form?.values.email as string | undefined;
+  const emailMismatch = !!(formEmail && member?.email && formEmail !== member.email.toLowerCase());
 
   const pick = (slot: number) => {
     if (processing !== null || saving) return;
@@ -225,23 +374,52 @@ function MemberPhotoImport({ memberId, onImported, onClose }: { memberId: string
     setPrepared((prev) => { const next = [...prev]; next[slot] = res.dataUrl; return next; });
   };
 
+  const onFormFile = async (file: File | undefined) => {
+    if (!file) return;
+    setError(null);
+    setNotice(null);
+    if (!isWordFile(file)) { setError("Déposez la fiche au format Word (.docx)."); return; }
+    setReadingForm(true);
+    try { setForm(await readForm(file)); }
+    catch (err) { setError(err instanceof Error && err.message ? err.message : "Fiche illisible."); }
+    finally { setReadingForm(false); }
+  };
+
   const save = async () => {
-    if (ready.length === 0) return;
+    if (ready.length === 0 && selectedFields.length === 0) return;
     setSaving(true);
     setError(null);
+    setNotice(null);
+    const done: string[] = [];
     try {
-      const media = await uploadRegistrationMedia({ photos: ready, selfie: null, frames: [], slotsUrl: `/api/admin/photos/${memberId}/slots` });
-      const res = await fetch(`/api/admin/photos/${memberId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paths: media.profilePhotoPaths }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) { setError(data.error || "Photos non enregistrées. Réessayez."); return; }
-      setCurrent(data.photos || []);
-      setPrepared(Array(SLOTS).fill(null));
-      setMember((m) => (m ? { ...m, photoCount: (data.photos || []).length } : m));
-      setNotice("Photos importées. Le membre choisira sa photo publique à sa prochaine connexion.");
+      if (selectedFields.length > 0) {
+        const res = await fetch(`/api/admin/photos/${memberId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ fields: Object.fromEntries(selectedFields.map((r) => [r.key, r.next])) }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { setError(data.error || "Informations non enregistrées. Réessayez."); return; }
+        setAnswers(data.answers || {});
+        setApply({});
+        done.push(`${selectedFields.length} information${selectedFields.length > 1 ? "s" : ""} enregistrée${selectedFields.length > 1 ? "s" : ""}`);
+        if (Array.isArray(data.skipped) && data.skipped.length) done.push(`non enregistré faute de colonne : ${data.skipped.join(", ")}`);
+      }
+      if (ready.length > 0) {
+        const media = await uploadRegistrationMedia({ photos: ready, selfie: null, frames: [], slotsUrl: `/api/admin/photos/${memberId}/slots` });
+        const res = await fetch(`/api/admin/photos/${memberId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ paths: media.profilePhotoPaths }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) { setError(`${done.length ? `${done.join(" · ")}. ` : ""}${data.error || "Photos non enregistrées. Réessayez."}`); return; }
+        setCurrent(data.photos || []);
+        setPrepared(Array(SLOTS).fill(null));
+        setMember((m) => (m ? { ...m, photoCount: (data.photos || []).length } : m));
+        done.push(`${ready.length} photo${ready.length > 1 ? "s" : ""} importée${ready.length > 1 ? "s" : ""} — le membre choisira sa photo publique à sa prochaine connexion`);
+      }
+      setNotice(`${done.join(" · ")}.`);
       onImported();
     } catch (err) {
       setError(err instanceof Error && err.message ? err.message : "Import impossible. Réessayez.");
@@ -254,8 +432,14 @@ function MemberPhotoImport({ memberId, onImported, onClose }: { memberId: string
     return <div className="rounded-2xl border border-border bg-card flex justify-center py-16"><Loader2 className="w-5 h-5 animate-spin text-primary" /></div>;
   }
 
+  const missingAnswers = PROFILE_FORM_KEYS.filter((k) => !displayValue(k, answers[k]));
+  const saveLabel = [
+    selectedFields.length > 0 && `${selectedFields.length} information${selectedFields.length > 1 ? "s" : ""}`,
+    ready.length > 0 && `${ready.length} photo${ready.length > 1 ? "s" : ""}`,
+  ].filter(Boolean).join(" et ");
+
   return (
-    <section aria-label="Import des photos du membre" className="rounded-2xl border border-border bg-card p-5 sm:p-6 space-y-5">
+    <section aria-label="Import pour le membre" className="rounded-2xl border border-border bg-card p-5 sm:p-6 space-y-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <h2 className="text-lg font-bold text-foreground truncate">{member ? labelOf(member) : "Membre"}</h2>
@@ -283,6 +467,85 @@ function MemberPhotoImport({ memberId, onImported, onClose }: { memberId: string
 
       {member && (
         <>
+          {/* ── Parcours d'inscription ── */}
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Parcours d'inscription</p>
+              <input ref={formInputRef} type="file" accept={WORD_ACCEPT} className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void onFormFile(f); }} />
+              <button type="button" onClick={() => formInputRef.current?.click()} disabled={readingForm || saving}
+                className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-xs font-semibold text-foreground hover:bg-muted disabled:opacity-50">
+                {readingForm ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileUp className="w-3.5 h-3.5" />}
+                {form ? "Importer une autre fiche" : "Importer sa fiche (.docx)"}
+              </button>
+            </div>
+
+            {!form ? (
+              missingAnswers.length ? (
+                <p className="text-sm text-amber-700">Manque dans le parcours : {missingAnswers.map((k) => FORM_FIELDS.find((f) => f.key === k)?.label).join(", ")}.</p>
+              ) : (
+                <p className="text-sm text-muted-foreground">Toutes les réponses du parcours sont renseignées.</p>
+              )
+            ) : (
+              <>
+                <p className="text-xs text-muted-foreground">
+                  Fiche « {form.fileName} » — {formRows.length} réponse{formRows.length > 1 ? "s" : ""} lue{formRows.length > 1 ? "s" : ""}, {form.photos.length} photo{form.photos.length > 1 ? "s" : ""}.
+                  Cochez ce qui doit être enregistré ; une réponse déjà présente n'est remplacée que si vous la cochez.
+                </p>
+                {emailMismatch && (
+                  <p role="alert" className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2.5 text-sm text-amber-800">
+                    <AlertTriangle className="w-4 h-4 shrink-0 mt-0.5" />
+                    La fiche indique l'adresse {formEmail}, différente de celle de ce membre. Vérifiez qu'il s'agit bien de la bonne personne.
+                  </p>
+                )}
+                {formRows.length > 0 && (
+                  <div className="overflow-x-auto rounded-xl border border-border">
+                    <table className="w-full text-sm">
+                      <thead className="bg-muted/50 text-[11px] uppercase tracking-wider text-muted-foreground">
+                        <tr>
+                          <th className="w-10 px-3 py-2"><span className="sr-only">Enregistrer</span></th>
+                          <th className="px-3 py-2 text-left font-semibold">Champ</th>
+                          <th className="px-3 py-2 text-left font-semibold">Actuellement</th>
+                          <th className="px-3 py-2 text-left font-semibold">Fiche</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {formRows.map((r) => {
+                          const label = FORM_FIELDS.find((f) => f.key === r.key)?.label ?? r.key;
+                          return (
+                            <tr key={r.key} className={cn(r.same && "text-muted-foreground")}>
+                              <td className="px-3 py-2 text-center">
+                                {r.same ? (
+                                  <CheckCircle2 className="w-4 h-4 text-primary inline" aria-label="Identique" />
+                                ) : (
+                                  <input type="checkbox" aria-label={`Enregistrer ${label}`} checked={!!apply[r.key]} disabled={saving}
+                                    onChange={(e) => setApply((prev) => ({ ...prev, [r.key]: e.target.checked }))} className="w-4 h-4 accent-[#486B46]" />
+                                )}
+                              </td>
+                              <td className="px-3 py-2 font-medium">{label}</td>
+                              <td className="px-3 py-2">{displayValue(r.key, r.prev) || <span className="text-amber-700">vide</span>}</td>
+                              <td className="px-3 py-2 font-semibold">{displayValue(r.key, r.next)}</td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+                {form.issues.length > 0 && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800 space-y-1">
+                    <p className="font-semibold">Réponses à vérifier avec le membre (non enregistrées) :</p>
+                    <ul className="list-disc pl-5 space-y-0.5">
+                      {form.issues.map((i) => (
+                        <li key={i.key}>{FORM_FIELDS.find((f) => f.key === i.key)?.label} : « {i.raw} » — {i.message}</li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+
+          {/* ── Photos ── */}
           <div>
             <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Photos actuelles ({current.length}/{SLOTS})</p>
             {current.length ? (
@@ -336,17 +599,13 @@ function MemberPhotoImport({ memberId, onImported, onClose }: { memberId: string
             {current.length > 0 && ready.length > 0 && (
               <p className="text-xs text-amber-700">Les photos actuelles seront remplacées par celles-ci.</p>
             )}
-            <button type="button" onClick={save} disabled={ready.length === 0 || saving || processing !== null}
+            <button type="button" onClick={save} disabled={(ready.length === 0 && selectedFields.length === 0) || saving || processing !== null}
               className="w-full h-11 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#3D5C3C] disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
-              {saving
-                ? "Import en cours…"
-                : ready.length === 0
-                  ? "Importer les photos"
-                  : `${current.length > 0 ? "Remplacer par" : "Importer"} ${ready.length} photo${ready.length > 1 ? "s" : ""}`}
+              {saving ? "Enregistrement…" : saveLabel ? `Compléter le parcours : ${saveLabel}` : "Compléter le parcours"}
             </button>
             <p className="text-xs text-muted-foreground">
-              Seules les photos de profil privées sont importées ici. Le selfie reste pris par le membre, et il choisira lui-même sa photo publique à sa connexion.
+              Le selfie, le mot de passe, la charte et la photo publique restent faits par le membre lui-même : la fiche ne les remplace pas.
             </p>
           </div>
         </>
