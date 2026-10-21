@@ -141,7 +141,7 @@ const doc = new Document({
       p(`Ne collez pas vos photos dans ce document. Envoyez 3 photos récentes de vous, seul(e), visage bien visible et sans filtre, directement sur WhatsApp au ${SUPPORT_PHONE}, avec la fiche remplie et l'adresse e-mail de votre inscription. Elles restent privées jusqu'à la validation de votre profil.`),
 
       heading("Et ensuite ?"),
-      p("Une fois votre compte créé, un administrateur vous enverra votre mot de passe sur WhatsApp. Vous pourrez le changer depuis « Mot de passe oublié ». Pour votre sécurité, votre selfie de vérification et l'acceptation de la charte restent à faire par vous-même, et vous choisirez votre photo publique à votre première connexion.", { run: { size: 19 } }),
+      p("Une fois votre compte créé à partir de cette fiche et de vos photos, un administrateur vous enverra votre mot de passe sur WhatsApp : avec votre adresse e-mail, vous pourrez vous connecter. Vous pourrez ensuite le changer depuis « Mot de passe oublié ». Pour votre sécurité, votre selfie de vérification et l'acceptation de la charte restent à faire par vous-même, et vous choisirez votre photo publique à votre première connexion.", { run: { size: 19 } }),
     ],
   }],
 });

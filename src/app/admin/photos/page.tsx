@@ -7,15 +7,16 @@
  * inscription en ligne : ils envoient sur WhatsApp la fiche d'inscription Word
  * remplie (src/lib/registration-form.ts) ou leurs photos, et l'admin les importe
  * ici (c'est le seul endroit où la fiche vierge se télécharge). La fiche crée le
- * compte s'il n'existe pas (l'admin envoie alors le mot de passe provisoire sur
- * WhatsApp) ou complète le parcours (identité, situation, pays, ville, valeurs,
+ * compte s'il n'existe pas : l'admin renseigne le mot de passe qu'il remettra au
+ * membre sur WhatsApp (e-mail + mot de passe suffisent pour se connecter), ou
+ * complète le parcours (identité, situation, pays, ville, valeurs,
  * téléphone). Les 3 photos arrivent à part sur WhatsApp, pas dans le document.
  * Le selfie, la charte et la photo publique restent faits par le membre.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { FileUp, FileText, Download, ImagePlus, KeyRound, UserPlus, Copy, Loader2, Search, Upload, X, ExternalLink, CheckCircle2, AlertTriangle } from "lucide-react";
+import { FileUp, FileText, Download, ImagePlus, KeyRound, UserPlus, Copy, Eye, EyeOff, Wand2, Loader2, Search, Upload, X, ExternalLink, CheckCircle2, AlertTriangle } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/page-header";
 import { EmptyState } from "@/components/admin/empty-state";
@@ -101,6 +102,12 @@ export default function AdminFileImportPage() {
   // Fiche d'un membre sans compte : l'admin le crée, puis transmet le mot de passe.
   const [newAccountForm, setNewAccountForm] = useState<LoadedForm | null>(null);
   const [creating, setCreating] = useState(false);
+  const [newPassword, setNewPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [newPhotos, setNewPhotos] = useState<(string | null)[]>(() => Array(SLOTS).fill(null));
+  const [newPhotoBusy, setNewPhotoBusy] = useState<number | null>(null);
+  const newPhotoInput = useRef<HTMLInputElement | null>(null);
+  const newPhotoSlot = useRef<number | null>(null);
   const [created, setCreated] = useState<{ id: string; email: string; password: string; phone?: string } | null>(null);
   const [copied, setCopied] = useState(false);
 
@@ -142,6 +149,8 @@ export default function AdminFileImportPage() {
     setFormError(null);
     setNewAccountForm(null);
     setCreated(null);
+    setNewPassword("");
+    setNewPhotos(Array(SLOTS).fill(null));
     if (!isWordFile(file)) { setFormError("Déposez la fiche au format Word (.docx). Les photos s'importent après avoir choisi le membre."); return; }
     setReadingForm(true);
     try {
@@ -161,29 +170,79 @@ export default function AdminFileImportPage() {
     }
   };
 
+  const generatePassword = () => {
+    const alphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const bytes = crypto.getRandomValues(new Uint8Array(12));
+    const pick = (from: number) => Array.from(bytes.slice(from, from + 4), (b) => alphabet[b % alphabet.length]).join("");
+    setNewPassword(`${pick(0)}-${pick(4)}-${pick(8)}`);
+    setShowPassword(true);
+  };
+
+  const pickNewPhoto = (slot: number) => {
+    if (newPhotoBusy !== null || creating) return;
+    newPhotoSlot.current = slot;
+    newPhotoInput.current?.click();
+  };
+
+  const onNewPhoto = async (file: File | undefined) => {
+    const slot = newPhotoSlot.current;
+    if (!file || slot === null) return;
+    setFormError(null);
+    setNewPhotoBusy(slot);
+    const res = await preparePhoto(file);
+    setNewPhotoBusy(null);
+    if (!res.ok) {
+      setFormError(res.reason === "heic" ? "Photo au format HEIC, illisible par ce navigateur : demandez une photo JPEG ou convertissez-la." : "Cette image n'a pas pu être lue. Essayez une photo JPEG ou PNG.");
+      return;
+    }
+    setNewPhotos((prev) => { const next = [...prev]; next[slot] = res.dataUrl; return next; });
+  };
+
+  /** Fiche + photos + mot de passe de l'admin : un seul geste crée le compte complet. */
   const createAccount = async () => {
     if (!newAccountForm) return;
+    if (newPassword.length < 8) { setFormError("Renseignez le mot de passe à remettre au membre (8 caractères minimum)."); return; }
     setCreating(true);
     setFormError(null);
     try {
       const res = await fetch("/api/admin/photos", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ fields: newAccountForm.values }),
+        body: JSON.stringify({ fields: newAccountForm.values, password: newPassword }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) { setFormError(data.error || "Création du compte impossible."); return; }
-      setCreated(data);
+      setCreated({ id: data.id, email: data.email, password: newPassword, phone: data.phone });
       setNewAccountForm(null);
       setPendingForm(null);
       setSelectedId(data.id);
       loadList();
+
+      const photos = newPhotos.filter((p): p is string => !!p);
+      if (photos.length > 0) {
+        try {
+          const media = await uploadRegistrationMedia({ photos, selfie: null, frames: [], slotsUrl: `/api/admin/photos/${data.id}/slots` });
+          const put = await fetch(`/api/admin/photos/${data.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ paths: media.profilePhotoPaths }),
+          });
+          if (!put.ok) throw new Error();
+          setSelectedId(null);
+          setTimeout(() => setSelectedId(data.id), 0);
+          loadList();
+        } catch {
+          setFormError("Compte créé, mais les photos n'ont pas été enregistrées : importez-les dans le panneau du membre.");
+        }
+      }
+      setNewPassword("");
+      setNewPhotos(Array(SLOTS).fill(null));
     } catch { setFormError("Création du compte impossible."); }
     finally { setCreating(false); }
   };
 
   const passwordMessage = created
-    ? `Bonjour, votre compte Garden of Alliance est créé. Adresse e-mail : ${created.email} — mot de passe provisoire : ${created.password}. Vous pourrez le changer depuis « Mot de passe oublié ». Envoyez-nous vos 3 photos sur ce numéro (${SUPPORT_PHONE_DISPLAY}) si ce n'est pas déjà fait.`
+    ? `Bonjour, votre compte Garden of Alliance est créé. Adresse e-mail : ${created.email} — mot de passe : ${created.password}. Connectez-vous sur Garden of Alliance avec ces identifiants ; vous pourrez changer le mot de passe depuis « Mot de passe oublié ». Une question ? ${SUPPORT_PHONE_DISPLAY}.`
     : "";
   const whatsappUrl = created ? `https://wa.me/${(created.phone || "").replace(/\D/g, "")}?text=${encodeURIComponent(passwordMessage)}` : "";
 
@@ -216,7 +275,7 @@ export default function AdminFileImportPage() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-semibold text-foreground">Fiche d'inscription reçue sur WhatsApp</p>
-            <p className="text-xs text-muted-foreground">Déposez le fichier .docx ici : le membre est retrouvé par l'adresse e-mail de la fiche (son compte est créé s'il n'existe pas), puis vous vérifiez ses réponses avant de les enregistrer. Ses 3 photos arrivent à part sur WhatsApp.</p>
+            <p className="text-xs text-muted-foreground">Déposez le fichier .docx ici : le membre est retrouvé par l'adresse e-mail de la fiche (son compte est créé s'il n'existe pas, avec le mot de passe que vous renseignez), puis vous vérifiez ses réponses avant de les enregistrer. Ses 3 photos arrivent à part sur WhatsApp.</p>
           </div>
           <button type="button" onClick={() => formInputRef.current?.click()} disabled={readingForm}
             className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#3D5C3C] disabled:opacity-50">
@@ -227,10 +286,10 @@ export default function AdminFileImportPage() {
         {formError && <p role="alert" className="mt-3 rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-2.5 text-sm font-medium text-destructive">{formError}</p>}
 
         {newAccountForm && (
-          <div className="mt-4 rounded-xl border border-border bg-card p-4 space-y-3">
+          <div className="mt-4 rounded-xl border border-border bg-card p-4 space-y-4">
             <p className="flex items-start gap-2 text-sm text-foreground">
               <UserPlus className="w-4 h-4 mt-0.5 text-primary shrink-0" />
-              <span>Aucun compte avec l'adresse <strong>{newAccountForm.values.email as string}</strong>. Créer le compte de {newAccountForm.values.firstName as string} {newAccountForm.values.lastName as string} à partir de la fiche ?</span>
+              <span>Aucun compte avec l'adresse <strong>{newAccountForm.values.email as string}</strong>. Le compte de {newAccountForm.values.firstName as string} {newAccountForm.values.lastName as string} sera créé à partir de la fiche, avec les photos et le mot de passe ci-dessous.</span>
             </p>
             <ul className="grid sm:grid-cols-2 gap-x-6 gap-y-1 text-xs text-muted-foreground">
               {FORM_FIELDS.filter((f) => f.key !== "email" && newAccountForm.values[f.key] !== undefined).map((f) => (
@@ -238,12 +297,60 @@ export default function AdminFileImportPage() {
               ))}
             </ul>
             {newAccountForm.issues.length > 0 && (
-              <p className="text-xs text-amber-700">À vérifier avec le membre : {newAccountForm.issues.map((i) => FORM_FIELDS.find((f) => f.key === i.key)?.label).join(", ")}. Ces réponses ne seront pas enregistrées ; la création exige que les champs obligatoires soient lisibles.</p>
+              <p className="text-xs text-amber-700">À vérifier avec le membre : {newAccountForm.issues.map((i) => FORM_FIELDS.find((f) => f.key === i.key)?.label).join(", ")}. Si un de ces champs est obligatoire, la création sera refusée.</p>
             )}
+
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground mb-2">Photos reçues sur WhatsApp (facultatif ici)</p>
+              <input ref={newPhotoInput} type="file" accept="image/*" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; e.target.value = ""; void onNewPhoto(f); }} />
+              <div className="grid grid-cols-3 gap-3 max-w-md">
+                {newPhotos.map((src, i) => (
+                  <div key={i} className="relative aspect-[3/4] rounded-xl border border-dashed border-border bg-muted/40 overflow-hidden">
+                    {src ? (
+                      <>
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={src} alt={`Photo ${i + 1} à importer`} className="w-full h-full object-cover" />
+                        <button type="button" disabled={creating} aria-label={`Retirer la photo ${i + 1}`}
+                          onClick={() => setNewPhotos((prev) => { const next = [...prev]; next[i] = null; return next; })}
+                          className="absolute top-1.5 right-1.5 w-6 h-6 rounded-full bg-black/50 text-white flex items-center justify-center hover:bg-black/70"><X className="w-3 h-3" /></button>
+                      </>
+                    ) : newPhotoBusy === i ? (
+                      <div role="status" className="w-full h-full flex items-center justify-center text-primary"><Loader2 className="w-5 h-5 animate-spin" /></div>
+                    ) : (
+                      <button type="button" onClick={() => pickNewPhoto(i)} disabled={newPhotoBusy !== null || creating}
+                        className="w-full h-full flex flex-col items-center justify-center gap-1 text-muted-foreground hover:text-primary hover:bg-primary/5 disabled:opacity-50">
+                        <Upload className="w-4 h-4" /><span className="text-[11px] font-semibold">Photo {i + 1}</span>
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <label htmlFor="new-member-password" className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">Mot de passe à remettre au membre</label>
+              <div className="mt-2 flex flex-wrap gap-2">
+                <div className="relative flex-1 min-w-[14rem] max-w-sm">
+                  <input id="new-member-password" type={showPassword ? "text" : "password"} value={newPassword} onChange={(e) => setNewPassword(e.target.value)}
+                    autoComplete="off" placeholder="8 caractères minimum" disabled={creating}
+                    className="w-full h-10 rounded-xl border border-input bg-card pl-3 pr-10 text-sm font-mono text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50" />
+                  <button type="button" onClick={() => setShowPassword((v) => !v)} aria-label={showPassword ? "Masquer le mot de passe" : "Afficher le mot de passe"}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground">
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+                <button type="button" onClick={generatePassword} disabled={creating} className="inline-flex items-center gap-1.5 h-10 px-3 rounded-xl border border-border text-xs font-semibold hover:bg-muted">
+                  <Wand2 className="w-3.5 h-3.5" /> Générer
+                </button>
+              </div>
+              <p className="mt-1.5 text-xs text-muted-foreground">Vous l'envoyez ensuite au membre sur WhatsApp : avec son adresse e-mail, il peut se connecter.</p>
+            </div>
+
             <div className="flex gap-2">
-              <button type="button" onClick={createAccount} disabled={creating}
+              <button type="button" onClick={createAccount} disabled={creating || newPhotoBusy !== null || newPassword.length < 8}
                 className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#3D5C3C] disabled:opacity-50">
-                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />} Créer le compte
+                {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
+                {creating ? "Création…" : "Créer le compte"}
               </button>
               <button type="button" onClick={() => setNewAccountForm(null)} disabled={creating} className="h-10 px-4 rounded-xl border border-border text-sm font-semibold hover:bg-muted">Annuler</button>
             </div>
@@ -252,9 +359,9 @@ export default function AdminFileImportPage() {
 
         {created && (
           <div role="status" className="mt-4 rounded-xl border border-primary/30 bg-card p-4 space-y-3">
-            <p className="flex items-center gap-2 text-sm font-semibold text-foreground"><KeyRound className="w-4 h-4 text-primary" /> Compte créé — envoyez le mot de passe au membre</p>
-            <p className="text-sm text-muted-foreground">{created.email} · mot de passe provisoire : <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">{created.password}</code></p>
-            <p className="text-xs text-amber-700">Ce mot de passe ne sera plus affiché après cette page. Importez ensuite ses 3 photos (reçues à part sur WhatsApp) dans le panneau ci-dessous.</p>
+            <p className="flex items-center gap-2 text-sm font-semibold text-foreground"><KeyRound className="w-4 h-4 text-primary" /> Compte créé — remettez-lui son mot de passe</p>
+            <p className="text-sm text-muted-foreground">{created.email} · mot de passe : <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-foreground">{created.password}</code></p>
+            <p className="text-xs text-amber-700">Ce mot de passe ne sera plus affiché une fois cette page quittée. Si les photos n'ont pas été ajoutées, importez-les dans le panneau ci-dessous.</p>
             <div className="flex flex-wrap gap-2">
               {created.phone && (
                 <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#3D5C3C]">

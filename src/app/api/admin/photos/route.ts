@@ -10,7 +10,6 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { randomInt } from "node:crypto";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { ADMIN_SYSTEM_EMAIL } from "@/lib/admin-system-shared";
@@ -57,19 +56,12 @@ export async function GET() {
   return NextResponse.json({ members });
 }
 
-/** Mot de passe provisoire lisible (sans caractères ambigus) : l'admin le transmet au membre. */
-function temporaryPassword(): string {
-  const alphabet = "abcdefghjkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-  const pick = (n: number) => Array.from({ length: n }, () => alphabet[randomInt(alphabet.length)]).join("");
-  return `${pick(4)}-${pick(4)}-${pick(4)}`;
-}
-
 /**
- * POST /api/admin/photos — { fields } : crée le compte d'un membre à partir de sa
- * fiche d'inscription Word (il n'a pas pu s'inscrire en ligne). Même résultat
- * que /api/auth/register : compte « en attente », profil renseigné. Un mot de
- * passe provisoire est renvoyé UNE fois : l'admin l'envoie au membre sur WhatsApp.
- * Selfie et charte restent à faire par le membre.
+ * POST /api/admin/photos — { fields, password } : crée le compte d'un membre à partir
+ * de sa fiche d'inscription Word (il n'a pas pu s'inscrire en ligne). Même résultat
+ * que /api/auth/register : compte « en attente », profil renseigné. Le mot de passe
+ * est choisi par l'admin, qui le remet au membre sur WhatsApp : avec son adresse
+ * e-mail, le membre peut se connecter. Selfie et charte restent à faire par lui.
  */
 export async function POST(req: NextRequest) {
   let admin;
@@ -77,6 +69,10 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => ({}));
   const input = body.fields && typeof body.fields === "object" ? body.fields as Record<string, unknown> : {};
+  const password = typeof body.password === "string" ? body.password : "";
+  if (password.length < 8 || password.length > 72) {
+    return NextResponse.json({ error: "Le mot de passe doit contenir entre 8 et 72 caractères." }, { status: 400 });
+  }
 
   const country = normalizeFormField("country", input.country);
   const ctx = { country: country.ok ? country.value as string : null };
@@ -92,7 +88,6 @@ export async function POST(req: NextRequest) {
   const email = values.email as string;
   const name = `${values.firstName} ${values.lastName}`.trim();
   const region = regionOfCountry(values.country as string);
-  const password = temporaryPassword();
 
   const { data: authData, error: authError } = await db.auth.admin.createUser({
     email,
@@ -105,7 +100,9 @@ export async function POST(req: NextRequest) {
     },
   });
   if (authError || !authData.user) {
-    if (/already|exists/i.test(authError?.message || "")) return NextResponse.json({ error: "Un compte existe déjà avec cet e-mail." }, { status: 409 });
+    const msg = authError?.message || "";
+    if (/already|exists/i.test(msg)) return NextResponse.json({ error: "Un compte existe déjà avec cet e-mail." }, { status: 409 });
+    if (/password/i.test(msg)) return NextResponse.json({ error: "Mot de passe refusé : choisissez-en un plus long ou plus complexe." }, { status: 400 });
     console.error("[admin/photos] création du compte:", authError?.message);
     return NextResponse.json({ error: "Création du compte impossible. Réessayez." }, { status: 500 });
   }
@@ -135,5 +132,5 @@ export async function POST(req: NextRequest) {
     await logAdminAction(admin.adminId, admin.email, "registration_account_created", "user", userId, { after: { email, country: values.country } });
   } catch { /* non bloquant */ }
 
-  return NextResponse.json({ ok: true, id: userId, email, password, phone: values.phone });
+  return NextResponse.json({ ok: true, id: userId, email, phone: values.phone });
 }
