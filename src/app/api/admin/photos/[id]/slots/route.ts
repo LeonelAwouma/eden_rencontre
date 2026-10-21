@@ -1,6 +1,6 @@
 /**
  * POST /api/admin/photos/:id/slots — adresses d'envoi signées pour importer les
- * photos de profil d'un membre (Admin → Import de photos).
+ * photos de profil d'un membre (Admin → Import de fichiers).
  *
  * Même mécanisme que l'inscription (/api/registration/media) : le navigateur de
  * l'admin dépose chaque photo, déjà réduite, directement dans le bucket privé

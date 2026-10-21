@@ -270,7 +270,7 @@ export async function POST(request: NextRequest) {
     });
 
     // Issue de secours « Je n'arrive pas à importer mes photos » : l'admin les importera
-    // (Admin → Import de photos) une fois reçues du membre.
+    // (Admin → Import de fichiers) une fois reçues du membre.
     if (body.photosDeferred === true && registration.photoRefs.length === 0) {
       try {
         await db.from("admin_notifications").insert({
