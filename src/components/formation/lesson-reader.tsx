@@ -371,15 +371,15 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
   // Même leçon (même slug) dans la langue de l'interface ; progression commune aux deux langues.
   const { localize, ui, formation } = useFormationLocale();
   const lesson = localize(lessonFr), pillar = localize(pillarFr), previous = localize(previousFr), next = localize(nextFr);
-  const { progress, ready, setCompleted, answer, resetQuiz, saveReflection, savePosition } = useFormationProgress({ persist: !preview });
+  const { progress, ready, synced, setCompleted, answer, resetQuiz, saveReflection, savePosition } = useFormationProgress({ persist: !preview });
   const basePath = preview ? ADMIN_LESSON_PREVIEW_PATH : FORMATION_BASE_PATH;
   // Retour : la liste des leçons de la formation (Académie → Bâtir sur le roc → leçon).
   const homeHref = preview ? ADMIN_LESSON_PREVIEW_PATH : FORMATION_BASE_PATH;
   const [scroll, setScroll] = useState(0);
   const isDone = progress.completed.includes(lesson.slug);
   // Déblocage progressif : un pilier s'ouvre quand le précédent est terminé. L'aperçu admin
-  // n'est jamais verrouillé, et rien ne l'est avant la lecture de la progression.
-  const locked = !preview && ready && !isPillarUnlocked(pillar.number, progress.completed);
+  // n'est jamais verrouillé, et rien ne l'est avant que la progression de la fiche ait été récupérée.
+  const locked = !preview && ready && synced && !isPillarUnlocked(pillar.number, progress.completed);
   // Fin de pilier : la leçon courante compte comme lue (l'atteindre la marque terminée).
   const isLastOfPillar = pillar.lessons[pillar.lessons.length - 1]?.slug === lesson.slug;
   const following = isLastOfPillar ? localize(nextPillar(pillar.number)) : null;
@@ -432,7 +432,7 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
 
   // À l'ouverture : proposer de reprendre là où la lecture s'était arrêtée.
   useEffect(() => {
-    if (!ready || locked) return; // leçon verrouillée : ni position ni « leçon en cours »
+    if (!ready || !synced || locked) return; // leçon verrouillée : ni position ni « leçon en cours »
     const saved = progress.positions[lesson.slug];
     setResumeAt(!progress.completed.includes(lesson.slug) && saved > 0.05 && saved < 0.95 ? saved : null);
     autoCompleted.current = false;
@@ -440,7 +440,7 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
     savePositionRef.current(lesson.slug, saved ?? 0); // mémorise la leçon en cours
     canSave.current = true;
     // eslint-disable-next-line react-hooks/exhaustive-deps -- une fois par leçon, quand la progression est chargée
-  }, [ready, lesson.slug]);
+  }, [ready, synced, locked, lesson.slug]);
 
   useEffect(() => {
     if (resumeAt !== null && scroll >= resumeAt - 0.02) setResumeAt(null);
@@ -455,7 +455,7 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
 
   useEffect(() => {
     const el = endRef.current;
-    if (!el || !ready) return;
+    if (!el || !ready || !synced || locked) return;
     const obs = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting && !autoCompleted.current) {
         autoCompleted.current = true;
@@ -464,7 +464,7 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
     }, { threshold: 0.6 });
     obs.observe(el);
     return () => obs.disconnect();
-  }, [ready, lesson.slug, isDone, setCompleted]);
+  }, [ready, synced, locked, lesson.slug, isDone, setCompleted]);
 
   if (locked) return <LockedPillar pillar={pillar} completed={progress.completed} />;
 
