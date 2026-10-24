@@ -93,11 +93,6 @@ export async function GET(req: NextRequest) {
     if (!data || data.length < PAGE_SIZE) { complete = true; break; }
     if (start + PAGE_SIZE >= 100000) return NextResponse.json({ error: "Volume d'engagements supérieur à la limite d'analyse." }, { status: 503 });
   }
-    const key = pairKey(e.requester_id, e.recipient_id);
-    const prev = engagementByPair.get(key);
-    // La plus récente compte, sauf qu'un engagement accepté prime toujours.
-    if (!prev || (e.status === "accepted" && prev.status !== "accepted")) engagementByPair.set(key, e);
-  }
 
   const stageOf = (f: FriendshipRow): Stage => {
     if (f.status === "declined") return "declined";
