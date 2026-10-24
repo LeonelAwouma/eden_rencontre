@@ -44,6 +44,7 @@ function applyAccentColor(accent: string) {
   root.style.setProperty("--accent-hex-50", accent + "80");
 
   const rgb = hexToRgb(accent);
+  const adminAccent = "#486B46";
 
   // Remove previous dynamic style if any
   const existing = document.getElementById("accent-dynamic-style");
@@ -75,59 +76,59 @@ function applyAccentColor(accent: string) {
     /* ── Buttons (green bg) ── */
     .eden-admin-body button[style*="background-color: rgb(56, 193, 114)"],
     .eden-admin-body .bg-\\[\\#38C172\\] {
-      background-color: ${accent} !important;
+      background-color: ${adminAccent} !important;
     }
 
     /* ── Accent green text ── */
     .eden-admin-body .text-\\[\\#38C172\\],
     .eden-admin-body .text-\\[\\#486B46\\] {
-      color: ${accent} !important;
+      color: ${adminAccent} !important;
     }
 
     /* ── Green backgrounds with opacity ── */
     .eden-admin-body .bg-\\[\\#38C172\\]\\/10,
     .eden-admin-body .bg-\\[\\#38C172\\]\\/5 {
-      background-color: ${accent}1a !important;
+      background-color: ${adminAccent}1a !important;
     }
 
     /* ── Focus rings ── */
     .eden-admin-body input:focus,
     .eden-admin-body select:focus,
     .eden-admin-body textarea:focus {
-      border-color: ${accent} !important;
-      box-shadow: 0 0 0 2px ${accent}33 !important;
+      border-color: ${adminAccent} !important;
+      box-shadow: 0 0 0 2px ${adminAccent}33 !important;
     }
 
     /* ── Ring on selected items ── */
     .eden-admin-body .ring-\\[\\#38C172\\] {
-      --tw-ring-color: ${accent} !important;
+      --tw-ring-color: ${adminAccent} !important;
     }
     .eden-admin-body .border-\\[\\#38C172\\] {
-      border-color: ${accent} !important;
+      border-color: ${adminAccent} !important;
     }
 
     /* ── Approved badge ── */
     .eden-badge-approved {
-      background: ${accent}1a !important;
-      color: ${accent} !important;
-      border-color: ${accent}33 !important;
+      background: ${adminAccent}1a !important;
+      color: ${adminAccent} !important;
+      border-color: ${adminAccent}33 !important;
     }
 
     /* ── Focus visible ── */
-    :focus-visible {
-      outline-color: ${accent};
+    .eden-admin :focus-visible {
+      outline-color: ${adminAccent};
     }
 
     /* ── Quick actions ── */
     .eden-quick-action:hover {
-      border-color: ${accent} !important;
-      background: ${accent}1a !important;
-      box-shadow: 0 4px 16px ${accent}33 !important;
+      border-color: ${adminAccent} !important;
+      background: ${adminAccent}1a !important;
+      box-shadow: 0 4px 16px ${adminAccent}33 !important;
     }
 
     /* ── Loading spinner ── */
     .eden-admin-body .animate-spin {
-      border-top-color: ${accent} !important;
+      border-top-color: ${adminAccent} !important;
     }
 
     /* ── Dashboard green text ── */
