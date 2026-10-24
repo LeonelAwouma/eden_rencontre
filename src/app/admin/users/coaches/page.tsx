@@ -35,7 +35,7 @@ export default function AdminCoaches(){
     <div className="grid lg:grid-cols-[minmax(0,360px)_1fr] gap-5">
       <form onSubmit={create} className="bg-white border rounded-2xl p-5 space-y-4">
         <h2 className="font-semibold flex gap-2 items-center"><UserPlus className="h-5 w-5 text-primary"/>Ajouter un coach</h2>
-        <label className="block text-sm font-medium">Nom du coach<input required value={name} onChange={e=>setName(e.target.value)} maxLength={100} className="mt-1 block w-full border rounded-lg px-3 py-2"/></label>
+        <label className="block text-sm font-medium">Nom du coach (facultatif)<input value={name} onChange={e=>setName(e.target.value)} maxLength={100} className="mt-1 block w-full border rounded-lg px-3 py-2"/></label>
         <label className="block text-sm font-medium">Adresse e-mail<input required type="email" autoComplete="off" value={email} onChange={e=>setEmail(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2"/></label>
         <label className="block text-sm font-medium">Mot de passe initial<input required type="password" autoComplete="new-password" minLength={12} value={password} onChange={e=>setPassword(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2"/><span className="text-xs text-[#56615A]">12 caractères minimum, lettres et chiffres. Transmettez-le par un canal sécurisé.</span></label>
         <button disabled={saving} className="rounded-xl bg-[#486B46] text-white px-4 py-2 w-full disabled:opacity-50">{saving?"Création…":"Créer le compte Coach"}</button>
