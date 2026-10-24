@@ -242,6 +242,7 @@ export default function DashboardPage() {
   const [discoverSearch, setDiscoverSearch] = useState("");
   const [discoverCount, setDiscoverCount] = useState(24);
   const [user, setUser] = useState<EdenUser | null>(null);
+  const [coachAccess, setCoachAccess] = useState(false);
   const { progress: formationProgress, synced: formationSynced } = useFormationProgress();
   const [activeConvId, setActiveConvId] = useState<string | null>(null);
   const [conversations, setConversations] = useState<ChatConversation[]>([]);
@@ -325,7 +326,7 @@ export default function DashboardPage() {
   // Le matching (Découvrir, suggestions, visiteurs, favoris, demandes) s'ouvre après le
   // pilier 1 de « Bâtir sur le roc » ; les profils des autres membres exigent en plus un profil à 100 %.
   const formationDone = isPillarOneComplete(formationProgress.completed);
-  const canBrowseProfiles = profileCompletionPct === 100 && formationDone;
+  const canBrowseProfiles = !coachAccess && profileCompletionPct === 100 && formationDone;
   const [viewingPhoto, setViewingPhoto] = useState<{ url: string; name: string } | null>(null);
   const closePhoto = useCallback(() => setViewingPhoto(null), []);
   const viewPhotoOf = (m: { avatar_url?: string | null; name: string }) => () => { if (m.avatar_url) setViewingPhoto({ url: m.avatar_url, name: m.name }); };
@@ -828,6 +829,8 @@ export default function DashboardPage() {
   useEffect(() => {
     // Le pseudonyme est exigé en amont par MemberGate (dashboard/layout.tsx).
     getSession().then((u) => setUser(u));
+    authHeaders().then(h => fetch("/api/coach/me", { headers:h, cache:"no-store" }))
+      .then(r => { if(r.ok) setCoachAccess(true); }).catch(() => {});
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
     if (tabParam && (TABS as string[]).includes(tabParam)) setActiveTab(tabParam as Tab);
