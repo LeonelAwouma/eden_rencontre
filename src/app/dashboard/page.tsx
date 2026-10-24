@@ -2174,6 +2174,10 @@ export default function DashboardPage() {
                 {incomingRequests.map((r) => {
                   const m = r.requester;
                   const loc = [m.city, m.country].filter(Boolean).join(", ");
+                  const age = ageFromBirthDate(m.birthDate);
+                  const bio = m.bio?.trim().replace(/\s+/g, " ");
+                  const shortBio = bio && bio.length > 200 ? `${bio.slice(0, 197).trimEnd()}…` : bio;
+                  const marriageValues = Array.isArray(m.marriageVision) ? m.marriageVision.slice(0, 3) : [];
                   return (
                     <div key={r.id} className="rounded-2xl p-5 sm:p-6"
                       style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
@@ -2188,9 +2192,37 @@ export default function DashboardPage() {
                               {m.name}
                               {m.verification_status === "verified" && isProfileFullyComplete(m) && <VerifiedBadge size={16} />}
                             </button>
-                            {loc && <p className="text-xs flex items-center gap-1 justify-center sm:justify-start" style={{ color: "#777777" }}>
-                              <MapPin className="w-3 h-3" /> {loc}{m.profession ? ` • ${m.profession}` : ""}
-                            </p>}
+                            <div className="flex flex-wrap items-center gap-x-3 gap-y-1 justify-center sm:justify-start text-xs" style={{ color: "#777777" }}>
+                              {age ? <span>{t("profileDetail.yearsOld", { age })}</span> : null}
+                              {loc && <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" /> {loc}</span>}
+                              {m.profession && <span className="inline-flex items-center gap-1"><Briefcase className="w-3 h-3" /> {m.profession}</span>}
+                            </div>
+                          </div>
+                          <div className="rounded-xl px-4 py-3 text-left" style={{ background: "#FAF9F6", border: "1px solid #F0EDE8" }}>
+                            <p className="text-[11px] uppercase tracking-wider font-bold" style={{ color: "#486B46" }}>
+                              {t("dashboard.requestProfileSummary")}
+                            </p>
+                            <p className="mt-1.5 text-sm leading-relaxed break-words" style={{ color: "#2F2F2F" }}>
+                              {shortBio || t("dashboard.requestProfileNoBio")}
+                            </p>
+                            {marriageValues.length > 0 && (
+                              <div className="mt-3">
+                                <p className="text-xs font-semibold mb-1.5" style={{ color: "#6B746E" }}>
+                                  {t("dashboard.requestMarriageValues")}
+                                </p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {marriageValues.map((id) => {
+                                    const value = getValue(id);
+                                    return (
+                                      <span key={id} className="inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium"
+                                        style={{ background: "#EEF5EC", color: "#486B46" }}>
+                                        <span aria-hidden="true">{value.icon}</span> {value.label}
+                                      </span>
+                                    );
+                                  })}
+                                </div>
+                              </div>
+                            )}
                           </div>
                           {r.message && <p className="italic leading-relaxed text-sm" style={{ color: "#2F2F2F" }}>&ldquo;{r.message}&rdquo;</p>}
                           <div className="flex flex-wrap gap-2 justify-center sm:justify-start">
