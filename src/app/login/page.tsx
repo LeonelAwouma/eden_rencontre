@@ -60,7 +60,7 @@ export default function LoginPage() {
       try {
         const { authHeaders } = await import("@/lib/auth");
         const response = await fetch("/api/coach/me", { headers: await authHeaders(), cache: "no-store" });
-        if (response.ok) { router.replace("/coach"); return; }
+        if (response.ok) { router.replace(nextPath() || "/dashboard"); return; }
       } catch { /* Le contrôle d'accès membre vérifie ensuite la session. */ }
       router.replace(nextPath() || "/searching?returning=1");
     }).catch(() => setCheckingSession(false));
@@ -123,7 +123,7 @@ export default function LoginPage() {
         });
       }
 
-      router.push(data.user?.role === "coach" ? "/coach" : (nextPath() || "/searching"));
+      router.push(data.user?.role === "coach" ? (nextPath() || "/dashboard") : (nextPath() || "/searching"));
     } catch {
       setError(t("login.errorServer"));
       setIsLoading(false);
