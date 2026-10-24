@@ -25,6 +25,7 @@ import {
   newsletterWelcomeEmail,
   testEmail,
   profileReminderEmail,
+  inactivityReminderEmail,
   type RenderedEmail,
   type MeetInvitationEmailParams,
   type MeetingInvitationEmailParams,
@@ -317,4 +318,9 @@ export async function sendNewsletterEmails(messages: NewsletterMessage[]): Promi
   }
   console.log(`📧 Newsletter sent to ${sent}/${messages.length} recipient(s) — Subject: ${messages[0].rendered.subject}`);
   return sent;
+}
+
+/** Envoi limité à un membre opt-in, avec en-têtes de désabonnement. */
+export async function sendInactivityReminderEmail(to: string, name: string, days: 7 | 21 | 45, unsubscribeUrl: string): Promise<boolean> {
+  return sendEmail(to, inactivityReminderEmail(name, days, unsubscribeUrl), "account", unsubscribeHeaders(unsubscribeUrl));
 }
