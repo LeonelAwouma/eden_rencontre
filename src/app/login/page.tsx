@@ -121,7 +121,7 @@ export default function LoginPage() {
         });
       }
 
-      router.push(nextPath() || "/searching");
+      router.push(data.user?.role === "coach" ? "/coach" : (nextPath() || "/searching"));
     } catch {
       setError(t("login.errorServer"));
       setIsLoading(false);
