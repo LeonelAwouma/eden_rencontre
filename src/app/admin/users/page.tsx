@@ -210,6 +210,11 @@ export default function AdminUsersPage() {
         subtitle={`${total} utilisateur${total !== 1 ? "s" : ""} au total`}
       />
 
+      <Link href="/admin/users/coaches" className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-[#D8E3D5] bg-white px-5 py-4 hover:bg-[#F6F9F5]">
+        <span><span className="block text-sm font-bold text-[#1F2A23]">Coachs de la plateforme</span>
+        <span className="block text-xs text-[#56615A]">Créer, consulter et suspendre des accès Coach distincts des membres</span></span>
+        <ShieldCheck className="w-6 h-6 text-primary shrink-0" />
+      </Link>
       <DataHealthPanel />
 
       {/* Error banner */}

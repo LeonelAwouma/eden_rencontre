@@ -56,6 +56,8 @@ export function MemberGate({ children }: { children: React.ReactNode }) {
         router.replace(`/login?next=${encodeURIComponent(pathname || "/dashboard")}`);
         return;
       }
+      // Le coach approuvé accède directement aux pages membres sans profil matrimonial.
+      if (account.status === "approved" && account.isCoach) { setAllowed(true); return; }
       // Profil de base incomplet (souvent une inscription Google interrompue) : on
       // garde la session et on renvoie vers le formulaire, avant tout le reste.
       if (!account.profileComplete && account.status !== "rejected" && account.status !== "suspended") {

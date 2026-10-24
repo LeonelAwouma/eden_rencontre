@@ -275,7 +275,7 @@ export async function reportIncident(kind: string, detail?: string): Promise<voi
 export async function getMyAccountStatus(): Promise<{
   status: AccountStatus; email: string; profileComplete: boolean; pseudo: string | null; sessionPseudo: string | null;
   /** Numéro de téléphone renseigné (demandé à l'inscription depuis le 2026-10-02 ; les anciens membres le complètent à l'entrée). */
-  hasPhone: boolean; country: string | null;
+  hasPhone: boolean; country: string | null; isCoach: boolean;
 } | null> {
   let user: EdenUser | null;
   if (supabase) {
@@ -298,9 +298,9 @@ export async function getMyAccountStatus(): Promise<{
   const email = user.email || "";
   // Repli localStorage (sans Supabase) : pas de validation admin possible.
   const sessionPseudo = user.pseudo?.trim() || null;
-  if (!supabase || !user.id) return { status: "approved", email, profileComplete: true, pseudo: sessionPseudo, sessionPseudo, hasPhone: true, country: null };
+  if (!supabase || !user.id) return { status: "approved", email, profileComplete: true, pseudo: sessionPseudo, sessionPseudo, hasPhone: true, country: null, isCoach: false };
   const [{ data, error }, phoneRes] = await Promise.all([
-    supabase.from("profiles").select("status, gender, country, city, pseudo").eq("id", user.id).maybeSingle(),
+    supabase.from("profiles").select("status, gender, country, city, pseudo, account_type").eq("id", user.id).maybeSingle(),
     // Lu à part : sans la colonne (migration 20261002_profiles_phone.sql non exécutée),
     // on ne bloque personne et le reste du statut reste lisible.
     supabase.from("profiles").select("phone").eq("id", user.id).maybeSingle(),
@@ -323,7 +323,7 @@ export async function getMyAccountStatus(): Promise<{
   const profileComplete = isRegistrationComplete(d);
   // Pseudo public : celui du profil (lu par l'admin et les membres), pas celui de la session.
   const pseudo = typeof d?.pseudo === "string" && d.pseudo.trim() ? d.pseudo.trim() : null;
-  return { status, email, profileComplete, pseudo, sessionPseudo, hasPhone, country: d?.country || null };
+  return { status, email, profileComplete, pseudo, sessionPseudo, hasPhone, country: d?.country || null, isCoach: d?.account_type === "coach" };
 }
 
 export async function signInWithGoogle(): Promise<{ ok: boolean; error?: string }> {

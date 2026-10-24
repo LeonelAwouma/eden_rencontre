@@ -55,13 +55,15 @@ export default function LoginPage() {
       return;
     }
     // Reconnexion automatique : si une session existe déjà, on saute la connexion.
-    getSession().then((session) => {
-      if (session) {
-        router.replace(nextPath() || "/searching?returning=1");
-      } else {
-        setCheckingSession(false);
-      }
-    });
+    getSession().then(async (session) => {
+      if (!session) { setCheckingSession(false); return; }
+      try {
+        const { authHeaders } = await import("@/lib/auth");
+        const response = await fetch("/api/coach/me", { headers: await authHeaders(), cache: "no-store" });
+        if (response.ok) { router.replace(nextPath() || "/dashboard"); return; }
+      } catch { /* Le contrôle d'accès membre vérifie ensuite la session. */ }
+      router.replace(nextPath() || "/searching?returning=1");
+    }).catch(() => setCheckingSession(false));
   }, [router]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -121,7 +123,7 @@ export default function LoginPage() {
         });
       }
 
-      router.push(nextPath() || "/searching");
+      router.push(data.user?.role === "coach" ? (nextPath() || "/dashboard") : (nextPath() || "/searching"));
     } catch {
       setError(t("login.errorServer"));
       setIsLoading(false);
