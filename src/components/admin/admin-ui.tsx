@@ -248,7 +248,7 @@ export function Toast({ notice, onClose }: { notice: { kind: "success" | "error"
   return (
     <div role={notice.kind === "error" ? "alert" : "status"}
       className={cn("fixed bottom-4 right-4 left-4 sm:left-auto z-[60] sm:max-w-sm flex items-start gap-3 px-4 py-3 rounded-xl border bg-white text-[14px] shadow-[0_8px_24px_rgba(31,51,40,0.12)] animate-in fade-in slide-in-from-bottom-2 duration-200",
-        notice.kind === "success" ? "border-primary/25 text-[#2F5A2D]" : "border-[#D64545]/30 text-[#B83333]")}>
+        notice.kind === "success" ? "border-primary/25 text-[#486B46]" : "border-[#D64545]/30 text-[#B83333]")}>
       <span className="flex-1">{notice.text}</span>
       <button type="button" onClick={onClose} className="text-[#5F6B63] hover:text-[#1F2A23]" aria-label="Fermer"><X className="w-4 h-4" /></button>
     </div>
