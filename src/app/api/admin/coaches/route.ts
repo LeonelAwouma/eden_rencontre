@@ -30,8 +30,8 @@ export async function POST(req: NextRequest) {
   const id=created.user.id;
   const {error:coachError}=await db.from("coach_accounts").insert({user_id:id,email,display_name:name,active:true});
   if(coachError){await db.auth.admin.deleteUser(id);return NextResponse.json({error:"Impossible de définir le rôle Coach."},{status:500});}
-  // Aucun profil matrimonial approuvé : protection contre matching et découvertes.
-  const {error:profileError}=await db.from("profiles").update({status:"suspended"}).eq("id",id);
+  // Un coach peut entrer dans les espaces membre et professionnel, sans être un candidat matrimonial.
+  const {error:profileError}=await db.from("profiles").update({status:"approved",account_type:"coach"}).eq("id",id);
   if(profileError) {
     await db.from("coach_accounts").delete().eq("user_id",id);
     await db.auth.admin.deleteUser(id);
@@ -43,8 +43,11 @@ export async function PATCH(req: NextRequest) {
   if (!await permitted()) return NextResponse.json({error:"Non autorisé"},{status:401});
   const body=await req.json().catch(()=>null);
   if(typeof body?.id!=="string"||typeof body?.active!=="boolean")return NextResponse.json({error:"Paramètres invalides"},{status:400});
-  const {data,error}=await getSupabaseAdmin().from("coach_accounts").update({active:body.active,updated_at:new Date().toISOString()})
+  const db=getSupabaseAdmin();
+  const {data,error}=await db.from("coach_accounts").update({active:body.active,updated_at:new Date().toISOString()})
     .eq("user_id",body.id).select("user_id,active").maybeSingle();
   if(error||!data)return NextResponse.json({error:"Coach introuvable ou modification impossible"},{status:404});
+  const {error:profileError}=await db.from("profiles").update({status:body.active?"approved":"suspended",account_type:"coach"}).eq("id",body.id);
+  if(profileError)return NextResponse.json({error:"Statut de profil incohérent, intervention nécessaire."},{status:500});
   return NextResponse.json({coach:data});
 }
