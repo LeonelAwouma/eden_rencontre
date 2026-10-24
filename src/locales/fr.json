@@ -1277,6 +1277,8 @@
     "requestsSubtitle": "Ces personnes souhaitent cheminer avec vous",
     "requestProfileSummary": "Présentation du demandeur",
     "requestProfileNoBio": "Ce membre n’a pas encore ajouté de présentation.",
+    "requestCompatibilityTitle": "Compatibilité réciproque",
+    "requestCompatibilityUnavailable": "Score indisponible",
     "requestMarriageValues": "Sa vision du mariage",
     "noPendingRequests": "Aucune demande en attente",
     "noPendingRequestsDesc": "Quand quelqu'un souhaite faire votre connaissance, sa demande apparaîtra ici.",
