@@ -502,3 +502,20 @@ export function blogPostNewsletterEmail(params: BlogPostNewsletterParams): Rende
     footer: newsletterFooter(unsubscribeUrl),
   });
 }
+
+/** Relance douce, sans allégation trompeuse de nouveau match ou message. */
+export function inactivityReminderEmail(name: string, days: 7 | 21 | 45, unsubscribeUrl: string): RenderedEmail {
+  const subject = days === 7 ? "Un petit bonjour de Garden of Alliance"
+    : days === 21 ? "Votre espace Garden of Alliance vous attend"
+    : "Souhaitez-vous toujours recevoir nos nouvelles ?";
+  return render(subject, {
+    preheader: "Vous pouvez reprendre votre parcours à votre rythme.",
+    title: days === 7 ? "Un petit bonjour" : "Revenez quand vous le souhaitez",
+    body: greeting(name) +
+      p("Cela fait un moment que vous n'avez pas visité Garden of Alliance. Votre espace est toujours disponible, et vous pouvez reprendre votre parcours à votre rythme.") +
+      p("Si vous le souhaitez, retrouvez votre profil et les ressources de l'Académie du mariage.") +
+      button(`${appUrl()}/login`, "Retrouver mon espace") +
+      fine(`Vous recevez ce rappel parce que vous avez choisi de recevoir les e-mails de réactivation. Pour ne plus en recevoir : ${link(unsubscribeUrl, "désactiver les rappels")}.`),
+    footer: `Vous avez choisi de recevoir les rappels d'inactivité. ${link(unsubscribeUrl, "Se désinscrire des rappels")}`,
+  });
+}
