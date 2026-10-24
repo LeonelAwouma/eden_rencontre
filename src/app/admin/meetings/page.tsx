@@ -61,7 +61,7 @@ interface MeetingStats {
 }
 
 const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string }> = {
-  scheduled: { label: "Planifié", color: "#38C172", bg: "#38C172/10" },
+  scheduled: { label: "Planifié", color: "#486B46", bg: "#486B46/10" },
   upcoming: { label: "À venir", color: "#3B82F6", bg: "#3B82F6/10" },
   in_progress: { label: "En cours", color: "#F59E0B", bg: "#F59E0B/10" },
   completed: { label: "Terminé", color: "#6B7280", bg: "#6B7280/10" },
@@ -188,7 +188,7 @@ export default function AdminMeetingsPage() {
           </h1>
           <p className="text-[13px] text-[#9CA3AF] mt-0.5 font-medium">Planifiez et gérez les rencontres Google Meet</p>
         </div>
-        <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#38C172] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(56,193,114,0.3)] hover:shadow-[0_6px_24px_rgba(56,193,114,0.4)] hover:-translate-y-0.5 transition-all">
+        <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(72,107,70,0.3)] hover:shadow-[0_6px_24px_rgba(72,107,70,0.4)] hover:-translate-y-0.5 transition-all">
           <Plus className="w-4 h-4" /> Nouveau rendez-vous
         </button>
       </motion.div>
@@ -198,7 +198,7 @@ export default function AdminMeetingsPage() {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
             { label: "Total", value: stats.total_meetings, color: "#1a1a1a" },
-            { label: "Planifiés", value: stats.scheduled_meetings, color: "#38C172" },
+            { label: "Planifiés", value: stats.scheduled_meetings, color: "#486B46" },
             { label: "À venir", value: stats.upcoming_meetings, color: "#3B82F6" },
             { label: "Terminés", value: stats.completed_meetings, color: "#6B7280" },
           ].map((stat) => (
@@ -229,7 +229,7 @@ export default function AdminMeetingsPage() {
       {/* Meetings List */}
       {loading ? (
         <div className="p-12 text-center">
-          <div className="w-8 h-8 border-[3px] border-[#38C172]/20 border-t-[#38C172] rounded-full animate-spin mx-auto" />
+          <div className="w-8 h-8 border-[3px] border-[#486B46]/20 border-t-[#486B46] rounded-full animate-spin mx-auto" />
           <p className="text-[13px] text-[#9CA3AF] mt-3 font-medium">Chargement…</p>
         </div>
       ) : meetings.length === 0 ? (
@@ -237,7 +237,7 @@ export default function AdminMeetingsPage() {
           <Video className="w-12 h-12 text-[#E5E7EB] mx-auto mb-4" />
           <p className="text-[15px] font-semibold text-[#374151]">Aucun rendez-vous</p>
           <p className="text-[13px] text-[#9CA3AF] mt-1">Créez un premier rendez-vous vidéo pour deux participants</p>
-          <button onClick={() => setShowCreateModal(true)} className="mt-4 px-5 py-2.5 rounded-xl bg-[#38C172] text-white text-[13px] font-semibold">
+          <button onClick={() => setShowCreateModal(true)} className="mt-4 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold">
             <Plus className="w-4 h-4 inline mr-1.5" /> Nouveau rendez-vous
           </button>
         </div>
@@ -285,7 +285,7 @@ export default function AdminMeetingsPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {meeting.google_meet_url && meeting.status !== "cancelled" && (
-                      <a href={meeting.google_meet_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#38C172] text-white text-[12px] font-semibold hover:bg-[#2DA861] transition-all">
+                      <a href={meeting.google_meet_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#486B46] text-white text-[12px] font-semibold hover:bg-[#486B46] transition-all">
                         <Video className="w-3.5 h-3.5" /> Rejoindre
                       </a>
                     )}
@@ -349,7 +349,7 @@ export default function AdminMeetingsPage() {
               value={cancelReason}
               onChange={(e) => setCancelReason(e.target.value)}
               placeholder="Raison de l'annulation (optionnel)"
-              className="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] text-[13px] text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] resize-none h-24 mb-4"
+              className="w-full px-4 py-3 rounded-xl border border-[#E5E7EB] text-[13px] text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46] resize-none h-24 mb-4"
             />
             <div className="flex gap-3">
               <button onClick={() => { setCancelModalId(null); setCancelReason(""); }} className="flex-1 px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-semibold text-[#374151] hover:bg-[#F9FAFB] transition-all">Annuler</button>
@@ -368,11 +368,11 @@ export default function AdminMeetingsPage() {
             <div className="space-y-4 mb-4">
               <div>
                 <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Nouvelle date</label>
-                <input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172]" />
+                <input type="date" value={rescheduleDate} onChange={(e) => setRescheduleDate(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46]" />
               </div>
               <div>
                 <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Nouvelle heure</label>
-                <input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172]" />
+                <input type="time" value={rescheduleTime} onChange={(e) => setRescheduleTime(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46]" />
               </div>
             </div>
             <p className="text-[12px] text-[#9CA3AF] mb-4">L'événement Google Calendar sera automatiquement mis à jour.</p>
@@ -516,7 +516,7 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
     return (
       <div>
         <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">{label}</label>
-        <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all">
+        <select value={value} onChange={(e) => onChange(e.target.value)} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46] transition-all">
           <option value="">Sélectionner un participant</option>
           {options.map((u) => (
             <option key={u.id} value={u.id}>{u.name} ({u.email})</option>
@@ -540,12 +540,12 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
         <div className="space-y-4">
           <div>
             <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Titre</label>
-            <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Première rencontre guidée" className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172]" />
+            <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Première rencontre guidée" className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46]" />
           </div>
 
           <div>
             <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Description</label>
-            <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Description du rendez-vous (optionnel)" className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] resize-none h-20" />
+            <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Description du rendez-vous (optionnel)" className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46] resize-none h-20" />
           </div>
 
           {/* Primary participants */}
@@ -578,7 +578,7 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
                 <select
                   value={pid}
                   onChange={(e) => updateExtraParticipant(index, e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172] transition-all"
+                  className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46] transition-all"
                 >
                   <option value="">Sélectionner un participant</option>
                   {availableUsers.map((u) => (
@@ -600,7 +600,7 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
           <button
             type="button"
             onClick={addExtraParticipant}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-[#D1D5DB] text-[13px] font-medium text-[#6B7280] hover:text-[#38C172] hover:border-[#38C172] hover:bg-[#38C172]/5 transition-all w-full justify-center"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-dashed border-[#D1D5DB] text-[13px] font-medium text-[#6B7280] hover:text-[#486B46] hover:border-[#486B46] hover:bg-[#486B46]/5 transition-all w-full justify-center"
           >
             <Plus className="w-4 h-4" /> Ajouter un participant
           </button>
@@ -608,17 +608,17 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Date</label>
-              <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172]" />
+              <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46]" />
             </div>
             <div>
               <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Heure</label>
-              <input type="time" value={form.time} onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172]" />
+              <input type="time" value={form.time} onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46]" />
             </div>
           </div>
 
           <div>
             <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Durée</label>
-            <select value={form.duration_minutes} onChange={(e) => setForm((f) => ({ ...f, duration_minutes: Number(e.target.value) }))} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#38C172]/20 focus:border-[#38C172]">
+            <select value={form.duration_minutes} onChange={(e) => setForm((f) => ({ ...f, duration_minutes: Number(e.target.value) }))} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46]">
               <option value={30}>30 minutes</option>
               <option value={45}>45 minutes</option>
               <option value={60}>1 heure</option>
@@ -633,7 +633,7 @@ function CreateMeetingModal({ onClose, onCreated }: { onClose: () => void; onCre
           <button
             onClick={handleSubmit}
             disabled={!form.title || !form.user_one_id || !form.user_two_id || !form.date || !form.time || form.user_one_id === form.user_two_id || loading}
-            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#38C172] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(56,193,114,0.3)] hover:shadow-[0_6px_24px_rgba(56,193,114,0.4)] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+            className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(72,107,70,0.3)] hover:shadow-[0_6px_24px_rgba(72,107,70,0.4)] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
           >
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Video className="w-4 h-4" /> Créer le rendez-vous</>}
           </button>

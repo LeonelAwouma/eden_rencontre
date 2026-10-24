@@ -616,7 +616,7 @@ export function ResourceForm({ initial, resourceId, slug, publishedAt }: {
             </div>
             <div className="pt-2 space-y-2 border-t border-border">
               <button type="submit" disabled={saving || uploading}
-                className="w-full mt-3 inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-primary text-white text-[14px] font-bold hover:bg-[#3A5A38] disabled:opacity-60 transition-colors shadow-sm">
+                className="w-full mt-3 inline-flex items-center justify-center gap-2 h-11 rounded-xl bg-primary text-white text-[14px] font-bold hover:bg-[#486B46] disabled:opacity-60 transition-colors shadow-sm">
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : v.status === "published" && !isEdit ? <Send className="w-4 h-4" /> : <Save className="w-4 h-4" />}
                 {saving ? "Enregistrement…" : submitLabel}
               </button>

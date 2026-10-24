@@ -118,7 +118,7 @@ export function BlogNewsletterPanel() {
           </p>
           <div className="flex justify-center gap-2 mt-5">
             {search || status !== "all" ? (
-              <button onClick={() => { setSearch(""); setStatus("all"); setPage(1); }} className="px-4 py-2 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold hover:bg-[#3A5A38]">Tout afficher</button>
+              <button onClick={() => { setSearch(""); setStatus("all"); setPage(1); }} className="px-4 py-2 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold hover:bg-[#486B46]">Tout afficher</button>
             ) : (
               <Link href="/blog" target="_blank" className="px-4 py-2 rounded-xl border border-[#E5E7EB] text-[13px] font-semibold text-[#56615A] hover:bg-[#F9FAFB]">Voir la page Blog</Link>
             )}

@@ -80,7 +80,7 @@ export default function AdminAcademyPage() {
           </span>
 
           <span className="mt-auto pt-6">
-            <span className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold group-hover:bg-[#3A5A38] transition-colors">
+            <span className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold group-hover:bg-[#486B46] transition-colors">
               <BookOpen className="w-4 h-4" /> Voir les leçons <ArrowRight className="w-4 h-4" />
             </span>
           </span>

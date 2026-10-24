@@ -164,7 +164,7 @@ export function DataHealthPanel() {
 
       {scan && (
         <div role="status" className={cn("mx-4 mb-3 rounded-xl px-3.5 py-2.5 text-[12px] font-medium",
-          scan.smtp.ok && !scan.anomalies.length ? "bg-[#486B46]/10 text-[#2E4A36]" : "bg-amber-50 text-amber-800 border border-amber-200")}>
+          scan.smtp.ok && !scan.anomalies.length ? "bg-[#486B46]/10 text-[#486B46]" : "bg-amber-50 text-amber-800 border border-amber-200")}>
           Contrôle du {new Date(scan.checked_at).toLocaleString("fr-FR")} :{" "}
           {scan.smtp.ok ? "e-mails opérationnels" : `e-mails EN PANNE — ${scan.smtp.error}`} ·{" "}
           {scan.anomalies.length ? `${scan.anomalies.length} compte(s) à réparer` : "aucun compte à réparer"}
@@ -185,7 +185,7 @@ export function DataHealthPanel() {
               </div>
               {a.repairable && (
                 <button type="button" onClick={() => repair(a)} disabled={!!busy}
-                  className="self-start sm:self-center inline-flex items-center gap-1 h-8 px-3 rounded-lg bg-[#486B46] text-white text-[12px] font-bold hover:bg-[#3A5A38] disabled:opacity-50">
+                  className="self-start sm:self-center inline-flex items-center gap-1 h-8 px-3 rounded-lg bg-[#486B46] text-white text-[12px] font-bold hover:bg-[#486B46] disabled:opacity-50">
                   {busy === a.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Wrench className="w-3.5 h-3.5" />}
                   Réparer
                 </button>
@@ -216,7 +216,7 @@ export function DataHealthPanel() {
               : "Exécutez la migration 20261002_profile_reminder.sql pour activer les relances."}
           </p>
           <button type="button" onClick={remind} disabled={!data.reminderTracking || !due.length || !!busy}
-            className="h-9 px-4 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#3A5A38] disabled:opacity-50 flex items-center justify-center gap-2">
+            className="h-9 px-4 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#486B46] disabled:opacity-50 flex items-center justify-center gap-2">
             {busy === "remind" ? <Loader2 className="w-4 h-4 animate-spin" /> : <Mail className="w-4 h-4" />}
             {busy === "remind" ? "Envoi…" : `Relancer (${due.length})`}
           </button>
@@ -260,7 +260,7 @@ export function DataHealthPanel() {
 
       {notice && (
         <p role="status" className={cn("mx-4 mb-4 rounded-xl px-3.5 py-2.5 text-[13px] font-medium",
-          notice.ok ? "bg-[#486B46]/10 text-[#2E4A36]" : "bg-[#B42318]/10 text-[#B42318]")}>
+          notice.ok ? "bg-[#486B46]/10 text-[#486B46]" : "bg-[#B42318]/10 text-[#B42318]")}>
           {notice.text}
         </p>
       )}

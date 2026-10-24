@@ -94,13 +94,13 @@ interface MeetStats {
 /* ───────────────────────── Config ─────────────────────────── */
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
-  active: { label: "Actif", color: "#38C172" },
+  active: { label: "Actif", color: "#486B46" },
   cancelled: { label: "Annulé", color: "#EF4444" },
   completed: { label: "Terminé", color: "#6B7280" },
 };
 
 const INVITATION_STATUS: Record<string, { label: string; color: string; icon: string }> = {
-  sent: { label: "Envoyé", color: "#38C172", icon: "✓" },
+  sent: { label: "Envoyé", color: "#486B46", icon: "✓" },
   failed: { label: "Échoué", color: "#EF4444", icon: "✗" },
   pending: { label: "En attente", color: "#F59E0B", icon: "⏳" },
 };
@@ -246,7 +246,7 @@ export default function AdminMeetsPage() {
           </h1>
           <p className="text-[13px] text-[#9CA3AF] mt-0.5 font-medium">Créez des réunions vidéo Jitsi et envoyez les invitations par e-mail</p>
         </div>
-        <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2D5016] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(45,80,22,0.3)] hover:shadow-[0_6px_24px_rgba(45,80,22,0.4)] hover:-translate-y-0.5 transition-all">
+        <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(72,107,70,0.3)] hover:shadow-[0_6px_24px_rgba(72,107,70,0.4)] hover:-translate-y-0.5 transition-all">
           <Plus className="w-4 h-4" /> Créer une visioconférence
         </button>
       </motion.div>
@@ -256,7 +256,7 @@ export default function AdminMeetsPage() {
         <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
           {[
             { label: "Total réunions", value: stats.total_meets, color: "#1a1a1a" },
-            { label: "Actifs", value: stats.active_meets, color: "#38C172" },
+            { label: "Actifs", value: stats.active_meets, color: "#486B46" },
             { label: "Emails envoyés", value: stats.sent_invitations, color: "#3B82F6" },
             { label: "Échecs email", value: stats.failed_invitations, color: "#EF4444" },
           ].map((stat) => (
@@ -287,7 +287,7 @@ export default function AdminMeetsPage() {
       {/* Meets List */}
       {loading ? (
         <div className="p-12 text-center">
-          <div className="w-8 h-8 border-[3px] border-[#2D5016]/20 border-t-[#2D5016] rounded-full animate-spin mx-auto" />
+          <div className="w-8 h-8 border-[3px] border-[#486B46]/20 border-t-[#486B46] rounded-full animate-spin mx-auto" />
           <p className="text-[13px] text-[#9CA3AF] mt-3 font-medium">Chargement…</p>
         </div>
       ) : meets.length === 0 ? (
@@ -295,7 +295,7 @@ export default function AdminMeetsPage() {
           <Video className="w-12 h-12 text-[#E5E7EB] mx-auto mb-4" />
           <p className="text-[15px] font-semibold text-[#374151]">Aucune visioconférence</p>
           <p className="text-[13px] text-[#9CA3AF] mt-1">Créez votre première réunion vidéo : les invitations partent automatiquement par e-mail</p>
-          <button onClick={() => setShowCreateModal(true)} className="mt-4 px-5 py-2.5 rounded-xl bg-[#2D5016] text-white text-[13px] font-semibold">
+          <button onClick={() => setShowCreateModal(true)} className="mt-4 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold">
             <Plus className="w-4 h-4 inline mr-1.5" /> Créer une visioconférence
           </button>
         </div>
@@ -319,7 +319,7 @@ export default function AdminMeetsPage() {
                     <div className="w-16 h-16 rounded-2xl bg-[#EEF5EC] border border-[#D4E8CF] flex flex-col items-center justify-center mx-auto">
                       <Calendar className="w-4 h-4 text-[#486B46] mb-0.5" />
                       <span className="text-[10px] font-bold text-[#374151] uppercase">{date.split(" ")[0]}</span>
-                      <span className="text-[16px] font-bold text-[#2D5016]">{date.split(" ")[1]}</span>
+                      <span className="text-[16px] font-bold text-[#486B46]">{date.split(" ")[1]}</span>
                     </div>
                   </div>
 
@@ -338,7 +338,7 @@ export default function AdminMeetsPage() {
                       <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {time} · {meet.duration} min</span>
                       <span className="flex items-center gap-1"><Users className="w-3.5 h-3.5" /> {meet.invitation_stats.total} invité(s)</span>
                       {meet.invitation_stats.sent > 0 && (
-                        <span className="flex items-center gap-1 text-[#38C172]"><Mail className="w-3.5 h-3.5" /> {meet.invitation_stats.sent} envoyé(s)</span>
+                        <span className="flex items-center gap-1 text-[#486B46]"><Mail className="w-3.5 h-3.5" /> {meet.invitation_stats.sent} envoyé(s)</span>
                       )}
                       {meet.invitation_stats.failed > 0 && (
                         <span className="flex items-center gap-1 text-[#EF4444]"><AlertTriangle className="w-3.5 h-3.5" /> {meet.invitation_stats.failed} échoué(s)</span>
@@ -353,7 +353,7 @@ export default function AdminMeetsPage() {
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {meet.status === "active" && (
                       meet.space_name?.startsWith(JITSI_SPACE_PREFIX) ? (
-                        <Link href={`/admin/meets/${meet.id}/salle`} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#2D5016] text-white text-[12px] font-semibold hover:bg-[#3D6B1E] transition-all">
+                        <Link href={`/admin/meets/${meet.id}/salle`} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#486B46] text-white text-[12px] font-semibold hover:bg-[#486B46] transition-all">
                           <Video className="w-3.5 h-3.5" /> Rejoindre
                         </Link>
                       ) : meet.meeting_uri ? (
@@ -413,7 +413,7 @@ export default function AdminMeetsPage() {
                             {meet.status !== "active" && (
                               <button
                                 onClick={() => handleStatusChange(meet.id, "active")}
-                                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-[#38C172] hover:bg-green-50 transition-all"
+                                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-[#486B46] hover:bg-green-50 transition-all"
                               >
                                 <RefreshCw className="w-3.5 h-3.5" /> Réactiver
                               </button>
@@ -587,8 +587,8 @@ function CreateMeetModal({ onClose, onCreated }: {
 
         {/* Step Indicator */}
         <div className="flex px-6 pt-3">
-          <div className="flex-1 h-1 rounded-full bg-[#2D5016] mr-1" />
-          <div className={cn("flex-1 h-1 rounded-full ml-1 transition-colors", step === "users" ? "bg-[#2D5016]" : "bg-[#E5E7EB]")} />
+          <div className="flex-1 h-1 rounded-full bg-[#486B46] mr-1" />
+          <div className={cn("flex-1 h-1 rounded-full ml-1 transition-colors", step === "users" ? "bg-[#486B46]" : "bg-[#E5E7EB]")} />
         </div>
 
         {/* Content */}
@@ -597,28 +597,28 @@ function CreateMeetModal({ onClose, onCreated }: {
             <div className="space-y-4">
               <div>
                 <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Titre de la réunion *</label>
-                <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Ex: Réunion mensuelle communauté" className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#2D5016]/20 focus:border-[#2D5016]" />
+                <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Ex: Réunion mensuelle communauté" className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46]" />
               </div>
 
               <div>
                 <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Description / message pour les invités</label>
-                <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Message qui sera inclus dans l'email d'invitation…" className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#2D5016]/20 focus:border-[#2D5016] resize-none h-20" />
+                <textarea value={form.description} onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))} placeholder="Message qui sera inclus dans l'email d'invitation…" className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46] resize-none h-20" />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Date *</label>
-                  <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#2D5016]/20 focus:border-[#2D5016]" />
+                  <input type="date" value={form.date} onChange={(e) => setForm((f) => ({ ...f, date: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46]" />
                 </div>
                 <div>
                   <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Heure *</label>
-                  <input type="time" value={form.time} onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#2D5016]/20 focus:border-[#2D5016]" />
+                  <input type="time" value={form.time} onChange={(e) => setForm((f) => ({ ...f, time: e.target.value }))} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46]" />
                 </div>
               </div>
 
               <div>
                 <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Durée</label>
-                <select value={form.duration} onChange={(e) => setForm((f) => ({ ...f, duration: Number(e.target.value) }))} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#2D5016]/20 focus:border-[#2D5016]">
+                <select value={form.duration} onChange={(e) => setForm((f) => ({ ...f, duration: Number(e.target.value) }))} className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] bg-white text-[13px] font-medium text-[#374151] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46]">
                   <option value={30}>30 minutes</option>
                   <option value={45}>45 minutes</option>
                   <option value={60}>1 heure</option>
@@ -639,7 +639,7 @@ function CreateMeetModal({ onClose, onCreated }: {
                   placeholder="Rechercher par nom ou email…"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-[13px] text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#2D5016]/20 focus:border-[#2D5016] transition-all font-medium"
+                  className="w-full pl-10 pr-4 py-2.5 bg-white border border-[#E5E7EB] rounded-xl text-[13px] text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46] transition-all font-medium"
                 />
               </div>
 
@@ -654,7 +654,7 @@ function CreateMeetModal({ onClose, onCreated }: {
                 onClick={toggleSelectAll}
                 className={cn(
                   "flex items-center gap-2 w-full px-4 py-2.5 rounded-xl text-[13px] font-medium border transition-all",
-                  selectAll ? "bg-[#EEF5EC] border-[#2D5016] text-[#2D5016]" : "border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]"
+                  selectAll ? "bg-[#EEF5EC] border-[#486B46] text-[#486B46]" : "border-[#E5E7EB] text-[#6B7280] hover:bg-[#F9FAFB]"
                 )}
               >
                 <UserPlus className="w-4 h-4" />
@@ -663,7 +663,7 @@ function CreateMeetModal({ onClose, onCreated }: {
 
               {/* Counter */}
               <div className="bg-[#EEF5EC] rounded-xl px-4 py-3 text-center">
-                <p className="text-[14px] font-bold text-[#2D5016]">
+                <p className="text-[14px] font-bold text-[#486B46]">
                   {selectedUserIds.length} utilisateur{selectedUserIds.length !== 1 ? "s" : ""} sélectionné{selectedUserIds.length !== 1 ? "s" : ""}
                 </p>
                 <p className="text-[11px] text-[#6B7280] mt-0.5">
@@ -690,10 +690,10 @@ function CreateMeetModal({ onClose, onCreated }: {
                         onClick={() => toggleUser(user.id)}
                         className={cn(
                           "flex items-center gap-3 w-full px-4 py-2.5 rounded-xl text-left transition-all",
-                          selected ? "bg-[#EEF5EC] border border-[#2D5016]/30" : "hover:bg-[#F9FAFB] border border-transparent"
+                          selected ? "bg-[#EEF5EC] border border-[#486B46]/30" : "hover:bg-[#F9FAFB] border border-transparent"
                         )}
                       >
-                        <div className={cn("w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all", selected ? "bg-[#2D5016] border-[#2D5016]" : "border-[#D1D5DB]")}>
+                        <div className={cn("w-5 h-5 rounded-md border-2 flex items-center justify-center transition-all", selected ? "bg-[#486B46] border-[#486B46]" : "border-[#D1D5DB]")}>
                           {selected && <span className="text-white text-[10px]">✓</span>}
                         </div>
                         <div className="flex-1 min-w-0">
@@ -721,7 +721,7 @@ function CreateMeetModal({ onClose, onCreated }: {
             <button
               onClick={() => setStep("users")}
               disabled={!canProceed}
-              className="flex-1 px-4 py-2.5 rounded-xl bg-[#2D5016] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(45,80,22,0.3)] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="flex-1 px-4 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(72,107,70,0.3)] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
               Suivant — Inviter des participants
             </button>
@@ -729,7 +729,7 @@ function CreateMeetModal({ onClose, onCreated }: {
             <button
               onClick={handleSubmit}
               disabled={!canProceed || loading}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#2D5016] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(45,80,22,0.3)] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(72,107,70,0.3)] disabled:opacity-40 disabled:cursor-not-allowed transition-all"
             >
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Video className="w-4 h-4" /> Créer et envoyer ({selectedUserIds.length})</>}
             </button>
@@ -803,7 +803,7 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
       <>
         
         <div className="p-12 text-center">
-          <div className="w-8 h-8 border-[3px] border-[#2D5016]/20 border-t-[#2D5016] rounded-full animate-spin mx-auto" />
+          <div className="w-8 h-8 border-[3px] border-[#486B46]/20 border-t-[#486B46] rounded-full animate-spin mx-auto" />
           <p className="text-[13px] text-[#9CA3AF] mt-3 font-medium">Chargement…</p>
         </div>
       </>
@@ -864,7 +864,7 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
             <div className="bg-[#F9FAFB] rounded-xl p-4">
               <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-1">Lien d&apos;invitation</p>
               {meet.meeting_uri ? (
-                <a href={meet.meeting_uri} target="_blank" rel="noopener noreferrer" className="text-[13px] font-medium text-[#2D5016] hover:underline break-all">{meet.meeting_uri}</a>
+                <a href={meet.meeting_uri} target="_blank" rel="noopener noreferrer" className="text-[13px] font-medium text-[#486B46] hover:underline break-all">{meet.meeting_uri}</a>
               ) : (
                 <p className="text-[13px] text-[#9CA3AF]">Non disponible</p>
               )}
@@ -874,7 +874,7 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
               <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-1">Invitations</p>
               <p className="text-[14px] font-semibold text-[#374151]">{meet.invitation_stats.total} au total</p>
               <div className="flex gap-3 mt-1 text-[12px]">
-                <span className="text-[#38C172]">✓ {meet.invitation_stats.sent} envoyé(s)</span>
+                <span className="text-[#486B46]">✓ {meet.invitation_stats.sent} envoyé(s)</span>
                 <span className="text-[#EF4444]">✗ {meet.invitation_stats.failed} échoué(s)</span>
                 {meet.invitation_stats.pending > 0 && <span className="text-[#F59E0B]">⏳ {meet.invitation_stats.pending} en attente</span>}
               </div>
@@ -884,11 +884,11 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
           {meet.meeting_uri && (
             <div className="flex flex-wrap gap-2">
               {meet.space_name?.startsWith(JITSI_SPACE_PREFIX) ? (
-                <Link href={`/admin/meets/${meet.id}/salle`} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2D5016] text-white text-[13px] font-semibold hover:bg-[#3D6B1E] transition-all">
+                <Link href={`/admin/meets/${meet.id}/salle`} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold hover:bg-[#486B46] transition-all">
                   <ShieldCheck className="w-4 h-4" /> Rejoindre comme modérateur
                 </Link>
               ) : (
-                <a href={meet.meeting_uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2D5016] text-white text-[13px] font-semibold hover:bg-[#3D6B1E] transition-all">
+                <a href={meet.meeting_uri} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold hover:bg-[#486B46] transition-all">
                   <Video className="w-4 h-4" /> Ouvrir l&apos;ancien lien
                 </a>
               )}
@@ -929,7 +929,7 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
                         <button
                           onClick={() => handleResend(inv.id)}
                           disabled={resendingId === inv.id}
-                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-[#2D5016] bg-[#EEF5EC] hover:bg-[#D4E8CF] transition-all disabled:opacity-50"
+                          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-[11px] font-semibold text-[#486B46] bg-[#EEF5EC] hover:bg-[#D4E8CF] transition-all disabled:opacity-50"
                         >
                           {resendingId === inv.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
                           Renvoyer

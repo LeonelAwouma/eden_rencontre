@@ -341,7 +341,7 @@ function AppearanceSection({
     <>
       <PanelHeader title="Apparence" description="Personnalisez la couleur d'accent et le message d'accueil de la plateforme." />
 
-      <FieldRow label="Couleur d'accent" description="Couleur des menus, boutons et badges de l'interface admin et de l'espace membre.">
+      <FieldRow label="Couleur d'accent" description="Couleur du site et des membres. L’administration conserve toujours le vert Eden (#486B46).">
         <div role="radiogroup" aria-label="Couleur d'accent" className="grid grid-cols-2 sm:grid-cols-3 gap-2">
           {ACCENT_COLORS.map((c) => {
             const selected = currentAccent.toLowerCase() === c.color.toLowerCase();

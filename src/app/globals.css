@@ -124,6 +124,22 @@
      répétés en masse. Portée à `.eden-admin`.
      ═══════════════════════════════════════════════════════ */
   .eden-admin {
+    /* Identité de l'administration : un seul vert, indépendamment des
+       couleurs d'accent configurables pour les espaces publics et membres. */
+    --admin-brand-green: #486B46;
+    --eden-primary-green: #486B46;
+    --eden-secondary-green: #486B46;
+    --eden-dark-green: #486B46;
+    --eden-light-green: rgb(72 107 70 / 0.08);
+    --sidebar-active-text: #486B46;
+    --sidebar-active-bar: #486B46;
+    --sidebar-active-bg: rgb(72 107 70 / 0.08);
+    --chart-eden: #486B46;
+    --chart-eden-light: rgb(72 107 70 / 0.08);
+    --accent-hex: #486B46;
+    --accent-hex-10: rgb(72 107 70 / 0.10);
+    --accent-hex-20: rgb(72 107 70 / 0.20);
+    --accent-hex-50: rgb(72 107 70 / 0.50);
     --background: 42 30% 97%;
     --foreground: 155 24% 13%;
 
@@ -141,14 +157,14 @@
 
     --border: 40 16% 88%;
     --input: 40 16% 88%;
-    --ring: 152 35% 32%;
+    --ring: 117 21% 35%;
 
-    --primary: 152 35% 32%;
+    --primary: 117 21% 35%;
     --primary-foreground: 0 0% 100%;
-    --accent: 152 35% 32%;
+    --accent: 117 21% 35%;
     --accent-foreground: 0 0% 100%;
 
-    --success: 152 45% 34%;
+    --success: 117 21% 35%;
     --warning: 38 68% 44%;
     --destructive: 0 62% 50%;
   }
@@ -722,50 +738,50 @@ html {
 /* Loading spinner */
 .eden-admin-body .animate-spin,
 .eden-admin-body div[class*="border-t-[#38C172]"]:not([class*="border-t-[#38C172]/"]) {
-  border-top-color: var(--accent-hex, #38C172) !important;
-  border-color: var(--accent-hex-20, #38C17233);
-  border-top-color: var(--accent-hex, #38C172) !important;
+  border-top-color: var(--accent-hex, #486B46) !important;
+  border-color: var(--accent-hex-20, #486B4633);
+  border-top-color: var(--accent-hex, #486B46) !important;
 }
 
 /* Save buttons with green background */
 .eden-admin-body button[class*="bg-[#38C172]"]:not([class*="bg-[#38C172]/"]),
 .eden-admin-body a[class*="bg-[#38C172]"]:not([class*="bg-[#38C172]/"]) {
-  background-color: var(--accent-hex, #38C172) !important;
-  box-shadow: 0 4px 16px var(--accent-hex-50, rgba(56, 193, 114, 0.3)) !important;
+  background-color: var(--accent-hex, #486B46) !important;
+  box-shadow: 0 4px 16px var(--accent-hex-50, rgba(72, 107, 70, 0.3)) !important;
 }
 .eden-admin-body button[class*="bg-[#38C172]"]:not([class*="bg-[#38C172]/"]):hover {
-  box-shadow: 0 6px 24px var(--accent-hex-50, rgba(56, 193, 114, 0.4)) !important;
+  box-shadow: 0 6px 24px var(--accent-hex-50, rgba(72, 107, 70, 0.4)) !important;
 }
 
 /* Green hover/active accents */
 .eden-admin-body button[class*="text-[#38C172]"]:not([class*="text-[#38C172]/"]),
 .eden-admin-body span[class*="text-[#38C172]"]:not([class*="text-[#38C172]/"]),
 .eden-admin-body a[class*="text-[#38C172]"]:not([class*="text-[#38C172]/"]) {
-  color: var(--accent-hex, #38C172) !important;
+  color: var(--accent-hex, #486B46) !important;
 }
 
 .eden-admin-body div[class*="bg-[#38C172]/10"]:not([class*="bg-[#38C172]/100"]),
 .eden-admin-body button[class*="bg-[#38C172]/10"]:not([class*="bg-[#38C172]/100"]) {
-  background-color: var(--accent-hex-10, rgba(56, 193, 114, 0.1)) !important;
+  background-color: var(--accent-hex-10, rgba(72, 107, 70, 0.1)) !important;
 }
 
 /* Focus rings */
 .eden-admin-body input:focus,
 .eden-admin-body select:focus {
-  border-color: var(--accent-hex, #38C172) !important;
-  box-shadow: 0 0 0 2px var(--accent-hex-20, rgba(56, 193, 114, 0.2)) !important;
+  border-color: var(--accent-hex, #486B46) !important;
+  box-shadow: 0 0 0 2px var(--accent-hex-20, rgba(72, 107, 70, 0.2)) !important;
 }
 
 /* Accent-colored borders on cards */
 .eden-admin-body [class*="border-[#38C172]"]:not([class*="border-[#38C172]/"]) {
-  border-color: var(--accent-hex, #38C172) !important;
+  border-color: var(--accent-hex, #486B46) !important;
 }
 
 /* Ring/selected states for color picker and options */
 .eden-admin-body [class*="ring-[#38C172]"]:not([class*="ring-[#38C172]/"]),
 .eden-admin-body [class*="border-[#38C172]"]:not([class*="border-[#38C172]/"]) {
-  --tw-ring-color: var(--accent-hex, #38C172) !important;
-  border-color: var(--accent-hex, #38C172) !important;
+  --tw-ring-color: var(--accent-hex, #486B46) !important;
+  border-color: var(--accent-hex, #486B46) !important;
 }
 
 /* Approved badge */
@@ -785,6 +801,11 @@ html {
   border-color: var(--accent-hex, #486B46);
   background: var(--accent-hex-10, #EEF5EC);
   box-shadow: 0 4px 16px var(--accent-hex-20, rgba(72, 107, 70, 0.12));
+}
+
+/* Les focus du back-office ne changent pas de couleur avec le thème public. */
+.eden-admin :focus-visible {
+  outline-color: #486B46;
 }
 
 /* ── Circular Progress ── */

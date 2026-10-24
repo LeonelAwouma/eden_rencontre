@@ -105,7 +105,7 @@ export default function AdminBlogPage() {
             ))}
           </div>
         </div>
-        <Link href="/admin/blog/new" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#486B46] text-white rounded-xl text-[13px] font-semibold hover:bg-[#3A5A38] transition-all shadow-sm">
+        <Link href="/admin/blog/new" className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#486B46] text-white rounded-xl text-[13px] font-semibold hover:bg-[#486B46] transition-all shadow-sm">
           <Plus className="w-4 h-4" /> Nouvel article
         </Link>
       </motion.div>
@@ -189,7 +189,7 @@ export default function AdminBlogPage() {
                     <td className="px-4 py-3"><div className="flex items-center justify-end gap-1">
                       {post.status==="published" && post.newsletter_sent_at && post.newsletter_recipients != null && <button onClick={()=>handleNewsletter(post)} disabled={actionLoading===post.id} title="Renvoyer aux abonnés" className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#486B46] hover:bg-[#EEF5EC] disabled:opacity-50"><RotateCw className="w-3.5 h-3.5" /></button>}
                       <Link href={`/admin/blog/${post.id}/edit`} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#486B46] hover:bg-[#EEF5EC] transition-all"><Edit3 className="w-3.5 h-3.5" /></Link>
-                      {post.status==="draft" && <button onClick={()=>handleStatusChange(post.id,"published")} disabled={actionLoading===post.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#38C172] hover:bg-[#38C172]/10 disabled:opacity-50"><Send className="w-3.5 h-3.5" /></button>}
+                      {post.status==="draft" && <button onClick={()=>handleStatusChange(post.id,"published")} disabled={actionLoading===post.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#486B46] hover:bg-[#486B46]/10 disabled:opacity-50"><Send className="w-3.5 h-3.5" /></button>}
                       {post.status==="published" && <button onClick={()=>handleStatusChange(post.id,"archived")} disabled={actionLoading===post.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#F59E0B] hover:bg-[#F59E0B]/10 disabled:opacity-50"><Archive className="w-3.5 h-3.5" /></button>}
                       <button onClick={()=>handleDelete(post.id)} disabled={deletingId===post.id} className="w-8 h-8 rounded-lg flex items-center justify-center text-[#9CA3AF] hover:text-[#F56565] hover:bg-[#F56565]/10 disabled:opacity-50">
                         {deletingId===post.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}

@@ -197,7 +197,7 @@ export default function AdminMediathequePage() {
         </div>
         <div className="flex items-center gap-2 flex-wrap">
           <Link href="/admin/mediatheque/new"
-            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-white text-[13px] font-bold hover:bg-[#3A5A38] transition-colors shadow-sm">
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-white text-[13px] font-bold hover:bg-[#486B46] transition-colors shadow-sm">
             <Plus className="w-4 h-4" /> Ajouter une ressource
           </Link>
         </div>
@@ -704,7 +704,7 @@ function LibraryEmptyState() {
         </p>
         <div className="mt-7 flex flex-col sm:flex-row items-center justify-center gap-2.5">
           <Link href="/admin/mediatheque/new"
-            className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-primary text-white text-[14px] font-bold hover:bg-[#3A5A38] transition-colors shadow-sm">
+            className="inline-flex items-center gap-2 h-11 px-5 rounded-xl bg-primary text-white text-[14px] font-bold hover:bg-[#486B46] transition-colors shadow-sm">
             <Plus className="w-4 h-4" /> Ajouter une première ressource
           </Link>
           <Link href="/admin/mediatheque/categories"

@@ -51,7 +51,7 @@ const WORD_ACCEPT = ".docx,application/vnd.openxmlformats-officedocument.wordpro
 
 const STATUS: Record<string, { label: string; className: string }> = {
   pending: { label: "En attente", className: "bg-amber-50 text-amber-700 border-amber-200" },
-  approved: { label: "Approuvé", className: "bg-[#486B46]/10 text-[#2E4A36] border-[#486B46]/20" },
+  approved: { label: "Approuvé", className: "bg-[#486B46]/10 text-[#486B46] border-[#486B46]/20" },
   suspended: { label: "Suspendu", className: "bg-red-50 text-red-700 border-red-200" },
   rejected: { label: "Refusé", className: "bg-gray-100 text-gray-600 border-gray-200" },
 };
@@ -278,7 +278,7 @@ export default function AdminFileImportPage() {
             <p className="text-xs text-muted-foreground">Déposez le fichier .docx ici : le membre est retrouvé par l'adresse e-mail de la fiche (son compte est créé s'il n'existe pas, avec le mot de passe que vous renseignez), puis vous vérifiez ses réponses avant de les enregistrer. Ses 3 photos arrivent à part sur WhatsApp.</p>
           </div>
           <button type="button" onClick={() => formInputRef.current?.click()} disabled={readingForm}
-            className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#3D5C3C] disabled:opacity-50">
+            className="inline-flex items-center justify-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#486B46] disabled:opacity-50">
             {readingForm ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileUp className="w-4 h-4" />}
             {readingForm ? "Lecture…" : "Importer une fiche"}
           </button>
@@ -348,7 +348,7 @@ export default function AdminFileImportPage() {
 
             <div className="flex gap-2">
               <button type="button" onClick={createAccount} disabled={creating || newPhotoBusy !== null || newPassword.length < 8}
-                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#3D5C3C] disabled:opacity-50">
+                className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#486B46] disabled:opacity-50">
                 {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserPlus className="w-4 h-4" />}
                 {creating ? "Création…" : "Créer le compte"}
               </button>
@@ -364,7 +364,7 @@ export default function AdminFileImportPage() {
             <p className="text-xs text-amber-700">Ce mot de passe ne sera plus affiché une fois cette page quittée. Si les photos n'ont pas été ajoutées, importez-les dans le panneau ci-dessous.</p>
             <div className="flex flex-wrap gap-2">
               {created.phone && (
-                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#3D5C3C]">
+                <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#486B46]">
                   Envoyer sur WhatsApp
                 </a>
               )}
@@ -782,7 +782,7 @@ function MemberImport({ memberId, initialForm, onImported, onClose }: { memberId
               <p className="text-xs text-amber-700">Les photos actuelles seront remplacées par celles-ci.</p>
             )}
             <button type="button" onClick={save} disabled={(ready.length === 0 && selectedFields.length === 0) || saving || processing !== null}
-              className="w-full h-11 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#3D5C3C] disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2">
+              className="w-full h-11 rounded-xl bg-[#486B46] text-white text-sm font-semibold hover:bg-[#486B46] disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2">
               {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
               {saving ? "Enregistrement…" : saveLabel ? `Compléter le parcours : ${saveLabel}` : "Compléter le parcours"}
             </button>

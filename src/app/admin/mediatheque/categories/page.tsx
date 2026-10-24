@@ -43,7 +43,7 @@ export default function CategoriesPage() {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[24px] font-bold text-[#1a1a1a]">Catégories</h1>
-        <button onClick={startNew} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#3A5A38]"><Plus className="w-4 h-4" /> Ajouter</button>
+        <button onClick={startNew} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#486B46]"><Plus className="w-4 h-4" /> Ajouter</button>
       </div>
 
       {showForm && (
@@ -59,7 +59,7 @@ export default function CategoriesPage() {
             <div><label className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1.5 block">Couleur</label><input type="color" value={form.color} onChange={e => setForm(p => ({ ...p, color: e.target.value }))} className="w-full h-[46px] border border-gray-200 rounded-xl cursor-pointer" /></div>
             <div><label className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1.5 block">Ordre</label><input type="number" value={form.sort_order} onChange={e => setForm(p => ({ ...p, sort_order: e.target.value }))} className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#486B46]" /></div>
           </div>
-          <button onClick={handleSave} disabled={saving || !form.name} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#3A5A38] disabled:opacity-50"><Save className="w-4 h-4" />{saving ? "..." : "Enregistrer"}</button>
+          <button onClick={handleSave} disabled={saving || !form.name} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#486B46] disabled:opacity-50"><Save className="w-4 h-4" />{saving ? "..." : "Enregistrer"}</button>
         </motion.div>
       )}
 

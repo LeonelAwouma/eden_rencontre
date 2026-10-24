@@ -366,7 +366,7 @@ export default function AdminUserDetailPage() {
                 <span className="font-semibold">Photos manquantes</span> — {(user.profile_photos || []).filter(Boolean).length}/3 photos de profil.
                 Si le membre vous les a envoyées, importez-les manuellement.
               </p>
-              <Link href={`/admin/photos?user=${user.id}`} className="shrink-0 inline-flex items-center justify-center h-9 px-4 rounded-lg bg-[#486B46] text-white text-[13px] font-semibold hover:bg-[#3D5C3C]">
+              <Link href={`/admin/photos?user=${user.id}`} className="shrink-0 inline-flex items-center justify-center h-9 px-4 rounded-lg bg-[#486B46] text-white text-[13px] font-semibold hover:bg-[#486B46]">
                 Importer les photos
               </Link>
             </div>

@@ -60,7 +60,7 @@ export default function LearningPathsPage() {
     <div className="max-w-4xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-[24px] font-bold text-[#1a1a1a]">Parcours de formation</h1>
-        <button onClick={startNew} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#3A5A38]"><Plus className="w-4 h-4" /> Ajouter</button>
+        <button onClick={startNew} className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#486B46]"><Plus className="w-4 h-4" /> Ajouter</button>
       </div>
 
       {showForm && (
@@ -104,7 +104,7 @@ export default function LearningPathsPage() {
             <div><label className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1.5 block">Ordre</label><input type="number" value={form.sort_order} onChange={e=>setForm(p=>({...p,sort_order:e.target.value}))} className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#486B46]"/></div>
             <div><label className="text-xs font-bold uppercase tracking-widest text-gray-500 mb-1.5 block">Statut</label><select value={form.status} onChange={e=>setForm(p=>({...p,status:e.target.value}))} className="w-full p-3 border border-gray-200 rounded-xl text-sm outline-none focus:border-[#486B46]"><option value="draft">Brouillon</option><option value="published">Publié</option></select></div>
           </div>
-          <button onClick={handleSave} disabled={saving||!form.title} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#3A5A38] disabled:opacity-50"><Save className="w-4 h-4"/>{saving?"...":"Enregistrer"}</button>
+          <button onClick={handleSave} disabled={saving||!form.title} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-bold hover:bg-[#486B46] disabled:opacity-50"><Save className="w-4 h-4"/>{saving?"...":"Enregistrer"}</button>
         </motion.div>
       )}
 
@@ -125,7 +125,7 @@ export default function LearningPathsPage() {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">
                     <h3 className="text-[15px] font-semibold text-[#2F2F2F]">{p.title}</h3>
-                    <span className={cn("px-2 py-0.5 rounded-md text-[10px] font-semibold", p.status==="published"?"bg-[#38C172]/10 text-[#38C172]":"bg-gray-100 text-gray-500")}>{p.status==="published"?"Publié":"Brouillon"}</span>
+                    <span className={cn("px-2 py-0.5 rounded-md text-[10px] font-semibold", p.status==="published"?"bg-[#486B46]/10 text-[#486B46]":"bg-gray-100 text-gray-500")}>{p.status==="published"?"Publié":"Brouillon"}</span>
                   </div>
                   <p className="text-[12px] text-[#9CA3AF] mt-1 line-clamp-2">{p.description}</p>
                   <div className="flex items-center gap-4 mt-2 text-[11px] text-[#6B7280]">

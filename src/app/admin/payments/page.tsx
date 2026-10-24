@@ -41,7 +41,7 @@ const STATUS_OPTIONS = [
 
 const STATUS_CLASSES: Record<string, string> = {
   pending: "bg-[#FF9E45]/10 text-[#FF9E45]",
-  completed: "bg-[#38C172]/10 text-[#38C172]",
+  completed: "bg-[#486B46]/10 text-[#486B46]",
   failed: "bg-[#F56565]/10 text-[#F56565]",
   refunded: "bg-[#4F7DF3]/10 text-[#4F7DF3]",
 };
@@ -119,7 +119,7 @@ export default function PaymentsPage() {
   });
 
   const statCards = [
-    { label: "Revenu total", value: formatCurrency(stats.totalRevenue), icon: DollarSign, color: "text-[#38C172]", bg: "bg-[#38C172]/10" },
+    { label: "Revenu total", value: formatCurrency(stats.totalRevenue), icon: DollarSign, color: "text-[#486B46]", bg: "bg-[#486B46]/10" },
     { label: "Revenu mensuel", value: formatCurrency(stats.monthlyRevenue), icon: TrendingUp, color: "text-[#4F7DF3]", bg: "bg-[#4F7DF3]/10" },
     { label: "Abonnements actifs", value: stats.activeSubscriptions, icon: Users, color: "text-[#FF9E45]", bg: "bg-[#FF9E45]/10" },
     { label: "Paiements échoués", value: stats.failedPayments, icon: AlertCircle, color: "text-[#F56565]", bg: "bg-[#F56565]/10" },
@@ -171,8 +171,8 @@ export default function PaymentsPage() {
             <AreaChart data={revenueChartData}>
               <defs>
                 <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#38C172" stopOpacity={0.15} />
-                  <stop offset="95%" stopColor="#38C172" stopOpacity={0} />
+                  <stop offset="5%" stopColor="#486B46" stopOpacity={0.15} />
+                  <stop offset="95%" stopColor="#486B46" stopOpacity={0} />
                 </linearGradient>
               </defs>
               <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" />
@@ -181,7 +181,7 @@ export default function PaymentsPage() {
               <Tooltip
                 contentStyle={{ borderRadius: 12, border: "1px solid #E5E7EB", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", fontSize: 13, fontWeight: 500 }}
               />
-              <Area type="monotone" dataKey="revenue" stroke="#38C172" strokeWidth={2.5} fill="url(#revenueGradient)" dot={false} activeDot={{ r: 5, fill: "#38C172", stroke: "#fff", strokeWidth: 2 }} />
+              <Area type="monotone" dataKey="revenue" stroke="#486B46" strokeWidth={2.5} fill="url(#revenueGradient)" dot={false} activeDot={{ r: 5, fill: "#486B46", stroke: "#fff", strokeWidth: 2 }} />
             </AreaChart>
           </ResponsiveContainer>
         </div>
@@ -226,7 +226,7 @@ export default function PaymentsPage() {
       >
         {loading ? (
           <div className="p-12 text-center">
-            <div className="w-8 h-8 border-[3px] border-[#38C172]/20 border-t-[#38C172] rounded-full animate-spin mx-auto" />
+            <div className="w-8 h-8 border-[3px] border-[#486B46]/20 border-t-[#486B46] rounded-full animate-spin mx-auto" />
             <p className="text-[13px] text-[#9CA3AF] mt-3 font-medium">Chargement…</p>
           </div>
         ) : payments.length === 0 ? (
