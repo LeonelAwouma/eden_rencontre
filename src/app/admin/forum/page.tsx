@@ -287,7 +287,7 @@ export default function AdminForumPage() {
       </div>
 
       {notice && (
-        <div role="status" className="fixed bottom-6 right-6 z-[60] max-w-sm flex items-center gap-2 px-4 py-3 rounded-xl bg-white border border-primary/30 shadow-lg text-[13px] font-medium text-[#3A5A38]">
+        <div role="status" className="fixed bottom-6 right-6 z-[60] max-w-sm flex items-center gap-2 px-4 py-3 rounded-xl bg-white border border-primary/30 shadow-lg text-[13px] font-medium text-[#486B46]">
           <CheckCircle2 className="w-4 h-4 text-primary shrink-0" /> {notice}
         </div>
       )}
@@ -454,7 +454,7 @@ export default function AdminForumPage() {
                 placeholder="Écrire au groupe au nom de l'équipe…" aria-label="Message de l'équipe"
                 className="flex-1 min-w-0 resize-none rounded-[20px] border border-border bg-white px-4 py-2 text-[14px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 max-h-[140px]" />
               <button type="submit" disabled={!draft.trim() || busy === "send"} aria-label="Envoyer"
-                className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shrink-0 hover:bg-[#3A5A38] disabled:opacity-40">
+                className="w-10 h-10 rounded-full bg-primary text-white flex items-center justify-center shrink-0 hover:bg-[#486B46] disabled:opacity-40">
                 {busy === "send" ? <Loader2 className="w-4 h-4 animate-spin" /> : editing ? <Check className="w-4 h-4" /> : <Send className="w-4 h-4" />}
               </button>
             </form>
@@ -474,7 +474,7 @@ export default function AdminForumPage() {
               className="mt-1 w-full px-3 py-2 rounded-xl border border-border text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10 resize-none" />
             <button onClick={() => saveSettings({ name: form.name.trim(), description: form.description.trim() }, "Réglages enregistrés.")}
               disabled={!settingsDirty || busy === "settings"}
-              className="mt-2 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-primary text-white text-[13px] font-bold hover:bg-[#3A5A38] disabled:opacity-40">
+              className="mt-2 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-xl bg-primary text-white text-[13px] font-bold hover:bg-[#486B46] disabled:opacity-40">
               <Save className="w-3.5 h-3.5" /> Enregistrer
             </button>
 
