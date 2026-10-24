@@ -313,7 +313,7 @@ export default function AdminUsersPage() {
       >
         {loading ? (
           <div className="p-12 text-center">
-            <div className="w-8 h-8 border-[3px] border-success/20 border-t-[#38C172] rounded-full animate-spin mx-auto" />
+            <div className="w-8 h-8 border-[3px] border-success/20 border-t-[#486B46] rounded-full animate-spin mx-auto" />
             <p className="text-[13px] text-muted-foreground mt-3 font-medium">Chargement…</p>
           </div>
         ) : users.length === 0 ? (
