@@ -41,6 +41,7 @@ import { getValue } from "@/lib/values";
 import { ageFromBirthDate, getSession } from "@/lib/auth";
 import { getMyOnboarding } from "@/lib/onboarding";
 import { computeDisplayMatch } from "@/lib/matching/adapter";
+import { MIN_VISIBLE_MATCH_SCORE } from "@/lib/matching/config";
 import { PROFILES } from "@/lib/profiles";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
@@ -73,6 +74,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
   const [showImagePreview, setShowImagePreview] = useState(false);
   // Pourcentage de compatibilité avec ce membre (null : pas calculable, questionnaire non rempli).
   const [compat, setCompat] = useState<number | null>(null);
+  const [compatChecked, setCompatChecked] = useState(false);
   // Fiches des membres : réservées à qui a terminé le pilier 1 de « Bâtir sur le roc ».
   const { progress: formationProgress, synced: formationSynced } = useFormationProgress();
   const formationDone = isPillarOneComplete(formationProgress.completed);
@@ -84,6 +86,8 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     let active = true;
     setLoading(true);
     setLoadError(null);
+    setCompatChecked(false);
+    setCompat(null);
 
     // Real member (Supabase uuid id)
     if (UUID_RE.test(id)) {
@@ -99,10 +103,11 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
       // Même calcul que la liste « Découvrir » : mes réponses + les siennes (champs non privés).
       Promise.all([getSession(), getMyOnboarding(), getMemberForMatch(id)])
         .then(([me, mine, other]) => {
-          if (!active || !me || !other) return;
-          setCompat(computeDisplayMatch({ ...me, questionnaire: mine.answers }, other).score);
+          if (!active) return;
+          if (me && other && !mine.unavailable) setCompat(computeDisplayMatch({ ...me, questionnaire: mine.answers }, other).score);
+          setCompatChecked(true);
         })
-        .catch(() => {});
+        .catch(() => { if (active) setCompatChecked(true); });
       return () => { active = false; };
     }
 
@@ -229,7 +234,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  if (loading) {
+  if (loading || (UUID_RE.test(id) && !compatChecked)) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-4">
         <Loader2 className="w-8 h-8 text-primary animate-spin" />
@@ -238,7 +243,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  if (!member) {
+  if (!member || (UUID_RE.test(id) && (compat === null || compat < MIN_VISIBLE_MATCH_SCORE))) {
     return (
       <div className="min-h-screen bg-background flex flex-col items-center justify-center gap-5 px-6 text-center">
         <div className="w-16 h-16 rounded-2xl bg-foreground/5 flex items-center justify-center"><UserPlus className="w-8 h-8 text-foreground/30" /></div>
