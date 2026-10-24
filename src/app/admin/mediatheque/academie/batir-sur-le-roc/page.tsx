@@ -41,7 +41,7 @@ export default function AdminBatirSurLeRocPage() {
           </Link>
           {first && (
             <Link href={`${ADMIN_LESSON_PREVIEW_PATH}/${first.slug}`}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold hover:bg-[#3A5A38] shadow-sm">
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold hover:bg-[#486B46] shadow-sm">
               <Eye className="w-4 h-4" /> Prévisualiser la leçon 1.1
             </Link>
           )}
