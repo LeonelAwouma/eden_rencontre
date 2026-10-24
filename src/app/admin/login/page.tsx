@@ -162,7 +162,7 @@ export default function AdminLoginPage() {
           ) : (
           <>
           {notice && (
-            <div role="status" className="flex items-start gap-2.5 mb-5 px-4 py-3 rounded-xl bg-[#486B46]/[0.07] border border-[#486B46]/25 text-[13px] text-[#2E4A36] font-medium">
+            <div role="status" className="flex items-start gap-2.5 mb-5 px-4 py-3 rounded-xl bg-[#486B46]/[0.07] border border-[#486B46]/25 text-[13px] text-[#486B46] font-medium">
               <CheckCircle2 className="w-[17px] h-[17px] shrink-0 mt-px text-[#486B46]" aria-hidden="true" />
               <span>{notice}</span>
             </div>
@@ -287,7 +287,7 @@ export default function AdminLoginPage() {
               <button
                 type="submit"
                 aria-busy={loading}
-                className="w-full h-12 rounded-xl bg-[#486B46] text-white text-[14.5px] font-semibold shadow-[0_4px_14px_-4px_rgba(72,107,70,0.45)] hover:bg-[#3D5C3C] hover:shadow-[0_6px_20px_-4px_rgba(72,107,70,0.5)] active:bg-[#35502F] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#486B46]/30 disabled:opacity-70 disabled:cursor-not-allowed disabled:shadow-none transition-[background-color,box-shadow] duration-200"
+                className="w-full h-12 rounded-xl bg-[#486B46] text-white text-[14.5px] font-semibold shadow-[0_4px_14px_-4px_rgba(72,107,70,0.45)] hover:bg-[#486B46] hover:shadow-[0_6px_20px_-4px_rgba(72,107,70,0.5)] active:bg-[#35502F] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#486B46]/30 disabled:opacity-70 disabled:cursor-not-allowed disabled:shadow-none transition-[background-color,box-shadow] duration-200"
               >
                 {loading ? (
                   <span className="flex items-center justify-center gap-2">
@@ -302,7 +302,7 @@ export default function AdminLoginPage() {
               <button
                 type="button"
                 onClick={() => { setMode("change"); setError(""); setNotice(""); }}
-                className="w-full inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#486B46] hover:text-[#2E4A36] hover:underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#486B46] rounded-md py-1"
+                className="w-full inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold text-[#486B46] hover:text-[#486B46] hover:underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#486B46] rounded-md py-1"
               >
                 <KeyRound className="w-3.5 h-3.5" aria-hidden="true" />
                 Modifier le mot de passe
@@ -458,7 +458,7 @@ function ChangePasswordForm({ initialEmail, fieldClass, onCancel, onDone }: {
         )}
 
         <button type="submit" aria-busy={loading}
-          className="w-full h-12 rounded-xl bg-[#486B46] text-white text-[14.5px] font-semibold shadow-[0_4px_14px_-4px_rgba(72,107,70,0.45)] hover:bg-[#3D5C3C] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#486B46]/30 disabled:opacity-70 disabled:cursor-not-allowed transition-colors">
+          className="w-full h-12 rounded-xl bg-[#486B46] text-white text-[14.5px] font-semibold shadow-[0_4px_14px_-4px_rgba(72,107,70,0.45)] hover:bg-[#486B46] focus:outline-none focus-visible:ring-4 focus-visible:ring-[#486B46]/30 disabled:opacity-70 disabled:cursor-not-allowed transition-colors">
           {loading
             ? <span className="flex items-center justify-center gap-2"><Loader2 className="w-4 h-4 animate-spin" aria-hidden="true" /> Enregistrement…</span>
             : "Enregistrer le nouveau mot de passe"}
