@@ -2184,6 +2184,12 @@ export default function DashboardPage() {
                   const shortBio = bio && bio.length > 200 ? `${bio.slice(0, 197).trimEnd()}…` : bio;
                   const marriageValues = Array.isArray(m.marriageVision) ? m.marriageVision.slice(0, 3) : [];
                   const matchScore = user && questionnaireReady ? computeDisplayMatch({ ...user, questionnaire: questionnaireAnswers }, m).score : null;
+                  const matchClassification = matchScore === null ? null
+                    : matchScore < 60 ? t("dashboard.matchNone")
+                    : matchScore < 70 ? t("dashboard.matchWeak")
+                    : matchScore < 80 ? t("dashboard.matchPotential")
+                    : matchScore < 90 ? t("dashboard.matchRecommended")
+                    : t("dashboard.matchStrong");
                   return (
                     <div key={r.id} className="rounded-2xl p-5 sm:p-6"
                       style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
@@ -2206,6 +2212,7 @@ export default function DashboardPage() {
                           </div>
                           <div className="rounded-xl px-4 py-3 text-left" style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}>
                             <p className="text-sm font-bold" style={{ color: "#486B46" }}><Heart className="w-4 h-4 inline mr-2" />{t("dashboard.requestCompatibilityTitle")}: {typeof matchScore === "number" ? t("profileDetail.compatibility", { pct: matchScore }) : t("dashboard.requestCompatibilityUnavailable")}</p>
+                            {matchClassification && <p className="mt-1 text-xs font-medium" style={{ color: "#486B46" }}>{matchClassification}</p>}
                             {typeof matchScore === "number" && <div role="progressbar" aria-label={t("dashboard.requestCompatibilityTitle")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={matchScore} className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: "#DAE7D6" }}><div className="h-full" style={{ background: "#486B46", width: `${matchScore}%` }} /></div>}
                           </div>
                           <div className="rounded-xl px-4 py-3 text-left" style={{ background: "#FAF9F6", border: "1px solid #F0EDE8" }}>
