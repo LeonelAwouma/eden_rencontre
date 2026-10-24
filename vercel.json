@@ -1,5 +1,12 @@
 {
   "crons": [
-    { "path": "/api/cron/account-health", "schedule": "0 6 * * *" }
+    {
+      "path": "/api/cron/account-health",
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/member-reactivation",
+      "schedule": "0 9 * * *"
+    }
   ]
 }
