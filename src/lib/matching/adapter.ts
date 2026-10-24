@@ -19,7 +19,7 @@
 import type { EdenUserProfile, QuestionnaireResponse, MatchStatus } from "./types";
 import { checkQuestionnaireCompletion } from "../onboarding";
 import { checkMatch, generateMatchSummary } from "./engine";
-import { DEFAULT_CONFIG } from "./config";
+import { DEFAULT_CONFIG, MIN_VISIBLE_MATCH_SCORE } from "./config";
 
 // ── GENERIC HELPERS ──────────────────────────────────────────────────────────
 
@@ -414,19 +414,24 @@ export function computeDisplayMatch(me: AdapterInput, other: AdapterInput): Disp
  * are kept at the end instead of being hidden. `minScore` still allows a stricter
  * list if needed.
  */
+/** Strict reciprocal visibility rule: 60% included, all lower scores excluded. */
+export function isVisibleMatch(me: AdapterInput, other: AdapterInput) {
+  const result = computeDisplayMatch(me, other);
+  return result.score !== null && result.score >= MIN_VISIBLE_MATCH_SCORE;
+}
+
 export function filterAndRankByReciprocalMatch<T extends AdapterInput>(
   me: AdapterInput,
   members: T[],
-  minScore = 0
+  minScore = MIN_VISIBLE_MATCH_SCORE
 ): T[] {
   const meProfile = toEdenProfile(me);
   const scored: { m: T; score: number }[] = [];
-  const unknown: T[] = [];
+  const threshold = Math.max(MIN_VISIBLE_MATCH_SCORE, minScore);
   for (const m of members) {
     const outcome = evaluate(meProfile, m);
-    if (outcome.kind === "scored" && outcome.score >= minScore) scored.push({ m, score: outcome.score });
-    else if (outcome.kind === "unknown") unknown.push(m);
+    if (outcome.kind === "scored" && outcome.score >= threshold) scored.push({ m, score: outcome.score });
   }
   scored.sort((a, b) => b.score - a.score);
-  return [...scored.map((s) => s.m), ...unknown];
+  return scored.map((s) => s.m);
 }

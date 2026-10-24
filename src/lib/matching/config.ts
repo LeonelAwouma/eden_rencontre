@@ -30,6 +30,9 @@ export const DEFAULT_CONFIG: MatchingConfig = {
   enable_semantic_analysis: true,
 };
 
+/** Reciprocal score floor for profile visibility, inclusive. */
+export const MIN_VISIBLE_MATCH_SCORE = DEFAULT_CONFIG.weak_threshold;
+
 // Minimum age to be matched. Kept in sync with MIN_AGE in src/lib/auth.ts
 // (the platform's actual signup minimum) — NOT the 21+ figure in the README,
 // which predates this being wired into the live product.

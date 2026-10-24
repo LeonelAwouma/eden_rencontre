@@ -280,6 +280,7 @@ export default function DashboardPage() {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [profileForm, setProfileForm] = useState({ name: "", city: "", country: "", civilStatus: "", profession: "", bio: "", marriageVision: [] as string[] });
   const [questionnaireAnswers, setQuestionnaireAnswers] = useState<Record<string, any>>({});
+  const [questionnaireReady, setQuestionnaireReady] = useState(false);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState<string | null>(null);
   const [localQAnswers, setLocalQAnswers] = useState<Record<string, any>>({});
   const [savingQuestionnaire, setSavingQuestionnaire] = useState(false);
@@ -926,6 +927,7 @@ export default function DashboardPage() {
       // un membre qui l'a peut-être déjà fini ; on réessaiera au prochain chargement.
       if (unavailable) return;
       setQuestionnaireAnswers(answers);
+      setQuestionnaireReady(true);
       const skipped = typeof window !== "undefined" && localStorage.getItem("eden_onboarding_skipped") === "1";
       if (!completed && !skipped) { router.replace("/onboarding"); return; }
       if (user.id) void runArrivalPrompts(user.id);
@@ -2181,6 +2183,13 @@ export default function DashboardPage() {
                   const bio = m.bio?.trim().replace(/\s+/g, " ");
                   const shortBio = bio && bio.length > 200 ? `${bio.slice(0, 197).trimEnd()}…` : bio;
                   const marriageValues = Array.isArray(m.marriageVision) ? m.marriageVision.slice(0, 3) : [];
+                  const matchScore = user && questionnaireReady ? computeDisplayMatch({ ...user, questionnaire: questionnaireAnswers }, m).score : null;
+                  const matchClassification = matchScore === null ? null
+                    : matchScore < 60 ? t("dashboard.matchNone")
+                    : matchScore < 70 ? t("dashboard.matchWeak")
+                    : matchScore < 80 ? t("dashboard.matchPotential")
+                    : matchScore < 90 ? t("dashboard.matchRecommended")
+                    : t("dashboard.matchStrong");
                   return (
                     <div key={r.id} className="rounded-2xl p-5 sm:p-6"
                       style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
@@ -2200,6 +2209,11 @@ export default function DashboardPage() {
                               {loc && <span className="inline-flex items-center gap-1"><MapPin className="w-3 h-3" /> {loc}</span>}
                               {m.profession && <span className="inline-flex items-center gap-1"><Briefcase className="w-3 h-3" /> {m.profession}</span>}
                             </div>
+                          </div>
+                          <div className="rounded-xl px-4 py-3 text-left" style={{ background: "#EEF5EC", border: "1px solid #C6D4C0" }}>
+                            <p className="text-sm font-bold" style={{ color: "#486B46" }}><Heart className="w-4 h-4 inline mr-2" />{t("dashboard.requestCompatibilityTitle")}: {typeof matchScore === "number" ? t("profileDetail.compatibility", { pct: matchScore }) : t("dashboard.requestCompatibilityUnavailable")}</p>
+                            {matchClassification && <p className="mt-1 text-xs font-medium" style={{ color: "#486B46" }}>{matchClassification}</p>}
+                            {typeof matchScore === "number" && <div role="progressbar" aria-label={t("dashboard.requestCompatibilityTitle")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={matchScore} className="mt-2 h-2 rounded-full overflow-hidden" style={{ background: "#DAE7D6" }}><div className="h-full" style={{ background: "#486B46", width: `${matchScore}%` }} /></div>}
                           </div>
                           <div className="rounded-xl px-4 py-3 text-left" style={{ background: "#FAF9F6", border: "1px solid #F0EDE8" }}>
                             <p className="text-[11px] uppercase tracking-wider font-bold" style={{ color: "#486B46" }}>
