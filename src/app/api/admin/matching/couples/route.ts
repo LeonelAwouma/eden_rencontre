@@ -1,5 +1,5 @@
 /**
- * GET /api/admin/matching/couples?stage=match|engagement_pending|relation|alliance_pending|declined|all&search=…&page=1
+ * GET /api/admin/matching/couples?stage=accepted|match|engagement_pending|relation|alliance_pending|declined|all&search=…&page=1
  *
  * Les couples de la plateforme et leur parcours. Définition retenue par
  * l'équipe : un VRAI match, c'est quand un membre clique sur « S'engager » dans
@@ -8,7 +8,8 @@
  *
  * Étapes d'un couple :
  *  alliance_pending     demande d'alliance envoyée, sans réponse
- *  relation             alliance acceptée : ils peuvent échanger
+ *  relation             alliance acceptée, sans engagement en attente ni validé
+ *  accepted (filtre)   TOUTES les alliances acceptées, y compris matchs et engagements
  *  engagement_pending   l'un a cliqué sur « S'engager », l'autre n'a pas encore validé
  *  match                engagement accepté : c'est un match
  *  engagement_declined  engagement refusé
@@ -38,10 +39,12 @@ export async function GET(req: NextRequest) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: "Non autorisé" }, { status: 401 }); }
 
   const { searchParams } = new URL(req.url);
-  const stageFilter = searchParams.get("stage") || "match";
+  const stageFilter = searchParams.get("stage") || "accepted";
   const search = (searchParams.get("search") || "").replace(/[,()%*\\]/g, " ").trim();
-  const page = Math.max(1, parseInt(searchParams.get("page") || "1"));
-  const limit = Math.min(50, Math.max(1, parseInt(searchParams.get("limit") || "20")));
+  const rawPage = Number(searchParams.get("page") || "1");
+  const rawLimit = Number(searchParams.get("limit") || "20");
+  const page = Number.isSafeInteger(rawPage) && rawPage > 0 ? rawPage : 1;
+  const limit = Number.isSafeInteger(rawLimit) ? Math.min(50, Math.max(1, rawLimit)) : 20;
 
   const db = getSupabaseAdmin();
 
@@ -49,20 +52,47 @@ export async function GET(req: NextRequest) {
   const { data: adminProfile } = await db.from("profiles").select("id").eq("email", ADMIN_SYSTEM_EMAIL).maybeSingle();
   const adminId = adminProfile?.id ?? null;
 
-  const { data: friendships, error } = await db
-    .from("friendships")
-    .select("id, requester_id, addressee_id, status, created_at, updated_at")
-    .order("updated_at", { ascending: false })
-    .limit(20000);
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+  // Lecture paginée : un simple .limit(20000) peut être plafonné à 1 000
+  // lignes par la configuration PostgREST, entraînant des statistiques erronées.
+  const friendships: FriendshipRow[] = [];
+  const PAGE_SIZE = 500;
+  let complete = false;
+  for (let start = 0; start < 100000; start += PAGE_SIZE) {
+    const { data, error } = await db.from("friendships")
+      .select("id, requester_id, addressee_id, status, created_at, updated_at")
+      .order("id", { ascending: true })
+      .range(start, start + PAGE_SIZE - 1);
+    if (error) return NextResponse.json({ error: "Impossible de charger les alliances." }, { status: 500 });
+    friendships.push(...((data || []) as FriendshipRow[]));
+    if (!data || data.length < PAGE_SIZE) { complete = true; break; }
+  }
+  if (!complete) return NextResponse.json({ error: "Volume de relations supérieur à la limite d'analyse." }, { status: 503 });
 
-  // Demandes d'engagement (table facultative : absente, on ignore cette étape).
+  // Une demande d'engagement est distincte de l'alliance. Un engagement validé
+  // transforme le duo en match, mais il reste dans « Alliances acceptées ».
   const engagementByPair = new Map<string, EngagementRow>();
-  const { data: engagements } = await db
-    .from("engagement_requests")
-    .select("requester_id, recipient_id, status, created_at, responded_at")
-    .order("created_at", { ascending: false });
-  for (const e of (engagements || []) as EngagementRow[]) {
+  let engagementsAvailable = true;
+  for (let start = 0; start < 100000; start += PAGE_SIZE) {
+    const { data, error } = await db.from("engagement_requests")
+      .select("requester_id, recipient_id, status, created_at, responded_at")
+      .order("created_at", { ascending: false })
+      .order("requester_id", { ascending: true })
+      .range(start, start + PAGE_SIZE - 1);
+    if (error) {
+      // Installation où la fonctionnalité Engagement n'est pas encore migrée.
+      // Ne jamais faire passer silencieusement un échec pour zéro match.
+      if (error.code === "42P01" || error.code === "PGRST205") { engagementsAvailable = false; break; }
+      return NextResponse.json({ error: "Impossible de charger les engagements." }, { status: 500 });
+    }
+    for (const e of (data || []) as EngagementRow[]) {
+      const key = pairKey(e.requester_id, e.recipient_id);
+      const prev = engagementByPair.get(key);
+      // L'acceptation prime sur les demandes ultérieures, sinon la plus récente compte.
+      if (!prev || (e.status === "accepted" && prev.status !== "accepted")) engagementByPair.set(key, e);
+    }
+    if (!data || data.length < PAGE_SIZE) { complete = true; break; }
+    if (start + PAGE_SIZE >= 100000) return NextResponse.json({ error: "Volume d'engagements supérieur à la limite d'analyse." }, { status: 503 });
+  }
     const key = pairKey(e.requester_id, e.recipient_id);
     const prev = engagementByPair.get(key);
     // La plus récente compte, sauf qu'un engagement accepté prime toujours.
@@ -79,9 +109,22 @@ export async function GET(req: NextRequest) {
     return "relation";
   };
 
-  const couples = ((friendships || []) as FriendshipRow[])
-    .filter((f) => f.requester_id !== adminId && f.addressee_id !== adminId)
-    .map((f) => ({ ...f, stage: stageOf(f) }));
+  // Plusieurs demandes inversées peuvent exister pour un même duo.
+  // On n'affiche le duo qu'une fois : une alliance acceptée prime, puis une
+  // invitation en attente, et enfin une invitation refusée.
+  const uniquePairs = new Map<string, FriendshipRow>();
+  const priority = (status: string) => status === "accepted" ? 3 : status === "pending" ? 2 : 1;
+  for (const row of friendships) {
+    if (row.requester_id === adminId || row.addressee_id === adminId) continue;
+    if (!["accepted", "pending", "declined"].includes(row.status)) continue;
+    const key = pairKey(row.requester_id, row.addressee_id);
+    const previous = uniquePairs.get(key);
+    if (!previous || priority(row.status) > priority(previous.status)
+      || (priority(row.status) === priority(previous.status) && row.updated_at > previous.updated_at)) {
+      uniquePairs.set(key, row);
+    }
+  }
+  const couples = [...uniquePairs.values()].map((f) => ({ ...f, stage: stageOf(f) }));
 
   // Statistiques (sur tous les couples).
   const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
@@ -91,7 +134,10 @@ export async function GET(req: NextRequest) {
     match: count("match"),
     matchThisWeek: couples.filter((c) => c.stage === "match" && new Date(matchedAt(c) || 0).getTime() >= weekAgo).length,
     engagement_pending: count("engagement_pending"),
+    // Ensemble inclusif : les duos en engagement et les matchs y restent.
+    accepted: couples.filter((c) => c.status === "accepted").length,
     relation: count("relation"),
+    engagement_declined: count("engagement_declined"),
     alliance_pending: count("alliance_pending"),
     declined: count("declined") + count("engagement_declined"),
     all: couples.length,
@@ -100,13 +146,16 @@ export async function GET(req: NextRequest) {
   // Filtre par étape (« Refusés » regroupe alliance et engagement refusés).
   let filtered = couples.filter((c) =>
     stageFilter === "all" ? true
+      : stageFilter === "accepted" ? c.status === "accepted"
       : stageFilter === "declined" ? c.stage === "declined" || c.stage === "engagement_declined"
       : c.stage === stageFilter
   );
-  // Les matchs, du plus récent au plus ancien.
-  if (stageFilter === "match") {
-    filtered.sort((a, b) => new Date(matchedAt(b) || 0).getTime() - new Date(matchedAt(a) || 0).getTime());
-  }
+  // Parcours récents en premier, et validation la plus récente parmi les matchs.
+  filtered.sort((a, b) => {
+    const dateOf = (c: FriendshipRow) =>
+      stageFilter === "match" ? matchedAt(c) || c.updated_at : c.updated_at;
+    return new Date(dateOf(b)).getTime() - new Date(dateOf(a)).getTime();
+  });
 
   // Recherche par pseudo, nom ou email de l'un des deux membres.
   if (search) {
@@ -154,10 +203,11 @@ export async function GET(req: NextRequest) {
       messageCount = count || 0;
       lastMessageAt = last?.created_at ?? null;
     }
-    const engagement = engagementByPair.get(key) ?? null;
+    const engagement = c.status === "accepted" ? engagementByPair.get(key) ?? null : null;
     return {
       id: c.id,
       stage: c.stage,
+      alliance_status: c.status,
       requested_at: c.created_at,
       // Alliance acceptée : dernière mise à jour de la demande (pas de date d'acceptation séparée).
       relation_at: c.status === "accepted" ? c.updated_at : null,
@@ -173,5 +223,10 @@ export async function GET(req: NextRequest) {
     };
   }));
 
-  return NextResponse.json({ couples: rows, total, page, totalPages: Math.max(1, Math.ceil(total / limit)), stats });
+  const response = NextResponse.json({
+    couples: rows, total, page, totalPages: Math.max(1, Math.ceil(total / limit)), stats,
+    engagementsAvailable,
+  });
+  response.headers.set("Cache-Control", "private, no-store");
+  return response;
 }
