@@ -72,7 +72,10 @@ export async function POST(request: NextRequest) {
       .eq("id", userId)
       .single();
 
-    const status = profile?.status || "pending";
+    const { data: coachAccount } = await db.from("coach_accounts")
+      .select("user_id, active").eq("user_id", userId).maybeSingle();
+    const coachActive = coachAccount?.active === true;
+    const status = coachActive ? "approved" : profile?.status || "pending";
 
     // Connexion refusée (403) : le motif apparaît dans les logs Vercel, pour savoir
     // tout de suite s'il s'agit d'un compte en attente, refusé ou suspendu.
@@ -123,6 +126,7 @@ export async function POST(request: NextRequest) {
         name: profile?.name,
         email: profile?.email || cleanEmail,
         status,
+        role: coachActive ? "coach" : "member",
       },
     });
 
