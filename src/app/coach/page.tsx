@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { authHeaders, logout } from "@/lib/auth";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { BookOpen, Home, LogOut, ShieldCheck } from "lucide-react";
+import { BookOpen, Home, LogOut, ShieldCheck, Users } from "lucide-react";
 type Coach={ id:string; email:string; name:string };
 export default function CoachHome(){
   const router=useRouter();
@@ -29,10 +29,11 @@ export default function CoachHome(){
       <p className="text-sm text-[#56615A]">Compte professionnel : {coach.email}</p>
       <p>Votre accès a été créé directement par l'administration. Aucun questionnaire de matching, selfie ou inscription membre n'est requis.</p>
     </section>
-    <section className="grid sm:grid-cols-2 gap-4">
+    <section className="grid sm:grid-cols-3 gap-4">
+      <Link href="/dashboard" className="rounded-2xl border bg-white p-5 space-y-2 hover:border-primary"><Users className="text-primary"/><h2 className="font-semibold">Espace membre</h2><p className="text-sm text-[#56615A]">Visiter le tableau de bord des membres avec votre compte Coach.</p></Link>
       <Link href="/" className="rounded-2xl border bg-white p-5 space-y-2 hover:border-primary"><Home className="text-primary"/><h2 className="font-semibold">Découvrir la plateforme</h2><p className="text-sm text-[#56615A]">Consulter les contenus publics de Garden of Alliance.</p></Link>
       <Link href="/mediatheque" className="rounded-2xl border bg-white p-5 space-y-2 hover:border-primary"><BookOpen className="text-primary"/><h2 className="font-semibold">Médiathèque</h2><p className="text-sm text-[#56615A]">Accéder aux ressources publiques disponibles.</p></Link>
     </section>
-    <p className="text-xs text-[#6B746E]">Le compte Coach ne donne pas accès à l'administration, au matching, aux messages privés ni aux données personnelles des membres.</p>
+    <p className="text-xs text-[#6B746E]">Le compte Coach permet de visiter l'espace membre, mais n'autorise pas les demandes d'alliance, les matchs ni la lecture des conversations privées. Il ne donne aucun droit d'administration.</p>
   </div></main>;
 }
