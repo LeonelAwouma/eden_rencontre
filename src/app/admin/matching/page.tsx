@@ -300,74 +300,77 @@ function Member({ p, align }: { p: CoupleProfile; align: "left" | "right" }) {
 function CoupleCard({ c, score }: { c: Couple; score: number | null }) {
   const st = STAGE[c.stage];
   const isMatch = c.stage === "match";
-  const inRelation = c.stage !== "alliance_pending" && c.stage !== "declined";
+  const accepted = c.alliance_status === "accepted";
   const engagementBy = c.engagement?.requester_id === c.requester.id ? c.requester : c.addressee;
+  const progress = [
+    { label: "Demande envoyée", done: true },
+    { label: "Alliance acceptée", done: accepted },
+    { label: "Engagement demandé", done: !!c.engagement },
+    { label: "Match confirmé", done: isMatch },
+  ];
+  const dateLabel = isMatch ? "Match confirmé le" : accepted ? "Dossier mis à jour le" : "Demande envoyée le";
+  const dateValue = isMatch ? c.matched_at : accepted ? c.updated_at : c.requested_at;
   return (
-    <li className={cn("bg-white rounded-2xl border p-4 sm:p-5", isMatch ? "border-primary/40" : "border-border")}>
-      {/* Les deux membres, reliés par le cœur du match */}
-      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4">
-        <Member p={c.requester} align="left" />
-        <div className="flex sm:flex-col items-center gap-2 justify-center">
-          <span className={cn("w-10 h-10 rounded-full flex items-center justify-center",
-            isMatch ? "bg-primary text-white" : inRelation ? "bg-primary/10 text-primary" : "bg-muted text-[#8A938C]")}>
-            <st.icon className="w-5 h-5" />
-          </span>
-          <span className={cn("inline-flex items-center h-6 px-2.5 rounded-full text-[11.5px] font-bold whitespace-nowrap", st.className)}>{st.label}</span>
+    <li className="rounded-2xl border border-border bg-white p-4 sm:p-5 space-y-3">
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
+        <div className="grid flex-1 grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4 min-w-0">
+          <Member p={c.requester} align="left" />
+          <HeartHandshake className="h-5 w-5 text-primary mx-auto" aria-hidden="true" />
+          <Member p={c.addressee} align="right" />
         </div>
-        <Member p={c.addressee} align="right" />
+        <span className={cn("self-start lg:self-center inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold whitespace-nowrap", st.className)}>
+          <st.icon className="h-4 w-4" aria-hidden="true" />{st.label}
+        </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
-        {([
-          { label: "Demande d’alliance", active: true, done: c.alliance_status === "accepted", date: c.requested_at },
-          { label: "Alliance acceptée", active: c.alliance_status === "accepted", done: c.alliance_status === "accepted", date: c.relation_at },
-          { label: "Engagement demandé", active: !!c.engagement, done: !!c.engagement, date: c.engagement?.requested_at || null },
-          { label: "Match confirmé", active: isMatch, done: isMatch, date: c.matched_at },
-        ]).map((step, index) => <div key={step.label} className="flex items-center gap-2">
-          {index > 0 && <ChevronRight className="w-3.5 h-3.5 text-[#A0A9A2]" aria-hidden />}
-          <span title={step.date ? formatDate(step.date) : undefined}
-            className={cn("inline-flex items-center rounded-lg px-2.5 py-1.5 text-[11px] font-semibold",
-              step.done ? "bg-primary/10 text-primary" : "bg-muted text-[#6B746E]")}>
-            {step.done ? "✓ " : ""}{step.label}
-          </span>
-        </div>)}
-        {(c.stage === "declined" || c.stage === "engagement_declined") && <span className="text-xs font-semibold text-[#9A4D3C]">· {st.label}</span>}
-      </div>
-      {/* Repères du couple */}
-      <div className="mt-3 pt-3.5 border-t border-border/70 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2.5 text-[12.5px]">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-border/70 pt-3">
         <Fact icon={Gauge} label="Compatibilité">
-          {score === null ? <span className="text-[#6B746E]">Questionnaire incomplet</span>
-            : <span className="font-bold text-foreground tabular-nums">{score} %</span>}
+          {score === null ? <span className="text-[#6B746E]">Non calculable</span>
+            : <span className="font-bold tabular-nums text-foreground">{score} %</span>}
         </Fact>
-        <Fact icon={isMatch ? CalendarHeart : Clock} label={isMatch ? "Match le" : inRelation ? "En relation depuis" : "Demande d'alliance le"}>
-          {formatDate(isMatch ? c.matched_at : inRelation ? c.relation_at : c.requested_at)}
-        </Fact>
-        <Fact icon={MessageCircle} label="Conversation">
+        <Fact icon={CalendarHeart} label={dateLabel}>{formatDate(dateValue)}</Fact>
+        <Fact icon={MessageCircle} label="Échanges">
           {c.conversation.id
-            ? <>{c.conversation.message_count} message{c.conversation.message_count > 1 ? "s" : ""}{c.conversation.last_message_at && <span className="text-[#6B746E]"> · {relative(c.conversation.last_message_at)}</span>}</>
-            : <span className="text-[#6B746E]">Pas encore commencée</span>}
+            ? <>{c.conversation.message_count} message{c.conversation.message_count > 1 ? "s" : ""}</>
+            : <span className="text-[#6B746E]">Aucun message</span>}
         </Fact>
         <Fact icon={Gem} label="Engagement">
-          {!c.engagement ? <span className="text-[#6B746E]">—</span>
-            : c.engagement.status === "accepted" ? <>Validé · demandé par {engagementBy.pseudo || engagementBy.name || "un membre"}</>
-            : c.engagement.status === "pending" ? <>Demandé par {engagementBy.pseudo || engagementBy.name || "un membre"} le {formatDate(c.engagement.requested_at)}</>
-            : <span className="text-[#6B746E]">Refusé</span>}
+          {!c.engagement ? <span className="text-[#6B746E]">Non demandé</span>
+            : c.engagement.status === "accepted" ? "Confirmé"
+            : c.engagement.status === "pending" ? "En attente"
+            : "Refusé"}
         </Fact>
       </div>
 
-      <div className="mt-3.5 flex flex-wrap gap-2">
-        <Link href={`/admin/users/${c.requester.id}`} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-[12px] font-semibold text-foreground hover:bg-muted">
-          <UserRound className="w-3.5 h-3.5" /> {c.requester.pseudo || c.requester.name || "Profil"}
-        </Link>
-        <Link href={`/admin/users/${c.addressee.id}`} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-[12px] font-semibold text-foreground hover:bg-muted">
-          <UserRound className="w-3.5 h-3.5" /> {c.addressee.pseudo || c.addressee.name || "Profil"}
-        </Link>
-        {c.conversation.id && (
-          <Link href={`/admin/chat-monitoring?user=${c.requester.id}`} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-[12px] font-semibold text-primary hover:bg-primary/5">
-            <Sparkles className="w-3.5 h-3.5" /> Voir leur conversation
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-3">
+        <div className="flex flex-wrap items-center gap-1.5" aria-label="Parcours du duo">
+          {progress.map((step, index) => (
+            <span key={step.label} className="inline-flex items-center gap-1.5">
+              {index > 0 && <ChevronRight className="h-3 w-3 text-[#9CA59E]" aria-hidden="true" />}
+              <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px]",
+                step.done ? "bg-primary/10 text-primary font-semibold" : "bg-muted text-[#6B746E]")}>
+                {step.done && <CheckCircle2 className="h-3 w-3" aria-hidden="true" />}{step.label}
+              </span>
+            </span>
+          ))}
+          {(c.stage === "declined" || c.stage === "engagement_declined") && <span className="text-xs text-[#9A4D3C] font-semibold">· {st.label}</span>}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href={`/admin/users/${c.requester.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+            <UserRound className="h-3.5 w-3.5" aria-hidden="true" /> Profil demandeur
           </Link>
-        )}
+          <Link href={`/admin/users/${c.addressee.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" /> Profil destinataire
+          </Link>
+          {c.conversation.id && <Link href={`/admin/chat-monitoring?user=${c.requester.id}`}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#56615A] hover:underline">
+            <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" /> Conversation
+          </Link>}
+        </div>
       </div>
+      {c.engagement?.status === "pending" && <p className="text-[11px] text-[#6B746E]">
+        Engagement demandé par {engagementBy.pseudo || engagementBy.name || "un membre"} le {formatDate(c.engagement.requested_at)}.
+      </p>}
     </li>
   );
 }
