@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { motion } from "framer-motion";
 import {
   Users,
@@ -11,6 +12,8 @@ import {
   CheckCircle2,
   Percent,
   Activity,
+  GraduationCap,
+  ArrowRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
@@ -111,6 +114,15 @@ export default function AnalyticsPage() {
           ))}
         </div>
       </motion.div>
+
+      <Link href="/admin/analytics/lessons" className="mb-6 flex flex-wrap items-center gap-3 rounded-2xl border border-[#D8E3D5] bg-[#F4F8F2] p-5 hover:bg-[#EDF5EA] transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#486B46]">
+        <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white border border-[#D8E3D5]"><GraduationCap className="w-6 h-6 text-[#486B46]" /></span>
+        <span className="flex-1 min-w-[170px]">
+          <span className="block text-sm font-bold text-[#1F2A23]">Progression des leçons</span>
+          <span className="block text-xs text-[#56615A] mt-1">Statistiques des trois piliers, validation des leçons et suivi par membre</span>
+        </span>
+        <span className="inline-flex items-center gap-1 text-sm font-semibold text-[#486B46]">Consulter <ArrowRight className="w-4 h-4" /></span>
+      </Link>
 
       {loading ? (
         <div className="p-12 text-center">
