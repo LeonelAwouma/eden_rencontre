@@ -15,10 +15,10 @@ export async function POST(req: NextRequest) {
   const body=await req.json().catch(()=>null);
   const email=typeof body?.email==="string"?body.email.trim().toLowerCase():"";
   const password=typeof body?.password==="string"?body.password:"";
-  const name=typeof body?.name==="string"?body.name.trim():"";
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||!name||name.length>100
+  const name=typeof body?.name==="string"&&body.name.trim()?body.name.trim():"Coach";
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)||name.length>100
      ||password.length<12||password.length>128||!/\d/.test(password)||!/[A-Za-z]/.test(password))
-    return NextResponse.json({error:"Nom, adresse e-mail et mot de passe de 12 caractères minimum (lettres et chiffres) requis."},{status:400});
+    return NextResponse.json({error:"Adresse e-mail et mot de passe de 12 caractères minimum (lettres et chiffres) requis."},{status:400});
   const db=getSupabaseAdmin();
   // Le coach reçoit un compte Supabase, sans formulaire membre ni questionnaire.
   // Le trigger existant peut créer un profil minimal : on le rend non approuvé
