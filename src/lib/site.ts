@@ -13,7 +13,7 @@ export const SITE_DESCRIPTION =
 
 /** Espaces privés : jamais indexés (robots.txt + noindex). */
 export const PRIVATE_PATHS = [
-  "/admin", "/api", "/dashboard", "/onboarding", "/reunion", "/searching",
+  "/admin", "/api", "/coach", "/dashboard", "/onboarding", "/reunion", "/searching",
   "/register/pending", "/reset-password", "/verify-otp", "/forgot-password", "/newsletter",
 ];
 
