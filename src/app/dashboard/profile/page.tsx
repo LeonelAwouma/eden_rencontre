@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getSession, updateProfile, logout, EdenUser } from "@/lib/auth";
 import { completeOnboarding, getQuestionnaires, applyAnswer, isFieldVisible, checkQuestionnaireCompletion, describeMissingQuestions, Questionnaire, Section, Field, type SupportedLocale } from "@/lib/onboarding";
+import { ReactivationEmailPreference } from "@/components/reactivation-email-preference";
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
 import type { Tab } from "@/components/dashboard/dashboard-types";
 import {
@@ -846,6 +847,7 @@ export default function ProfilePage() {
             <>
               <BasicInfoCard profile={profile} onRefresh={handleRefresh} onSwitchToFaith={() => setTab("faith")} />
               <ProfileCompletionCard profile={profile} />
+              <ReactivationEmailPreference />
             </>
           ) : (
             <FaithJourneyCard profileId={profile.id} answers={profile.questionnaire || {}} completed={!!profile.onboarding_completed} onRefresh={handleRefresh} />

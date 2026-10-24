@@ -9,6 +9,7 @@ import { dialOfIso, phoneIsoFor, toE164 } from "@/lib/geo";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { LoadingScreen } from "@/components/loading-screen";
+import { authHeaders } from "@/lib/auth";
 
 /**
  * Espace membre réservé aux comptes approuvés par l'admin.
@@ -89,6 +90,15 @@ export function MemberGate({ children }: { children: React.ReactNode }) {
     })();
     return () => { cancelled = true; };
   }, [router, pathname, attempt]);
+
+  useEffect(() => {
+    if (!allowed) return;
+    let cancelled = false;
+    authHeaders().then(headers => {
+      if (!cancelled) void fetch("/api/member/activity", { method: "POST", headers }).catch(() => {});
+    }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [allowed, pathname]);
 
   if (unavailable) {
     return <AccountUnavailable onRetry={() => { setUnavailable(false); setAttempt((n) => n + 1); }} />;
