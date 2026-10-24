@@ -91,7 +91,7 @@ export function BlogEditor({ value, onChange, onImageUpload }: BlogEditorProps) 
           <input type="url" value={linkUrl} onChange={e => setLinkUrl(e.target.value)} placeholder="https://exemple.com"
             className="flex-1 text-sm bg-white border border-[#E5E7EB] rounded-lg px-3 py-1.5 outline-none focus:border-[#486B46]"
             onKeyDown={e => { if (e.key === "Enter") { e.preventDefault(); handleLink(); } }} />
-          <button type="button" onClick={handleLink} className="text-xs font-semibold text-white bg-[#486B46] px-3 py-1.5 rounded-lg hover:bg-[#3A5A38]">Insérer</button>
+          <button type="button" onClick={handleLink} className="text-xs font-semibold text-white bg-[#486B46] px-3 py-1.5 rounded-lg hover:bg-[#486B46]">Insérer</button>
           <button type="button" onClick={() => { setShowLinkInput(false); setLinkUrl(""); }} className="text-xs text-[#9CA3AF] hover:text-[#2F2F2F]">Annuler</button>
         </div>
       )}
