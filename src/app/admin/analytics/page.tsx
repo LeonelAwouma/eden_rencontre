@@ -74,13 +74,13 @@ export default function AnalyticsPage() {
 
   const statCards = data ? [
     { label: "Total utilisateurs", value: data.stats.totalUsers, icon: Users, color: "text-[#4B5563]", bg: "bg-[#F3F4F6]" },
-    { label: "Nouvelles inscriptions", value: data.stats.newRegistrations, icon: UserPlus, color: "text-[#38C172]", bg: "bg-[#38C172]/10" },
+    { label: "Nouvelles inscriptions", value: data.stats.newRegistrations, icon: UserPlus, color: "text-[#486B46]", bg: "bg-[#486B46]/10" },
     { label: "Utilisateurs actifs", value: data.stats.activeUsers, icon: UserCheck, color: "text-[#4F7DF3]", bg: "bg-[#4F7DF3]/10" },
     { label: "Taux de conversion", value: `${data.stats.conversionRate}%`, icon: Percent, color: "text-[#8B5CF6]", bg: "bg-[#8B5CF6]/10" },
-    { label: "Taux d'approbation", value: `${data.stats.approvalRate}%`, icon: CheckCircle2, color: "text-[#38C172]", bg: "bg-[#38C172]/10" },
+    { label: "Taux d'approbation", value: `${data.stats.approvalRate}%`, icon: CheckCircle2, color: "text-[#486B46]", bg: "bg-[#486B46]/10" },
     { label: "Meets créés", value: data.stats.totalMeets, icon: Calendar, color: "text-[#FF9E45]", bg: "bg-[#FF9E45]/10" },
     { label: "Meets publiés", value: data.stats.publishedMeets, icon: Activity, color: "text-[#4F7DF3]", bg: "bg-[#4F7DF3]/10" },
-    { label: "Meets terminés", value: data.stats.completedMeets, icon: TrendingUp, color: "text-[#38C172]", bg: "bg-[#38C172]/10" },
+    { label: "Meets terminés", value: data.stats.completedMeets, icon: TrendingUp, color: "text-[#486B46]", bg: "bg-[#486B46]/10" },
   ] : [];
 
   const chartDays = data?.dailyRegistrations.map((d) => ({
@@ -126,7 +126,7 @@ export default function AnalyticsPage() {
 
       {loading ? (
         <div className="p-12 text-center">
-          <div className="w-8 h-8 border-[3px] border-[#38C172]/20 border-t-[#38C172] rounded-full animate-spin mx-auto" />
+          <div className="w-8 h-8 border-[3px] border-[#486B46]/20 border-t-[#486B46] rounded-full animate-spin mx-auto" />
           <p className="text-[13px] text-[#9CA3AF] mt-3 font-medium">Chargement des analytics…</p>
         </div>
       ) : !data ? (
@@ -167,8 +167,8 @@ export default function AnalyticsPage() {
                 <AreaChart data={chartDays}>
                   <defs>
                     <linearGradient id="totalGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#38C172" stopOpacity={0.15} />
-                      <stop offset="95%" stopColor="#38C172" stopOpacity={0} />
+                      <stop offset="5%" stopColor="#486B46" stopOpacity={0.15} />
+                      <stop offset="95%" stopColor="#486B46" stopOpacity={0} />
                     </linearGradient>
                     <linearGradient id="approvedGrad" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#4F7DF3" stopOpacity={0.1} />
@@ -180,7 +180,7 @@ export default function AnalyticsPage() {
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#9CA3AF", fontWeight: 500 }} />
                   <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #E5E7EB", boxShadow: "0 4px 24px rgba(0,0,0,0.06)", fontSize: 13, fontWeight: 500 }} />
                   <Legend iconType="circle" wrapperStyle={{ fontSize: 12, fontWeight: 500 }} />
-                  <Area name="Total" type="monotone" dataKey="total" stroke="#38C172" strokeWidth={2.5} fill="url(#totalGrad)" dot={false} activeDot={{ r: 5, fill: "#38C172", stroke: "#fff", strokeWidth: 2 }} />
+                  <Area name="Total" type="monotone" dataKey="total" stroke="#486B46" strokeWidth={2.5} fill="url(#totalGrad)" dot={false} activeDot={{ r: 5, fill: "#486B46", stroke: "#fff", strokeWidth: 2 }} />
                   <Area name="Approuvés" type="monotone" dataKey="approved" stroke="#4F7DF3" strokeWidth={2} fill="url(#approvedGrad)" dot={false} activeDot={{ r: 4, fill: "#4F7DF3", stroke: "#fff", strokeWidth: 2 }} />
                 </AreaChart>
               </ResponsiveContainer>
@@ -245,7 +245,7 @@ export default function AnalyticsPage() {
                       <XAxis type="number" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: "#9CA3AF", fontWeight: 500 }} />
                       <YAxis type="category" dataKey="city" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#4B5563", fontWeight: 500 }} width={80} />
                       <Tooltip contentStyle={{ borderRadius: 12, border: "1px solid #E5E7EB", fontSize: 13, fontWeight: 500 }} />
-                      <Bar dataKey="count" fill="#38C172" radius={[0, 6, 6, 0]} barSize={20} />
+                      <Bar dataKey="count" fill="#486B46" radius={[0, 6, 6, 0]} barSize={20} />
                     </BarChart>
                   </ResponsiveContainer>
                 </div>
