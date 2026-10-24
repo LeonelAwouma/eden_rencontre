@@ -151,7 +151,7 @@ export function Sidebar({
                             "flex items-center gap-3 rounded-[10px] transition-colors duration-150 relative",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                             isCollapsed ? "justify-center w-11 h-10 mx-auto" : "px-3 py-2 min-h-[38px]",
-                            active ? "bg-primary/[0.08] text-[#2F5A2D]" : "text-[#4A534D] hover:bg-[#F5F3EF] hover:text-[#1F2A23]"
+                            active ? "bg-primary/[0.08] text-[#486B46]" : "text-[#4A534D] hover:bg-[#F5F3EF] hover:text-[#1F2A23]"
                           )}>
                           <Icon className={cn("w-[18px] h-[18px] flex-shrink-0 transition-colors duration-150",
                             active ? "text-primary" : "text-[#6B746E] group-hover:text-[#3A443E]")} aria-hidden="true" />
