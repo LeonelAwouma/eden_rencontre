@@ -28,15 +28,16 @@ interface CoupleProfile {
   verification_status?: string | null; status?: string | null; questionnaire?: Record<string, unknown> | null;
 }
 interface Couple {
-  id: string; stage: Stage; requested_at: string; relation_at: string | null; matched_at: string | null; updated_at: string;
+  id: string; stage: Stage; alliance_status: string; requested_at: string; relation_at: string | null; matched_at: string | null; updated_at: string;
   requester: CoupleProfile; addressee: CoupleProfile;
   engagement: { status: string; requested_at: string; responded_at: string | null; requester_id: string } | null;
   conversation: { id: string | null; message_count: number; last_message_at: string | null };
 }
-interface Stats { match: number; matchThisWeek: number; engagement_pending: number; relation: number; alliance_pending: number; declined: number; all: number }
-type TabKey = "match" | "engagement_pending" | "relation" | "alliance_pending" | "declined" | "all";
+interface Stats { accepted: number; engagement_declined: number; match: number; matchThisWeek: number; engagement_pending: number; relation: number; alliance_pending: number; declined: number; all: number }
+type TabKey = "accepted" | "match" | "engagement_pending" | "relation" | "alliance_pending" | "declined" | "all";
 
 const TABS: { value: TabKey; label: string; icon: typeof Heart }[] = [
+  { value: "accepted", label: "Alliances acceptées", icon: HeartHandshake },
   { value: "match", label: "Matchs", icon: Gem },
   { value: "engagement_pending", label: "Engagement à valider", icon: HeartHandshake },
   { value: "relation", label: "En relation", icon: MessageCircle },
@@ -94,8 +95,8 @@ function compatibility(c: Couple): number | null {
 
 export default function AdminMatchingPage() {
   const [couples, setCouples] = useState<Couple[]>([]);
-  const [stats, setStats] = useState<Stats>({ match: 0, matchThisWeek: 0, engagement_pending: 0, relation: 0, alliance_pending: 0, declined: 0, all: 0 });
-  const [stage, setStage] = useState<TabKey>("match");
+  const [stats, setStats] = useState<Stats>({ accepted: 0, engagement_declined: 0, match: 0, matchThisWeek: 0, engagement_pending: 0, relation: 0, alliance_pending: 0, declined: 0, all: 0 });
+  const [stage, setStage] = useState<TabKey>("accepted");
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [page, setPage] = useState(1);
@@ -103,6 +104,7 @@ export default function AdminMatchingPage() {
   const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [engagementsAvailable, setEngagementsAvailable] = useState(true);
 
   useEffect(() => {
     const id = setTimeout(() => setDebounced(search.trim()), 350);
@@ -120,6 +122,7 @@ export default function AdminMatchingPage() {
       setError(null);
       setCouples(data.couples || []);
       setStats(data.stats);
+      setEngagementsAvailable(data.engagementsAvailable !== false);
       setTotal(data.total || 0);
       setTotalPages(data.totalPages || 1);
     } catch {
@@ -139,15 +142,20 @@ export default function AdminMatchingPage() {
       <div className="mb-5">
         <h1 className="font-headline text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">Matching</h1>
         <p className="text-sm text-[#56615A] mt-1 max-w-2xl">
-          Un match, c&apos;est quand un membre clique sur « S&apos;engager » et que l&apos;autre valide. Suivez ici chaque couple, de la demande d&apos;alliance jusqu&apos;au match.
+          Une alliance acceptée permet aux deux membres d&apos;échanger. Un match confirmé correspond à une demande d&apos;engagement acceptée. Chaque duo est suivi une seule fois, de l&apos;invitation à la confirmation.
         </p>
       </div>
 
-      {/* Statistiques compactes, monochromes */}
+      {/* Deux indicateurs globaux distincts, puis les étapes de parcours. */}
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+        <StatTile label="Alliances acceptées · total" value={stats.accepted} icon={HeartHandshake} hint="Inclut relations, engagements en cours et matchs confirmés" />
+        <StatTile label="Matchs confirmés" value={stats.match} icon={Gem} hint={`${stats.matchThisWeek} cette semaine · engagement accepté`} />
+        <StatTile label="Duos suivis" value={stats.all} icon={Users} hint="Toutes les demandes et alliances, sans compter deux fois un duo" />
+      </div>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <StatTile label="Matchs" value={stats.match} icon={Gem} hint={`${stats.matchThisWeek} cette semaine · engagement validé`} />
+        <StatTile label="Alliances en cours" value={stats.relation} icon={MessageCircle} hint="Acceptées · pas encore d’engagement" />
         <StatTile label="Engagements à valider" value={stats.engagement_pending} icon={HeartHandshake} hint="« S'engager » envoyé, en attente" />
-        <StatTile label="En relation" value={stats.relation} icon={MessageCircle} hint="alliance acceptée, sans engagement" />
+        <StatTile label="Refus" value={stats.declined} icon={XCircle} hint={`${stats.engagement_declined} engagement(s) refusé(s)`} />
         <StatTile label="Demandes d'alliance" value={stats.alliance_pending} icon={Clock} hint="pas encore de réponse" />
       </div>
 
@@ -178,6 +186,7 @@ export default function AdminMatchingPage() {
         </div>
       </div>
 
+      {!engagementsAvailable && <div role="status" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Le suivi des demandes d’engagement est indisponible : les matchs confirmés peuvent être sous-estimés.</div>}
       {error && <div role="alert" className="mb-4 p-3 rounded-xl bg-[#B42318]/10 border border-[#B42318]/20 text-[13px] font-medium text-[#B42318]">{error}</div>}
 
       {loading ? (
@@ -188,12 +197,13 @@ export default function AdminMatchingPage() {
         <div className="bg-white rounded-2xl border border-border py-14 px-6 text-center">
           <HeartHandshake className="w-9 h-9 text-primary/70 mx-auto mb-3" />
           <p className="text-[15px] font-semibold text-foreground">
-            {debounced ? "Aucun couple ne correspond" : stage === "match" ? "Pas encore de match" : "Rien dans cette étape pour l'instant"}
+            {debounced ? "Aucun duo ne correspond" : stage === "match" ? "Pas encore de match" : stage === "accepted" ? "Aucune alliance acceptée" : "Rien dans cette étape pour l'instant"}
           </p>
           <p className="text-[13px] text-[#56615A] mt-1 max-w-md mx-auto">
             {debounced ? "Essayez un autre pseudo, nom ou email."
               : stage === "match" ? "Dès qu'un membre valide la demande d'engagement de l'autre, leur match apparaît ici."
-              : "Les couples apparaîtront ici au fil de leur parcours."}
+              : stage === "accepted" ? "Les alliances acceptées apparaissent ici, y compris celles ayant évolué vers un engagement ou un match."
+              : "Les duos apparaîtront ici au fil de leur parcours."}
           </p>
         </div>
       ) : (
@@ -204,7 +214,7 @@ export default function AdminMatchingPage() {
 
       {!loading && total > 0 && (
         <div className="flex items-center justify-between gap-3 mt-5">
-          <p className="text-[12px] text-[#6B746E] font-medium">{total} couple{total > 1 ? "s" : ""}</p>
+          <p className="text-[12px] text-[#6B746E] font-medium">{total} duo{total > 1 ? "s" : ""}</p>
           {totalPages > 1 && (
             <div className="flex items-center gap-1.5">
               <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} aria-label="Page précédente"
@@ -272,8 +282,24 @@ function CoupleCard({ c, score }: { c: Couple; score: number | null }) {
         <Member p={c.addressee} align="right" />
       </div>
 
+      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
+        {([
+          { label: "Demande d’alliance", active: true, done: c.alliance_status === "accepted", date: c.requested_at },
+          { label: "Alliance acceptée", active: c.alliance_status === "accepted", done: c.alliance_status === "accepted", date: c.relation_at },
+          { label: "Engagement demandé", active: !!c.engagement, done: !!c.engagement, date: c.engagement?.requested_at || null },
+          { label: "Match confirmé", active: isMatch, done: isMatch, date: c.matched_at },
+        ]).map((step, index) => <div key={step.label} className="flex items-center gap-2">
+          {index > 0 && <ChevronRight className="w-3.5 h-3.5 text-[#A0A9A2]" aria-hidden />}
+          <span title={step.date ? formatDate(step.date) : undefined}
+            className={cn("inline-flex items-center rounded-lg px-2.5 py-1.5 text-[11px] font-semibold",
+              step.done ? "bg-primary/10 text-primary" : "bg-muted text-[#6B746E]")}>
+            {step.done ? "✓ " : ""}{step.label}
+          </span>
+        </div>)}
+        {(c.stage === "declined" || c.stage === "engagement_declined") && <span className="text-xs font-semibold text-[#9A4D3C]">· {st.label}</span>}
+      </div>
       {/* Repères du couple */}
-      <div className="mt-4 pt-3.5 border-t border-border/70 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2.5 text-[12.5px]">
+      <div className="mt-3 pt-3.5 border-t border-border/70 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2.5 text-[12.5px]">
         <Fact icon={Gauge} label="Compatibilité">
           {score === null ? <span className="text-[#6B746E]">Questionnaire incomplet</span>
             : <span className="font-bold text-foreground tabular-nums">{score} %</span>}
