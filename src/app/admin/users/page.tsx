@@ -21,6 +21,8 @@ import {
   MessageCircle,
   X,
   User,
+  FileSpreadsheet,
+  Loader2,
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
@@ -110,6 +112,7 @@ export default function AdminUsersPage() {
   const [actionError, setActionError] = useState<string | null>(null);
   const [emailWarning, setEmailWarning] = useState<string | null>(null);
   const [viewingUser, setViewingUser] = useState<UserProfile | null>(null);
+  const [exporting, setExporting] = useState(false);
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -201,6 +204,39 @@ export default function AdminUsersPage() {
     }
   };
 
+  // Export Excel : tous les membres correspondant aux filtres affichés (pas seulement la page).
+  const exportUsers = async () => {
+    setExporting(true);
+    setActionError(null);
+    try {
+      const params = new URLSearchParams();
+      if (statusFilter !== "all") params.set("status", statusFilter);
+      if (planFilter !== "all") params.set("plan", planFilter);
+      if (searchQuery) params.set("search", searchQuery);
+      const res = await fetch(`/api/admin/users/export?${params.toString()}`);
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        throw new Error(data.error || "L'export n'a pas pu être généré.");
+      }
+      const blob = await res.blob();
+      const name = /filename="([^"]+)"/.exec(res.headers.get("Content-Disposition") || "")?.[1] || "membres.xlsx";
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "L'export n'a pas pu être généré.");
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const filtered = statusFilter !== "all" || planFilter !== "all" || searchQuery.trim() !== "";
+
   return (
     <>
       
@@ -208,6 +244,18 @@ export default function AdminUsersPage() {
       <PageHeader
         title="Utilisateurs"
         subtitle={`${total} utilisateur${total !== 1 ? "s" : ""} au total`}
+        actions={
+          <button
+            type="button"
+            onClick={exportUsers}
+            disabled={exporting || total === 0}
+            title={filtered ? "Exporte les membres correspondant aux filtres actuels" : "Exporte tous les membres"}
+            className="inline-flex items-center gap-2 h-10 px-4 rounded-xl bg-primary text-primary-foreground text-[14px] font-semibold hover:bg-primary/90 transition-colors duration-150 disabled:opacity-50 disabled:pointer-events-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 focus-visible:ring-offset-1"
+          >
+            {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileSpreadsheet className="w-4 h-4" />}
+            {exporting ? "Préparation…" : filtered ? `Exporter en Excel (${total})` : "Exporter en Excel"}
+          </button>
+        }
       />
 
       <Link href="/admin/users/coaches" className="mb-5 flex items-center justify-between gap-3 rounded-2xl border border-[#D8E3D5] bg-white px-5 py-4 hover:bg-[#F6F9F5]">

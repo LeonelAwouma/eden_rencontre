@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { applyUserFilters, readUserFilters } from "@/lib/admin-users-filter";
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,35 +9,17 @@ export async function GET(request: NextRequest) {
     const db = getSupabaseAdmin();
 
     const { searchParams } = new URL(request.url);
-    const status = searchParams.get("status");
-    const plan = searchParams.get("plan");
-    const search = searchParams.get("search");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "20", 10);
     const offset = (page - 1) * limit;
 
-    let query = db
-      .from("profiles")
-      .select("*", { count: "exact" })
-      .order("created_at", { ascending: false, nullsFirst: false });
-
-    if (status && status !== "all") {
-      if (status === "verification_pending") {
-        query = query.eq("verification_status", "under_review");
-      } else {
-        query = query.eq("status", status);
-      }
-    }
-
-    if (plan && plan !== "all") {
-      query = query.eq("subscription_plan", plan);
-    }
-
-    if (search) {
-      query = query.or(
-        `name.ilike.%${search}%,email.ilike.%${search}%,city.ilike.%${search}%,country.ilike.%${search}%`
-      );
-    }
+    let query = applyUserFilters(
+      db
+        .from("profiles")
+        .select("*", { count: "exact" })
+        .order("created_at", { ascending: false, nullsFirst: false }),
+      readUserFilters(searchParams)
+    );
 
     query = query.range(offset, offset + limit - 1);
 
