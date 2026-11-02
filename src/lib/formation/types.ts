@@ -51,6 +51,13 @@ export interface Lesson {
   /** Affiche de la leçon : remplace la bannière recadrée en tête de lecture. */
   poster?: Poster;
   pdf: string;
+  /**
+   * Version audio (français). Avec `transcript` (transcription horodatée de l'audio, voir
+   * SpeechTranscript dans speech-align.ts), le texte est surligné mot à mot pendant l'écoute : l'audio
+   * doit alors LIRE le texte de la leçon. Sans `transcript`, simple lecteur. `summary` : l'audio est un
+   * résumé raconté, présenté comme tel.
+   */
+  audio?: { src: string; transcript?: string; summary?: boolean };
   readingMinutes: number;
   intro: { heading: string; blocks: LessonBlock[] };
   /** « L'objectif de cette leçon », quand la leçon en formule un. */

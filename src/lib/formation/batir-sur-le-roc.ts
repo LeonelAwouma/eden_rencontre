@@ -16,6 +16,8 @@ const lecon11: Lesson = {
   title: "Entre éloge et réalité",
   image: { ...img("1-1"), position: "center top", alt: "Des mariés marchent main dans la main dans un jardin, devant une église. Dans des bulles de pensée barrées d'une croix rouge : la mariée imagine un prince parfait sur un cheval blanc (l'idéalisation), le marié imagine une femme qui cache un visage menaçant (le cynisme)." },
   pdf: `${BASE}/pdf/lecon-1-1-entre-eloge-et-realite.pdf`,
+  // Lecture du texte de la leçon : les mots sont surlignés pendant l'écoute (transcription horodatée du MP3).
+  audio: { src: `${BASE}/audio/lecon-1-1-entre-eloge-et-realite.mp3`, transcript: `${BASE}/audio/lecon-1-1-entre-eloge-et-realite.json` },
   readingMinutes: 8,
   intro: {
     heading: "La lentille à travers laquelle nous regardons l'amour",
@@ -131,6 +133,9 @@ const lecon12: Lesson = {
   title: "Le mariage comme sanctuaire",
   image: { ...img("1-2"), alt: "Allée d'une église décorée de fleurs blanches et vertes ; au fond, les mariés se tiennent devant l'autel." },
   pdf: `${BASE}/pdf/lecon-1-2-le-mariage-comme-sanctuaire.pdf`,
+  // Résumé raconté (pas la lecture du texte) : lecteur seul, sans surlignage. À remplacer par la lecture du texte
+  // (voir docs/audio-lecons.md), puis ajouter `transcript` comme pour la leçon 1.1.
+  audio: { src: `${BASE}/audio/lecon-1-2-le-mariage-comme-sanctuaire.mp3`, summary: true },
   readingMinutes: 8,
   intro: {
     heading: "L'oasis dans un monde de performance",
@@ -240,6 +245,9 @@ const lecon13: Lesson = {
   title: "Le mariage comme réponse à un but",
   image: { ...img("1-3"), alt: "Deux alliances dorées posées sur la page d'un dictionnaire, à l'entrée « marriage »." },
   pdf: `${BASE}/pdf/lecon-1-3-le-mariage-comme-reponse-a-un-but.pdf`,
+  // Résumé raconté (pas la lecture du texte) : lecteur seul, sans surlignage. À remplacer par la lecture du texte
+  // (voir docs/audio-lecons.md), puis ajouter `transcript` comme pour la leçon 1.1.
+  audio: { src: `${BASE}/audio/lecon-1-3-le-mariage-comme-reponse-a-un-but.mp3`, summary: true },
   readingMinutes: 9,
   intro: {
     heading: "L'amour n'est pas une destination",

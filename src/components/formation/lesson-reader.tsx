@@ -10,7 +10,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
-import { RichText, frenchSpacing } from "./rich-text";
+import { RichText, Words, SpeechWordsProvider, frenchSpacing } from "./rich-text";
+import { SpeechPlayer } from "./speech-player";
 import { PosterFigure } from "./poster";
 import { useFormationProgress } from "@/lib/formation/progress";
 import { FORMATION_BASE_PATH, ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
@@ -33,9 +34,9 @@ export function Blocks({ blocks }: { blocks: LessonBlock[] }) {
               <figure key={i} className="my-8 relative pl-6 sm:pl-8 border-l-2 border-primary/40">
                 <Quote aria-hidden className="absolute -left-3 -top-1 w-6 h-6 p-1 rounded-full bg-background text-primary/70" />
                 <blockquote className="font-headline italic text-[20px] sm:text-[22px] leading-snug text-foreground">
-                  {frenchSpacing(ui.quote(b.text))}
+                  <Words text={ui.quote(b.text)} />
                 </blockquote>
-                <figcaption className="mt-2 text-[13px] font-semibold tracking-wide text-primary">{b.ref}</figcaption>
+                <figcaption className="mt-2 text-[13px] font-semibold tracking-wide text-primary"><Words text={b.ref} /></figcaption>
               </figure>
             );
           case "points":
@@ -43,7 +44,7 @@ export function Blocks({ blocks }: { blocks: LessonBlock[] }) {
               <ul key={i} className="space-y-4 my-6">
                 {b.items.map((it, j) => (
                   <li key={j} className="eden-leaf-bullet">
-                    <strong className="font-semibold text-foreground">{it.lead}</strong>{" "}
+                    <strong className="font-semibold text-foreground"><Words text={it.lead} /></strong>{" "}
                     <RichText text={it.text} />
                   </li>
                 ))}
@@ -64,7 +65,7 @@ export function Blocks({ blocks }: { blocks: LessonBlock[] }) {
             return (
               <figure key={i} className="my-8 rounded-r-2xl border-l-2 border-[#C9A24A]/70 bg-[#FBF7EC] px-5 py-4 sm:px-6">
                 <blockquote className="italic text-[16.5px] sm:text-[17px] leading-relaxed text-[#3F3A2E]">
-                  {frenchSpacing(ui.quote(b.text))}
+                  <Words text={ui.quote(b.text)} />
                 </blockquote>
                 <figcaption className="mt-2 text-[13px] font-semibold text-[#6E4A00]">— <RichText text={b.author} /></figcaption>
               </figure>
@@ -400,6 +401,10 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
   const canSave = useRef(false);
   const [resumeAt, setResumeAt] = useState<number | null>(null);
   const endRef = useRef<HTMLDivElement>(null);
+  // Texte dont les mots sont surlignés pendant l'écoute de la version audio (leçons qui en ont une).
+  const contentRef = useRef<HTMLElement>(null);
+  // Surlignage mot à mot : seulement quand l'audio lit le texte (avec transcription), pas pour un résumé.
+  const speechOn = !!lesson.audio?.transcript;
   // Une seule complétion automatique par visite : si le membre la retire, on la respecte.
   const autoCompleted = useRef(false);
 
@@ -536,7 +541,7 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
       )}
 
       <div className="max-w-6xl mx-auto px-5 sm:px-6 lg:grid lg:grid-cols-[minmax(0,1fr)_240px] lg:gap-14">
-        <article className="max-w-[68ch] mx-auto lg:mx-0 lg:ml-auto w-full pb-20">
+        <article ref={contentRef} className="max-w-[68ch] mx-auto lg:mx-0 lg:ml-auto w-full pb-20">
           {/* Titre */}
           <div className="pt-8 sm:pt-10">
             <p className="text-[12px] font-bold uppercase tracking-[0.2em] text-primary">
@@ -544,7 +549,7 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
             </p>
             <h1 className="mt-3 font-headline text-[34px] sm:text-[44px] font-bold leading-[1.08] tracking-tight text-foreground">
               <span className="block text-[18px] sm:text-[20px] font-semibold text-[#56615A] mb-1.5 tracking-normal">{ui.lessonLabel(lesson.number)}</span>
-              {lesson.title}
+              <SpeechWordsProvider value={speechOn}><Words text={lesson.title} /></SpeechWordsProvider>
             </h1>
             <div className="mt-5 flex flex-wrap items-center gap-x-5 gap-y-2 text-[13.5px] text-[#56615A]">
               <span className="inline-flex items-center gap-1.5"><Clock className="w-4 h-4" /> {ui.readingTime(lesson.readingMinutes)}</span>
@@ -553,12 +558,18 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
             </div>
           </div>
 
+          {lesson.audio && (
+            <SpeechPlayer key={lesson.slug} src={lesson.audio.src} transcriptSrc={lesson.audio.transcript} summary={lesson.audio.summary} rootRef={contentRef}
+              title={`${ui.lessonLabel(lesson.number)} — ${lesson.title}`} />
+          )}
+
           <div
             className="mt-8 space-y-5 text-[17px] sm:text-[18px] leading-[1.75] text-[#2E3A33] select-none"
             style={{ WebkitUserSelect: "none", WebkitTouchCallout: "none" } as React.CSSProperties}
             onCopy={preventContentCopy} onCut={preventContentCopy}
           >
-            <SectionTitle id="introduction" eyebrow={ui.introduction}>{lesson.intro.heading}</SectionTitle>
+            <SpeechWordsProvider value={speechOn}>
+            <SectionTitle id="introduction" eyebrow={ui.introduction}><Words text={lesson.intro.heading} /></SectionTitle>
             <Blocks blocks={lesson.intro.blocks} />
 
             {lesson.objective && (
@@ -566,14 +577,14 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
                 <Target className="w-5 h-5 text-primary shrink-0 mt-1" />
                 <p className="text-[16px] leading-relaxed">
                   <strong className="block text-[12px] font-bold uppercase tracking-[0.16em] text-primary mb-1">{ui.objective}</strong>
-                  {lesson.objective}
+                  <Words text={lesson.objective} />
                 </p>
               </aside>
             )}
 
             {lesson.parts.map((part, i) => (
               <section key={i}>
-                <SectionTitle id={`partie-${i + 1}`} eyebrow={ui.part(i + 1)}>{part.heading}</SectionTitle>
+                <SectionTitle id={`partie-${i + 1}`} eyebrow={ui.part(i + 1)}><Words text={part.heading} /></SectionTitle>
                 <div className="space-y-5"><Blocks blocks={part.blocks} /></div>
               </section>
             ))}
@@ -581,7 +592,7 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
             {/* Cas pratique */}
             {lesson.caseStudy && (
             <section>
-              <SectionTitle id="cas-pratique" eyebrow={ui.caseStudy}>{lesson.caseStudy.title}</SectionTitle>
+              <SectionTitle id="cas-pratique" eyebrow={ui.caseStudy}><Words text={lesson.caseStudy.title} /></SectionTitle>
               <p className="text-[#3F4A43]"><RichText text={lesson.caseStudy.context} /></p>
               <div className="mt-5 grid gap-3">
                 {lesson.caseStudy.responses.map((r, i) => (
@@ -604,12 +615,13 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
             <section>
               <div id="boussole" className="scroll-mt-28 mt-14 rounded-3xl border border-[#D9C9A3] bg-[#FBF7EC] px-6 py-6 sm:px-8 sm:py-7">
                 <p className="flex items-center gap-2.5 font-headline text-[22px] font-bold text-[#6E4A00]">
-                  <Compass className="w-5 h-5" /> {lesson.compass.title}
+                  <Compass className="w-5 h-5" /> <Words text={lesson.compass.title} />
                 </p>
                 <div className="mt-3 space-y-4 text-[16.5px] leading-[1.75] text-[#3F3A2E]"><Blocks blocks={lesson.compass.blocks} /></div>
               </div>
             </section>
             )}
+            </SpeechWordsProvider>
 
             {/* Validation des acquis */}
             <section>

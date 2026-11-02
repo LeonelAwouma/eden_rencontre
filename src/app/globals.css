@@ -870,3 +870,20 @@ html {
   .eden-loader-orbit, .eden-loader-halo, .eden-loader-bar { animation: none; }
   .eden-loader-fade { animation: none; opacity: 1; }
 }
+
+/* ─── Lecture audio d'une leçon : le mot prononcé est surligné dans le texte ─── */
+.speech-w {
+  border-radius: 4px;
+  transition: background-color .12s ease, box-shadow .12s ease;
+}
+/* Mot en cours : vert Eden, avec un léger halo pour rester lisible sur le crème. */
+.speech-w.speech-on {
+  background-color: hsl(var(--primary) / 0.26);
+  box-shadow: 0 0 0 3px hsl(var(--primary) / 0.26);
+}
+/* Une fois la lecture commencée, un clic sur un mot y déplace la voix. */
+[data-speech-active] .speech-w { cursor: pointer; }
+[data-speech-active] .speech-w:hover { background-color: hsl(var(--primary) / 0.10); }
+@media (prefers-reduced-motion: reduce) {
+  .speech-w { transition: none; }
+}
