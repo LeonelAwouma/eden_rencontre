@@ -39,9 +39,6 @@ export async function POST(request: NextRequest) {
     // le selfie aux photos depuis la fiche du membre (SelfieCheckPanel).
     const registration = readRegistrationSelfie(body);
 
-    // Photo publique choisie à l'inscription (même règle que /api/auth/register).
-    const chosenAvatarUrl = await resolveRegistrationAvatar(getSupabaseAdmin(), body, registration.media);
-
     // Pseudonyme public (le vrai nom Google reste réservé à l'admin)
     const cleanPseudo = typeof pseudo === "string" ? pseudo.trim() : "";
     if (cleanPseudo.length < 2 || cleanPseudo.length > 30 || /[<>"]/.test(cleanPseudo)) {
@@ -145,6 +142,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Unicité du pseudonyme (insensible à la casse), en excluant le compte de
+    // l'appelant lui-même (userId résolu ci-dessus depuis sa propre session,
+    // jamais depuis un champ du corps de la requête) : un membre qui reprend une
+    // inscription Google interrompue et resoumet son propre pseudo ne doit pas
+    // se voir répondre « déjà pris » par lui-même. Retour anticipé non bloquant ;
+    // l'index unique profiles_pseudo_unique_idx reste la garantie définitive.
+    {
+      const { data: pseudoConflict } = await db.from("profiles").select("id").ilike("pseudo", cleanPseudo).neq("id", userId).limit(1).maybeSingle();
+      if (pseudoConflict) {
+        return NextResponse.json({ error: "Ce pseudonyme est déjà utilisé." }, { status: 409 });
+      }
+    }
+
+    // Photo publique choisie à l'inscription (même règle que /api/auth/register).
+    const chosenAvatarUrl = await resolveRegistrationAvatar(db, body, registration.media, cleanGender);
+
     // Save charter acceptance if all accepted
     if (charterAuthorizeVerification && charterCommitRespectful && charterAcceptFull) {
       const ip = request.headers.get("x-forwarded-for") || request.headers.get("x-real-ip") || null;
@@ -215,6 +228,11 @@ export async function POST(request: NextRequest) {
 
     if (profileError) {
       console.error("[Google Onboarding] Profile save error:", profileError.message);
+      // Course gagnée par l'index unique profiles_pseudo_unique_idx : le contrôle
+      // anticipé ci-dessus ne l'empêche pas totalement, c'est l'index qui tranche.
+      if (profileError.code === "23505" && /pseudo/i.test(profileError.message)) {
+        return NextResponse.json({ error: "Ce pseudonyme est déjà utilisé." }, { status: 409 });
+      }
       await reportRegistrationFailure("google_profile_save", profileError.message, { userId, flow: "google" });
       return NextResponse.json(
         { error: "Erreur lors de la mise à jour du profil. L'équipe a été prévenue ; réessayez dans quelques minutes." },

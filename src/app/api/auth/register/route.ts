@@ -75,18 +75,30 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Veuillez indiquer si vous êtes un homme ou une femme." }, { status: 400 });
     }
     const cleanMarriageVision = Array.isArray(marriageVision) ? marriageVision.filter((v) => typeof v === "string") : [];
+    const cleanPseudo = String(pseudo).trim();
 
     const db = getSupabaseAdmin();
     const cleanEmail = email.trim().toLowerCase();
     reportEmail = cleanEmail;
 
-    const finalAvatarUrl = await resolveRegistrationAvatar(db, body, registration.media);
+    // Unicité du pseudonyme (insensible à la casse) : ici, retour anticipé non
+    // bloquant ; l'index unique profiles_pseudo_unique_idx (20261102_simplified_registration.sql)
+    // reste la garantie définitive contre une course entre deux inscriptions simultanées
+    // (voir le rattrapage de l'erreur de contrainte plus bas).
+    {
+      const { data: pseudoConflict } = await db.from("profiles").select("id").ilike("pseudo", cleanPseudo).limit(1).maybeSingle();
+      if (pseudoConflict) {
+        return NextResponse.json({ error: "Ce pseudonyme est déjà utilisé." }, { status: 409 });
+      }
+    }
+
+    const finalAvatarUrl = await resolveRegistrationAvatar(db, body, registration.media, cleanGender);
 
     // 1. Create auth user via Supabase Admin API
     // Métadonnées sans valeur vide : la base ne reçoit que des champs renseignés.
     const metadata = Object.fromEntries(Object.entries({
       name,
-      pseudo,
+      pseudo: cleanPseudo,
       firstName,
       lastName,
       avatar_url: finalAvatarUrl,
@@ -154,7 +166,7 @@ export async function POST(request: NextRequest) {
       id: userId,
       email: cleanEmail,
       name,
-      pseudo,
+      pseudo: cleanPseudo,
       first_name: firstName,
       last_name: lastName,
       gender: cleanGender,
@@ -192,6 +204,12 @@ export async function POST(request: NextRequest) {
       await reportRegistrationFailure("profile_save", profileError.message, { email: cleanEmail, userId, flow: "classique" });
       const { error: rollbackError } = await db.auth.admin.deleteUser(userId);
       if (rollbackError) console.error("[inscription] annulation du compte impossible:", rollbackError.message);
+      // Course gagnée par l'index unique profiles_pseudo_unique_idx (deux inscriptions
+      // simultanées avec le même pseudo) : le contrôle anticipé ci-dessus ne l'empêche
+      // pas totalement, c'est l'index qui tranche en dernier ressort.
+      if (profileError.code === "23505" && /pseudo/i.test(profileError.message)) {
+        return NextResponse.json({ error: "Ce pseudonyme est déjà utilisé." }, { status: 409 });
+      }
       return NextResponse.json(
         { error: "Votre profil n'a pas pu être enregistré. L'équipe a été prévenue ; réessayez dans quelques minutes." },
         { status: 500 }

@@ -15,11 +15,21 @@ export function isRegistrationComplete(p: { gender?: unknown; country?: unknown;
   return !!(p && p.gender && p.country && p.city);
 }
 
-/** Date de naissance au format du formulaire (AAAA-MM-JJ), réelle, et majeure. */
-export function isAdultBirthDate(iso: unknown, minAge = MIN_REGISTRATION_AGE): boolean {
+/**
+ * Vrai si `iso` est une date calendaire réelle au format AAAA-MM-JJ (rejette les
+ * dates impossibles comme 2023-02-30 ; gère nativement les années bissextiles via
+ * le round-trip Date → ISO). Ne dit rien sur l'âge — voir `isAdultBirthDate`.
+ */
+export function isRealBirthDateIso(iso: unknown): iso is string {
   if (typeof iso !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return false;
   const birth = new Date(`${iso}T00:00:00Z`);
-  if (isNaN(birth.getTime()) || birth.toISOString().slice(0, 10) !== iso) return false;
+  return !isNaN(birth.getTime()) && birth.toISOString().slice(0, 10) === iso;
+}
+
+/** Date de naissance au format du formulaire (AAAA-MM-JJ), réelle, et majeure. */
+export function isAdultBirthDate(iso: unknown, minAge = MIN_REGISTRATION_AGE): boolean {
+  if (!isRealBirthDateIso(iso)) return false;
+  const birth = new Date(`${iso}T00:00:00Z`);
   const now = new Date();
   let age = now.getUTCFullYear() - birth.getUTCFullYear();
   const m = now.getUTCMonth() - birth.getUTCMonth();

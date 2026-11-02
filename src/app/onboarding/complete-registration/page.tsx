@@ -1,178 +1,59 @@
 "use client";
 
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Progress } from "@/components/ui/progress";
-import {
-  Dialog,
-  DialogContent,
-  DialogTitle,
-  DialogDescription,
-} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
-import { getSession, logout, ageFromBirthDate, MIN_AGE, reportIncident } from "@/lib/auth";
+import { getSession, reportIncident } from "@/lib/auth";
 import { isRegistrationComplete } from "@/lib/registration-rules";
 import { supabase } from "@/lib/supabase";
-import { MARRIAGE_VALUES } from "@/lib/values";
-import { cameraErrorKey } from "@/lib/camera-error";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { uploadRegistrationMedia } from "@/lib/registration-media-client";
-import { useFormProgress } from "@/hooks/use-form-progress";
-import { SUPPORT_PHONE_DISPLAY } from "@/lib/contact";
-import { AvatarPicker } from "@/components/avatar-picker";
-import { filterCountries, filterCities, countryLabel, phoneIsoFor, dialOfIso, toE164 } from "@/lib/geo";
-import { PhoneInput } from "@/components/phone-input";
-import { Flag } from "@/components/flag";
-import { preparePhoto, videoFrameToDataUrl, MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
+import { dialOfIso, toE164 } from "@/lib/geo";
+import { MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
 import { useMobileContinueGate, MobileContinueGate } from "@/components/mobile-continue-gate";
-import {
-  AlertTriangle,
-  ArrowRight,
-  ChevronLeft,
-  ChevronRight,
-  Star,
-  CheckCircle2,
-  MessageCircle,
-  Plus,
-  Search,
-  MapPin,
-  ShieldCheck,
-  Heart,
-  Camera,
-  RotateCcw,
-  Upload,
-  X,
-  Loader2,
-} from "lucide-react";
+import { ShieldCheck, Heart } from "lucide-react";
 import { LoadingScreen } from "@/components/loading-screen";
-import { SocialLogo } from "@/components/social-logo";
+import { useRegistrationForm } from "@/hooks/use-registration-form";
+import { RegistrationProgress } from "@/components/registration/registration-progress";
+import { RegistrationAccountStep } from "@/components/registration/account-step";
+import { RegistrationProfileStep } from "@/components/registration/profile-step";
+import { RegistrationVerificationStep } from "@/components/registration/verification-step";
 
-// Pays, villes et indicatifs : src/lib/geo.ts (commun aux deux formulaires d'inscription).
+const TOTAL_STEPS = 3;
 
 export default function CompleteRegistrationPage() {
   const router = useRouter();
-  const { t, locale } = useI18n();
+  const { t } = useI18n();
   const { ready: deviceReady, showGate, continueOnDesktop } = useMobileContinueGate();
-  const [step, setStep] = useState(0);
-  // Écran « pseudonyme » affiché avant les 12 étapes du profil.
-  const [pseudoDone, setPseudoDone] = useState(false);
-  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
-  const [pendingGender, setPendingGender] = useState<string | null>(null);
-  const [countrySearch, setCountrySearch] = useState("");
-  const [citySearch, setCitySearch] = useState("");
+
   const [loading, setLoading] = useState(true);
   const [userEmail, setUserEmail] = useState("");
-  const [userName, setUserName] = useState("");
-  /** Compte Google connecté : la progression sauvegardée lui est propre. */
   const [userId, setUserId] = useState<string | null>(null);
+  const [authHeader, setAuthHeader] = useState<string | undefined>(undefined);
 
-  const [formData, setFormData] = useState({
-    pseudo: "",
-    gender: "",
-    discoverySource: "",
-    civilStatus: "",
-    region: "",
-    country: "",
-    city: "",
-    birthDate: "",
-    marriageVision: [] as string[],
-    charterAuthorizeVerification: false,
-    charterCommitRespectful: false,
-    charterAcceptFull: false,
-    phoneIso: "CM",
-    phoneLocal: "",
+  const {
+    step, setStep, nextStep, prevStep,
+    formData, setFormData,
+    photo, setPhoto,
+    selfieDataUri, setSelfieDataUri,
+    publicAvatar, setPublicAvatar,
+    photosDeferred, setPhotosDeferred,
+    restoreNoticeStep,
+    clearProgress,
+  } = useRegistrationForm({
+    draftKey: userId ? `eden_complete_registration_progress:${userId}` : null,
+    totalSteps: TOTAL_STEPS,
   });
 
-  const pseudoValid = formData.pseudo.trim().length >= 2 && formData.pseudo.trim().length <= 30 && !/[<>"]/.test(formData.pseudo);
-  const age = ageFromBirthDate(formData.birthDate);
-  const ageValid = age !== null && age >= MIN_AGE;
+  const patchFormData = (patch: Partial<typeof formData>) => setFormData((prev) => ({ ...prev, ...patch }));
 
-  // Photo uploads (same 3-photo requirement as the classic registration flow)
-  const [photos, setPhotos] = useState<(string | null)[]>([null, null, null]);
-  /** Photo publique : une des photos de profil, ou un avatar illustré. */
-  const [publicAvatar, setPublicAvatar] = useState<string | null>(null);
-  const [activePhotoSlot, setActivePhotoSlot] = useState<number | null>(null);
-  const photoInputRef = useRef<HTMLInputElement | null>(null);
-
-  // Photo réduite dès le choix (1280 px, JPEG) : envoyées en base64, les photos
-  // brutes d'un téléphone dépassaient la limite de 4,5 Mo des fonctions Vercel.
-  const [photoError, setPhotoError] = useState<string | null>(null);
-  const [processingSlot, setProcessingSlot] = useState<number | null>(null);
-  // Issue de secours : inscription terminée sans photos, que l'admin importera
-  // (Admin → Import de fichiers) une fois envoyées par le membre. Exceptionnel.
-  const [photosDeferred, setPhotosDeferred] = useState(false);
-  const [showDeferDialog, setShowDeferDialog] = useState(false);
-  const deferPhotos = () => {
-    setPhotos([null, null, null]);
-    // Une photo publique prise parmi les photos n'a plus lieu d'être.
-    setPublicAvatar((prev) => (prev && prev.startsWith("data:") ? null : prev));
-    setPhotoError(null);
-    setPhotosDeferred(true);
-    setShowDeferDialog(false);
-    nextStep();
-  };  const handlePhotoSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    const slot = activePhotoSlot;
-    // Reset input so the same file can be re-selected
-    e.target.value = "";
-    if (!file || slot === null) return;
-    setPhotoError(null);
-    // Une grande photo peut prendre plusieurs secondes à réduire sur un téléphone
-    // modeste : sans indicateur, le membre croyait l'import raté et recommençait.
-    setProcessingSlot(slot);
-    const res = await preparePhoto(file);
-    setProcessingSlot(null);
-    if (!res.ok) {
-      setPhotoError(t(res.reason === "heic" ? "camera.photoHeic" : "camera.photoUnsupported"));
-      // Échec vécu dans le navigateur, invisible côté serveur : signalé à l'admin.
-      void reportIncident("registration_photo_failed", `${res.reason} — ${res.detail}`);
-      return;
-    }
-    setPhotosDeferred(false);
-    setPhotos((prev) => {
-      const next = [...prev];
-      next[slot] = res.dataUrl;
-      return next;
-    });
-  };
-
-  const openPhotoPicker = (slotIndex: number) => {
-    if (processingSlot !== null) return;
-    setActivePhotoSlot(slotIndex);
-    photoInputRef.current?.click();
-  };
-
-  const removePhoto = (slotIndex: number) => {
-    setPhotos((prev) => {
-      const next = [...prev];
-      next[slotIndex] = null;
-      return next;
-    });
-  };
-
-  const allPhotosUploaded = photos.every((p) => p !== null);
-
-  // Selfie verification state
-  const [selfieDataUri, setSelfieDataUri] = useState<string | null>(null);
-  const [selfieError, setSelfieError] = useState<string | null>(null);
-  const [cameraActive, setCameraActive] = useState(false);
-  const [videoPlaying, setVideoPlaying] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-
-  const totalSteps = 13;
-  const displayStep = pseudoDone ? step + 2 : 1;
-  const progress = (displayStep / (totalSteps + 1)) * 100;
-
-  // Verify user is authenticated (came from Google OAuth)
+  // Compte Google déjà authentifié : vérifie qu'il n'a pas déjà un profil de
+  // base complet (sinon on renvoie directement vers le questionnaire) et
+  // récupère pseudo existant / email / jeton de session.
   useEffect(() => {
     (async () => {
       const session = await getSession();
@@ -180,14 +61,11 @@ export default function CompleteRegistrationPage() {
         router.replace("/login");
         return;
       }
-      // Profil déjà complété ? On lit la table profiles (source de vérité pour l'admin).
       let existingPseudo = session.pseudo || "";
       if (supabase && session.id) {
         const { data: prof } = await supabase
           .from("profiles").select("pseudo, gender, country, city, birth_date").eq("id", session.id).maybeSingle();
         if (prof?.pseudo) existingPseudo = prof.pseudo;
-        // Même règle que la garde de l'espace membre : sinon un membre sans pseudo
-        // ou sans date de naissance refaisait tout le formulaire, selfie compris.
         if (isRegistrationComplete(prof)) {
           router.replace("/onboarding");
           return;
@@ -195,289 +73,98 @@ export default function CompleteRegistrationPage() {
       }
       if (existingPseudo) setFormData((prev) => ({ ...prev, pseudo: existingPseudo }));
       setUserEmail(session.email || "");
-      setUserName(session.name || "");
       setUserId(session.id || null);
+      if (supabase) {
+        const { data: { session: supaSession } } = await supabase.auth.getSession();
+        if (supaSession?.access_token) setAuthHeader(`Bearer ${supaSession.access_token}`);
+      }
       setLoading(false);
     })();
-  }, [router]);
+  }, [router, setFormData]);
 
-  // Progression gardée si le téléphone recharge l'onglet (ouverture de la galerie,
-  // de l'appareil photo…). Clé propre au compte : un autre compte ouvert dans le
-  // même onglet ne retrouve jamais les photos de quelqu'un d'autre.
-  const LAST_STEP = 11;
-  const PHOTO_STEP = 9;
-  const SELFIE_STEP = 10;
-  const [restoreNoticeStep, setRestoreNoticeStep] = useState<number | null>(null);
-  const progressSnapshot = useMemo(
-    () => ({ pseudoDone, step, formData, photos, publicAvatar, selfieDataUri, photosDeferred }),
-    [pseudoDone, step, formData, photos, publicAvatar, selfieDataUri, photosDeferred]
-  );
-  const { clear: clearProgress } = useFormProgress({
-    key: userId ? `eden_complete_registration_progress:${userId}` : null,
-    snapshot: progressSnapshot,
-    heavyKeys: ["photos", "publicAvatar", "selfieDataUri"],
-    onRestore: (saved) => {
-      if (saved.formData) setFormData((prev) => ({ ...prev, ...saved.formData }));
-      const savedPhotos = Array.isArray(saved.photos) && saved.photos.length === 3 ? saved.photos : null;
-      if (savedPhotos) setPhotos(savedPhotos);
-      if (typeof saved.publicAvatar === "string") setPublicAvatar(saved.publicAvatar);
-      const savedSelfie = typeof saved.selfieDataUri === "string" ? saved.selfieDataUri : null;
-      if (savedSelfie) setSelfieDataUri(savedSelfie);
-      // Photos ou selfie non retrouvés (quota du navigateur) : on revient à l'étape qui les demande.
-      let target = typeof saved.step === "number" ? Math.max(0, Math.min(LAST_STEP, saved.step)) : 0;
-      const deferred = saved.photosDeferred === true;
-      if (deferred) setPhotosDeferred(true);
-      if (target > PHOTO_STEP && !deferred && !(savedPhotos && savedPhotos.every(Boolean))) target = PHOTO_STEP;
-      if (target > SELFIE_STEP && !savedSelfie) target = SELFIE_STEP;
-      setStep(target);
-      if (saved.pseudoDone) {
-        setPseudoDone(true);
-        setRestoreNoticeStep(target);
-      }
-    },
-  });
-
-  const nextStep = () => setStep((prev) => prev + 1);
-  const prevStep = () => setStep((prev) => prev - 1);
-  const handleGenderSelection = (gender: "homme" | "femme") => {
-    setPendingGender(gender);
-    setShowConfirmDialog(true);
-  };
-
-  const confirmGender = () => {
-    if (pendingGender) {
-      setFormData({ ...formData, gender: pendingGender });
-      setShowConfirmDialog(false);
-      nextStep();
-    }
-  };
-
-  const toggleValue = (val: string) => {
-    setFormData((prev) => {
-      const current = prev.marriageVision;
-      if (current.includes(val)) return { ...prev, marriageVision: current.filter((v) => v !== val) };
-      if (current.length >= 3) return prev;
-      return { ...prev, marriageVision: [...current, val] };
-    });
-  };
-
-  const handleRegionSelect = (region: string) => {
-    setFormData({ ...formData, region, country: "", city: "" });
-    nextStep();
-  };
-
-  const handleCountrySelect = (country: string) => {
-    setFormData({ ...formData, country, city: "", phoneIso: phoneIsoFor(country) });
-    nextStep();
-  };
-
-  const handleCitySelect = (city: string) => {
-    setFormData({ ...formData, city });
-    nextStep();
-  };
-
-  // ── Camera & Selfie Verification ─────────────────────────────
-  const startCamera = async () => {
-    setSelfieError(null);
-    setVideoPlaying(false);
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "user", width: { ideal: 640 }, height: { ideal: 480 } },
-      });
-      streamRef.current = stream;
-      // The <video> element only mounts once cameraActive is true, so the stream
-      // can't be attached here yet — a useEffect below does it once the ref exists.
-      setCameraActive(true);
-    } catch (err) {
-      setSelfieError(t(cameraErrorKey(err)));
-    }
-  };
-
-  // Manually (re)start playback — used both by the auto-attach effect below and
-  // by a visible fallback button, since some browsers silently refuse to
-  // autoplay a video whose stream was attached from a useEffect (outside the
-  // click handler's "user gesture" window) even when it's muted.
-  const playVideoPreview = () => {
-    videoRef.current?.play().catch(() => {});
-  };
-
-  // Attach the camera stream once the <video> element has actually mounted.
-  useEffect(() => {
-    if (cameraActive && videoRef.current && streamRef.current) {
-      videoRef.current.srcObject = streamRef.current;
-      playVideoPreview();
-    }
-  }, [cameraActive]);
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach((tr) => tr.stop());
-      streamRef.current = null;
-    }
-    setCameraActive(false);
-  };
-
-  // Selfie simple : aucune comparaison automatique, l'admin compare lui-même
-  // le selfie aux photos de profil avant de valider le compte.
-  const captureSelfie = () => {
-    if (!videoRef.current) return;
-    // Tant que la vidéo n'a pas démarré, videoWidth vaut 0 : image invalide.
-    const dataUri = videoFrameToDataUrl(videoRef.current);
-    if (!dataUri) return;
-    setSelfieDataUri(dataUri);
-    stopCamera();
-  };
-
-  const retakeSelfie = () => {
-    setSelfieDataUri(null);
-    setSelfieError(null);
-    startCamera();
-  };
-
-  // Cleanup camera stream on unmount
-  useEffect(() => {
-    return () => {
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach((tr) => tr.stop());
-      }
-    };
-  }, []);
-
-  const [saving, setSaving] = useState(false);
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [creating, setCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const handleComplete = async () => {
-    setSaveError(null);
-    setSaving(true);
-
+    setCreateError(null);
+    setCreating(true);
     try {
-      // Get the current Supabase session to include the access token
-      const headers: Record<string, string> = {
-        "Content-Type": "application/json",
-      };
-      if (supabase) {
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session?.access_token) {
-          headers["Authorization"] = `Bearer ${session.access_token}`;
-        }
-      }
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (authHeader) headers["Authorization"] = authHeader;
 
-      // Les images partent directement dans Supabase Storage (bucket privé) :
-      // la route d'inscription ne reçoit que leurs chemins, quelques Ko au lieu de plusieurs Mo.
       let media: Awaited<ReturnType<typeof uploadRegistrationMedia>> | null = null;
       try {
-        media = await uploadRegistrationMedia({ photos: photos.filter(Boolean) as string[], selfie: selfieDataUri, frames: [] });
+        media = await uploadRegistrationMedia({ photos: photo ? [photo] : [], selfie: selfieDataUri, frames: [] });
       } catch (uploadErr) {
         const message = uploadErr instanceof Error ? uploadErr.message : "";
         void reportIncident("registration_upload_failed", `${message || "erreur inconnue"} — ua=${navigator.userAgent.slice(0, 220)}`);
-        // Stockage pas encore installé (migration non exécutée) : on revient à l'ancien envoi.
         if (!/non configuré/i.test(message)) {
-          setSaveError(message || t("camera.photosTooLarge"));
-          setSaving(false);
+          setCreateError(message || t("camera.photosTooLarge"));
+          setCreating(false);
           return;
         }
       }
 
+      const photosArray = photo ? [photo] : [];
       const payload = JSON.stringify({
-          pseudo: formData.pseudo.trim(),
-          gender: formData.gender,
-          birthDate: formData.birthDate,
-          phone: toE164(dialOfIso(formData.phoneIso), formData.phoneLocal),
-          discoverySource: formData.discoverySource,
-          civilStatus: formData.civilStatus,
-          region: formData.region,
-          country: formData.country,
-          city: formData.city,
-          marriageVision: formData.marriageVision,
-          charterAuthorizeVerification: formData.charterAuthorizeVerification,
-          charterCommitRespectful: formData.charterCommitRespectful,
-          charterAcceptFull: formData.charterAcceptFull,
-          // Inscription sans photos (issue de secours) : l'admin est prévenu et les importera.
-          photosDeferred: photosDeferred && photos.every((p) => !p),
-          ...(media ?? { selfieImage: selfieDataUri, profilePhotos: photos.filter(Boolean) }),
-          // Avatar pris parmi les photos : le serveur le copie dans le stockage public des avatars.
-          avatarPhotoIndex: media && publicAvatar ? (photos.filter(Boolean) as string[]).indexOf(publicAvatar) : -1,
-          avatarUrl: publicAvatar && (!publicAvatar.startsWith("data:") || !media) ? publicAvatar : null,
-        });
-      // Garde-fou : au-delà de 4,5 Mo, Vercel refuse la requête (413) sans réponse lisible.
+        pseudo: formData.pseudo.trim(),
+        gender: formData.gender,
+        birthDate: formData.birthDate,
+        phone: toE164(dialOfIso(formData.phoneIso), formData.phoneLocal),
+        civilStatus: formData.civilStatus,
+        region: formData.region,
+        country: formData.country,
+        city: formData.city,
+        charterAuthorizeVerification: formData.charterAuthorizeVerification,
+        charterCommitRespectful: formData.charterCommitRespectful,
+        charterAcceptFull: formData.charterAcceptFull,
+        photosDeferred: photosDeferred && !photo,
+        ...(media ?? { selfieImage: selfieDataUri, profilePhotos: photosArray }),
+        avatarPhotoIndex: media && publicAvatar ? photosArray.indexOf(publicAvatar) : -1,
+        avatarUrl: publicAvatar && (!publicAvatar.startsWith("data:") || !media) ? publicAvatar : null,
+      });
       if (payload.length > MAX_UPLOAD_PAYLOAD) {
-        setSaveError(t("camera.photosTooLarge"));
-        setSaving(false);
+        setCreateError(t("camera.photosTooLarge"));
+        setCreating(false);
         return;
       }
 
-      const res = await fetch("/api/auth/google-onboarding", {
-        method: "POST",
-        headers,
-        body: payload,
-      });
-
+      const res = await fetch("/api/auth/google-onboarding", { method: "POST", headers, body: payload });
       const data = await res.json();
 
       if (!res.ok) {
-        setSaveError(data.error || t("completeRegistration.saveErrorGeneric"));
-        setSaving(false);
+        if (res.status === 409 && /pseudonyme/i.test(data.error || "")) {
+          setCreateError(data.error);
+          setCreating(false);
+          setStep(0);
+          return;
+        }
+        setCreateError(data.error || t("completeRegistration.saveErrorGeneric"));
+        setCreating(false);
         return;
       }
 
-      // Compte déjà approuvé : direction le questionnaire. Sinon, attente de validation par l'admin.
-      // Inscription complétée : la progression sauvegardée n'a plus lieu d'être.
       clearProgress();
       if (data.status === "approved") router.push("/onboarding");
-      else router.push(`/register/pending?email=${encodeURIComponent(userEmail)}${photosDeferred ? "&photos=pending" : ""}`);
+      else router.push(`/register/pending?email=${encodeURIComponent(userEmail)}${photosDeferred && !photo ? "&photos=pending" : ""}`);
     } catch {
-      setSaveError(t("completeRegistration.saveErrorServer"));
-      setSaving(false);
+      setCreateError("Erreur de connexion au serveur.");
+      setCreating(false);
     }
   };
 
-  const filteredCountries = filterCountries(formData.region, countrySearch);
-
-  const filteredCities = filterCities(formData.country, citySearch);
-
-  const discoverySources = [
-    { name: "TikTok", label: "TikTok", icon: <SocialLogo name="tiktok" /> },
-    { name: "Instagram", label: "Instagram", icon: <SocialLogo name="instagram" /> },
-    { name: "Facebook", label: "Facebook", icon: <SocialLogo name="facebook" /> },
-    { name: "WhatsApp", label: "WhatsApp", icon: <SocialLogo name="whatsapp" /> },
-    { name: "Bouche à oreille", label: t("completeRegistration.sourceWordOfMouth"), icon: <MessageCircle className="w-5 h-5 text-primary" /> },
-    { name: "YouTube", label: "YouTube", icon: <SocialLogo name="youtube" /> },
-    { name: "Autre", label: t("completeRegistration.sourceOther"), icon: <Plus className="w-5 h-5 text-foreground/40" /> },
-  ];
-
-  const civilStatusOptions = [
-    { value: "Célibataire", label: t("completeRegistration.civilStatusSingle") },
-    { value: "Veuf / Veuve", label: t("completeRegistration.civilStatusWidowed") },
-    { value: "Divorcé(e)", label: t("completeRegistration.civilStatusDivorced") },
-  ];
-
-  const regionLabel = (r: string) => (r === "Afrique" ? t("completeRegistration.regionAfrica") : t("completeRegistration.regionDiaspora"));
-  const genderDisplay = (g: string) => (g === "homme" ? t("completeRegistration.genderMale") : t("completeRegistration.genderFemale"));
-
-  if (loading || !deviceReady) {
-    return (
-      <LoadingScreen label={loading ? t("completeRegistration.loadingProfile") : undefined} />
-    );
-  }
-
-  if (showGate) {
-    return <MobileContinueGate onContinueDesktop={continueOnDesktop} />;
-  }
+  if (loading || !deviceReady) return <LoadingScreen />;
+  if (showGate) return <MobileContinueGate onContinueDesktop={continueOnDesktop} />;
 
   return (
     <div className="min-h-screen bg-background flex">
-      {/* Left Panel — Image & Branding (hidden on mobile) */}
       <div className="hidden lg:flex lg:w-[42%] xl:w-[45%] relative overflow-hidden">
-        <Image
-          src="/mariage.webp"
-          alt="Garden of Alliance — Alliance Bénie"
-          fill
-          className="object-cover object-center"
-          priority
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/60 to-background/30 z-10" />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background z-10" />
-
+        <div className="absolute inset-0 animate-breathe">
+          <Image src="/couple-jardin.webp" alt="Couple chrétien, fronts joints au jardin" fill className="object-cover object-center" priority />
+        </div>
+        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/40 to-transparent z-10" />
+        <div className="absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background/45 to-transparent z-10" />
+        <div className="absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-background to-transparent z-10" />
         <div className="relative z-20 flex flex-col justify-between p-12 w-full">
           <Link href="/" className="flex items-center gap-3 group">
             <Monogram className="w-10 h-10 text-primary shrink-0 group-hover:scale-110 transition-transform duration-500" />
@@ -485,900 +172,120 @@ export default function CompleteRegistrationPage() {
               Garden <span>of Alliance</span>
             </span>
           </Link>
-
           <div className="space-y-8">
             <div className="space-y-4">
               <h2 className="font-headline text-4xl xl:text-5xl font-bold text-foreground leading-tight">
-                {t("completeRegistration.leftTitle")} <br />
-                <span className="text-primary italic font-normal">{t("completeRegistration.leftTitleHighlight")}</span>
+                {t("register.leftTitle")} <br />
+                <span className="text-primary italic font-normal">{t("register.leftTitleHighlight")}</span>
               </h2>
-              <p className="text-foreground/60 text-lg max-w-md leading-relaxed">
-                {t("completeRegistration.leftSubtitle", { name: userName })}
-              </p>
+              <p className="text-foreground/60 text-lg max-w-md leading-relaxed">{t("register.leftSubtitle")}</p>
             </div>
-
             <div className="space-y-4">
               <div className="flex items-center gap-3 text-foreground/50">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <ShieldCheck className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-sm font-medium">{t("completeRegistration.feature1")}</span>
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><ShieldCheck className="w-4 h-4 text-primary" /></div>
+                <span className="text-sm font-medium">{t("register.aiVerification")}</span>
               </div>
               <div className="flex items-center gap-3 text-foreground/50">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <Heart className="w-4 h-4 text-primary fill-primary" />
-                </div>
-                <span className="text-sm font-medium">{t("completeRegistration.feature2")}</span>
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><Heart className="w-4 h-4 text-primary fill-primary" /></div>
+                <span className="text-sm font-medium">{t("register.spiritualAffinities")}</span>
               </div>
               <div className="flex items-center gap-3 text-foreground/50">
-                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
-                  <ShieldCheck className="w-4 h-4 text-primary" />
-                </div>
-                <span className="text-sm font-medium">{t("completeRegistration.feature3")}</span>
+                <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center"><ShieldCheck className="w-4 h-4 text-primary" /></div>
+                <span className="text-sm font-medium">{t("register.moderatedCommunity")}</span>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Panel — Completion Form */}
       <div className="flex-1 flex flex-col min-h-screen overflow-y-auto">
-        {/* Mobile Header */}
         <div className="lg:hidden flex items-center justify-between px-6 py-5 border-b border-foreground/5">
           <Link href="/" className="flex items-center gap-3 group">
             <Monogram className="w-8 h-8 text-primary shrink-0" />
-            <span className="font-headline text-lg font-bold text-foreground">
-              Garden <span>of Alliance</span>
-            </span>
+            <span className="font-headline text-lg font-bold text-foreground">Garden <span>of Alliance</span></span>
           </Link>
+        </div>
+
+        <div className="lg:hidden relative w-full h-40 sm:h-52 shrink-0 overflow-hidden">
+          <div className="absolute inset-0 animate-breathe">
+            <Image src="/mariage.webp" alt="Mariage chrétien — Garden of Alliance" fill className="object-cover object-[50%_22%]" />
+          </div>
+          <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-background to-transparent" />
         </div>
 
         <div className="flex-1 flex flex-col justify-center items-center px-5 sm:px-12 lg:px-16 xl:px-20 py-8 sm:py-10">
           <div className="w-full max-w-lg space-y-7 sm:space-y-8">
-            {/* Welcome banner */}
-            <div className="bg-primary/5 border border-primary/20 rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="font-bold text-primary text-sm">{t("completeRegistration.googleConnected")}</p>
-                <p className="text-xs text-foreground/40">{userEmail}</p>
-              </div>
-            </div>
+            <RegistrationProgress
+              step={(step + 1) as 1 | 2 | 3}
+              titleKey={step === 0 ? "registrationV2.step1Title" : step === 1 ? "registrationV2.step2Title" : "registrationV2.step3Title"}
+              subtitleKey={step === 0 ? "registrationV2.step1Subtitle" : step === 1 ? "registrationV2.step2Subtitle" : "registrationV2.step3Subtitle"}
+            />
 
-            {/* Progress Bar */}
-            {step <= 10 && (
-              <div className="space-y-3 animate-in fade-in duration-500">
-                <Progress value={progress} className="h-1.5 bg-foreground/5" />
-                <div className="flex justify-between items-center">
-                  <span className="text-[10px] font-black uppercase tracking-[0.3em] text-primary">
-                    {t("completeRegistration.stepOf", { current: displayStep, total: totalSteps + 1 })}
-                  </span>
-                  <span className="text-[10px] font-bold text-foreground/20 uppercase tracking-widest">
-                    {t("completeRegistration.percentComplete", { pct: Math.round(progress) })}
-                  </span>
-                </div>
-              </div>
-            )}
-
-            {pseudoDone && restoreNoticeStep === step && (
+            {restoreNoticeStep === step && (
               <p role="status" className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm font-medium text-primary">
                 {t("register.progressRestored")}
               </p>
             )}
 
             <AnimatePresence mode="wait">
-            <motion.div
-              key={pseudoDone ? step : "pseudo"}
-              initial={{ opacity: 0, x: 24 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -24 }}
-              transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-            >
-
-            {/* ============================================================ */}
-            {/* Pseudonyme — nom public du profil (le nom Google reste privé) */}
-            {/* ============================================================ */}
-            {!pseudoDone && (
-              <form
-                className="space-y-8"
-                onSubmit={(e) => { e.preventDefault(); if (pseudoValid) { setFormData((prev) => ({ ...prev, pseudo: prev.pseudo.trim() })); setPseudoDone(true); } }}
+              <motion.div
+                key={step}
+                initial={{ opacity: 0, x: 24 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -24 }}
+                transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
               >
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.pseudoTitle")}</h1>
-                  <p className="text-foreground/50 text-base">{t("completeRegistration.pseudoSubtitle")}</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="pseudo" className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.pseudoLabel")}</Label>
-                  <Input
-                    id="pseudo"
-                    autoFocus
-                    maxLength={30}
-                    autoComplete="nickname"
-                    placeholder={t("register.pseudoPlaceholder")}
-                    value={formData.pseudo}
-                    onChange={(e) => setFormData({ ...formData, pseudo: e.target.value })}
-                    className="h-14 rounded-xl bg-card border-foreground/10 text-base"
+                {step === 0 && (
+                  <RegistrationAccountStep
+                    mode="google"
+                    formData={formData}
+                    setFormData={patchFormData}
+                    onContinue={nextStep}
+                    authHeader={authHeader}
+                    googleUserEmail={userEmail}
                   />
-                  <p className="text-[12px] text-foreground/40">{t("register.pseudoHint")}</p>
-                  {formData.pseudo.trim().length > 0 && !pseudoValid && (
-                    <p className="text-[12px] text-destructive">{t("completeRegistration.pseudoInvalid")}</p>
-                  )}
-                </div>
-                <Button type="submit" disabled={!pseudoValid} className="w-full h-14 rounded-xl font-bold text-base gap-2">
-                  {t("completeRegistration.continue")} <ChevronRight className="w-4 h-4" />
-                </Button>
-                {/* Première étape : le compte Google est déjà connecté, et la garde de l'espace
-                    membre ramènerait ici. Revenir en arrière = se déconnecter et retrouver la connexion. */}
-                <button type="button" onClick={async () => { await logout(); router.replace("/login"); }} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2 disabled:opacity-40">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </form>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 0 — Gender Selection */}
-            {/* ============================================================ */}
-            {pseudoDone && step === 0 && (
-              <div className="space-y-8">
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step0Title")}</h1>
-                  <p className="text-foreground/50 text-base">{t("completeRegistration.step0Subtitle")}</p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => handleGenderSelection("homme")}
-                    className="bg-card hover:bg-foreground/5 transition-all p-8 sm:p-10 rounded-3xl text-center border border-foreground/5 group shadow-xl hover:border-primary/50 hover:shadow-primary/5"
-                  >
-                    <span className="text-5xl block mb-4 group-hover:scale-110 transition-transform">👦</span>
-                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{t("completeRegistration.genderMale")}</p>
-                    <p className="text-primary/50 text-xs mt-1 font-medium">{t("completeRegistration.genderMaleSubtext")}</p>
-                  </button>
-
-                  <button
-                    onClick={() => handleGenderSelection("femme")}
-                    className="bg-card hover:bg-foreground/5 transition-all p-8 sm:p-10 rounded-3xl text-center border border-foreground/5 group shadow-xl hover:border-primary/50 hover:shadow-primary/5"
-                  >
-                    <span className="text-5xl block mb-4 group-hover:scale-110 transition-transform">👧</span>
-                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{t("completeRegistration.genderFemale")}</p>
-                    <p className="text-primary/50 text-xs mt-1 font-medium">{t("completeRegistration.genderFemaleSubtext")}</p>
-                  </button>
-                </div>
-
-                <div className="flex justify-center">
-                  <div className="bg-olive/10 border border-olive/20 rounded-full py-2 px-5 flex items-center gap-2">
-                    <AlertTriangle className="w-3.5 h-3.5 text-olive" />
-                    <p className="text-olive/80 text-[10px] font-bold uppercase tracking-widest">{t("completeRegistration.definitiveInfo")}</p>
-                  </div>
-                </div>
-
-                <button onClick={() => setPseudoDone(false)} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 1 — Discovery Source */}
-            {/* ============================================================ */}
-            {pseudoDone && step === 1 && (
-              <div className="space-y-8">
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step1Title")}</h1>
-                  <p className="text-foreground/50 text-base">{t("completeRegistration.step1Subtitle")}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  {discoverySources.map((source) => (
-                    <Button
-                      key={source.name}
-                      variant="outline"
-                      onClick={() => { setFormData({ ...formData, discoverySource: source.name }); nextStep(); }}
-                      className="h-14 rounded-xl border-foreground/5 bg-card hover:bg-foreground/5 hover:border-primary/50 text-base font-medium text-foreground/80 gap-3 group"
-                    >
-                      <span className="group-hover:scale-110 transition-transform">{source.icon}</span>
-                      <span className="group-hover:text-primary transition-colors">{source.label}</span>
-                    </Button>
-                  ))}
-                </div>
-                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 2 — Civil Status */}
-            {/* ============================================================ */}
-            {pseudoDone && step === 2 && (
-              <div className="space-y-8">
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step2Title")}</h1>
-                  <p className="text-foreground/50 text-base">{t("completeRegistration.step2Subtitle")}</p>
-                </div>
-                <div className="space-y-3">
-                  {civilStatusOptions.map((s) => (
-                    <Button
-                      key={s.value}
-                      variant="outline"
-                      onClick={() => { setFormData({ ...formData, civilStatus: s.value }); nextStep(); }}
-                      className="w-full h-16 rounded-xl border-foreground/5 bg-card hover:bg-foreground/5 hover:border-primary/50 text-lg font-bold text-foreground hover:text-primary"
-                    >
-                      {s.label}
-                    </Button>
-                  ))}
-                </div>
-                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 3 — Region */}
-            {/* ============================================================ */}
-            {pseudoDone && step === 3 && (
-              <div className="space-y-8">
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step3Title")}</h1>
-                  <p className="text-foreground/50 text-base">{t("completeRegistration.step3Subtitle")}</p>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <button
-                    onClick={() => handleRegionSelect("Afrique")}
-                    className="bg-card border-foreground/5 p-10 rounded-3xl text-center hover:border-primary/50 border cursor-pointer transition-all group shadow-xl"
-                  >
-                    <span className="text-5xl block mb-4 group-hover:scale-110 transition-transform">🌍</span>
-                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{t("completeRegistration.regionAfrica")}</p>
-                  </button>
-                  <button
-                    onClick={() => handleRegionSelect("Diaspora")}
-                    className="bg-card border-foreground/5 p-10 rounded-3xl text-center hover:border-primary/50 border cursor-pointer transition-all group shadow-xl"
-                  >
-                    <span className="text-5xl block mb-4 group-hover:scale-110 transition-transform">✈️</span>
-                    <p className="font-bold text-lg text-foreground group-hover:text-primary transition-colors">{t("completeRegistration.regionDiaspora")}</p>
-                  </button>
-                </div>
-                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 4 — Country */}
-            {/* ============================================================ */}
-            {pseudoDone && step === 4 && (
-              <div className="space-y-8">
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step4Title")}</h1>
-                  <p className="text-foreground/50 text-base">{t("completeRegistration.step4Subtitle", { region: regionLabel(formData.region) })}</p>
-                </div>
-
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 w-5 h-5" />
-                  <Input
-                    placeholder={t("completeRegistration.searchCountryPlaceholder")}
-                    value={countrySearch}
-                    onChange={(e) => setCountrySearch(e.target.value)}
-                    className="pl-12 h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20"
+                )}
+                {step === 1 && (
+                  <RegistrationProfileStep
+                    mode="google"
+                    formData={formData}
+                    setFormData={patchFormData}
+                    onContinue={nextStep}
+                    onBack={prevStep}
                   />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
-                  {filteredCountries.map((country) => (
-                    <Button
-                      key={country.name}
-                      variant="outline"
-                      onClick={() => handleCountrySelect(country.name)}
-                      className="h-14 rounded-xl border-foreground/5 bg-card hover:bg-foreground/5 hover:border-primary/50 text-base font-bold text-foreground/80 group text-left justify-start px-6"
-                    >
-                      <Flag iso={country.iso} className="mr-3" />
-                      <span className="group-hover:text-primary transition-colors truncate">{countryLabel(country, locale)}</span>
-                    </Button>
-                  ))}
-                </div>
-                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 5 — City */}
-            {/* ============================================================ */}
-            {pseudoDone && step === 5 && (
-              <div className="space-y-8">
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step5Title")}</h1>
-                  <p className="text-foreground/50 text-base">{t("completeRegistration.step5Subtitle", { country: formData.country })}</p>
-                </div>
-
-                <div className="relative">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 w-5 h-5" />
-                  <Input
-                    placeholder={t("completeRegistration.searchCityPlaceholder")}
-                    value={citySearch}
-                    onChange={(e) => setCitySearch(e.target.value)}
-                    className="pl-12 h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20"
+                )}
+                {step === 2 && (
+                  <RegistrationVerificationStep
+                    gender={formData.gender}
+                    charterAuthorizeVerification={formData.charterAuthorizeVerification}
+                    charterCommitRespectful={formData.charterCommitRespectful}
+                    charterAcceptFull={formData.charterAcceptFull}
+                    onChangeCharter={patchFormData}
+                    photo={photo}
+                    setPhoto={setPhoto}
+                    photosDeferred={photosDeferred}
+                    setPhotosDeferred={setPhotosDeferred}
+                    selfieDataUri={selfieDataUri}
+                    setSelfieDataUri={setSelfieDataUri}
+                    publicAvatar={publicAvatar}
+                    setPublicAvatar={setPublicAvatar}
+                    onBack={prevStep}
+                    onComplete={handleComplete}
+                    creating={creating}
+                    createError={createError}
                   />
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[320px] overflow-y-auto pr-2 custom-scrollbar">
-                  {filteredCities.map((city) => (
-                    <Button
-                      key={city}
-                      variant="outline"
-                      onClick={() => handleCitySelect(city)}
-                      className="h-14 rounded-xl border-foreground/5 bg-card hover:bg-foreground/5 hover:border-primary/50 text-base font-bold text-foreground/80 group text-left justify-start px-6"
-                    >
-                      <MapPin className="w-4 h-4 text-primary/40 group-hover:text-primary mr-2" />
-                      <span className="group-hover:text-primary transition-colors">{city}</span>
-                    </Button>
-                  ))}
-                  <Button
-                    variant="outline"
-                    onClick={() => handleCitySelect(citySearch || "Autre")}
-                    className="h-14 rounded-xl border-foreground/5 bg-card hover:bg-foreground/5 hover:border-primary/50 text-base font-bold text-foreground/40 group text-left justify-start px-6 italic"
-                  >
-                    <Plus className="w-4 h-4 text-foreground/20 group-hover:text-primary mr-2" />
-                    {t("completeRegistration.typeOtherCity", { value: citySearch || t("completeRegistration.otherCityFallback") })}
-                  </Button>
-                </div>
-                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 6 — Birth Date */}
-            {/* ============================================================ */}
-            {pseudoDone && step === 6 && (
-              <div className="space-y-8">
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step6Title")}</h1>
-                  <p className="text-foreground/50 text-base">{t("completeRegistration.step6Subtitle")}</p>
-                </div>
-                <div className="space-y-5">
-                  <div className="bg-card border border-foreground/10 rounded-xl p-4 flex items-center gap-3">
-                    <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                      <span className="text-primary text-sm font-bold">@</span>
-                    </div>
-                    <div>
-                      <p className="text-sm font-medium text-foreground">{userName}</p>
-                      <p className="text-xs text-foreground/40">{userEmail}</p>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("completeRegistration.birthDateLabel")}</Label>
-                    <Input
-                      autoFocus
-                      type="date"
-                      value={formData.birthDate}
-                      onChange={(e) => setFormData({ ...formData, birthDate: e.target.value })}
-                      className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30"
-                    />
-                    {formData.birthDate && !ageValid && (
-                      <p className="text-xs text-destructive flex items-center gap-1.5"><AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {t("completeRegistration.minAgeError", { age: MIN_AGE })}</p>
-                    )}
-                    {formData.birthDate && ageValid && (
-                      <p className="text-[11px] text-foreground/30 uppercase tracking-widest">{t("completeRegistration.yearsOld", { age })}</p>
-                    )}
-                  </div>
-                  <PhoneInput
-                    iso={formData.phoneIso}
-                    local={formData.phoneLocal}
-                    onIso={(phoneIso) => setFormData({ ...formData, phoneIso })}
-                    onLocal={(phoneLocal) => setFormData({ ...formData, phoneLocal })}
-                  />
-                  <Button
-                    onClick={nextStep}
-                    disabled={!ageValid || !toE164(dialOfIso(formData.phoneIso), formData.phoneLocal)}
-                    className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
-                  >
-                    {t("completeRegistration.continue")} <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                </div>
-                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 7 — Values Selection */}
-            {/* ============================================================ */}
-            {pseudoDone && step === 7 && (
-              <div className="space-y-8">
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step7Title")}</h1>
-                  <p className="text-foreground/50 text-base">{t("completeRegistration.step7Subtitle")}</p>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {MARRIAGE_VALUES.map((item) => (
-                    <button
-                      key={item.id}
-                      onClick={() => toggleValue(item.id)}
-                      className={cn(
-                        "h-16 px-5 rounded-xl border-2 transition-all flex items-center gap-3 text-left",
-                        formData.marriageVision.includes(item.id)
-                          ? "bg-primary/10 border-primary text-primary shadow-lg shadow-primary/5"
-                          : "bg-card border-foreground/5 text-foreground/60 hover:border-primary/50 hover:text-foreground"
-                      )}
-                    >
-                      <span className="text-xl">{item.icon}</span>
-                      <span className="font-bold text-sm">{item.label}</span>
-                      {formData.marriageVision.includes(item.id) && (
-                        <CheckCircle2 className="w-4 h-4 text-primary ml-auto" />
-                      )}
-                    </button>
-                  ))}
-                </div>
-                <Button
-                  onClick={nextStep}
-                  disabled={formData.marriageVision.length === 0}
-                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  {t("completeRegistration.continue")} <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 8 — Charter Acceptance */}
-            {/* ============================================================ */}
-            {pseudoDone && step === 8 && (
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-3xl font-headline font-bold text-foreground">{t("completeRegistration.step8Title")}</h1>
-                  <p className="text-foreground/50 text-sm">{t("completeRegistration.step8Subtitle")}</p>
-                </div>
-
-                {/* Charter content — scrollable */}
-                <div className="bg-card border border-foreground/10 rounded-2xl p-5 max-h-[340px] overflow-y-auto custom-scrollbar space-y-5 text-sm text-foreground/70 leading-relaxed">
-                  <div className="space-y-3">
-                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">{t("completeRegistration.axe1")}</h3>
-                    <p>{t("completeRegistration.art1")}</p>
-                    <p>{t("completeRegistration.art2")}</p>
-                  </div>
-                  <div className="space-y-3">
-                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">{t("completeRegistration.axe2")}</h3>
-                    <p>{t("completeRegistration.art3")}</p>
-                    <p>{t("completeRegistration.art4")}</p>
-                  </div>
-                  <div className="space-y-3">
-                    <h3 className="font-headline font-bold text-deep-eden text-base sticky top-0 bg-card pb-1">{t("completeRegistration.axe3")}</h3>
-                    <p>{t("completeRegistration.art5")}</p>
-                  </div>
-                </div>
-
-                {/* Checkboxes */}
-                <div className="space-y-3">
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={formData.charterAuthorizeVerification}
-                      onChange={() => setFormData({ ...formData, charterAuthorizeVerification: !formData.charterAuthorizeVerification })}
-                      className="mt-1 w-5 h-5 rounded border-foreground/20 text-primary focus:ring-primary/30 shrink-0"
-                    />
-                    <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
-                      {t("completeRegistration.checkbox1")}
-                    </span>
-                  </label>
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={formData.charterCommitRespectful}
-                      onChange={() => setFormData({ ...formData, charterCommitRespectful: !formData.charterCommitRespectful })}
-                      className="mt-1 w-5 h-5 rounded border-foreground/20 text-primary focus:ring-primary/30 shrink-0"
-                    />
-                    <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
-                      {t("completeRegistration.checkbox2")}
-                    </span>
-                  </label>
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={formData.charterAcceptFull}
-                      onChange={() => setFormData({ ...formData, charterAcceptFull: !formData.charterAcceptFull })}
-                      className="mt-1 w-5 h-5 rounded border-foreground/20 text-primary focus:ring-primary/30 shrink-0"
-                    />
-                    <span className="text-sm text-foreground/80 group-hover:text-foreground transition-colors">
-                      {t("completeRegistration.checkbox3")}
-                    </span>
-                  </label>
-                </div>
-
-                <Button
-                  onClick={nextStep}
-                  disabled={!formData.charterAuthorizeVerification || !formData.charterCommitRespectful || !formData.charterAcceptFull}
-                  className="w-full h-14 bg-primary text-primary-foreground font-black rounded-xl text-base shadow-xl shadow-primary/15 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  {t("completeRegistration.acceptAndContinue")} <ShieldCheck className="w-5 h-5 ml-2" />
-                </Button>
-                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 9 — Photo Upload (Mandatory) */}
-            {/* ============================================================ */}
-            {pseudoDone && step === 9 && (
-              <div className="space-y-8">
-                <input
-                  ref={photoInputRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handlePhotoSelect}
-                />
-                {photoError && <p role="alert" className="rounded-xl border border-destructive/30 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive">{photoError}</p>}
-                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-                    <Upload className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-primary text-sm uppercase tracking-wider">{t("register.photosRequired")}</p>
-                    <p className="text-xs text-foreground/40 mt-0.5">{t("register.photosRequiredDesc")}</p>
-                  </div>
-                </div>
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.addPhotos")}</h1>
-                  <p className="text-foreground/50 text-base">{t("register.addPhotosDesc")}</p>
-                </div>
-
-                <div className="grid grid-cols-3 gap-4 w-full">
-                  {photos.map((src, i) => (
-                    <div key={i} onClick={() => openPhotoPicker(i)} className="relative aspect-[2/3] bg-card border border-foreground/5 rounded-2xl overflow-hidden group shadow-xl hover:border-primary/30 transition-all cursor-pointer">
-                      {src ? (
-                        <>
-                          <Image src={src} alt="" fill className="object-cover group-hover:scale-105 transition-transform" />
-                          <button onClick={(e) => { e.stopPropagation(); removePhoto(i); }} className="absolute top-3 right-3 w-7 h-7 bg-black/40 backdrop-blur-md rounded-full flex items-center justify-center text-foreground/60 hover:text-foreground transition-colors">
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                          {i === 0 && (
-                            <div className="absolute top-3 left-3 w-7 h-7 bg-primary rounded-full flex items-center justify-center text-primary-foreground shadow-lg">
-                              <Star className="w-3.5 h-3.5 fill-primary-foreground" />
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        processingSlot === i ? (
-                          <div role="status" className="w-full h-full flex flex-col items-center justify-center gap-3 bg-primary/5 px-2 text-center">
-                            <Loader2 className="w-6 h-6 text-primary animate-spin" />
-                            <span className="text-[10px] font-semibold text-primary leading-tight">{t("camera.photoProcessing")}</span>
-                          </div>
-                        ) : (
-                          <div className="w-full h-full flex flex-col items-center justify-center gap-3 hover:bg-foreground/5 transition-colors">
-                            <Upload className="w-6 h-6 text-foreground/20" />
-                            <span className="text-[9px] font-bold text-foreground/20 uppercase tracking-widest">Photo {i + 1}</span>
-                          </div>
-                        )
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {!allPhotosUploaded && (
-                  <p className="text-sm text-foreground/40 text-center">
-                    {t("register.photosMandatory")}
-                  </p>
                 )}
-                <Button
-                  onClick={nextStep}
-                  disabled={!allPhotosUploaded}
-                  className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  {t("register.continueToVerification")} <Camera className="w-5 h-5 ml-2" />
-                </Button>
-                <button
-                  type="button"
-                  onClick={() => setShowDeferDialog(true)}
-                  className={cn("w-full text-center text-sm underline underline-offset-4 transition-colors py-1",
-                    photoError ? "text-destructive font-semibold" : "text-foreground/40 hover:text-primary")}
-                >
-                  {t("register.photosDeferLink")}
-                </button>
-                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 10 — Selfie Verification */}
-            {/* ============================================================ */}
-            {pseudoDone && step === 10 && (
-              <div className="space-y-6">
-                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-                    <ShieldCheck className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-primary text-sm uppercase tracking-wider">{t("completeRegistration.step9Badge")}</p>
-                    <p className="text-xs text-foreground/40 mt-0.5">{t("completeRegistration.step9BadgeDesc")}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step9Title")}</h1>
-                  <p className="text-foreground/50 text-sm">{t("completeRegistration.step9Subtitle")}</p>
-                </div>
-
-                {/* Camera / Selfie Area */}
-                <div className="relative w-full aspect-[3/4] max-h-[380px] bg-card border border-foreground/10 rounded-2xl overflow-hidden">
-                  {!cameraActive && !selfieDataUri && (
-                    <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-                      <Camera className="w-16 h-16 text-foreground/15" />
-                      <p className="text-foreground/30 text-sm">{t("completeRegistration.activateCameraPrompt")}</p>
-                      <Button onClick={startCamera} className="bg-primary text-primary-foreground font-bold rounded-xl px-8">
-                        <Camera className="w-4 h-4 mr-2" /> {t("completeRegistration.activateCamera")}
-                      </Button>
-                    </div>
-                  )}
-                  {cameraActive && (
-                    <>
-                      <video ref={videoRef} autoPlay playsInline muted onPlaying={() => setVideoPlaying(true)}
-                        className="w-full h-full object-cover" style={{ transform: "scaleX(-1)" }} />
-                      {!videoPlaying && (
-                        <button onClick={playVideoPreview}
-                          className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-black/60 text-white">
-                          <Camera className="w-10 h-10" />
-                          <span className="text-sm font-bold px-6 text-center">{t("register.selfieTapToShow")}</span>
-                        </button>
-                      )}
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-48 h-48 border-2 border-primary/50 rounded-full" />
-                      </div>
-                      <div className="absolute bottom-4 left-0 right-0 flex justify-center">
-                        <Button onClick={captureSelfie} disabled={!videoPlaying}
-                          className="bg-primary text-primary-foreground font-bold rounded-full w-16 h-16 p-0 shadow-lg disabled:opacity-40">
-                          <Camera className="w-6 h-6" />
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                  {selfieDataUri && (
-                    <>
-                      <img src={selfieDataUri} alt="Selfie" className="w-full h-full object-cover" />
-                      <div className="absolute top-4 right-4">
-                        <Button onClick={retakeSelfie} variant="outline" size="sm" className="bg-black/40 border-white/20 text-white hover:bg-black/60 backdrop-blur-md">
-                          <RotateCcw className="w-4 h-4 mr-1" /> {t("completeRegistration.retake")}
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </div>
-                <canvas ref={canvasRef} className="hidden" />
-
-                {/* Error */}
-                {selfieError && (
-                  <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/20 rounded-xl p-4">
-                    <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                    <p className="text-sm text-destructive/90">{selfieError}</p>
-                  </div>
-                )}
-
-                {/* Continuer : l'équipe comparera le selfie aux photos avant de valider le compte */}
-                {selfieDataUri && (
-                  <Button
-                    onClick={nextStep}
-                    className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform"
-                  >
-                    {t("register.selfieContinueBtn")} <ArrowRight className="w-5 h-5 ml-2" />
-                  </Button>
-                )}
-
-                <button onClick={() => { stopCamera(); prevStep(); }} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 11 — Public Avatar */}
-            {/* ============================================================ */}
-            {pseudoDone && step === 11 && (
-              <div className="space-y-6">
-                <div className="space-y-3">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("register.avatarTitle")}</h1>
-                  <p className="text-foreground/50 text-sm">{t("register.avatarSubtitle")}</p>
-                </div>
-
-                <AvatarPicker photos={photos} gender={formData.gender} value={publicAvatar} onChange={setPublicAvatar} />
-
-                {!publicAvatar && <p className="text-xs text-foreground/50 text-center">{t("register.avatarChooseHint")}</p>}
-                <Button
-                  onClick={nextStep}
-                  disabled={!publicAvatar}
-                  className="w-full h-14 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-base rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-50 disabled:hover:scale-100"
-                >
-                  {t("register.continueToCompletion")} <ArrowRight className="w-5 h-5 ml-2" />
-                </Button>
-                <button onClick={prevStep} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            {/* ============================================================ */}
-            {/* Step 12 — Completion / Summary */}
-            {/* ============================================================ */}
-            {step >= 12 && (
-              <div className="space-y-8">
-                {/* Success Banner */}
-                <div className="bg-primary/5 border border-primary/20 rounded-2xl p-5 flex items-center gap-4">
-                  <div className="w-12 h-12 bg-primary/10 rounded-xl flex items-center justify-center shrink-0">
-                    <CheckCircle2 className="w-6 h-6 text-primary" />
-                  </div>
-                  <div>
-                    <p className="font-bold text-primary text-sm uppercase tracking-wider">{t("completeRegistration.step10SuccessBanner")}</p>
-                    <p className="text-xs text-foreground/40 mt-0.5">{t("completeRegistration.step10SuccessBannerDesc", { city: formData.city, country: formData.country })}</p>
-                  </div>
-                </div>
-
-                <div className="space-y-3 text-center">
-                  <h1 className="text-2xl sm:text-4xl font-headline font-bold text-foreground">{t("completeRegistration.step10WelcomeTitle")}</h1>
-                  <p className="text-foreground/50 text-base">
-                    {t("completeRegistration.step10WelcomeDesc")}
-                  </p>
-                </div>
-
-                {/* Summary */}
-                <div className="bg-card border border-foreground/10 rounded-2xl p-5 space-y-3 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-foreground/40">{t("completeRegistration.summaryGender")}</span>
-                    <span className="font-bold text-foreground capitalize">{genderDisplay(formData.gender)}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-foreground/40">{t("completeRegistration.summaryResidence")}</span>
-                    <span className="font-bold text-foreground">{formData.city}, {formData.country}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-foreground/40">{t("completeRegistration.summarySituation")}</span>
-                    <span className="font-bold text-foreground">{formData.civilStatus}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-foreground/40">{t("completeRegistration.summaryAge")}</span>
-                    <span className="font-bold text-foreground">{t("completeRegistration.yearsOld", { age: age ?? 0 })}</span>
-                  </div>
-                </div>
-
-                {saveError && (
-                  <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/20 rounded-xl p-4">
-                    <AlertTriangle className="w-5 h-5 text-destructive shrink-0 mt-0.5" />
-                    <p className="text-sm text-destructive/90">{saveError}</p>
-                  </div>
-                )}
-
-                <Button
-                  onClick={handleComplete}
-                  disabled={saving}
-                  className="w-full h-16 bg-primary hover:bg-primary/90 text-primary-foreground font-black text-lg rounded-2xl gap-3 shadow-2xl shadow-primary/25 hover:scale-[1.02] active:scale-[0.98] transition-transform disabled:opacity-70 disabled:hover:scale-100"
-                >
-                  {saving ? (
-                    <span className="flex items-center gap-3">
-                      <span className="w-5 h-5 border-2 border-primary-foreground/30 border-t-primary-foreground rounded-full animate-spin" />
-                      {t("completeRegistration.saving")}
-                    </span>
-                  ) : (
-                    <>{t("completeRegistration.submitProfile")} <Heart className="w-6 h-6 fill-primary-foreground" /></>
-                  )}
-                </Button>
-                <button type="button" onClick={prevStep} disabled={saving} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2 disabled:opacity-40">
-                  <ChevronLeft className="w-4 h-4" /> {t("completeRegistration.back")}
-                </button>
-              </div>
-            )}
-
-            </motion.div>
+              </motion.div>
             </AnimatePresence>
-
-            {/* Login link on steps 0-10 */}
-            {step <= 10 && (
-              <div className="text-center pt-2">
-                <p className="text-foreground/30 text-sm">
-                  {t("completeRegistration.needHelp")}{" "}
-                  <Link href="/contact" className="text-primary font-bold hover:text-primary/80 transition-colors">
-                    {t("completeRegistration.contactUs")}
-                  </Link>
-                </p>
-              </div>
-            )}
           </div>
         </div>
-
-        {/* Footer for terms */}
-        {step <= 10 && (
-          <div className="px-6 py-4 border-t border-foreground/5">
-            <p className="text-center text-foreground/15 text-[10px] font-medium uppercase tracking-widest">
-              {t("completeRegistration.footerTermsPrefix")}{" "}
-              <Link href="/charte" className="text-foreground/25 hover:text-primary/60 transition-colors">{t("completeRegistration.footerTermsCharter")}</Link>
-              {" "}{t("completeRegistration.footerTermsAnd")}{" "}
-              <Link href="/cgu" className="text-foreground/25 hover:text-primary/60 transition-colors">{t("completeRegistration.footerTermsCgu")}</Link>.
-            </p>
-          </div>
-        )}
       </div>
 
-      {/* Gender Confirmation Dialog */}
-      <Dialog open={showDeferDialog} onOpenChange={setShowDeferDialog}>
-        <DialogContent className="max-w-md bg-card text-foreground border-foreground/5 rounded-[2rem] p-8 sm:p-10">
-          <div className="flex flex-col items-center text-center space-y-5">
-            <div className="w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center">
-              <Upload className="w-7 h-7 text-primary" />
-            </div>
-            <div className="space-y-2">
-              <DialogTitle className="text-xl sm:text-2xl font-bold text-foreground">{t("register.photosDeferTitle")}</DialogTitle>
-              <DialogDescription className="text-foreground/60 text-sm">{t("register.photosDeferDesc")}</DialogDescription>
-            </div>
-            <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl flex gap-3 text-left">
-              <AlertTriangle className="w-5 h-5 text-primary shrink-0" />
-              <p className="text-xs text-foreground/60">{t("register.photosDeferSupport", { phone: SUPPORT_PHONE_DISPLAY })}</p>
-            </div>
-            <div className="flex flex-col w-full gap-3">
-              <Button onClick={deferPhotos} className={"w-full h-14 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors"}>
-                {t("register.photosDeferConfirm")}
-              </Button>
-              <Button variant="ghost" onClick={() => setShowDeferDialog(false)} className="w-full text-foreground/50 hover:text-primary transition-colors">
-                {t("register.photosDeferCancel")}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-        <DialogContent className="max-w-md bg-card text-foreground border-foreground/5 rounded-[2rem] p-10">
-          <div className="flex flex-col items-center text-center space-y-6">
-            <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center text-5xl">
-              {pendingGender === "homme" ? "👦" : "👧"}
-            </div>
-            <div className="space-y-2">
-              <DialogTitle className="text-2xl font-bold text-foreground">{t("completeRegistration.confirmDialogTitle")}</DialogTitle>
-              <DialogDescription className="text-foreground/50">
-                {t("completeRegistration.confirmDialogDesc")} <span className="font-bold text-primary uppercase">{pendingGender ? genderDisplay(pendingGender) : ""}</span>.
-              </DialogDescription>
-            </div>
-            <div className="bg-primary/5 border border-primary/10 p-4 rounded-2xl flex gap-3 text-left">
-              <AlertTriangle className="w-5 h-5 text-primary shrink-0" />
-              <p className="text-xs text-foreground/40 italic">
-                {t("completeRegistration.confirmDialogNotice")}
-              </p>
-            </div>
-            <div className="flex flex-col w-full gap-3">
-              <Button onClick={confirmGender} className="w-full h-14 bg-primary text-primary-foreground font-bold rounded-xl hover:bg-primary/90 transition-colors">
-                {t("completeRegistration.confirmDialogConfirm")}
-              </Button>
-              <Button variant="ghost" onClick={() => setShowConfirmDialog(false)} className="w-full text-foreground/40 hover:text-primary transition-colors">
-                {t("completeRegistration.confirmDialogCancel")}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
       <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 5px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(255, 255, 255, 0.02);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: hsl(145 22% 62% / 0.2);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: hsl(145 22% 62% / 0.4);
-        }
+        .custom-scrollbar::-webkit-scrollbar { width: 5px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.02); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: hsl(145 22% 62% / 0.2); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: hsl(145 22% 62% / 0.4); }
       `}</style>
     </div>
   );

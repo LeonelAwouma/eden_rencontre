@@ -197,8 +197,13 @@ export function matchesSearch(text: string, query: string): boolean {
   return !q || normalizeSearch(text).includes(q);
 }
 
-export function filterCountries(region: string, query: string): GeoCountry[] {
-  return countriesOf(region)
+/**
+ * `region` vide/absente : recherche dans tous les pays, sans présélection
+ * Afrique/Diaspora (inscription simplifiée — la région se déduit du pays choisi,
+ * voir `findCountry(...).region`, plutôt que d'être demandée au préalable).
+ */
+export function filterCountries(region: string | null | undefined, query: string): GeoCountry[] {
+  return (region ? countriesOf(region) : COUNTRIES)
     .filter((c) => matchesSearch(c.name, query) || matchesSearch(c.nameEn, query) || matchesSearch(c.dial, query))
     .sort((a, b) => a.name.localeCompare(b.name, "fr"));
 }

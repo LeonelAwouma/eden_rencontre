@@ -8,6 +8,7 @@
 
 import { randomUUID } from "crypto";
 import type { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { edenAvatarsFor } from "@/lib/avatar";
 
 type Db = ReturnType<typeof getSupabaseAdmin>;
 
@@ -160,22 +161,31 @@ export async function publishAvatarFromDataUri(db: Db, dataUri: string): Promise
  * dans le bucket public), un avatar illustré (adresse https), ou une image
  * encodée de l'ancien formulaire (déposée dans le stockage). Toujours une
  * adresse courte, jamais une image encodée.
+ *
+ * L'avatar est désormais facultatif à l'inscription (étape 3 simplifiée) : si
+ * le membre n'en choisit aucun, `gender` permet d'attribuer automatiquement un
+ * avatar illustré Eden par défaut plutôt que de laisser `avatar_url` vide —
+ * jamais une photo privée publiée sans choix explicite, toujours une
+ * illustration déjà publique.
  */
 export async function resolveRegistrationAvatar(
   db: Db,
   body: Record<string, unknown>,
-  media: RegistrationMedia | null
+  media: RegistrationMedia | null,
+  gender?: string | null
 ): Promise<string | null> {
   const index = typeof body.avatarPhotoIndex === "number" ? body.avatarPhotoIndex : -1;
   const fromPhoto = media && index >= 0 ? media.profilePhotoPaths[index] : undefined;
   if (fromPhoto) return publishAvatarFromMedia(db, fromPhoto);
   const url = body.avatarUrl;
-  if (typeof url !== "string" || !url) return null;
-  if (/^https:\/\//.test(url) && url.length < 2000) return url;
-  // Avatar Eden (public/avatars) : adresse relative, voir EDEN_AVATARS dans src/lib/avatar.ts.
-  if (/^\/avatars\/[a-z0-9-]+\.webp$/.test(url)) return url;
-  if (url.startsWith("data:")) return publishAvatarFromDataUri(db, url);
-  return null;
+  if (typeof url === "string" && url) {
+    if (/^https:\/\//.test(url) && url.length < 2000) return url;
+    // Avatar Eden (public/avatars) : adresse relative, voir EDEN_AVATARS dans src/lib/avatar.ts.
+    if (/^\/avatars\/[a-z0-9-]+\.webp$/.test(url)) return url;
+    if (url.startsWith("data:")) return publishAvatarFromDataUri(db, url);
+  }
+  const fallback = edenAvatarsFor(gender);
+  return fallback.length ? fallback[0] : null;
 }
 
 /**
