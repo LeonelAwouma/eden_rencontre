@@ -359,18 +359,32 @@ export default function AdminUserDetailPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Main info */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Photos manquantes (issue de secours de l'inscription) : import manuel exceptionnel. */}
-          {(user.profile_photos || []).filter(Boolean).length < 3 && (
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
-              <p className="text-sm text-amber-800">
-                <span className="font-semibold">Photos manquantes</span> — {(user.profile_photos || []).filter(Boolean).length}/3 photos de profil.
-                Si le membre vous les a envoyées, importez-les manuellement.
-              </p>
-              <Link href={`/admin/photos?user=${user.id}`} className="shrink-0 inline-flex items-center justify-center h-9 px-4 rounded-lg bg-[#486B46] text-white text-[13px] font-semibold hover:bg-[#486B46]">
-                Importer les photos
-              </Link>
-            </div>
-          )}
+          {/* Inscription simplifiée : 1 photo obligatoire, 2 facultatives (ajoutables
+              par le membre depuis /dashboard/profile). Seule l'absence totale (0 photo,
+              issue de secours « je ne peux pas importer ma photo ») est une anomalie à
+              régulariser — 1 ou 2 photos sont des états normaux, pas une alerte. */}
+          {(() => {
+            const photoCount = (user.profile_photos || []).filter(Boolean).length;
+            if (photoCount === 0) {
+              return (
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <p className="text-sm text-amber-800">
+                    <span className="font-semibold">Photos manquantes</span> — 0/3 photo de profil.
+                    Si le membre vous l&apos;a envoyée, importez-la manuellement.
+                  </p>
+                  <Link href={`/admin/photos?user=${user.id}`} className="shrink-0 inline-flex items-center justify-center h-9 px-4 rounded-lg bg-[#486B46] text-white text-[13px] font-semibold hover:bg-[#486B46]">
+                    Importer les photos
+                  </Link>
+                </div>
+              );
+            }
+            if (photoCount < 3) {
+              return (
+                <p className="text-xs text-[#777777]">{photoCount}/3 photos de profil — les 2 autres sont facultatives.</p>
+              );
+            }
+            return null;
+          })()}
 
           {/* Vérification du selfie : le selfie face à chaque photo de profil */}
           <SelfieCheckPanel
