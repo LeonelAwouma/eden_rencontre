@@ -20,6 +20,8 @@ import { normalizeGender } from "@/lib/verses";
 import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
 import { AutoSaveIndicator } from "@/components/autosave-indicator";
 import { ProfilePhotoEditor } from "@/components/profile-photo-editor";
+import { DISCOVERY_SOURCE_OPTIONS } from "@/lib/discovery-sources";
+import { ProfilePhotoGallery } from "@/components/profile-photo-gallery";
 
 
 /* ─────────────────────────── Types ─────────────────────────── */
@@ -43,6 +45,10 @@ interface ProfileData {
   onboarding_completed: boolean;
   verification_status: string;
   updated_at: string;
+  /** Facultatif, renseignable ici — n'est plus demandé à l'inscription. */
+  discovery_source: string | null;
+  /** 1 à 3 photos privées (matching) ; les 2 au-delà de la première s'ajoutent ici. */
+  profile_photos: string[] | null;
 }
 
 /* ─────────────────────── Helpers ─────────────────────────── */
@@ -120,6 +126,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
     gender: normalizeGender(profile.gender) as string,
     birth_date: profile.birth_date || "",
     marriage_vision: (profile.marriage_vision || []) as string[],
+    discovery_source: profile.discovery_source || "",
   });
 
   useEffect(() => {
@@ -128,6 +135,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
       region: profile.region || "", profession: profile.profession || "", bio: profile.bio || "",
       civil_status: profile.civil_status || "", gender: normalizeGender(profile.gender),
       birth_date: profile.birth_date || "", marriage_vision: profile.marriage_vision || [],
+      discovery_source: profile.discovery_source || "",
     });
   }, [profile]);
 
@@ -141,10 +149,11 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
         name: form.name.trim(), pseudo: form.pseudo.trim(), city: form.city.trim(), country: form.country.trim(),
         region: form.region.trim(), profession: form.profession.trim(), bio: form.bio.trim(),
         civil_status: form.civil_status, gender: form.gender, birth_date: form.birth_date || null,
-        marriage_vision: form.marriage_vision, updated_at: new Date().toISOString(),
+        marriage_vision: form.marriage_vision, discovery_source: form.discovery_source || null,
+        updated_at: new Date().toISOString(),
       }).eq("id", profile.id);
       if (error) throw error;
-      await updateProfile({ name: form.name.trim(), pseudo: form.pseudo.trim(), city: form.city, country: form.country, profession: form.profession, bio: form.bio, marriageVision: form.marriage_vision });
+      await updateProfile({ name: form.name.trim(), pseudo: form.pseudo.trim(), city: form.city, country: form.country, profession: form.profession, bio: form.bio, marriageVision: form.marriage_vision, discoverySource: form.discovery_source });
       setEditing(false);
       onRefresh();
     } catch (e: any) {
@@ -193,6 +202,8 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
               {profile.city && <p className="text-sm text-[#777777] flex items-center gap-1 mt-0.5"><MapPin size={12} />{profile.city}{profile.country ? `, ${profile.country}` : ""}</p>}
             </div>
           </div>
+
+          <ProfilePhotoGallery initialCount={(profile.profile_photos || []).filter(Boolean).length} />
 
           {/* Personal Info Section */}
           <div>
@@ -250,6 +261,13 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
                   <span key={v} className="px-3 py-1.5 bg-[#EEF5EC] text-[#486B46] rounded-full text-xs font-medium">{v}</span>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Discovery source — facultatif, n'est plus demandé à l'inscription */}
+          {profile.discovery_source && (
+            <div>
+              <InfoRow label={t("profilePage.discoverySourceLabel")} value={profile.discovery_source} />
             </div>
           )}
 
@@ -337,6 +355,18 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
                 </button>
               ))}
             </div>
+          </div>
+
+          {/* Discovery source — facultatif, plus demandé à l'inscription */}
+          <div>
+            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 pb-2 border-b border-[#F0EDE8]">{t("profilePage.discoverySourceLabel")}</h4>
+            <EditField
+              label={t("profilePage.discoverySourceLabel")}
+              value={form.discovery_source}
+              onChange={v => setForm(f => ({ ...f, discovery_source: v }))}
+              type="select"
+              options={[...DISCOVERY_SOURCE_OPTIONS]}
+            />
           </div>
 
           {/* Save / Cancel buttons at bottom */}
@@ -722,7 +752,7 @@ export default function ProfilePage() {
       if (!session?.id) { router.replace("/login"); return; }
 
       const { data, error } = await supabase.from("profiles")
-        .select("id, email, name, pseudo, city, country, avatar_url, gender, civil_status, region, profession, bio, marriage_vision, birth_date, questionnaire, onboarding_completed, verification_status, updated_at")
+        .select("id, email, name, pseudo, city, country, avatar_url, gender, civil_status, region, profession, bio, marriage_vision, birth_date, questionnaire, onboarding_completed, verification_status, updated_at, discovery_source, profile_photos")
         .eq("id", session.id)
         .maybeSingle();
       if (error) throw error;

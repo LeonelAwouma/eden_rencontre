@@ -29,7 +29,7 @@ export interface EdenUser {
 }
 
 // Champs modifiables par l'utilisateur (email, sexe, etc. exclus — verrouillés)
-export type EditableProfile = Partial<Pick<EdenUser, "name" | "pseudo" | "city" | "country" | "civilStatus" | "profession" | "bio" | "marriageVision" | "avatar_url">>;
+export type EditableProfile = Partial<Pick<EdenUser, "name" | "pseudo" | "city" | "country" | "civilStatus" | "profession" | "bio" | "marriageVision" | "avatar_url" | "discoverySource">>;
 
 export type RegisterInput = Omit<EdenUser, "createdAt"> & { password: string };
 export type AuthResult = { ok: true; user: EdenUser } | { ok: false; error: string };
@@ -181,6 +181,7 @@ export async function updateProfile(updates: EditableProfile): Promise<AuthResul
     const COLUMNS: Record<string, string> = {
       name: "name", pseudo: "pseudo", city: "city", country: "country", civilStatus: "civil_status",
       profession: "profession", bio: "bio", marriageVision: "marriage_vision", avatar_url: "avatar_url",
+      discoverySource: "discovery_source",
     };
     const row: Record<string, any> = {};
     for (const [k, v] of Object.entries(clean)) if (COLUMNS[k]) row[COLUMNS[k]] = v;
