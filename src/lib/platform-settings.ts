@@ -8,6 +8,10 @@
 //   notifications.email_enabled  envoi des e-mails de réunion (invitations, reports, annulations)
 //   appearance.accent_color      couleur d'accent (AccentColorProvider)
 //   appearance.banner_text       bandeau de la page d'accueil (AnnouncementBar)
+//   referral.*                   programme de parrainage (src/lib/referrals.ts)
+//   subscription.*               droits GOLD effectifs (src/lib/subscription/effective.ts) —
+//     commercial_restrictions_enabled est l'interrupteur maître : à false (défaut), aucune
+//     des clés ci-dessous n'a d'effet observable (voir le plan feature/referral-gold-rewards).
 
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
@@ -31,6 +35,28 @@ export const EDITABLE_SETTINGS: Record<string, Validator> = {
     typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v) ? null : "Couleur invalide (format #RRGGBB).",
   "appearance.banner_text": (v) =>
     typeof v === "string" && v.length <= 200 ? null : "Le texte du bandeau est limité à 200 caractères.",
+
+  "referral.enabled": (v) => (typeof v === "boolean" ? null : "Valeur attendue : activé ou désactivé."),
+  "referral.required_referrals": (v) =>
+    typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 50 ? null : "Doit être un entier entre 1 et 50.",
+  "referral.reward_duration_days": (v) =>
+    typeof v === "number" && Number.isInteger(v) && v >= 1 && v <= 365 ? null : "Doit être un entier entre 1 et 365.",
+  "referral.review_delay_days": (v) =>
+    typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 90 ? null : "Doit être un entier entre 0 et 90.",
+  "referral.cumulative_allowed": (v) => (typeof v === "boolean" ? null : "Valeur attendue : activé ou désactivé."),
+  "referral.reward_cap": (v) =>
+    typeof v === "number" && Number.isInteger(v) && v >= 0 ? null : "Doit être un entier positif (0 = pas de plafond).",
+  "referral.campaign_start_at": (v) =>
+    v === null || (typeof v === "string" && !isNaN(Date.parse(v))) ? null : "Date invalide.",
+  "referral.campaign_end_at": (v) =>
+    v === null || (typeof v === "string" && !isNaN(Date.parse(v))) ? null : "Date invalide.",
+
+  "subscription.launch_promo_end_at": (v) =>
+    v === null || (typeof v === "string" && !isNaN(Date.parse(v))) ? null : "Date invalide.",
+  "subscription.discovery_period_days": (v) =>
+    typeof v === "number" && Number.isInteger(v) && v >= 0 && v <= 365 ? null : "Doit être un entier entre 0 et 365.",
+  "subscription.commercial_restrictions_enabled": (v) =>
+    typeof v === "boolean" ? null : "Valeur attendue : activé ou désactivé.",
 };
 
 export interface EmailSettings {

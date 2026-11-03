@@ -15,6 +15,7 @@ import { isAdultBirthDate } from "@/lib/registration-rules";
 import { reportRegistrationFailure } from "@/lib/registration-incident";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { readRegistrationSelfie, discardLivenessFrames, resolveRegistrationAvatar } from "@/lib/registration-media";
+import { captureReferral, REFERRAL_COOKIE } from "@/lib/referrals";
 
 export const maxDuration = 60;
 
@@ -218,6 +219,13 @@ export async function POST(request: NextRequest) {
 
     // Comptée seulement pour une inscription réellement aboutie.
     await recordRateLimit(ipKey, "register");
+
+    // Capture du parrainage (jeton d'intention à usage unique posé par
+    // /r/[code]) — appel RPC atomique, jamais bloquant pour l'inscription.
+    {
+      const nonce = request.cookies.get(REFERRAL_COOKIE)?.value;
+      if (nonce) await captureReferral(db, nonce, userId);
+    }
 
     // Téléphone : colonne profiles.phone (20261002_profiles_phone.sql). Sans elle, l'inscription continue.
     {

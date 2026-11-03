@@ -15,7 +15,8 @@ import { SpeechPlayer } from "./speech-player";
 import { PosterFigure } from "./poster";
 import { useFormationProgress } from "@/lib/formation/progress";
 import { FORMATION_BASE_PATH, ADMIN_LESSON_PREVIEW_PATH } from "@/lib/formation/paths";
-import { isPillarUnlocked, blockingPillar, nextPillar, resumeLesson, requiredPillars } from "@/lib/formation/batir-sur-le-roc";
+import { isPillarUnlockedLight, blockingPillarMeta, nextPillarMeta, resumeLessonSlug, requiredPillarsLight } from "@/lib/formation/structure";
+import type { PillarMeta } from "@/lib/formation/structure";
 import type { Lesson, LessonBlock, Pillar } from "@/lib/formation/types";
 import { useFormationLocale } from "@/lib/formation/ui";
 
@@ -370,7 +371,7 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
   lesson: Lesson; pillar: Pillar; previous: Lesson | null; next: Lesson | null; preview?: boolean;
 }) {
   // Même leçon (même slug) dans la langue de l'interface ; progression commune aux deux langues.
-  const { localize, ui, formation } = useFormationLocale();
+  const { localize, ui, formation, lang } = useFormationLocale();
   const lesson = localize(lessonFr), pillar = localize(pillarFr), previous = localize(previousFr), next = localize(nextFr);
   const { progress, ready, synced, setCompleted, answer, resetQuiz, saveReflection, savePosition } = useFormationProgress({ persist: !preview });
   const basePath = preview ? ADMIN_LESSON_PREVIEW_PATH : FORMATION_BASE_PATH;
@@ -380,13 +381,15 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
   const isDone = progress.completed.includes(lesson.slug);
   // Déblocage progressif : un pilier s'ouvre quand le précédent est terminé. L'aperçu admin
   // n'est jamais verrouillé, et rien ne l'est avant que la progression de la fiche ait été récupérée.
-  const locked = !preview && ready && synced && !isPillarUnlocked(pillar.number, progress.completed);
+  // Métadonnées légères (src/lib/formation/structure.ts) : ces fonctions ne portent jamais
+  // le corps des leçons, contrairement à l'ancien import depuis batir-sur-le-roc.ts.
+  const locked = !preview && ready && synced && !isPillarUnlockedLight(pillar.number, progress.completed);
   // Fin de pilier : la leçon courante compte comme lue (l'atteindre la marque terminée).
   const isLastOfPillar = pillar.lessons[pillar.lessons.length - 1]?.slug === lesson.slug;
-  const following = isLastOfPillar ? localize(nextPillar(pillar.number)) : null;
+  const following = isLastOfPillar ? nextPillarMeta(pillar.number, lang) : null;
   const readSoFar = [...progress.completed, lesson.slug];
   const leftInPillar = pillar.lessons.filter((l) => !readSoFar.includes(l.slug));
-  const nextOpen = preview || !following || isPillarUnlocked(following.number, readSoFar);
+  const nextOpen = preview || !following || isPillarUnlockedLight(following.number, readSoFar);
   const answers = progress.quiz[lesson.slug] || {};
 
   // ── Sauvegarde au fil de la lecture ──────────────────────────
@@ -734,7 +737,7 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
 
 /** Fin de la dernière leçon d'un pilier : félicitations et passage au pilier suivant. */
 function PillarEnd({ pillar, following, left, basePath, homeHref, onContinue }: {
-  pillar: Pillar; following: Pillar | null; left: Lesson[]; basePath: string; homeHref: string; onContinue: () => void;
+  pillar: Pillar; following: PillarMeta | null; left: Lesson[]; basePath: string; homeHref: string; onContinue: () => void;
 }) {
   const { ui } = useFormationLocale();
   if (left.length > 0) {
@@ -787,9 +790,9 @@ function PillarEnd({ pillar, following, left, basePath, homeHref, onContinue }: 
 
 /** Leçon d'un pilier encore fermé (ouverte par son adresse) : on renvoie vers le pilier à terminer. */
 function LockedPillar({ pillar, completed }: { pillar: Pillar; completed: string[] }) {
-  const { ui, localize } = useFormationLocale();
-  const blocker = localize(blockingPillar(pillar.number, completed));
-  const resume = localize(resumeLesson({ completed, lastLesson: null }));
+  const { ui, lang } = useFormationLocale();
+  const blocker = blockingPillarMeta(pillar.number, completed, lang);
+  const resumeSlug = resumeLessonSlug({ completed, lastLesson: null });
   return (
     <div className="eden-public min-h-screen bg-background text-foreground flex flex-col">
       <header className="border-b border-border">
@@ -804,10 +807,10 @@ function LockedPillar({ pillar, completed }: { pillar: Pillar; completed: string
           <span className="w-14 h-14 mx-auto rounded-2xl bg-card border border-border text-[#56615A] flex items-center justify-center"><Lock className="w-6 h-6" /></span>
           <p className="mt-5 text-[12px] font-bold uppercase tracking-[0.18em] text-primary">{ui.pillarEyebrow(pillar.number, pillar.title)}</p>
           <h1 className="mt-2 font-headline text-[28px] font-bold leading-tight text-foreground">{ui.pillarLockedTitle(pillar.number)}</h1>
-          {blocker && <p className="mt-3 text-[15.5px] leading-relaxed text-[#3F4A43]">{ui.pillarLockedDesc(requiredPillars(pillar.number))}</p>}
+          {blocker && <p className="mt-3 text-[15.5px] leading-relaxed text-[#3F4A43]">{ui.pillarLockedDesc(requiredPillarsLight(pillar.number))}</p>}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
-            {blocker && resume && (
-              <Link href={`${FORMATION_BASE_PATH}/${resume.slug}`} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-primary text-white text-[14px] font-bold hover:bg-primary/90">
+            {blocker && resumeSlug && (
+              <Link href={`${FORMATION_BASE_PATH}/${resumeSlug}`} className="inline-flex items-center gap-2 h-11 px-5 rounded-full bg-primary text-white text-[14px] font-bold hover:bg-primary/90">
                 {ui.resumePillar(blocker.number)} <ArrowRight className="w-4 h-4" />
               </Link>
             )}

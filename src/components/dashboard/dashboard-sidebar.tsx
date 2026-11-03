@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import {
   Home, Search, MessageCircle, Star, Eye, Heart, Crown, UserCircle, LogOut, GraduationCap,
-  MessagesSquare, ChevronsUpDown, X, type LucideIcon,
+  MessagesSquare, ChevronsUpDown, X, Gift, type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { avatarSrc } from "@/lib/avatar";
@@ -81,6 +81,7 @@ const GROUPS: { key: string; entries: NavEntry[] }[] = [
     entries: [
       { kind: "link", href: "/dashboard/forum", icon: MessagesSquare, label: (t) => t("forum.title") },
       { kind: "link", href: "/dashboard/academie", icon: GraduationCap, label: (t) => t("dashboard.academyTitle") },
+      { kind: "link", href: "/dashboard/parrainage", icon: Gift, label: (t) => t("referral.navLabel") },
     ],
   },
 ];

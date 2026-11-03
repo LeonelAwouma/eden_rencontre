@@ -9,7 +9,8 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { Monogram, Flourish } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
-import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson, pillarStatus, requiredPillars } from "@/lib/formation/batir-sur-le-roc";
+import { FORMATION_BASE_PATH } from "@/lib/formation/paths";
+import { PILLAR_LESSON_SLUGS, resumeLessonSlug, pillarStatusLight, requiredPillarsLight, lessonMetaOf } from "@/lib/formation/structure";
 import { cn } from "@/lib/utils";
 import { useFormationLocale } from "@/lib/formation/ui";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
@@ -22,13 +23,15 @@ export default function AcademyIndexPage() {
   const { t } = useI18n();
   const { progress, ready } = useFormationProgress();
   // Formation et textes dans la langue de l'interface (français ou anglais).
-  const { formation, ui, localize, stories } = useFormationLocale();
+  const { formation, ui, localize, stories, lang } = useFormationLocale();
 
-  const doneCount = ALL_LESSONS.filter(({ lesson }) => progress.completed.includes(lesson.slug)).length;
-  // Leçon en cours de lecture en priorité, sinon la première non terminée.
-  const nextLesson = localize(resumeLesson(progress));
+  const allLessonSlugs = Object.values(PILLAR_LESSON_SLUGS).flat();
+  const doneCount = allLessonSlugs.filter((slug) => progress.completed.includes(slug)).length;
+  // Leçon en cours de lecture en priorité, sinon la première non terminée (métadonnées légères uniquement).
+  const nextLessonSlug = resumeLessonSlug(progress);
+  const nextLesson = nextLessonSlug ? lessonMetaOf(nextLessonSlug, lang) : null;
   const started = hasStarted(progress);
-  const available = ALL_LESSONS.length;
+  const available = allLessonSlugs.length;
 
   // Ressources complémentaires, conservées de l'ancienne Académie.
   const discernementLessons = [
@@ -127,7 +130,7 @@ export default function AcademyIndexPage() {
           <ol className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {formation.pillars.filter((p) => p.lessons.length > 0).map((pillar) => {
               // Tant que la progression n'est pas lue, aucun pilier n'est affiché verrouillé à tort.
-              const status = ready ? pillarStatus(pillar, progress.completed) : "todo";
+              const status = ready ? pillarStatusLight(pillar.number, progress.completed) : "todo";
               const locked = status === "locked";
               const done = pillar.lessons.filter((l) => progress.completed.includes(l.slug)).length;
               const total = pillar.lessons.length;
@@ -163,7 +166,7 @@ export default function AcademyIndexPage() {
                     <span className="mt-auto pt-4 block">
                       {locked ? (
                         <span className="flex items-start gap-2 text-[13px] font-semibold text-[#6E4A00]">
-                          <Lock className="w-4 h-4 shrink-0 mt-px" /> {ui.pillarLocked(requiredPillars(pillar.number))}
+                          <Lock className="w-4 h-4 shrink-0 mt-px" /> {ui.pillarLocked(requiredPillarsLight(pillar.number))}
                         </span>
                       ) : (
                         <>

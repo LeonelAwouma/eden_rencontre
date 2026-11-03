@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { sendAccountApprovedEmail, getLastEmailError } from "@/lib/email";
+import { reevaluateReferral } from "@/lib/referrals";
 
 export async function POST(
   request: NextRequest,
@@ -65,6 +66,10 @@ export async function POST(
       { user_email: user.email, user_name: user.name },
       ip
     );
+
+    // Réévaluation du parrainage (si ce membre est un filleul) — aucun point
+    // d'accroche partagé avec la fin du questionnaire, à appeler explicitement.
+    await reevaluateReferral(db, id).catch((e) => console.error("[approve] réévaluation du parrainage:", e));
 
     return NextResponse.json({ ok: true, message: "Utilisateur approuvé avec succès.", emailSent, emailError: emailSent ? null : getLastEmailError() });
   } catch (error) {

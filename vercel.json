@@ -7,6 +7,10 @@
     {
       "path": "/api/cron/member-reactivation",
       "schedule": "0 9 * * *"
+    },
+    {
+      "path": "/api/cron/referral-review",
+      "schedule": "0 7 * * *"
     }
   ]
 }

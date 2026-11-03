@@ -6,6 +6,7 @@ import { isAdultBirthDate } from "@/lib/registration-rules";
 import { reportRegistrationFailure } from "@/lib/registration-incident";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { readRegistrationSelfie, discardLivenessFrames, resolveRegistrationAvatar } from "@/lib/registration-media";
+import { captureReferral, REFERRAL_COOKIE } from "@/lib/referrals";
 
 export const maxDuration = 60;
 
@@ -244,6 +245,16 @@ export async function POST(request: NextRequest) {
     {
       const { error: phoneError } = await db.from("profiles").update({ phone }).eq("id", userId);
       if (phoneError) console.warn("[inscription] téléphone non enregistré:", phoneError.message);
+    }
+
+    // Capture du parrainage — appel de secours (défense en profondeur) : la
+    // capture principale se fait dès l'atterrissage sur cette page (voir
+    // complete-registration/page.tsx), bien avant que ce formulaire ne soit
+    // soumis. Idempotent (nonce à usage unique + index unique referred_user_id)
+    // : ce second appel ne recrée rien si le premier a déjà réussi.
+    {
+      const nonce = request.cookies.get(REFERRAL_COOKIE)?.value;
+      if (nonce) await captureReferral(db, nonce, userId);
     }
 
     // Rafale de l'ancien formulaire (preuve de présence automatique, abandonnée) : non conservée.

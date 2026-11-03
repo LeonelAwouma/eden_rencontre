@@ -327,12 +327,25 @@ export async function getMyAccountStatus(): Promise<{
   return { status, email, profileComplete, pseudo, sessionPseudo, hasPhone, country: d?.country || null, isCoach: d?.account_type === "coach" };
 }
 
+/** Lit un cookie non httpOnly côté client (ex. eden_ref, posé par /r/[code]). */
+function readCookie(name: string): string | null {
+  if (typeof document === "undefined") return null;
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
 export async function signInWithGoogle(): Promise<{ ok: boolean; error?: string }> {
   if (!supabase) {
     return { ok: false, error: "Connexion Google indisponible (Supabase non configuré)." };
   }
-  // Redirect to complete-registration page so Google users can fill in missing profile info
-  const redirectTo = typeof window !== "undefined" ? `${window.location.origin}/onboarding/complete-registration` : undefined;
+  // Redirect to complete-registration page so Google users can fill in missing profile info.
+  // Le nonce de parrainage (jamais le code brut — voir src/lib/referrals.ts) est propagé en
+  // `?ref=` : Supabase conserve les paramètres de requête additionnels sur `redirectTo` à
+  // travers tout l'échange OAuth, sans aucune modification du mécanisme OAuth lui-même.
+  const ref = readCookie("eden_ref");
+  const redirectTo = typeof window !== "undefined"
+    ? `${window.location.origin}/onboarding/complete-registration${ref ? `?ref=${encodeURIComponent(ref)}` : ""}`
+    : undefined;
   const { error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: { redirectTo },

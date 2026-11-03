@@ -164,24 +164,29 @@ export async function listIncomingRequests(myId: string): Promise<FriendRequest[
   }));
 }
 
-// Envoie une demande d'amitié.
+// Envoie une demande d'amitié — route serveur /api/matching/request
+// (supabase/migrations/20261104_friendships_server_only.sql a retiré la
+// policy d'insertion cliente sur `friendships` : l'écriture directe depuis
+// le navigateur n'est plus possible, le quota/l'abonnement effectif sont
+// désormais vérifiés côté serveur).
 export async function sendFriendRequest(addresseeId: string, message?: string): Promise<{ ok: boolean; error?: string }> {
   if (!supabase) return { ok: false, error: "Supabase non configuré." };
-  const { data: auth } = await supabase.auth.getUser();
-  const me = auth.user?.id;
-  if (!me) return { ok: false, error: "Vous devez être connecté." };
-  if (me === addresseeId) return { ok: false, error: "Action impossible." };
-  const { error } = await supabase
-    .from("friendships")
-    .upsert(
-      { requester_id: me, addressee_id: addresseeId, status: "pending", message: message ?? null, updated_at: new Date().toISOString() },
-      { onConflict: "requester_id,addressee_id" }
-    );
-  if (error) {
-    console.error("[Eden] demande d'amitié échouée:", error.message);
-    return { ok: false, error: error.message };
+  const { data: auth } = await supabase.auth.getSession();
+  const token = auth.session?.access_token;
+  if (!token) return { ok: false, error: "Vous devez être connecté." };
+  try {
+    const res = await fetch("/api/matching/request", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ addresseeId, message: message ?? null }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) return { ok: false, error: data.error || "Demande non envoyée." };
+    return { ok: true };
+  } catch (err) {
+    console.error("[Eden] demande d'amitié échouée:", err);
+    return { ok: false, error: "Erreur réseau." };
   }
-  return { ok: true };
 }
 
 // Accepte ou décline une demande reçue.

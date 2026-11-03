@@ -26,7 +26,7 @@ import { canOptimizeImage, avatarSrc } from "@/lib/avatar";
 import { PhotoLightbox } from "@/components/photo-lightbox";
 import { useToast } from "@/hooks/use-toast";
 import { getSession, logout, updateProfile, ageFromBirthDate, authHeaders, type EdenUser } from "@/lib/auth";
-import { ALL_LESSONS, resumeLesson, isPillarOneComplete } from "@/lib/formation/batir-sur-le-roc";
+import { PILLAR_LESSON_SLUGS, resumeLessonSlug, isPillarOneCompleteLight } from "@/lib/formation/structure";
 import { FormationLock } from "@/components/formation-lock";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
 import { Textarea } from "@/components/ui/textarea";
@@ -326,7 +326,7 @@ export default function DashboardPage() {
   const [profileMissing, setProfileMissing] = useState<string[]>([]);
   // Le matching (Découvrir, suggestions, visiteurs, favoris, demandes) s'ouvre après le
   // pilier 1 de « Bâtir sur le roc » ; les profils des autres membres exigent en plus un profil à 100 %.
-  const formationDone = isPillarOneComplete(formationProgress.completed);
+  const formationDone = isPillarOneCompleteLight(formationProgress.completed);
   const canBrowseProfiles = !coachAccess && profileCompletionPct === 100 && formationDone;
   const [viewingPhoto, setViewingPhoto] = useState<{ url: string; name: string } | null>(null);
   const closePhoto = useCallback(() => setViewingPhoto(null), []);
@@ -1383,8 +1383,9 @@ export default function DashboardPage() {
                     Sur grand écran (xl), ils restent dans la colonne de droite. */}
                 <section className="xl:hidden grid grid-cols-1 sm:grid-cols-2 gap-3" aria-label={t("dashboard.academyTitle")}>
                   {user && (() => {
-                    const done = ALL_LESSONS.filter(({ lesson }) => formationProgress.completed.includes(lesson.slug)).length;
-                    const total = ALL_LESSONS.length;
+                    const allSlugs = Object.values(PILLAR_LESSON_SLUGS).flat();
+                    const done = allSlugs.filter((slug) => formationProgress.completed.includes(slug)).length;
+                    const total = allSlugs.length;
                     return (
                       <Link href="/dashboard/academie"
                         className="group flex items-center gap-3 rounded-2xl p-3 pr-4 bg-white transition-shadow hover:shadow-md"
@@ -1850,9 +1851,10 @@ export default function DashboardPage() {
 
                   {/* Académie du Mariage — réservée aux membres connectés */}
                   {user && (() => {
-                    const done = ALL_LESSONS.filter(({ lesson }) => formationProgress.completed.includes(lesson.slug)).length;
-                    const total = ALL_LESSONS.length;
-                    const next = resumeLesson(formationProgress);
+                    const allSlugs = Object.values(PILLAR_LESSON_SLUGS).flat();
+                    const done = allSlugs.filter((slug) => formationProgress.completed.includes(slug)).length;
+                    const total = allSlugs.length;
+                    const next = resumeLessonSlug(formationProgress);
                     // La carte ouvre la page de l'Académie (présentation de « Bâtir sur le roc »).
                     const href = "/dashboard/academie";
                     const cta = !next ? t("dashboard.academyReread") : hasStarted(formationProgress) ? t("dashboard.academyContinue") : t("dashboard.academyStart");

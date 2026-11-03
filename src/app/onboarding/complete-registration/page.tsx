@@ -74,9 +74,28 @@ export default function CompleteRegistrationPage() {
       if (existingPseudo) setFormData((prev) => ({ ...prev, pseudo: existingPseudo }));
       setUserEmail(session.email || "");
       setUserId(session.id || null);
+      let token: string | undefined;
       if (supabase) {
         const { data: { session: supaSession } } = await supabase.auth.getSession();
-        if (supaSession?.access_token) setAuthHeader(`Bearer ${supaSession.access_token}`);
+        if (supaSession?.access_token) { token = supaSession.access_token; setAuthHeader(`Bearer ${token}`); }
+      }
+      // Capture du parrainage DÈS L'ATTERRISSAGE, pas seulement à la soumission
+      // finale — point clé pour survivre à un abandon prolongé de l'onboarding :
+      // la ligne `referrals` existe déjà en base même si l'utilisateur revient
+      // reprendre son inscription des jours plus tard. `ref` vient de l'URL
+      // (propagé par signInWithGoogle via redirectTo) ou, à défaut, du cookie
+      // `eden_ref` directement.
+      if (token) {
+        const urlRef = new URLSearchParams(window.location.search).get("ref");
+        const cookieRef = document.cookie.match(/(?:^|; )eden_ref=([^;]*)/)?.[1];
+        const ref = urlRef || (cookieRef ? decodeURIComponent(cookieRef) : null);
+        if (ref) {
+          fetch("/api/referrals/capture", {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ nonce: ref }),
+          }).catch(() => {});
+        }
       }
       setLoading(false);
     })();

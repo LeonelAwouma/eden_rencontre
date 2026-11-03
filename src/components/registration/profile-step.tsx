@@ -1,17 +1,16 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { ArrowRight, ChevronLeft, Search, MapPin, Plus, CheckCircle2 } from "lucide-react";
+import { ArrowRight, ChevronLeft } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { ageFromBirthDate, MIN_AGE } from "@/lib/auth";
-import { filterCountries, filterCities, countryLabel, phoneIsoFor, findCountry, toE164, dialOfIso } from "@/lib/geo";
+import { phoneIsoFor, findCountry, toE164, dialOfIso } from "@/lib/geo";
 import { PhoneInput } from "@/components/phone-input";
-import { Flag } from "@/components/flag";
 import { BirthDateInput } from "@/components/registration/birth-date-input";
+import { CountryCityInline } from "@/components/geo/country-city-inline";
 import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 import type { RegistrationFormData, RegistrationMode } from "@/components/registration/types";
 
@@ -37,19 +36,14 @@ export function RegistrationProfileStep({
   onContinue: () => void;
   onBack: () => void;
 }) {
-  const { t, locale } = useI18n();
-  const [countrySearch, setCountrySearch] = useState("");
-  const [citySearch, setCitySearch] = useState("");
+  const { t } = useI18n();
 
   const age = ageFromBirthDate(formData.birthDate);
   const ageValid = age !== null && age >= MIN_AGE;
 
-  const filteredCountries = formData.country ? [] : filterCountries(null, countrySearch);
-  const filteredCities = formData.country ? filterCities(formData.country, citySearch) : [];
-
-  const selectCountry = (country: string) => {
-    setFormData({ country, city: "", region: findCountry(country)?.region ?? "", phoneIso: phoneIsoFor(country) });
-    setCitySearch("");
+  const onChangeCountry = (country: string) => {
+    if (!country) { setFormData({ country: "", region: "" }); return; }
+    setFormData({ country, region: findCountry(country)?.region ?? "", phoneIso: phoneIsoFor(country) });
   };
 
   const phoneValid = !!toE164(dialOfIso(formData.phoneIso), formData.phoneLocal);
@@ -140,76 +134,13 @@ export function RegistrationProfileStep({
 
       <div className="space-y-2">
         <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("registrationV2.locationLabel")}</Label>
-        {formData.country ? (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between rounded-xl border border-primary/30 bg-primary/5 px-4 py-3">
-              <span className="flex items-center gap-2 font-bold text-foreground">
-                <Flag iso={findCountry(formData.country)?.iso ?? ""} /> {formData.country}
-              </span>
-              <button type="button" onClick={() => setFormData({ country: "", city: "" })} className="text-xs font-semibold text-primary underline underline-offset-2">
-                {t("register.back")}
-              </button>
-            </div>
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 w-5 h-5" />
-              <Input
-                placeholder={t("registrationV2.cityPlaceholder")}
-                value={citySearch}
-                onChange={(e) => setCitySearch(e.target.value)}
-                className="pl-12 h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20"
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-2">
-              {filteredCities.map((city) => (
-                <Button
-                  key={city}
-                  type="button"
-                  variant="outline"
-                  onClick={() => setFormData({ city })}
-                  className={cn("h-12 rounded-xl text-sm font-bold text-left justify-start px-4",
-                    formData.city === city ? "border-primary bg-primary/10 text-primary" : "border-foreground/5 bg-card text-foreground/70 hover:border-primary/50")}
-                >
-                  <MapPin className="w-4 h-4 mr-2 shrink-0" /> <span className="truncate">{city}</span>
-                  {formData.city === city && <CheckCircle2 className="w-4 h-4 ml-auto shrink-0" />}
-                </Button>
-              ))}
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setFormData({ city: citySearch || "Autre" })}
-                className="h-12 rounded-xl text-sm font-bold text-left justify-start px-4 italic border-foreground/5 bg-card text-foreground/40"
-              >
-                <Plus className="w-4 h-4 mr-2 shrink-0" /> {t("register.enterCity", { city: citySearch || t("register.otherCity") })}
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            <div className="relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-foreground/20 w-5 h-5" />
-              <Input
-                autoFocus={mode === "google"}
-                placeholder={t("registrationV2.countryPlaceholder")}
-                value={countrySearch}
-                onChange={(e) => setCountrySearch(e.target.value)}
-                className="pl-12 h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20"
-              />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[220px] overflow-y-auto pr-2">
-              {filteredCountries.map((country) => (
-                <Button
-                  key={country.name}
-                  type="button"
-                  variant="outline"
-                  onClick={() => selectCountry(country.name)}
-                  className="h-12 rounded-xl border-foreground/5 bg-card hover:border-primary/50 text-sm font-bold text-foreground/70 text-left justify-start px-4"
-                >
-                  <Flag iso={country.iso} className="mr-2" /> <span className="truncate">{countryLabel(country, locale)}</span>
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
+        <CountryCityInline
+          country={formData.country}
+          city={formData.city}
+          autoFocusCountry={mode === "google"}
+          onChangeCountry={onChangeCountry}
+          onChangeCity={(city) => setFormData({ city })}
+        />
       </div>
 
       <PhoneInput
