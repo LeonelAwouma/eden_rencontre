@@ -1,6 +1,16 @@
 // Formation « Bâtir sur le roc » — préparation au mariage en six piliers.
 // Contenu transcrit des leçons PDF rédigées par l'équipe Garden of Alliance.
 // Les PDF et les images sont servis depuis public/formation/batir-sur-le-roc/.
+//
+// SERVEUR UNIQUEMENT — ne jamais importer ce module (ni pilier-2.ts/pilier-3.ts)
+// depuis un fichier "use client" : il porte le texte INTÉGRAL de chaque leçon
+// (piliers 1-3). Un composant client qui l'importerait embarquerait tout ce
+// texte dans le bundle JavaScript du navigateur, indépendamment de toute
+// protection ajoutée à la page ou à l'API — c'est exactement le problème
+// corrigé par src/lib/formation/structure.ts (métadonnées légères, lui,
+// importable côté client pour la navigation/le déblocage des piliers) et par
+// /api/formation/lesson/[slug] (seul point d'accès autorisé au contenu
+// complet, résolu côté serveur après vérification de l'abonnement effectif).
 import type { Formation, Lesson, Pillar } from "./types";
 import { pillar2 } from "./pilier-2";
 import { pillar3 } from "./pilier-3";

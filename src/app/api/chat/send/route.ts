@@ -19,11 +19,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getApprovedUser } from "@/lib/api-auth";
 import { validateMessage } from "@/lib/moderation";
+import { hasFeatureAccess } from "@/lib/subscription/effective";
 
 const MAX_LENGTH = 5000;
 /** Erreurs reconnues par le tableau de bord (notifySendError). */
 const CONVERSATION_CLOSED = "conversation_closed";
 const NOT_FRIENDS = "not_friends";
+const MESSAGE_QUOTA_REACHED = "message_quota_reached";
+/**
+ * Quota gratuit quotidien — n'est même consulté que si ce plafond est déjà
+ * atteint (voir ci-dessous) : un membre qui envoie normalement quelques
+ * messages par jour ne déclenche jamais `hasFeatureAccess`, et donc jamais
+ * d'activation d'un crédit GOLD. Sans effet tant que
+ * `subscription.commercial_restrictions_enabled` est désactivé (défaut).
+ */
+const FREE_DAILY_MESSAGE_LIMIT = 50;
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -68,6 +78,20 @@ export async function POST(req: NextRequest) {
     if (data === true) { friends = true; break; }
   }
   if (!friends) return NextResponse.json({ error: NOT_FRIENDS }, { status: 403 });
+
+  // Quota gratuit vérifié D'ABORD (simple comptage, aucun effet de bord) —
+  // hasFeatureAccess (et donc une éventuelle activation de crédit) n'est
+  // appelée QUE si ce quota est déjà atteint, jamais à chaque usage ordinaire.
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const { count: todayCount } = await db
+    .from("messages")
+    .select("id", { count: "exact", head: true })
+    .eq("sender_id", user.id)
+    .gte("created_at", todayStart.toISOString());
+  if ((todayCount || 0) >= FREE_DAILY_MESSAGE_LIMIT) {
+    const unlimited = await hasFeatureAccess(db, user.id, "unlimited_messaging");
+    if (!unlimited) return NextResponse.json({ error: MESSAGE_QUOTA_REACHED }, { status: 429 });
+  }
 
   // Modération du texte (les photos seules ne passent pas par le pipeline texte).
   if (content) {
