@@ -1,7 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { requireAdmin } from "@/lib/admin-auth";
 import { EDITABLE_SETTINGS, invalidatePlatformSettingsCache } from "@/lib/platform-settings";
+import { sweepSuspendRedundantCredits } from "@/lib/subscription/effective";
+
+/**
+ * Un changement de ces clés peut rendre un crédit GOLD `active` redondant
+ * (nouvelle promo, abonnement payant GOLD, etc.) : le balayage de suspension
+ * doit s'exécuter réellement avant la fin de la requête — via `after()`
+ * (déjà utilisé ailleurs dans ce dépôt, ex. src/app/api/auth/register/route.ts,
+ * garanti par Next.js/Vercel même après l'envoi de la réponse), jamais un
+ * simple appel « tiré et oublié » avant de répondre, qui n'aurait aucune
+ * garantie d'exécution sur une fonction serverless. Le cron quotidien
+ * referral-review reste un filet de sécurité supplémentaire.
+ */
+const SWEEP_TRIGGER_KEYS = new Set([
+  "subscription.commercial_restrictions_enabled",
+  "subscription.launch_promo_end_at",
+  "subscription.discovery_period_days",
+]);
 
 export async function GET(req: NextRequest) {
   if (!(await requireAdmin().catch(() => null))) {
@@ -69,6 +86,9 @@ export async function PUT(req: NextRequest) {
 
     if (error) throw error;
     invalidatePlatformSettingsCache();
+    if (SWEEP_TRIGGER_KEYS.has(`${category}.${key}`)) {
+      after(() => sweepSuspendRedundantCredits(supabase).catch((e) => console.error("[settings] balayage de suspension des crédits:", e)));
+    }
     return NextResponse.json(data);
   } catch (err) {
     console.error("Settings update error:", err);
