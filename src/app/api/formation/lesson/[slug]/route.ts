@@ -11,10 +11,13 @@
  * préservé) ; une fois activé, `hasFeatureAccess` décide réellement — en cas
  * de refus, la réponse ne contient NI le texte NI aucune URL d'actif protégé.
  *
- * Infrastructure disponible et testée ; son câblage dans l'interface de
- * lecture (src/components/formation/lesson-reader.tsx, actuellement un
- * composant client qui importe directement le contenu complet) reste à
- * terminer — voir le bilan de livraison pour le détail de cette limitation.
+ * Câblage réel : src/app/dashboard/academie/batir-sur-le-roc/[lecon]/page.tsx
+ * (coquille) + src/components/formation/lesson-page-client.tsx (composant
+ * client qui appelle cette route) sont désormais branchés sur cette route —
+ * plus aucun import direct du contenu complet dans un fichier "use client"
+ * pour la page de leçon elle-même (limitation restante : voir le bilan de
+ * livraison pour useFormationLocale/ui.ts, qui sert d'autres besoins
+ * d'internationalisation côté client et n'a pas été refondu ici).
  */
 
 import { NextRequest, NextResponse } from "next/server";
@@ -23,7 +26,37 @@ import { getApprovedUser } from "@/lib/api-auth";
 import { findLesson } from "@/lib/formation/batir-sur-le-roc";
 import { pillarOfLesson } from "@/lib/formation/structure";
 import { hasFeatureAccess } from "@/lib/subscription/effective";
-import { getFormationAssetUrl } from "@/lib/formation/media";
+import { getFormationAssetUrl, FORMATION_PUBLIC_BASE } from "@/lib/formation/media";
+import type { Lesson } from "@/lib/formation/types";
+
+/**
+ * Réécrit les actifs protégés (image pleine taille, audio, PDF) d'une leçon
+ * en URL signées quand ils ont été migrés vers le bucket privé
+ * `formation-media` — la vignette/carte reste toujours publique (simple
+ * aperçu de catalogue, jamais protégée). Pour le pilier 1 (toujours gratuit)
+ * ou tant qu'un actif n'a pas encore été migré, le chemin public actuel est
+ * conservé tel quel (comportement inchangé).
+ */
+async function resolveLessonAssets(db: ReturnType<typeof getSupabaseAdmin>, lesson: Lesson, userId: string, pillarNumber: number): Promise<Lesson> {
+  if (pillarNumber <= 1) return lesson;
+  const toStoragePath = (publicPath: string) => (publicPath.startsWith(FORMATION_PUBLIC_BASE) ? publicPath.slice(FORMATION_PUBLIC_BASE.length + 1) : null);
+  const resolve = async (publicPath: string | undefined) => {
+    if (!publicPath) return publicPath;
+    const storagePath = toStoragePath(publicPath);
+    if (!storagePath) return publicPath;
+    const signed = await getFormationAssetUrl(db, storagePath, { userId, lessonSlug: lesson.slug });
+    return signed ?? publicPath; // pas encore migré : chemin public actuel conservé
+  };
+  const [imageSrc, audioSrc, transcript, pdf] = await Promise.all([
+    resolve(lesson.image.src), resolve(lesson.audio?.src), resolve(lesson.audio?.transcript), resolve(lesson.pdf),
+  ]);
+  return {
+    ...lesson,
+    image: { ...lesson.image, src: imageSrc ?? lesson.image.src },
+    audio: lesson.audio ? { ...lesson.audio, src: audioSrc ?? lesson.audio.src, transcript: transcript ?? lesson.audio.transcript } : lesson.audio,
+    pdf: pdf ?? lesson.pdf,
+  };
+}
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const user = await getApprovedUser(request);
@@ -43,13 +76,14 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     }
   }
 
-  // Pilier 1 (ou accès autorisé) : contenu complet. Les actifs restent sur
-  // leur chemin public actuel tant qu'ils n'ont pas été migrés vers le
-  // bucket privé formation-media — getFormationAssetUrl ne s'applique qu'aux
-  // chemins déjà migrés (voir supabase/migrations/20261105_formation_media_bucket.sql).
+  // Pilier 1 (ou accès autorisé) : contenu complet. Seuls les actifs réellement
+  // migrés vers le bucket privé formation-media sont réécrits en URL signées —
+  // tant qu'un fichier n'est pas migré, son chemin public actuel est conservé
+  // (zéro régression pendant la migration progressive).
+  const lesson = await resolveLessonAssets(db, found.lesson, user.id, pillarNumber);
   return NextResponse.json({
     locked: false,
-    lesson: found.lesson,
+    lesson,
     pillar: found.pillar,
     previous: found.previous,
     next: found.next,

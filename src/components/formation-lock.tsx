@@ -3,17 +3,18 @@
 import Link from "next/link";
 import { GraduationCap, Check } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
-import { FORMATION_BASE_PATH, MATCHING_REQUIRED_LESSONS } from "@/lib/formation/batir-sur-le-roc";
-import { useFormationLocale } from "@/lib/formation/ui";
+import { FORMATION_BASE_PATH } from "@/lib/formation/paths";
+import { MATCHING_REQUIRED_LESSONS, PILLAR_META, PILLAR_META_EN } from "@/lib/formation/structure";
 
 /**
  * Remplace une fonctionnalité de matching tant que le pilier 1 de « Bâtir sur le roc »
  * n'est pas terminé : progression leçon par leçon et accès direct à la suivante.
+ * Pilier 1 uniquement (toujours gratuit) : métadonnées légères, jamais le contenu
+ * complet des piliers 2-3 (src/lib/formation/structure.ts).
  */
 export function FormationLock({ completed }: { completed: string[] }) {
-  const { t } = useI18n();
-  const { formation } = useFormationLocale();
-  const lessons = formation.pillars[0].lessons;
+  const { t, locale } = useI18n();
+  const lessons = (locale === "en" ? PILLAR_META_EN : PILLAR_META)[0].lessons;
   const total = MATCHING_REQUIRED_LESSONS.length;
   const done = MATCHING_REQUIRED_LESSONS.filter((slug) => completed.includes(slug)).length;
   const next = lessons.find((l) => !completed.includes(l.slug));

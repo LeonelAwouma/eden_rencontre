@@ -14,6 +14,9 @@ type Db = ReturnType<typeof getSupabaseAdmin>;
 
 export const FORMATION_BUCKET = "formation-media";
 
+/** Préfixe des anciens chemins publics — pour dériver le chemin de stockage privé. */
+export const FORMATION_PUBLIC_BASE = "/formation/batir-sur-le-roc";
+
 /**
  * URL signée d'un actif protégé pour une leçon donnée, si l'abonnement
  * effectif du membre couvre le pilier de cette leçon. Toujours autorisé pour

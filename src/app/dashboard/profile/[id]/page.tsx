@@ -47,7 +47,7 @@ import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { useI18n } from "@/lib/i18n";
 import { useFormationProgress } from "@/lib/formation/progress";
-import { isPillarOneComplete } from "@/lib/formation/batir-sur-le-roc";
+import { isPillarOneCompleteLight } from "@/lib/formation/structure";
 import { FormationLock } from "@/components/formation-lock";
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -77,7 +77,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
   const [compatChecked, setCompatChecked] = useState(false);
   // Fiches des membres : réservées à qui a terminé le pilier 1 de « Bâtir sur le roc ».
   const { progress: formationProgress, synced: formationSynced } = useFormationProgress();
-  const formationDone = isPillarOneComplete(formationProgress.completed);
+  const formationDone = isPillarOneCompleteLight(formationProgress.completed);
   const matchingOpen = formationSynced && formationDone;
 
   useEffect(() => {

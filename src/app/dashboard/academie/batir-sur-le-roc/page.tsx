@@ -5,7 +5,8 @@ import Image from "next/image";
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Lock, Play } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
-import { FORMATION_BASE_PATH, ALL_LESSONS, resumeLesson, isPillarUnlocked, blockingPillar, requiredPillars } from "@/lib/formation/batir-sur-le-roc";
+import { FORMATION_BASE_PATH } from "@/lib/formation/paths";
+import { PILLAR_LESSON_SLUGS, resumeLessonSlug, isPillarUnlockedLight, blockingPillarMeta, requiredPillarsLight, lessonMetaOf } from "@/lib/formation/structure";
 import { useFormationLocale } from "@/lib/formation/ui";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
 import { PosterFigure } from "@/components/formation/poster";
@@ -18,12 +19,14 @@ import { PosterFigure } from "@/components/formation/poster";
 export default function BatirSurLeRocLessonsPage() {
   const { progress, ready } = useFormationProgress();
   // Formation et textes dans la langue de l'interface (français ou anglais).
-  const { formation, ui, localize } = useFormationLocale();
+  const { formation, ui, lang } = useFormationLocale();
 
-  const doneCount = ALL_LESSONS.filter(({ lesson }) => progress.completed.includes(lesson.slug)).length;
-  const nextLesson = localize(resumeLesson(progress));
+  const allLessonSlugs = Object.values(PILLAR_LESSON_SLUGS).flat();
+  const doneCount = allLessonSlugs.filter((slug) => progress.completed.includes(slug)).length;
+  const nextLessonSlug = resumeLessonSlug(progress);
+  const nextLesson = nextLessonSlug ? lessonMetaOf(nextLessonSlug, lang) : null;
   const started = hasStarted(progress);
-  const available = ALL_LESSONS.length;
+  const available = allLessonSlugs.length;
   const pct = available ? Math.round((doneCount / available) * 100) : 0;
 
   return (
@@ -84,8 +87,8 @@ export default function BatirSurLeRocLessonsPage() {
         {formation.pillars.filter((p) => p.lessons.length > 0).map((pillar) => {
           const done = pillar.lessons.filter((l) => progress.completed.includes(l.slug)).length;
           // Pilier ouvert quand le précédent est terminé (jamais verrouillé à tort avant la lecture de la progression).
-          const locked = ready && !isPillarUnlocked(pillar.number, progress.completed);
-          const blocker = locked ? localize(blockingPillar(pillar.number, progress.completed)) : null;
+          const locked = ready && !isPillarUnlockedLight(pillar.number, progress.completed);
+          const blocker = locked ? blockingPillarMeta(pillar.number, progress.completed, lang) : null;
           return (
             <section key={pillar.slug} aria-labelledby={`pilier-${pillar.number}`} className="space-y-6">
               <div className={cn("flex flex-wrap items-end justify-between gap-4", pillar.poster && "sm:flex-nowrap sm:items-center sm:gap-8")}>
@@ -107,7 +110,7 @@ export default function BatirSurLeRocLessonsPage() {
               {locked && blocker && (
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[#E2C9A6] bg-[#FBF3E8] px-5 py-4">
                   <p className="flex items-start gap-2.5 text-[14.5px] text-[#6E4A00]">
-                    <Lock className="w-4 h-4 shrink-0 mt-0.5" /> {ui.pillarLocked(requiredPillars(pillar.number))}
+                    <Lock className="w-4 h-4 shrink-0 mt-0.5" /> {ui.pillarLocked(requiredPillarsLight(pillar.number))}
                   </p>
                   {nextLesson && (
                     <Link href={`${FORMATION_BASE_PATH}/${nextLesson.slug}`} className="inline-flex items-center gap-1.5 text-[14px] font-bold text-primary hover:underline">
