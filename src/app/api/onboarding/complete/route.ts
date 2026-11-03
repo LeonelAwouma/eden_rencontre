@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { checkQuestionnaireCompletion } from "@/lib/onboarding";
 import { evaluateVerificationBadge } from "@/lib/verification-badge";
+import { reevaluateReferral } from "@/lib/referrals";
 
 /**
  * POST — Fin du questionnaire d'onboarding.
@@ -51,6 +52,10 @@ export async function POST(req: NextRequest) {
 
     // Profil + questionnaire complets ⇒ badge « Profil vérifié » attribué automatiquement.
     const badge = await evaluateVerificationBadge(supabase, userId);
+
+    // Réévaluation du parrainage (si ce membre est un filleul) — aucun point
+    // d'accroche partagé avec l'approbation admin, à appeler explicitement.
+    await reevaluateReferral(supabase, userId).catch((e) => console.error("[onboarding/complete] réévaluation du parrainage:", e));
 
     return NextResponse.json({
       ok: true,

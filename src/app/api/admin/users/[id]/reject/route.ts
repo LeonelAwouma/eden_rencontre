@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { sendAccountRejectedEmail, getLastEmailError } from "@/lib/email";
+import { reevaluateReferral } from "@/lib/referrals";
 
 export async function POST(
   request: NextRequest,
@@ -62,6 +63,8 @@ export async function POST(
       { user_email: user.email, user_name: user.name, reason },
       ip
     );
+
+    await reevaluateReferral(db, id).catch((e) => console.error("[reject] réévaluation du parrainage:", e));
 
     return NextResponse.json({ ok: true, message: "Utilisateur rejeté.", emailSent, emailError: emailSent ? null : getLastEmailError() });
   } catch (error) {
