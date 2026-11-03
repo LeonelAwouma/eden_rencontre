@@ -22,6 +22,7 @@ import { AutoSaveIndicator } from "@/components/autosave-indicator";
 import { ProfilePhotoEditor } from "@/components/profile-photo-editor";
 import { DISCOVERY_SOURCE_OPTIONS } from "@/lib/discovery-sources";
 import { ProfilePhotoGallery } from "@/components/profile-photo-gallery";
+import { CountryCityPicker } from "@/components/geo/country-city-popover";
 
 
 /* ─────────────────────────── Types ─────────────────────────── */
@@ -328,8 +329,12 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
               <MapPin size={14} /> {t("profilePage.location")}
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <EditField label={t("profilePage.city")} value={form.city} onChange={v => setForm(f => ({ ...f, city: v }))} />
-              <EditField label={t("profilePage.country")} value={form.country} onChange={v => setForm(f => ({ ...f, country: v }))} />
+              <CountryCityPicker
+                country={form.country}
+                city={form.city}
+                onChangeCountry={(country) => setForm(f => ({ ...f, country }))}
+                onChangeCity={(city) => setForm(f => ({ ...f, city }))}
+              />
               <EditField label={t("profilePage.region")} value={form.region} onChange={v => setForm(f => ({ ...f, region: v }))} />
             </div>
           </div>

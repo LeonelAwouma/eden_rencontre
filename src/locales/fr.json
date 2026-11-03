@@ -1582,6 +1582,15 @@
     "session5Q3": "Quelle est votre vision d'une communication saine et transparente au sein d'un couple chrétien ?",
     "session5Example": "« Il n'est pas toujours facile d'exprimer ses peurs, mais la prière m'a beaucoup aidé(e) à apaiser mes inquiétudes. Quels défis vous ont le plus fortifié(e) spirituellement ? »"
   },
+  "geo": {
+    "cityNotListed": "Ma ville n'est pas dans la liste",
+    "manualCityPlaceholder": "Saisissez le nom de votre ville",
+    "confirmCity": "Valider",
+    "changeCountry": "Modifier",
+    "changeCity": "Modifier",
+    "selectCountryPrompt": "Sélectionner un pays",
+    "selectCityPrompt": "Sélectionner une ville"
+  },
   "profilePage": {
     "personalInformation": "Informations personnelles",
     "nameRequired": "Le nom est requis.",

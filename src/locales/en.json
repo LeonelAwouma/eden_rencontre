@@ -1582,6 +1582,15 @@
     "session5Q3": "What is your vision of healthy and transparent communication within a Christian couple?",
     "session5Example": "\"It's not always easy to express one's fears, but prayer has greatly helped me calm my worries. What challenges have strengthened you the most spiritually?\""
   },
+  "geo": {
+    "cityNotListed": "My city isn't listed",
+    "manualCityPlaceholder": "Type your city's name",
+    "confirmCity": "Confirm",
+    "changeCountry": "Change",
+    "changeCity": "Change",
+    "selectCountryPrompt": "Select a country",
+    "selectCityPrompt": "Select a city"
+  },
   "profilePage": {
     "personalInformation": "Personal Information",
     "nameRequired": "Name is required.",
