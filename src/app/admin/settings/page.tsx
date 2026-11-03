@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { Globe, Bell, Palette, Save, Loader2, CheckCircle2, AlertCircle, Check, Mail, ChevronDown, X, TriangleAlert } from "lucide-react";
+import { Globe, Bell, Palette, Save, Loader2, CheckCircle2, AlertCircle, Check, Mail, ChevronDown, X, TriangleAlert, Gift } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { PageHeader } from "@/components/admin/page-header";
 import { Card, HEADING_FONT, LoadingBlock, btn, inputClass } from "@/components/admin/admin-ui";
@@ -20,6 +20,7 @@ const SECTIONS = [
   { id: "general", label: "Général", description: "Nom et contact", icon: Globe },
   { id: "notifications", label: "Notifications", description: "E-mails envoyés", icon: Bell },
   { id: "appearance", label: "Apparence", description: "Couleur et bandeau", icon: Palette },
+  { id: "referral", label: "Parrainage", description: "Programme et droits GOLD", icon: Gift },
   { id: "incidents", label: "Pannes", description: "Problèmes vécus par les membres", icon: TriangleAlert },
 ];
 
@@ -29,6 +30,15 @@ const DEFAULTS: Record<string, unknown> = {
   "notifications.email_enabled": true,
   "appearance.accent_color": "#486B46",
   "appearance.banner_text": "",
+  "referral.enabled": false,
+  "referral.required_referrals": 3,
+  "referral.reward_duration_days": 30,
+  "referral.review_delay_days": 7,
+  "referral.cumulative_allowed": true,
+  "referral.reward_cap": 0,
+  "subscription.commercial_restrictions_enabled": false,
+  "subscription.discovery_period_days": 30,
+  "subscription.launch_promo_end_at": null,
 };
 
 /** En-tête d'un panneau de réglages. */
@@ -128,22 +138,33 @@ export default function SettingsPage() {
     setEditedValues((prev) => ({ ...prev, [`${category}.${key}`]: value }));
   };
 
-  const hasChanges = (category: string) =>
-    Object.keys(editedValues).some((k) => k.startsWith(`${category}.`));
+  // L'onglet « Parrainage » couvre deux catégories platform_settings
+  // (referral.* et subscription.*, surfaces admin distinctes mais réunies
+  // dans un seul onglet ici) — sectionCategories donne les préfixes réels à
+  // filtrer/enregistrer pour un id d'onglet donné.
+  const sectionCategories = (section: string): string[] => (section === "referral" ? ["referral", "subscription"] : [section]);
 
-  const discardSection = (category: string) => {
-    setSaveError(null);
-    setEditedValues((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => !k.startsWith(`${category}.`))));
+  const hasChanges = (section: string) => {
+    const prefixes = sectionCategories(section);
+    return Object.keys(editedValues).some((k) => prefixes.some((c) => k.startsWith(`${c}.`)));
   };
 
-  const saveSection = async (category: string) => {
+  const discardSection = (section: string) => {
+    setSaveError(null);
+    const prefixes = sectionCategories(section);
+    setEditedValues((prev) => Object.fromEntries(Object.entries(prev).filter(([k]) => !prefixes.some((c) => k.startsWith(`${c}.`)))));
+  };
+
+  const saveSection = async (section: string) => {
     setSaving(true);
     setSaveError(null);
-    const entries = Object.entries(editedValues).filter(([k]) => k.startsWith(`${category}.`));
+    const prefixes = sectionCategories(section);
+    const entries = Object.entries(editedValues).filter(([k]) => prefixes.some((c) => k.startsWith(`${c}.`)));
     const errors: string[] = [];
     const succeeded: string[] = [];
 
     for (const [id, value] of entries) {
+      const category = prefixes.find((c) => id.startsWith(`${c}.`))!;
       const key = id.slice(category.length + 1);
       try {
         const res = await fetch("/api/admin/settings", {
@@ -227,6 +248,42 @@ export default function SettingsPage() {
       }
       case "appearance":
         return <AppearanceSection getValue={getValue} setValue={setValue} />;
+      case "referral": {
+        const programOn = getValue("referral", "enabled") === true;
+        const restrictionsOn = getValue("subscription", "commercial_restrictions_enabled") === true;
+        const numberField = (category: string, key: string, label: string, description?: string) => (
+          <FieldRow label={label} description={description} htmlFor={`${category}-${key}`}>
+            <input id={`${category}-${key}`} type="number" value={String(getValue(category, key))}
+              onChange={(e) => setValue(category, key, Number(e.target.value))} className={inputClass} />
+          </FieldRow>
+        );
+        return (
+          <>
+            <PanelHeader title="Programme de parrainage" description="3 filleuls validés (seuil configurable) donnent 30 jours GOLD. Désactivé par défaut." />
+            <FieldRow inline label="Programme actif" description="Active le lien de parrainage et l'octroi de récompenses.">
+              <Switch checked={programOn} onChange={(v) => setValue("referral", "enabled", v)} label="Programme actif" />
+            </FieldRow>
+            {numberField("referral", "required_referrals", "Filleuls requis", "Nombre de filleuls validés pour déclencher une récompense.")}
+            {numberField("referral", "reward_duration_days", "Durée de la récompense (jours)")}
+            {numberField("referral", "review_delay_days", "Délai de vérification (jours)")}
+            <FieldRow inline label="Cumul autorisé" description="Un parrain peut-il accumuler plusieurs récompenses ?">
+              <Switch checked={getValue("referral", "cumulative_allowed") === true} onChange={(v) => setValue("referral", "cumulative_allowed", v)} label="Cumul autorisé" />
+            </FieldRow>
+            {numberField("referral", "reward_cap", "Plafond de récompenses (0 = aucun)")}
+
+            <PanelHeader title="Droits GOLD effectifs" description="Interrupteur maître : sépare l'activation technique de l'activation commerciale réelle." />
+            <FieldRow inline label="Restrictions commerciales actives" description="Tant que désactivé (défaut), l'accès GOLD reste total pour tout le monde — aucun crédit n'est consulté ni activé.">
+              <Switch checked={restrictionsOn} onChange={(v) => setValue("subscription", "commercial_restrictions_enabled", v)} label="Restrictions commerciales actives" />
+            </FieldRow>
+            {numberField("subscription", "discovery_period_days", "Durée de la découverte offerte (jours)")}
+            <FieldRow label="Fin de la promotion de lancement" description="Date ISO (ex. 2026-12-01). Laisser vide = aucune promo active." htmlFor="subscription-launch_promo_end_at">
+              <input id="subscription-launch_promo_end_at" type="text" placeholder="AAAA-MM-JJ"
+                value={getValue("subscription", "launch_promo_end_at") === null ? "" : String(getValue("subscription", "launch_promo_end_at"))}
+                onChange={(e) => setValue("subscription", "launch_promo_end_at", e.target.value || null)} className={inputClass} />
+            </FieldRow>
+          </>
+        );
+      }
       case "incidents":
         return <IncidentsPanel />;
       default:
