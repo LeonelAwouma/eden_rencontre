@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemberHeader } from "@/components/dashboard/member-chrome";
+
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowLeft, ArrowRight, CheckCircle2, Clock, Lock, Play } from "lucide-react";
@@ -20,6 +22,7 @@ export default function BatirSurLeRocLessonsPage() {
   const { progress, ready } = useFormationProgress();
   // Formation et textes dans la langue de l'interface (français ou anglais).
   const { formation, ui, lang } = useFormationLocale();
+  useMemberHeader({ title: formation.title, backHref: "/dashboard/academie" });
 
   const allLessonSlugs = Object.values(PILLAR_LESSON_SLUGS).flat();
   const doneCount = allLessonSlugs.filter((slug) => progress.completed.includes(slug)).length;
@@ -31,18 +34,6 @@ export default function BatirSurLeRocLessonsPage() {
 
   return (
     <div className="eden-public min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-3">
-          <Link href="/dashboard/academie" className="flex items-center gap-2 min-w-0 text-[14px] font-semibold text-foreground hover:text-primary transition-colors">
-            <ArrowLeft className="w-4 h-4 shrink-0" />
-            <Monogram className="w-7 h-6 text-primary shrink-0 hidden sm:block" />
-            <span className="truncate">{ui.backToAcademy}</span>
-          </Link>
-          {ready && (
-            <span className="shrink-0 text-[13px] font-semibold text-[#56615A]">{ui.lessonsCount(doneCount, available)}</span>
-          )}
-        </div>
-      </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-12">
         {/* ───── En-tête de la formation + reprise ───── */}

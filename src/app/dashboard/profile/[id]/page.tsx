@@ -1,7 +1,8 @@
 "use client";
 
+import { useMemberHeader } from "@/components/dashboard/member-chrome";
+
 import { use, useState, useEffect } from "react";
-import { Footer } from "@/components/footer";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -57,6 +58,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
   const { toast } = useToast();
   const router = useRouter();
   const { t } = useI18n();
+  useMemberHeader({ title: t("dashboardTabs.discover"), backHref: "/dashboard?tab=Discover" });
 
   const [member, setMember] = useState<MemberProfile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -221,7 +223,7 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
   if (formationSynced && !formationDone) {
     return (
       <div className="min-h-screen bg-background">
-        <div className="container mx-auto px-4 py-8 max-w-2xl space-y-8 pb-24">
+        <div className="container mx-auto px-4 py-8 max-w-2xl space-y-8 pb-6">
           <Button variant="ghost" asChild className="text-foreground/40 hover:text-primary hover:bg-transparent group pl-0">
             <Link href="/dashboard">
               <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
@@ -538,7 +540,6 @@ export default function ProfileDetailPage({ params }: { params: Promise<{ id: st
         </DialogContent>
       </Dialog>
 
-      <Footer />
     </div>
   );
 }

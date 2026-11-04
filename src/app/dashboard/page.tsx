@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
@@ -52,31 +53,21 @@ import { Monogram, Flourish, VitrailPattern } from "@/components/ornaments";
 import { AvatarPicker } from "@/components/avatar-picker";
 import { RegistrationFeedbackDialog, needsRegistrationFeedback } from "@/components/registration-feedback-dialog";
 import { ImposingFloralCorners, ImposingFloralSide } from "@/components/garden";
-import { DashboardSidebar, SIDEBAR_OFFSET_CLASS } from "@/components/dashboard/dashboard-sidebar";
+import { useImmersiveScreen, useLogoutGuard, useMemberChrome, useMemberHeader } from "@/components/dashboard/member-chrome";
+import { ImmersiveChatShell } from "@/components/dashboard/immersive-chat-shell";
+import { useIsDesktop } from "@/hooks/use-media-query";
 import { PricingHero, PricingPlans } from "@/components/pricing/pricing-plans";
 import { SUPPORT_WHATSAPP_URL } from "@/lib/contact";
 import { ChatGuide } from "@/components/dashboard/chat-guide";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
-import { Tab, TABS, ComposerType, FeedPost, EDIT_WINDOW_MS } from "@/components/dashboard/dashboard-types";
+import { Tab, TABS, TAB_LABEL_KEY, ComposerType, FeedPost, EDIT_WINDOW_MS } from "@/components/dashboard/dashboard-types";
 import { pickVerse, type Verse } from "@/lib/verses";
 import { useI18n } from "@/lib/i18n";
 import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
 import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
 import { PushOptIn } from "@/components/push-opt-in";
 import { AutoSaveIndicator } from "@/components/autosave-indicator";
-
-const TAB_LABEL_KEY: Record<string, string> = {
-  Home: "dashboardTabs.home", Accueil: "dashboardTabs.home",
-  Discover: "dashboardTabs.discover", Découvrir: "dashboardTabs.discover",
-  Visitors: "dashboardTabs.visitors", Visiteurs: "dashboardTabs.visitors",
-  Favorites: "dashboardTabs.favorites", Favoris: "dashboardTabs.favorites",
-  Requests: "dashboardTabs.requests", Demandes: "dashboardTabs.requests",
-  Premium: "dashboardTabs.premium",
-  Messages: "dashboardTabs.messages",
-  Notifications: "dashboardTabs.notifications",
-  Profile: "dashboardTabs.profile", Profil: "dashboardTabs.profile",
-};
 
 // Sentinel activeConvId used before any real conversation with Admin exists yet —
 // lets the pinned Admin entry open a chat view without a conversation row in the DB.
@@ -237,7 +228,6 @@ export default function DashboardPage() {
   const tabLabel = (tab: Tab) => t(TAB_LABEL_KEY[tab] || tab);
   const [activeTab, setActiveTab] = useState<Tab>("Accueil");
   const [showPremiumBanner, setShowPremiumBanner] = useState(true);
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [discoverFilter, setDiscoverFilter] = useState("all");
   const [discoverSearch, setDiscoverSearch] = useState("");
   const [discoverCount, setDiscoverCount] = useState(24);
@@ -428,6 +418,55 @@ export default function DashboardPage() {
   const unreadVerificationNotifs = verificationNotifs.filter((n) => !n.is_read);
   const unreadEngagementNotifs = engagementNotifs.filter((n) => !n.is_read);
   const notifCount = unreadMeetingNotifs.length + unreadBlogNotifs.length + unreadVerificationNotifs.length + unreadEngagementNotifs.length;
+
+  // La chrome du layout (en-tête, barre inférieure, tiroir) lit ces valeurs : ce composant reste leur source de vérité.
+  const { registerTabController, publishBadges } = useMemberChrome();
+  useEffect(() => {
+    registerTabController({ activeTab, setActiveTab });
+    return () => registerTabController(null);
+  }, [activeTab, registerTabController]);
+  useEffect(() => {
+    publishBadges({ totalUnread, incomingRequestCount: incomingRequests.length, notifCount });
+  }, [totalUnread, incomingRequests.length, notifCount, publishBadges]);
+  useMemberHeader({ title: tabLabel(activeTab) });
+  // Édition du profil en cours : la déconnexion quitte le tiroir (protection existante conservée).
+  useLogoutGuard(editingProfile ? "profile-edit" : null);
+
+  // Conversation ouverte sous 1024px : écran immersif (ni en-tête ni barre inférieure), en portail.
+  // Même seuil que la sidebar et la barre inférieure, donc aucune bande 768-1023px où tout se chevauche.
+  const isDesktop = useIsDesktop();
+  const chatImmersive = !isDesktop && (activeTab === "Messages") && activeConvId !== null;
+  useImmersiveScreen(chatImmersive);
+
+  // Défilement du fil : à l'ouverture et à chaque nouveau message tant que le lecteur est en bas.
+  const threadScrollRef = useRef<HTMLDivElement | null>(null);
+  const threadAtBottomRef = useRef(true);
+  const scrollThreadToBottom = useCallback(() => {
+    const el = threadScrollRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, []);
+  const setThreadScroll = useCallback((el: HTMLDivElement | null) => {
+    threadScrollRef.current = el;
+    threadAtBottomRef.current = true;
+    if (el) el.scrollTop = el.scrollHeight; // conversation (re)montée : on arrive sur le dernier message
+  }, []);
+  const onThreadScroll = useCallback(() => {
+    const el = threadScrollRef.current;
+    if (el) threadAtBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+  }, []);
+  // Changer de conversation (sans remontage, en desktop) repart toujours du dernier message.
+  useLayoutEffect(() => { threadAtBottomRef.current = true; }, [activeConvId]);
+  useLayoutEffect(() => {
+    if (threadAtBottomRef.current) scrollThreadToBottom();
+  }, [messages, partnerTyping, scrollThreadToBottom]);
+  // Le clavier réduit le viewport visuel : si l'on était en bas, on y reste.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv || !chatImmersive) return;
+    const keepBottom = () => { if (threadAtBottomRef.current) scrollThreadToBottom(); };
+    vv.addEventListener("resize", keepBottom);
+    return () => vv.removeEventListener("resize", keepBottom);
+  }, [chatImmersive, scrollThreadToBottom]);
 
   const markMeetingNotifsRead = async () => {
     if (!user?.id || unreadMeetingNotifs.length === 0) return;
@@ -1243,97 +1282,9 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
-      {/* ══ LAYER 1: SIDEBAR ══ */}
-      <DashboardSidebar
-        activeTab={activeTab}
-        setActiveTab={setActiveTab}
-        displayName={displayName}
-        displayInitial={displayInitial}
-        myAvatar={myAvatar}
-        displayLocation={displayLocation}
-        totalUnread={totalUnread}
-        incomingRequestCount={incomingRequests.length}
-      />
-
       {/* ══ MAIN CONTENT (Layers 2 + 3) ══ */}
-      <div className={cn(SIDEBAR_OFFSET_CLASS, "pb-[calc(76px+env(safe-area-inset-bottom))] lg:pb-0")}>
-        {/* Topbar : titre de la page à gauche, actions discrètes à droite */}
-        <header className="sticky top-0 z-30 h-16 border-b border-[#E6EAE5] bg-[#FAF9F6]/90 backdrop-blur-xl">
-          <div className="h-full max-w-[1280px] mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between gap-3">
-            {/* Mobile : menu + logo */}
-            <div className="flex items-center gap-2 lg:hidden min-w-0">
-              <button type="button" onClick={() => setMobileMenuOpen(true)} aria-label={t("dashboard.openMenu")}
-                className="w-10 h-10 -ml-2 rounded-lg flex items-center justify-center text-[#1C241F] hover:bg-[#F0F4EF] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45">
-                <Menu className="w-5 h-5" />
-              </button>
-              <Link href="/dashboard" className="flex items-center gap-2 min-w-0">
-                <Monogram className="w-8 h-7 text-[#1F4D3A] shrink-0" />
-                <span className="font-headline text-[19px] font-bold text-[#1C241F] truncate">Garden <span className="italic font-medium text-[#3F704D]">of Alliance</span></span>
-              </Link>
-            </div>
-            {/* Desktop : titre de la page */}
-            <h1 className="hidden lg:block font-headline text-[26px] font-bold leading-none text-[#1C241F]">{tabLabel(activeTab)}</h1>
-
-            <div className="flex items-center gap-1 sm:gap-1.5">
-              {/* Boost : action discrète, jamais en concurrence avec l'abonnement Premium */}
-              {activeTab !== "Premium" && (
-                <button type="button" onClick={() => setActiveTab("Premium")}
-                  className="hidden md:inline-flex items-center gap-1.5 h-10 px-3 rounded-lg text-[13px] font-semibold text-[#3F704D] hover:bg-[#F0F4EF] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45">
-                  <Zap className="w-4 h-4 text-[#C6A15B]" aria-hidden="true" /> {t("dashboard.boost")}
-                </button>
-              )}
-              <a href={SUPPORT_WHATSAPP_URL} target="_blank" rel="noopener noreferrer"
-                aria-label={t("dashboard.support")} title={t("dashboard.support")}
-                className="hidden sm:flex w-10 h-10 rounded-lg items-center justify-center text-[#4A564F] hover:bg-[#F0F4EF] hover:text-[#1C241F] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45">
-                <LifeBuoy className="w-5 h-5" />
-              </a>
-              <button type="button" onClick={() => setActiveTab("Notifications")}
-                aria-label={notifCount > 0 ? `${t("dashboardTabs.notifications")} (${notifCount})` : t("dashboardTabs.notifications")}
-                className={cn("relative w-10 h-10 rounded-lg flex items-center justify-center transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45",
-                  activeTab === "Notifications" ? "bg-[#EEF5EE] text-[#28543C]" : "text-[#4A564F] hover:bg-[#F0F4EF] hover:text-[#1C241F]")}>
-                <Bell className="w-5 h-5" />
-                {notifCount > 0 && (
-                  <span className="absolute top-1 right-1 min-w-[18px] h-[18px] px-1 text-[10px] font-bold rounded-full flex items-center justify-center bg-[#28543C] text-white ring-2 ring-[#FAF9F6] tabular-nums">
-                    {notifCount > 9 ? "9+" : notifCount}
-                  </span>
-                )}
-              </button>
-              <button type="button" onClick={() => setActiveTab("Profil")} aria-label={t("dashboard.myAccount")}
-                className="ml-1 rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45 focus-visible:ring-offset-2">
-                <Avatar className="w-9 h-9 ring-1 ring-[#E6EAE5]">
-                  <AvatarImage src={avatarSrc(myAvatar)} alt="" />
-                  <AvatarFallback className="bg-[#EEF5EE] text-[#28543C] font-semibold">{displayInitial}</AvatarFallback>
-                </Avatar>
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {/* Tiroir de navigation mobile : même navigation que la sidebar desktop */}
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <div className="fixed inset-0 z-[60] lg:hidden" role="dialog" aria-modal="true" aria-label={t("dashboardSidebar.navLabel")}>
-              <motion.div className="absolute inset-0 bg-[#1C241F]/30 backdrop-blur-[2px]" onClick={() => setMobileMenuOpen(false)}
-                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.2 }} />
-              <motion.div className="absolute inset-y-0 left-0 w-[288px] max-w-[86vw] shadow-[8px_0_32px_rgba(20,40,30,0.12)]"
-                initial={{ x: "-100%" }} animate={{ x: 0 }} exit={{ x: "-100%" }} transition={{ duration: 0.24, ease: "easeOut" }}>
-                <DashboardSidebar
-                  variant="drawer"
-                  onClose={() => setMobileMenuOpen(false)}
-                  activeTab={activeTab}
-                  setActiveTab={setActiveTab}
-                  displayName={displayName}
-                  displayInitial={displayInitial}
-                  myAvatar={myAvatar}
-                  displayLocation={displayLocation}
-                  totalUnread={totalUnread}
-                  incomingRequestCount={incomingRequests.length}
-                />
-              </motion.div>
-            </div>
-          )}
-        </AnimatePresence>
-
+      {/* Décalage de sidebar et réserve de barre inférieure : portés par la chrome du layout. */}
+      <div>
         {/* ═══════════════════════════════════════════════════ */}
         {/* THREE-LAYER CONTENT */}
         {/* ═══════════════════════════════════════════════════ */}
@@ -1918,37 +1869,6 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* ══ MOBILE BOTTOM NAV ══ */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-40 backdrop-blur-xl h-[76px] flex items-center justify-around px-1 pb-[env(safe-area-inset-bottom)]"
-        style={{ background: "rgba(255,255,255,0.95)", borderTop: "1px solid #E8E5E0" }}>
-        {(["Accueil", "Découvrir", "Messages"] as Tab[]).map((name) => {
-          const active = activeTab === name;
-          return (
-            <button key={name} onClick={() => setActiveTab(name)}
-              className="flex flex-col items-center justify-center gap-1 w-full h-full transition-colors"
-              style={{ color: active ? "#486B46" : "#777777" }}>
-              {name === "Accueil" && <Home className="w-5 h-5" />}
-              {name === "Découvrir" && <Search className="w-5 h-5" />}
-              {name === "Messages" && <MessageCircle className="w-5 h-5" />}
-              <span className="text-[9px] font-bold uppercase tracking-wider">{tabLabel(name)}</span>
-            </button>
-          );
-        })}
-        {/* Forum en accès prioritaire ; l'Académie reste dans le menu et sur l'accueil. */}
-        <Link href="/dashboard/forum"
-          className="flex flex-col items-center justify-center gap-1 w-full h-full transition-colors"
-          style={{ color: "#777777" }}>
-          <MessagesSquare className="w-5 h-5" />
-          <span className="text-[9px] font-bold uppercase tracking-wider">{t("forum.title")}</span>
-        </Link>
-        <button onClick={() => setMobileMenuOpen(true)}
-          className="flex flex-col items-center justify-center gap-1 w-full h-full transition-colors"
-          style={{ color: "#777777" }}>
-          <Menu className="w-5 h-5" />
-          <span className="text-[9px] font-bold uppercase tracking-wider">{t("dashboard.menu")}</span>
-        </button>
-      </nav>
-
       {/* ══ PHOTO LIGHTBOX — petite photo cliquée → prévisualisation agrandie ══ */}
       <PhotoLightbox photo={viewingPhoto} onClose={closePhoto} closeLabel={t("memberCard.closePhoto")} />
     </div>
@@ -1970,6 +1890,12 @@ export default function DashboardPage() {
         )}
       </div>
     );
+    // Le fil de conversation : plein écran dans un portail sous 1024px, colonne de droite au-dessus.
+    const renderThreadSlot = (content: React.ReactNode) =>
+      chatImmersive
+        ? createPortal(<ImmersiveChatShell>{content}</ImmersiveChatShell>, document.body)
+        : <div className="flex-1 flex-col min-w-0 hidden lg:flex">{content}</div>;
+
     switch (activeTab) {
       case "Découvrir":
       case "Discover": {
@@ -2270,10 +2196,10 @@ export default function DashboardPage() {
 
       case "Messages":
         return (
-          <div className="rounded-2xl overflow-hidden flex h-[calc(100vh-8rem)] min-h-[520px]"
+          <div className={cn("rounded-2xl overflow-hidden flex h-[calc(100dvh-var(--chat-reserve))]", chatImmersive && "hidden")}
             style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 1px 3px rgba(72,107,70,0.04), 0 4px 16px rgba(72,107,70,0.06)" }}>
             {/* Conversation list */}
-            <div className={cn("w-full md:w-[320px] flex-col shrink-0", activeConvId !== null ? "hidden md:flex" : "flex")}
+            <div className={cn("w-full lg:w-[320px] flex-col shrink-0", activeConvId !== null ? "hidden lg:flex" : "flex")}
               style={{ borderRight: "1px solid #E8E5E0" }}>
               {showNewChat ? (
                 <>
@@ -2373,13 +2299,13 @@ export default function DashboardPage() {
             </div>
 
             {/* Chat thread */}
-            <div className={cn("flex-1 flex-col min-w-0", activeConvId === null ? "hidden md:flex" : "flex")}>
-              {displayConv ? (() => {
+            {renderThreadSlot(
+              displayConv ? (() => {
                 const isAdminThread = !!adminUser && displayConv.otherId === adminUser.id;
                 return (
                 <>
-                  <div className="flex items-center gap-3 p-3" style={{ borderBottom: "1px solid #E8E5E0" }}>
-                    <button onClick={() => setActiveConvId(null)} className="md:hidden w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ color: "#777777" }}>
+                  <div className="flex items-center gap-3 p-3 shrink-0" style={{ borderBottom: "1px solid #E8E5E0" }}>
+                    <button onClick={() => setActiveConvId(null)} aria-label={t("memberNav.back")} className="lg:hidden w-11 h-11 -ml-1 rounded-lg flex items-center justify-center shrink-0" style={{ color: "#777777" }}>
                       <ArrowLeft className="w-5 h-5" />
                     </button>
                     <button onClick={() => !isAdminThread && displayConv.otherId && router.push(`/dashboard/profile/${displayConv.otherId}`)}
@@ -2439,7 +2365,7 @@ export default function DashboardPage() {
                     )}
                   </div>
                   {!isAdminThread && engagement[displayConv.id]?.status === "pending" && engagement[displayConv.id]?.recipientId === meId && (
-                    <div className="p-4 flex items-center gap-3 flex-wrap" style={{ background: "#EEF5EC", borderBottom: "1px solid #E8E5E0" }}>
+                    <div className="p-4 flex items-center gap-3 flex-wrap shrink-0" style={{ background: "#EEF5EC", borderBottom: "1px solid #E8E5E0" }}>
                       <HeartHandshake className="w-5 h-5 shrink-0" style={{ color: "#486B46" }} />
                       <div className="flex-1 min-w-[180px]">
                         <p className="text-sm font-bold" style={{ color: "#2F2F2F" }}>{t("dashboard.engageBannerRecipientTitle", { name: displayConv.name })}</p>
@@ -2459,7 +2385,7 @@ export default function DashboardPage() {
                   )}
                   <div className="relative flex-1 min-h-0" style={{ background: "#FAF9F6" }}>
                     <VitrailPattern className="absolute inset-0 w-full h-full pointer-events-none opacity-[0.03]" />
-                    <div className="relative h-full overflow-y-auto p-4 space-y-2 custom-scrollbar">
+                    <div ref={setThreadScroll} onScroll={onThreadScroll} className="relative h-full overflow-y-auto p-4 space-y-2 custom-scrollbar chat-scroll">
                       {messages.length === 0 && isAdminThread && (
                         <p className="text-center text-xs py-8" style={{ color: "#777777" }}>{t("dashboard.contactAdminWelcome")}</p>
                       )}
@@ -2491,7 +2417,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   {/* Message input */}
-                  <div className="relative" style={{ borderTop: "1px solid #E8E5E0" }}>
+                  <div className="relative shrink-0 pb-[env(safe-area-inset-bottom)]" style={{ borderTop: "1px solid #E8E5E0" }}>
                     <AnimatePresence>
                       {showEmoji && (
                         <motion.div
@@ -2500,7 +2426,7 @@ export default function DashboardPage() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 8, scale: 0.97 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute bottom-full left-3 mb-2 w-[300px] sm:w-[340px] max-h-[320px] overflow-y-auto custom-scrollbar rounded-2xl z-20"
+                          className="absolute bottom-full left-3 mb-2 w-[300px] sm:w-[340px] max-w-[calc(100%-1.5rem)] max-h-[min(320px,calc(var(--app-vh,100dvh)-9rem))] overflow-y-auto custom-scrollbar rounded-2xl z-20"
                           style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 8px 32px rgba(72,107,70,0.12)" }}
                         >
                           {EMOJI_CATEGORIES.map((group) => (
@@ -2547,7 +2473,8 @@ export default function DashboardPage() {
                       </button>
                       <Input value={chatInput} onChange={(e) => handleChatInput(e.target.value)}
                         placeholder={pendingImage ? t("dashboard.captionPlaceholder") : t("dashboard.typeMessagePlaceholder")}
-                        className="flex-1 h-10 rounded-full px-4 text-sm"
+                        onFocus={() => requestAnimationFrame(scrollThreadToBottom)}
+                        className="flex-1 h-11 rounded-full px-4 text-base lg:text-sm"
                         style={{ background: "#FAF9F6", border: "none" }} />
                       <Button type="submit" disabled={(!chatInput.trim() && !pendingImage) || uploading}
                         className="w-10 h-10 rounded-full p-0 shrink-0"
@@ -2566,8 +2493,7 @@ export default function DashboardPage() {
                   <h3 className="font-headline text-xl font-bold mb-1" style={{ color: "#2F2F2F" }}>{t("dashboard.yourConversations")}</h3>
                   <p className="text-sm max-w-xs" style={{ color: "#777777" }}>{t("dashboard.selectOrStartConversation")}</p>
                 </div>
-              )}
-            </div>
+              ))}
           </div>
         );
 

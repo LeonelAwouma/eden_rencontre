@@ -10,6 +10,8 @@ import {
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useImmersiveScreen } from "@/components/dashboard/member-chrome";
+import { useVisualViewportHeight } from "@/hooks/use-visual-viewport";
 import { Monogram } from "@/components/ornaments";
 import { useFormationLocale } from "@/lib/formation/ui";
 import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
@@ -38,6 +40,10 @@ export default function ForumPage() {
 }
 
 function ForumGroup() {
+  // Écran immersif : ni en-tête partagé ni barre inférieure, le forum garde son propre en-tête et sa saisie.
+  useImmersiveScreen(true);
+  // Hauteur = viewport visuel : sur iOS Safari le clavier ne réduit que celui-là, `100dvh` ne suffit pas.
+  useVisualViewportHeight(true);
   const { t, locale } = useI18n();
   const { toast } = useToast();
   const params = useSearchParams();
@@ -157,6 +163,16 @@ function ForumGroup() {
       el.scrollTop = el.scrollHeight;
     }
   }, [messages]);
+
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const keepBottom = () => { if (atBottom.current) scrollToBottom(); };
+    vv.addEventListener("resize", keepBottom);
+    return () => vv.removeEventListener("resize", keepBottom);
+    // scrollToBottom ne dépend que de scrollRef (stable) : pas besoin de le relancer.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const onScroll = () => {
     const el = scrollRef.current;
@@ -308,7 +324,7 @@ function ForumGroup() {
   }), [messages]);
 
   return (
-    <div className="eden-public h-[100dvh] flex flex-col bg-background text-foreground">
+    <div className="eden-public immersive-screen flex flex-col bg-background text-foreground">
       {/* En-tête du groupe */}
       <header className="shrink-0 z-30 bg-background/95 backdrop-blur-xl border-b border-border">
         <div className="max-w-4xl mx-auto px-2 sm:px-4 h-16 flex items-center gap-2">
@@ -362,7 +378,7 @@ function ForumGroup() {
 
       {/* Fil des messages */}
       <div ref={scrollRef} onScroll={onScroll}
-        className="relative flex-1 overflow-y-auto bg-[#F4F1EA] [background-image:radial-gradient(rgba(72,107,70,0.06)_1px,transparent_1px)] [background-size:18px_18px]">
+        className="relative flex-1 min-h-0 overflow-y-auto chat-scroll bg-[#F4F1EA] [background-image:radial-gradient(rgba(72,107,70,0.06)_1px,transparent_1px)] [background-size:18px_18px]">
         <div className="max-w-4xl mx-auto px-3 sm:px-5 py-4">
           {state === "loading" && (
             <div className="flex justify-center py-20"><Loader2 className="w-6 h-6 text-primary animate-spin" /></div>
@@ -479,7 +495,7 @@ function ForumGroup() {
                 )}
 
                 {panel !== "none" && (
-                  <div className="mb-2 rounded-2xl border border-border bg-card max-h-[240px] overflow-y-auto custom-scrollbar">
+                  <div className="mb-2 rounded-2xl border border-border bg-card max-h-[min(240px,calc(var(--app-vh,100dvh)-14rem))] overflow-y-auto custom-scrollbar">
                     {panel === "sticker" ? (
                       <StickerPicker labelFor={stickerLabel} onPick={(id) => send(id)} />
                     ) : (
@@ -514,7 +530,7 @@ function ForumGroup() {
                   </button>
                   <textarea ref={inputRef} value={draft} onChange={(e) => setDraft(e.target.value)} onKeyDown={onKeyDown}
                     rows={1} maxLength={FORUM_LIMITS.bodyMax} placeholder={t("forum.composerPlaceholder")} aria-label={t("forum.composerPlaceholder")}
-                    className="flex-1 min-w-0 resize-none rounded-[22px] border border-border bg-card px-4 py-2.5 text-[15px] leading-snug outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 max-h-[148px]" />
+                    className="flex-1 min-w-0 resize-none rounded-[22px] border border-border bg-card px-4 py-2.5 text-[16px] lg:text-[15px] leading-snug outline-none focus:border-primary focus:ring-2 focus:ring-primary/15 max-h-[148px]" />
                   <button type="submit" disabled={!draft.trim() || sending} aria-label={editing ? t("forum.saveEdit") : t("forum.send")}
                     className="w-11 h-11 rounded-full bg-primary text-white flex items-center justify-center shrink-0 hover:bg-primary/90 disabled:opacity-40 transition-colors">
                     {sending ? <Loader2 className="w-5 h-5 animate-spin" /> : editing ? <Check className="w-5 h-5" /> : <Send className="w-5 h-5" />}

@@ -1194,12 +1194,25 @@
     "navLabel": "Navigation principale",
     "groupMain": "Principal",
     "groupMine": "Mon espace",
-    "groupCommunity": "Communauté",
+    "groupInteractions": "Mes interactions",
+    "groupCommunity": "Communauté et apprentissage",
+    "groupAccount": "Mon compte",
     "groupSettings": "Paramètres",
+    "subscription": "Abonnement",
+    "notificationsSettings": "Notifications et paramètres",
+    "help": "Aide",
     "accountMenu": "Menu du compte",
     "viewProfile": "Mon profil",
     "closeMenu": "Fermer le menu",
     "unread": "non lus"
+  },
+  "memberNav": {
+    "navLabel": "Navigation principale",
+    "community": "Communauté",
+    "menu": "Menu",
+    "back": "Retour",
+    "notifications": "Notifications",
+    "language": "Langue"
   },
   "memberCard": {
     "removeFavorite": "Retirer des favoris",
@@ -1592,6 +1605,8 @@
     "selectCityPrompt": "Sélectionner une ville"
   },
   "profilePage": {
+    "referralShortcutTitle": "Parrainage et récompenses",
+    "referralShortcutHint": "Invitez vos proches et débloquez GOLD",
     "personalInformation": "Informations personnelles",
     "nameRequired": "Le nom est requis.",
     "pseudo": "Pseudo",
