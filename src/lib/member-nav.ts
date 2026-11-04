@@ -93,3 +93,13 @@ export function memberDest(id: string): MemberDest {
 
 /** Destinations de la barre inférieure, dans l'ordre d'affichage. */
 export const MEMBER_PRIMARY: MemberDest[] = MEMBER_PRIMARY_IDS.map(memberDest);
+
+/**
+ * Adresse d'une entrée du menu, ou `null` pour un lien sortant / une action.
+ * Sert à rapprocher une entrée de menu d'une annonce « Nouveauté » (`navHref`).
+ */
+export function destHref(dest: MemberDest): string | null {
+  if (dest.kind === "tab") return `/dashboard?tab=${dest.tab}`;
+  if (dest.kind === "route") return dest.href;
+  return null;
+}

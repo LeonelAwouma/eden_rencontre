@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
+import { setAdminBannerVisible } from "@/lib/banner-slot";
 
 /** Site-wide announcement banner, driven by the admin "Texte du bandeau" setting. */
 export function AnnouncementBar() {
@@ -15,7 +16,14 @@ export function AnnouncementBar() {
       .catch(() => {});
   }, []);
 
-  if (!text || dismissed) return null;
+  const visible = !!text && !dismissed;
+  // Un seul bandeau à la fois en tête de page : le bandeau « Nouveautés » cède la place à celui-ci.
+  useEffect(() => {
+    setAdminBannerVisible(visible);
+    return () => setAdminBannerVisible(false);
+  }, [visible]);
+
+  if (!visible) return null;
 
   return (
     <div className="relative w-full bg-deep-eden text-background text-center text-[11px] sm:text-xs font-semibold tracking-wide py-2.5 px-10">

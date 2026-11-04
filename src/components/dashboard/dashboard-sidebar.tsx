@@ -9,7 +9,9 @@ import { cn } from "@/lib/utils";
 import { avatarSrc } from "@/lib/avatar";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
-import { MEMBER_GROUPS, type MemberDest } from "@/lib/member-nav";
+import { MEMBER_GROUPS, destHref, type MemberDest } from "@/lib/member-nav";
+import { NewBadge } from "@/components/whats-new/new-badge";
+import { useMemberAnnouncements } from "@/components/whats-new/announcements-provider";
 import { canonicalTab } from "./dashboard-types";
 import { MEMBER_NAV_ICONS } from "./member-nav-icons";
 import { useMemberChrome } from "./member-chrome";
@@ -57,6 +59,8 @@ export function DashboardSidebar({ variant = "fixed", onClose, footer }: Sidebar
   const badgeFor = (id: string) =>
     id === "messages" ? badges.totalUnread : id === "requests" ? badges.incomingRequestCount : 0;
 
+  const { badgeTargets } = useMemberAnnouncements();
+
   const premiumActive = activeTab !== null && canonicalTab(activeTab) === "Premium";
 
   return (
@@ -101,6 +105,9 @@ export function DashboardSidebar({ variant = "fixed", onClose, footer }: Sidebar
                 const Icon = MEMBER_NAV_ICONS[dest.id];
                 const active = isActive(dest);
                 const count = badgeFor(dest.id);
+                // « Nouveau » sur l'entrée désignée par `navHref ?? href` ; jamais à côté d'un compteur de non-lus.
+                const href = destHref(dest);
+                const isNew = count === 0 && href !== null && badgeTargets.includes(href);
                 const icon = (
                   <Icon
                     className={cn("w-[19px] h-[19px] shrink-0 transition-colors duration-150",
@@ -113,6 +120,7 @@ export function DashboardSidebar({ variant = "fixed", onClose, footer }: Sidebar
                     {active && <span aria-hidden="true" className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-[var(--sidebar-active-bar,#28543C)]" />}
                     {icon}
                     <span className="flex-1">{t(dest.labelKey)}</span>
+                    {isNew && <NewBadge />}
                     {count > 0 && (
                       <span className="min-w-[22px] h-[22px] px-1.5 rounded-full bg-[#28543C] text-white text-[11px] font-bold flex items-center justify-center tabular-nums">
                         {count > 9 ? "9+" : count}

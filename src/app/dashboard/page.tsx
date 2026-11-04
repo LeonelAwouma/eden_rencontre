@@ -55,6 +55,7 @@ import { RegistrationFeedbackDialog, needsRegistrationFeedback } from "@/compone
 import { ImposingFloralCorners, ImposingFloralSide } from "@/components/garden";
 import { useImmersiveScreen, useLogoutGuard, useMemberChrome, useMemberHeader } from "@/components/dashboard/member-chrome";
 import { ImmersiveChatShell } from "@/components/dashboard/immersive-chat-shell";
+import { MemberAnnouncement } from "@/components/whats-new/announcements-provider";
 import { useIsDesktop } from "@/hooks/use-media-query";
 import { PricingHero, PricingPlans } from "@/components/pricing/pricing-plans";
 import { SUPPORT_WHATSAPP_URL } from "@/lib/contact";
@@ -1329,6 +1330,9 @@ export default function DashboardPage() {
 
                 {/* Notifications sur le téléphone : invitation masquable */}
                 <PushOptIn variant="banner" />
+
+                {/* Nouveauté : une seule carte à la fois, dans le flux (jamais fixe), absente des écrans immersifs. */}
+                <MemberAnnouncement />
 
                 {/* Mobile first : Académie et événements à portée de pouce, avant le fil.
                     Sur grand écran (xl), ils restent dans la colonne de droite. */}
