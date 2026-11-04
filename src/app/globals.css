@@ -887,3 +887,63 @@ html {
 @media (prefers-reduced-motion: reduce) {
   .speech-w { transition: none; }
 }
+
+/* ═══════════════════════════════════════════════════
+   CHROME MEMBRE — hauteurs partagées
+   La barre inférieure et la réserve de contenu dérivent de la même variable :
+   elles sont égales par construction (avant : h-[76px] + safe-area en
+   border-box, pour une réserve de 76px + safe-area, soit ~34px d'écart).
+   ═══════════════════════════════════════════════════ */
+:root {
+  --member-header-h: 64px;
+  --member-nav-h: 64px;
+  /*
+   * Hauteur retirée à la liste des conversations : en-tête + marges verticales du <main>
+   * (py-6 = 48px, py-8 = 64px dès sm) + barre inférieure + safe area. En lg+ la barre
+   * disparaît et il ne reste que l'ancien 8rem (64 + 2 x 32).
+   * Remplace `100vh - 8rem`, calibré pour le desktop seul : il manquait ~94px sur iPhone.
+   */
+  --chat-reserve: calc(var(--member-header-h) + 48px + var(--member-nav-h) + env(safe-area-inset-bottom));
+}
+@media (min-width: 640px) {
+  :root { --chat-reserve: calc(var(--member-header-h) + 64px + var(--member-nav-h) + env(safe-area-inset-bottom)); }
+}
+@media (min-width: 1024px) {
+  :root { --chat-reserve: 8rem; }
+}
+.member-nav-h {
+  height: calc(var(--member-nav-h) + env(safe-area-inset-bottom));
+}
+.member-nav-gap {
+  padding-bottom: calc(var(--member-nav-h) + env(safe-area-inset-bottom));
+}
+@media (min-width: 1024px) {
+  .member-nav-gap { padding-bottom: 0; }
+}
+/* Liste de messages : le défilement ne doit jamais se propager à la page. */
+/*
+ * Écran plein écran (forum). Sous 1024px : fixe, calé sur le viewport VISUEL (--app-vh/--app-vt,
+ * posés par useVisualViewportHeight) pour que le clavier ne le laisse jamais dépasser.
+ * En lg+ : retour au flux normal, à côté de la sidebar.
+ */
+.immersive-screen {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 40;
+  top: var(--app-vt, 0px);
+  height: var(--app-vh, 100dvh);
+  padding-top: env(safe-area-inset-top);
+}
+@media (min-width: 1024px) {
+  .immersive-screen {
+    position: static;
+    height: 100dvh;
+    padding-top: 0;
+  }
+}
+.chat-scroll {
+  overscroll-behavior: contain;
+  /* Le smooth global (html) décalerait le premier cadrage sur le dernier message. */
+  scroll-behavior: auto;
+}

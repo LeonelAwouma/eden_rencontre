@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemberHeader } from "@/components/dashboard/member-chrome";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -42,6 +44,9 @@ function StoryBlocks({ blocks }: { blocks: StoryBlock[] }) {
  * les aperçus admin, bandeau d'aperçu, retour vers l'Académie de l'admin.
  */
 export function StoryReader({ story: storyFr, preview = false }: { story: Story; preview?: boolean }) {
+  // Ce lecteur a son propre en-tête (progression, pastilles de leçons) : pas de doublon avec l'en-tête partagé.
+  // Sans effet hors de l'espace membre (aperçu admin).
+  useMemberHeader({ hidden: true });
   const { ui, localizeStory, stories, find } = useFormationLocale();
   const story = localizeStory(storyFr);
   const academyHref = preview ? ADMIN_FORMATION_PATH : "/dashboard/academie";

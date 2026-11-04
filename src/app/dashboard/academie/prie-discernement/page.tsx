@@ -1,8 +1,8 @@
 
 "use client";
 
-import { Navigation } from "@/components/navigation";
-import { Footer } from "@/components/footer";
+import { useMemberHeader } from "@/components/dashboard/member-chrome";
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -28,6 +28,7 @@ import { useI18n } from "@/lib/i18n";
 export default function DiscernementPage() {
   const router = useRouter();
   const { t } = useI18n();
+  useMemberHeader({ title: t("dashboard.academyTitle"), backHref: "/dashboard/academie" });
 
   const whenItems = [
     t("prieDiscernement.when1"),
@@ -52,15 +53,6 @@ export default function DiscernementPage() {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-50 bg-card border-b border-secondary/15 px-6 h-20 flex items-center justify-between">
-        <Link href="/dashboard" className="flex items-center gap-2">
-          <Monogram className="w-9 h-8 text-primary shrink-0" />
-          <span className="font-headline text-2xl font-bold text-foreground">Garden <span>of Alliance</span></span>
-        </Link>
-        <Button variant="ghost" onClick={() => router.back()} className="text-muted-foreground gap-2 hover:bg-foreground/5 hover:text-secondary">
-          <ArrowLeft className="w-4 h-4" /> {t("prieDiscernement.backToDashboard")}
-        </Button>
-      </header>
 
       <main className="container mx-auto px-4 py-16 max-w-4xl space-y-16">
         {/* Header Section */}
@@ -222,7 +214,6 @@ export default function DiscernementPage() {
         </div>
       </main>
 
-      <Footer />
     </div>
   );
 }

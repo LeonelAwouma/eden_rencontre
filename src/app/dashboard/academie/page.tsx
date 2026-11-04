@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemberHeader } from "@/components/dashboard/member-chrome";
+
 import {
   Heart, MessageSquare, Wallet, Users, Flame, Briefcase, Church, Baby, Clock, Star, ScrollText,
   ArrowLeft, ArrowRight, Mountain, Sprout, HeartHandshake, CheckCircle2, BookOpen, MessagesSquare, Lock,
@@ -21,6 +23,7 @@ import { RichText, frenchSpacing } from "@/components/formation/rich-text";
 export default function AcademyIndexPage() {
   const router = useRouter();
   const { t } = useI18n();
+  useMemberHeader({ title: t("dashboard.academyTitle"), backHref: "/dashboard" });
   const { progress, ready } = useFormationProgress();
   // Formation et textes dans la langue de l'interface (français ou anglais).
   const { formation, ui, localize, stories, lang } = useFormationLocale();
@@ -49,20 +52,6 @@ export default function AcademyIndexPage() {
 
   return (
     <div className="eden-public min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
-          <Link href="/dashboard" className="flex items-center gap-2.5 group">
-            <Monogram className="w-8 h-7 text-primary" />
-            <span className="font-headline text-lg sm:text-xl font-bold text-foreground">
-              Garden of Alliance <span className="text-primary italic font-normal">{ui.backToAcademy}</span>
-            </span>
-          </Link>
-          <button onClick={() => router.push("/dashboard")}
-            className="inline-flex items-center gap-2 h-9 px-3 rounded-full text-[13px] font-semibold text-[#3F4A43] hover:bg-muted transition-colors">
-            <ArrowLeft className="w-4 h-4" /> <span className="hidden sm:inline">{t("academie.backToDashboard")}</span>
-          </button>
-        </div>
-      </header>
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-10 sm:py-14 space-y-16">
         {/* ───── Académie du mariage ───── */}

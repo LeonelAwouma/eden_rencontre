@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemberHeader } from "@/components/dashboard/member-chrome";
+
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -371,6 +373,9 @@ export function LessonReader({ lesson: lessonFr, pillar: pillarFr, previous: pre
   lesson: Lesson; pillar: Pillar; previous: Lesson | null; next: Lesson | null; preview?: boolean;
 }) {
   // Même leçon (même slug) dans la langue de l'interface ; progression commune aux deux langues.
+  // Ce lecteur a son propre en-tête (progression, pastilles de leçons) : pas de doublon avec l'en-tête partagé.
+  // Sans effet hors de l'espace membre (aperçu admin).
+  useMemberHeader({ hidden: true });
   const { localize, ui, formation, lang } = useFormationLocale();
   const lesson = localize(lessonFr), pillar = localize(pillarFr), previous = localize(previousFr), next = localize(nextFr);
   const { progress, ready, synced, setCompleted, answer, resetQuiz, saveReflection, savePosition } = useFormationProgress({ persist: !preview });
@@ -790,6 +795,9 @@ function PillarEnd({ pillar, following, left, basePath, homeHref, onContinue }: 
 
 /** Leçon d'un pilier encore fermé (ouverte par son adresse) : on renvoie vers le pilier à terminer. */
 function LockedPillar({ pillar, completed }: { pillar: Pillar; completed: string[] }) {
+  // Ce lecteur a son propre en-tête (progression, pastilles de leçons) : pas de doublon avec l'en-tête partagé.
+  // Sans effet hors de l'espace membre (aperçu admin).
+  useMemberHeader({ hidden: true });
   const { ui, lang } = useFormationLocale();
   const blocker = blockingPillarMeta(pillar.number, completed, lang);
   const resumeSlug = resumeLessonSlug({ completed, lastLesson: null });

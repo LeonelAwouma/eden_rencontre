@@ -1,5 +1,7 @@
 "use client";
 
+import { useMemberHeader } from "@/components/dashboard/member-chrome";
+
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Gift, Copy, Check, Share2 } from "lucide-react";
@@ -29,6 +31,7 @@ async function authHeader(): Promise<Record<string, string>> {
 
 export default function ReferralPage() {
   const { t, locale } = useI18n();
+  useMemberHeader({ title: t("referral.pageTitle"), backHref: "/dashboard" });
   const [code, setCode] = useState<string | null>(null);
   const [url, setUrl] = useState<string | null>(null);
   const [data, setData] = useState<DashboardData | null>(null);
@@ -111,15 +114,6 @@ export default function ReferralPage() {
 
   return (
     <div className="eden-public min-h-screen bg-background text-foreground">
-      <header className="sticky top-0 z-40 bg-background/90 backdrop-blur-xl border-b border-border">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-16 flex items-center gap-2.5">
-          <Link href="/dashboard" className="flex items-center gap-2 text-[14px] font-semibold text-foreground hover:text-primary transition-colors">
-            <ArrowLeft className="w-4 h-4" />
-            <Monogram className="w-7 h-6 text-primary hidden sm:block" />
-          </Link>
-          <span className="font-headline text-[17px] font-bold">{t("referral.pageTitle")}</span>
-        </div>
-      </header>
 
       <main className="max-w-4xl mx-auto px-4 sm:px-6 py-10 space-y-8">
         <section className="text-center max-w-xl mx-auto">

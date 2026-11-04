@@ -4,14 +4,13 @@ import React, { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-import { getSession, updateProfile, logout, EdenUser } from "@/lib/auth";
+import { getSession, updateProfile, EdenUser } from "@/lib/auth";
 import { completeOnboarding, getQuestionnaires, applyAnswer, isFieldVisible, checkQuestionnaireCompletion, describeMissingQuestions, Questionnaire, Section, Field, type SupportedLocale } from "@/lib/onboarding";
 import { ReactivationEmailPreference } from "@/components/reactivation-email-preference";
-import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar";
-import type { Tab } from "@/components/dashboard/dashboard-types";
+import { useLogoutGuard, useMemberHeader } from "@/components/dashboard/member-chrome";
 import {
   User, Edit3, Save, X, CheckCircle, AlertCircle, Loader2, ChevronDown, ChevronRight,
-  MapPin, Briefcase, BookOpen, Lock, Heart
+  MapPin, Briefcase, BookOpen, Lock, Heart, Gift
 } from "lucide-react";
 import { VerifiedBadge } from "@/components/VerifiedBadge";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
@@ -114,6 +113,8 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
   ];
 
   const [editing, setEditing] = useState(false);
+  // Édition en cours : pas de déconnexion depuis le tiroir tant que ce n'est pas enregistré.
+  useLogoutGuard(editing ? "profile-edit" : null);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
     name: profile.name || "",
@@ -745,10 +746,13 @@ export default function ProfilePage() {
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get("tab") === "faith") setTab("faith");
   }, []);
-  const [mobileNav, setMobileNav] = useState(false);
   const [profile, setProfile] = useState<ProfileData | null>(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<{ message: string; type: "success" | "error" } | null>(null);
+
+  // En-tête partagé (titre + retour) ; le questionnaire retire la déconnexion du tiroir, comme avant.
+  useMemberHeader({ title: profile?.name || t("profilePage.myProfile"), backHref: "/dashboard" });
+  useLogoutGuard(tab === "faith" ? "faith-journey" : null);
 
   const loadProfile = useCallback(async () => {
     if (!supabase) { setLoading(false); return; }
@@ -784,19 +788,9 @@ export default function ProfilePage() {
     loadProfile();
   };
 
-  const handleLogout = async () => {
-    await logout();
-    router.replace("/login");
-  };
-
-  const handleSetActiveTab = (tb: Tab) => {
-    if (tb === "Profile") return;
-    router.push("/dashboard");
-  };
-
   if (loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#FAF9F6]">
+      <div className="flex min-h-[60vh] items-center justify-center bg-[#FAF9F6]">
         <div className="text-center">
           <div className="w-10 h-10 border-2 border-[#486B46] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           <p className="text-sm text-[#777777]">{t("profilePage.loadingProfile")}</p>
@@ -807,7 +801,7 @@ export default function ProfilePage() {
 
   if (!profile) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#FAF9F6]">
+      <div className="flex min-h-[60vh] items-center justify-center bg-[#FAF9F6]">
         <div className="text-center p-8 eden-card max-w-md mx-4">
           <AlertCircle size={40} className="text-[#C6A15B] mx-auto mb-4" />
           <h2 className="font-['Playfair_Display'] text-xl font-bold text-[#2F2F2F] mb-2">{t("profilePage.profileNotFound")}</h2>
@@ -818,77 +812,55 @@ export default function ProfilePage() {
     );
   }
 
-  const sidebarProps = {
-    activeTab: "Profile" as Tab,
-    setActiveTab: handleSetActiveTab,
-    displayName: profile.name || t("profilePage.member"),
-    displayInitial: getAvatarLetter(profile.name),
-    myAvatar: profile.avatar_url || undefined,
-    displayLocation: profile.city || "",
-    totalUnread: 0,
-    incomingRequestCount: 0,
-    notifCount: 0,
-    // Déconnexion visible sur l'onglet profil uniquement, pas pendant le questionnaire.
-    onLogout: tab === "profile" ? handleLogout : undefined,
-  };
+  const segment = (active: boolean) =>
+    `flex-1 min-h-[44px] px-3 rounded-xl text-sm font-medium transition-all whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45 ${active ? "bg-[#486B46] text-white" : "bg-white text-[#777777] hover:bg-[#EEF5EC]"}`;
 
   return (
-    <div className="flex h-screen bg-[#FAF9F6]">
-      {/* Sidebar desktop (fixe) : la colonne réserve sa largeur pour ne pas masquer le contenu */}
-      <div className="hidden lg:block w-64 shrink-0">
-        <DashboardSidebar {...sidebarProps} />
+    <div className="bg-[#FAF9F6]">
+      {/* Identité : l'en-tête partagé porte le titre et le retour, la carte porte le reste. */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-8 pt-4 flex items-center gap-4">
+        <ProfileAvatar name={profile.name} avatarUrl={profile.avatar_url} size="md" />
+        <div className="flex-1 min-w-0">
+          <p className="font-['Playfair_Display'] text-lg sm:text-xl font-bold text-[#2F2F2F] truncate inline-flex items-center gap-2 max-w-full">
+            <span className="truncate">{profile.name || t("profilePage.myProfile")}</span>
+            {profile.verification_status === "verified" && isProfileFullyComplete(profile) && <VerifiedBadge size={20} />}
+          </p>
+          <p className="text-sm text-[#777777] truncate">{profile.email} {profile.city ? `· ${profile.city}` : ""}</p>
+        </div>
       </div>
 
-      {/* Mobile nav */}
-      <div className="lg:hidden">
-        <button onClick={() => setMobileNav(true)} aria-label={t("dashboard.openMenu")}
-          className="fixed top-4 left-4 z-50 w-11 h-11 bg-white rounded-xl shadow-[0_4px_20px_rgba(20,40,30,0.08)] flex items-center justify-center border border-[#E6EAE5] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45">
-          <svg width="18" height="14" viewBox="0 0 18 14" fill="none" aria-hidden="true"><path d="M1 1h16M1 7h16M1 13h16" stroke="#1C241F" strokeWidth="1.5" strokeLinecap="round" /></svg>
-        </button>
-        {mobileNav && (
-          <div className="fixed inset-0 z-[60]" role="dialog" aria-modal="true">
-            <div className="absolute inset-0 bg-[#1C241F]/30 backdrop-blur-[2px]" onClick={() => setMobileNav(false)} />
-            <div className="relative z-10 h-full w-[288px] max-w-[86vw] shadow-[8px_0_32px_rgba(20,40,30,0.12)] animate-in slide-in-from-left duration-200">
-              {/* Mode tiroir : la sidebar fixe est masquée sous 1024 px, le tiroir l'affiche en pleine hauteur */}
-              <DashboardSidebar {...sidebarProps} variant="drawer" onClose={() => setMobileNav(false)} />
-            </div>
-          </div>
+      {/* Segments : sous l'en-tête, jamais côte à côte avec l'identité (débordait dès 390 px). */}
+      <div className="sticky z-20 bg-[#FAF9F6]/95 backdrop-blur-sm border-b border-[#E0DDD8] mt-4 px-4 sm:px-8 py-2"
+        style={{ top: "var(--member-header-h)" }}>
+        <div className="max-w-4xl mx-auto flex gap-2" role="tablist">
+          <button role="tab" aria-selected={tab === "profile"} onClick={() => setTab("profile")} className={segment(tab === "profile")}>{t("profilePage.tabProfile")}</button>
+          <button role="tab" aria-selected={tab === "faith"} onClick={() => setTab("faith")} className={segment(tab === "faith")}>{t("profilePage.tabFaithJourney")}</button>
+        </div>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 sm:px-8 py-6 space-y-6">
+        {tab === "profile" ? (
+          <>
+            <BasicInfoCard profile={profile} onRefresh={handleRefresh} onSwitchToFaith={() => setTab("faith")} />
+            <ProfileCompletionCard profile={profile} />
+            {/* Raccourci : le parrainage reste aussi accessible depuis le menu. */}
+            <Link href="/dashboard/parrainage"
+              className="eden-card p-4 flex items-center gap-4 min-h-[64px] hover:border-[#C6A15B]/60 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F704D]/45">
+              <span className="w-11 h-11 rounded-xl bg-[#EEF5EC] flex items-center justify-center shrink-0">
+                <Gift className="w-5 h-5 text-[#486B46]" aria-hidden="true" />
+              </span>
+              <span className="flex-1 min-w-0">
+                <span className="block text-sm font-semibold text-[#2F2F2F]">{t("profilePage.referralShortcutTitle")}</span>
+                <span className="block text-xs text-[#777777]">{t("profilePage.referralShortcutHint")}</span>
+              </span>
+              <ChevronRight className="w-5 h-5 text-[#777777] shrink-0" aria-hidden="true" />
+            </Link>
+            <ReactivationEmailPreference />
+          </>
+        ) : (
+          <FaithJourneyCard profileId={profile.id} answers={profile.questionnaire || {}} completed={!!profile.onboarding_completed} onRefresh={handleRefresh} />
         )}
       </div>
-
-      {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
-        {/* Header */}
-        <div className="sticky top-0 z-30 bg-[#FAF9F6]/95 backdrop-blur-sm border-b border-[#E0DDD8] px-4 sm:px-8 py-4">
-          <div className="max-w-4xl mx-auto flex items-center gap-4">
-            <ProfileAvatar name={profile.name} avatarUrl={profile.avatar_url} size="md" />
-            <div className="flex-1 min-w-0">
-              <h1 className="font-['Playfair_Display'] text-xl sm:text-2xl font-bold text-[#2F2F2F] truncate inline-flex items-center gap-2">
-                {profile.name || t("profilePage.myProfile")}
-                {profile.verification_status === "verified" && isProfileFullyComplete(profile) && <VerifiedBadge size={20} />}
-              </h1>
-              <p className="text-sm text-[#777777] truncate">{profile.email} {profile.city ? `· ${profile.city}` : ""}</p>
-            </div>
-            <div className="flex gap-2">
-              <button onClick={() => setTab("profile")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "profile" ? "bg-[#486B46] text-white" : "bg-white text-[#777777] hover:bg-[#EEF5EC]"}`}>{t("profilePage.tabProfile")}</button>
-              <button onClick={() => setTab("faith")} className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${tab === "faith" ? "bg-[#486B46] text-white" : "bg-white text-[#777777] hover:bg-[#EEF5EC]"}`}>{t("profilePage.tabFaithJourney")}</button>
-            </div>
-          </div>
-        </div>
-
-        {/* Content */}
-        <div className="max-w-4xl mx-auto px-4 sm:px-8 py-6 space-y-6">
-          {tab === "profile" ? (
-            <>
-              <BasicInfoCard profile={profile} onRefresh={handleRefresh} onSwitchToFaith={() => setTab("faith")} />
-              <ProfileCompletionCard profile={profile} />
-              <ReactivationEmailPreference />
-            </>
-          ) : (
-            <FaithJourneyCard profileId={profile.id} answers={profile.questionnaire || {}} completed={!!profile.onboarding_completed} onRefresh={handleRefresh} />
-          )}
-        </div>
-      </main>
 
       {toast && <Toast message={toast.message} type={toast.type} onClose={() => setToast(null)} />}
     </div>

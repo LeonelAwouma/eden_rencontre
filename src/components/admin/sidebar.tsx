@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -65,6 +65,20 @@ export function Sidebar({
     setTooltip({ label, y: r.top + r.height / 2 });
   };
 
+  // Tiroir mobile ouvert : Échap le ferme et la page derrière ne défile plus.
+  // (Sur desktop `isOpen` reste faux : la colonne est toujours visible.)
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", onKey);
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = previous;
+    };
+  }, [isOpen, onClose]);
+
   const isActive = (item: (typeof NAV_ITEMS)[0]) => {
     const itemPath = item.href.split("?")[0];
     const itemSearchParams = new URL(item.href, "http://localhost").searchParams;
@@ -85,7 +99,7 @@ export function Sidebar({
       </AnimatePresence>
 
       <aside aria-label="Navigation de l'administration" className={cn(
-        "fixed top-0 left-0 h-screen z-50 flex flex-col",
+        "fixed top-0 left-0 h-[100dvh] z-50 flex flex-col",
         "bg-white border-r border-[#ECE8E1]",
         "transition-[width,transform] duration-200 ease-out",
         "lg:translate-x-0", isOpen ? "translate-x-0" : "-translate-x-full",

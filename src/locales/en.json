@@ -1194,12 +1194,25 @@
     "navLabel": "Main navigation",
     "groupMain": "Main",
     "groupMine": "My space",
-    "groupCommunity": "Community",
+    "groupInteractions": "My interactions",
+    "groupCommunity": "Community and learning",
+    "groupAccount": "My account",
     "groupSettings": "Settings",
+    "subscription": "Subscription",
+    "notificationsSettings": "Notifications and settings",
+    "help": "Help",
     "accountMenu": "Account menu",
     "viewProfile": "My profile",
     "closeMenu": "Close menu",
     "unread": "unread"
+  },
+  "memberNav": {
+    "navLabel": "Main navigation",
+    "community": "Community",
+    "menu": "Menu",
+    "back": "Back",
+    "notifications": "Notifications",
+    "language": "Language"
   },
   "memberCard": {
     "removeFavorite": "Remove from favorites",
@@ -1592,6 +1605,8 @@
     "selectCityPrompt": "Select a city"
   },
   "profilePage": {
+    "referralShortcutTitle": "Referrals and rewards",
+    "referralShortcutHint": "Invite your loved ones and unlock GOLD",
     "personalInformation": "Personal Information",
     "nameRequired": "Name is required.",
     "pseudo": "Nickname",
