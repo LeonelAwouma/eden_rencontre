@@ -7,6 +7,8 @@ import { AdminTopbar } from "@/components/admin/admin-topbar";
 import { cn } from "@/lib/utils";
 import { LoadingScreen } from "@/components/loading-screen";
 import { ADMIN_LESSON_PREVIEW_PATH, ADMIN_STORY_PREVIEW_PATH } from "@/lib/formation/paths";
+import { useAnnouncements, useDiscoverOnVisit } from "@/components/whats-new/use-announcements";
+import { AnnouncementSlot } from "@/components/whats-new/announcement-card";
 
 interface AdminInfo {
   id: string;
@@ -119,6 +121,10 @@ export default function AdminLayout({
   // reste exigée par le middleware (vérification côté serveur de /admin/*).
   const isLessonPreview = (pathname?.startsWith(`${ADMIN_LESSON_PREVIEW_PATH}/`) || pathname?.startsWith(`${ADMIN_STORY_PREVIEW_PATH}/`)) ?? false;
 
+  // Nouveautés destinées aux administrateurs (jamais chargées sur la connexion ni les aperçus plein écran).
+  const announcements = useAnnouncements("admin", !loading && !isLoginPage && !isLessonPreview);
+  useDiscoverOnVisit(announcements, pathname ?? "", null);
+
   if (isLoginPage || isLessonPreview) {
     return <>{children}</>;
   }
@@ -141,6 +147,7 @@ export default function AdminLayout({
           onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
           onLogout={handleLogout}
           adminName={admin?.name || "Administrateur"}
+          newHrefs={announcements.badgeTargets}
         />
 
         <div
@@ -152,6 +159,12 @@ export default function AdminLayout({
           {/* Montée une seule fois ici : elle était recopiée dans 21 pages, où
               son bouton menu mobile était branché sur un callback vide. */}
           <AdminTopbar adminName={admin?.name || "Administrateur"} />
+
+          {/* `empty:hidden` : sans annonce, aucun espace réservé. */}
+          <AnnouncementSlot
+            api={announcements}
+            className="w-full max-w-[1600px] mx-auto px-4 pt-4 sm:px-6 lg:px-8 empty:hidden"
+          />
 
           <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8 max-w-[1600px] w-full min-w-0 mx-auto">
             {children}

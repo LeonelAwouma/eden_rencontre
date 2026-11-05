@@ -6,11 +6,12 @@ import { usePathname, useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
+import { NewBadge } from "@/components/whats-new/new-badge";
 import {
   LayoutDashboard, Users, CalendarDays, ShieldCheck, BarChart3,
   CreditCard, Settings, LogOut, X, Heart, MessageSquare,
   MessageCircle, PanelLeftClose, PanelLeftOpen, Video, Library,
-  BookOpen, Send, Keyboard, MessagesSquare, Accessibility, FileUp, Gift,
+  BookOpen, Send, Keyboard, MessagesSquare, Accessibility, FileUp, Gift, Megaphone,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -20,6 +21,8 @@ interface SidebarProps {
   onToggleCollapse: () => void;
   onLogout: () => void;
   adminName: string;
+  /** Adresses d'entrées à marquer « Nouveau » (voir src/lib/whats-new.ts). */
+  newHrefs?: string[];
 }
 
 const BRAND_GREEN = "#486B46";
@@ -42,6 +45,7 @@ const NAV_ITEMS = [
   { label: "Parrainages et récompenses", href: "/admin/referrals", icon: Gift, section: "platform" },
   { label: "Paiements", href: "/admin/payments", icon: CreditCard, section: "platform" },
   { label: "Analytics", href: "/admin/analytics", icon: BarChart3, section: "platform" },
+  { label: "Annonces", href: "/admin/announcements", icon: Megaphone, section: "platform" },
   { label: "Paramètres", href: "/admin/settings", icon: Settings, section: "platform" },
 ];
 
@@ -52,7 +56,7 @@ const SECTIONS = [
 ];
 
 export function Sidebar({
-  isOpen, isCollapsed, onClose, onToggleCollapse, onLogout, adminName,
+  isOpen, isCollapsed, onClose, onToggleCollapse, onLogout, adminName, newHrefs = [],
 }: SidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -153,11 +157,12 @@ export function Sidebar({
                   {items.map((item) => {
                     const active = isActive(item);
                     const Icon = item.icon;
+                    const isNew = newHrefs.includes(item.href);
                     return (
                       <div key={item.href} className="relative group">
                         <Link href={item.href}
                           aria-current={active ? "page" : undefined}
-                          aria-label={isCollapsed ? item.label : undefined}
+                          aria-label={isCollapsed ? `${item.label}${isNew ? " (nouveau)" : ""}` : undefined}
                           onMouseEnter={showTooltip(item.label)}
                           onMouseLeave={() => setTooltip(null)}
                           onFocus={showTooltip(item.label)}
@@ -175,6 +180,8 @@ export function Sidebar({
                               {item.label}
                             </span>
                           )}
+                          {!isCollapsed && isNew && <NewBadge />}
+                          {isCollapsed && isNew && <span className="absolute top-1 right-1"><NewBadge variant="dot" /></span>}
                           {!isCollapsed && item.shortcut && (
                             <span className={cn("text-[10px] font-mono px-1.5 py-0.5 rounded border opacity-0 group-hover:opacity-100 transition-opacity duration-150",
                               active ? "text-primary/70 border-primary/15 bg-primary/5" : "text-[#6B746E] border-zinc-200 bg-zinc-50")}>

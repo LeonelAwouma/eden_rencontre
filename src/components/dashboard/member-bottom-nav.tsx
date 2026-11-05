@@ -5,7 +5,9 @@ import { usePathname } from "next/navigation";
 import { Menu } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
-import { MEMBER_PRIMARY, type MemberDest } from "@/lib/member-nav";
+import { MEMBER_GROUPS, MEMBER_PRIMARY, destHref, type MemberDest } from "@/lib/member-nav";
+import { NewBadge } from "@/components/whats-new/new-badge";
+import { useMemberAnnouncements } from "@/components/whats-new/announcements-provider";
 import { canonicalTab } from "./dashboard-types";
 import { MEMBER_NAV_ICONS } from "./member-nav-icons";
 import { useMemberChrome } from "./member-chrome";
@@ -38,6 +40,7 @@ export function MemberBottomNav() {
   const { t } = useI18n();
   const pathname = usePathname();
   const { immersive, activeTab, goToTab, badges, menuOpen, setMenuOpen } = useMemberChrome();
+  const { badgeTargets } = useMemberAnnouncements();
 
   if (immersive) return null;
 
@@ -54,6 +57,17 @@ export function MemberBottomNav() {
   const colour = (active: boolean) => (active ? "text-[#28543C]" : "text-[#6B746E]");
   const menuBadge = badges.incomingRequestCount + badges.notifCount;
 
+  const primaryHrefs = new Set(MEMBER_PRIMARY.map(destHref));
+  const isNewDest = (dest: MemberDest) => {
+    const href = destHref(dest);
+    return href !== null && badgeTargets.includes(href);
+  };
+  // Les entrées hors de la barre vivent dans le tiroir : un « Nouveau » qui s'y trouve allume « Menu ».
+  const drawerHasNew = MEMBER_GROUPS.flatMap((g) => g.dests).some((d) => {
+    const href = destHref(d);
+    return href !== null && !primaryHrefs.has(href) && isNewDest(d);
+  });
+
   return (
     <nav
       aria-label={t("memberNav.navLabel")}
@@ -67,6 +81,9 @@ export function MemberBottomNav() {
             <span className="relative">
               <Icon className="w-[22px] h-[22px]" aria-hidden="true" />
               {dest.id === "messages" && <Badge count={badges.totalUnread} label={t("dashboardSidebar.unread")} />}
+              {isNewDest(dest) && !(dest.id === "messages" && badges.totalUnread > 0) && (
+                <span className="absolute -top-1 -right-2.5"><NewBadge variant="dot" /></span>
+              )}
             </span>
             <span className={labelClass}>{labelOf(dest)}</span>
             {active && <span aria-hidden="true" className="absolute top-0 h-[3px] w-8 rounded-b-full bg-[var(--sidebar-active-bar,#28543C)]" />}
@@ -100,6 +117,9 @@ export function MemberBottomNav() {
         <span className="relative">
           <Menu className="w-[22px] h-[22px]" aria-hidden="true" />
           <Badge count={menuBadge} label={t("dashboardSidebar.unread")} />
+          {drawerHasNew && menuBadge === 0 && (
+            <span className="absolute -top-1 -right-2.5"><NewBadge variant="dot" /></span>
+          )}
         </span>
         <span className={labelClass}>{t("memberNav.menu")}</span>
       </button>

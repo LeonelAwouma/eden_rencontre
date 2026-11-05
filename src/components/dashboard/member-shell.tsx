@@ -7,6 +7,7 @@ import { MemberBottomNav } from "./member-bottom-nav";
 import { MemberChromeProvider, useMemberChrome } from "./member-chrome";
 import { MemberDrawer } from "./member-drawer";
 import { MemberHeader } from "./member-header";
+import { MemberAnnouncementsProvider } from "@/components/whats-new/announcements-provider";
 
 function ShellFrame({ children }: { children: ReactNode }) {
   const { immersive } = useMemberChrome();
@@ -35,7 +36,9 @@ function ShellFrame({ children }: { children: ReactNode }) {
 export function MemberShell({ children }: { children: ReactNode }) {
   return (
     <MemberChromeProvider>
-      <ShellFrame>{children}</ShellFrame>
+      <MemberAnnouncementsProvider>
+        <ShellFrame>{children}</ShellFrame>
+      </MemberAnnouncementsProvider>
     </MemberChromeProvider>
   );
 }

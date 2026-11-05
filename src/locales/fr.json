@@ -641,11 +641,11 @@
     "eyebrow": "Données",
     "title": "Politique de",
     "titleHighlight": "Confidentialité",
-    "lastUpdate": "Dernière mise à jour : 22 septembre 2026",
+    "lastUpdate": "Dernière mise à jour : 4 novembre 2026",
     "s1Title": "1. Collecte des Données",
     "s1Body": "Nous collectons les données que vous nous fournissez directement lors de votre inscription : nom, prénom, adresse email, date de naissance, photo de profil et informations de profil. Nous collectons également des données de navigation (adresse IP, type de navigateur) pour assurer le bon fonctionnement du service.",
     "s2Title": "2. Utilisation des Données",
-    "s2Body": "Vos données sont utilisées exclusivement pour : la gestion de votre compte, la mise en relation avec d'autres membres compatibles, l'amélioration de nos services, et la communication concernant votre activité sur la plateforme. Nous ne vendons jamais vos données à des tiers.",
+    "s2Body": "Vos données sont utilisées exclusivement pour : la gestion de votre compte, la mise en relation avec d'autres membres compatibles, l'amélioration de nos services, et la communication concernant votre activité sur la plateforme. Nous mémorisons aussi, dans les données de votre compte, les annonces de nouveautés que vous avez fermées ou découvertes, afin de ne pas vous les présenter de nouveau ; cette information est supprimée avec votre compte. Nous comptabilisons par ailleurs, de façon agrégée et anonyme, les affichages, clics et fermetures de ces annonces, sans aucun identifiant personnel. Nous ne vendons jamais vos données à des tiers.",
     "s3Title": "3. Partage des Données",
     "s3Body": "Vos données personnelles ne sont partagées qu'avec les prestataires techniques nécessaires au fonctionnement du service : Vercel (hébergement du site), Supabase (base de données, authentification et stockage des photos), Hostinger (envoi des e-mails), Google (connexion avec Google et réunions Google Meet) et DiceBear (génération des avatars illustrés). Ces prestataires ne traitent vos données que pour nous fournir leur service. Aucune donnée n'est vendue ni cédée à des fins publicitaires.",
     "s4Title": "4. Sécurité",
@@ -1205,6 +1205,12 @@
     "viewProfile": "Mon profil",
     "closeMenu": "Fermer le menu",
     "unread": "non lus"
+  },
+  "whatsNew": {
+    "new": "Nouveau",
+    "discover": "Découvrir",
+    "close": "Fermer cette annonce",
+    "regionLabel": "Nouveauté"
   },
   "memberNav": {
     "navLabel": "Navigation principale",

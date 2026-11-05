@@ -641,11 +641,11 @@
     "eyebrow": "Data",
     "title": "Privacy",
     "titleHighlight": "Policy",
-    "lastUpdate": "Last updated: September 22, 2026",
+    "lastUpdate": "Last updated: November 4, 2026",
     "s1Title": "1. Data Collection",
     "s1Body": "We collect the data you provide directly during registration: first and last name, email address, date of birth, profile photo, and profile information. We also collect browsing data (IP address, browser type) to ensure the service runs properly.",
     "s2Title": "2. Use of Data",
-    "s2Body": "Your data is used exclusively to: manage your account, connect you with compatible members, improve our services, and communicate with you about your activity on the platform. We never sell your data to third parties.",
+    "s2Body": "Your data is used exclusively to: manage your account, connect you with compatible members, improve our services, and communicate with you about your activity on the platform. We also store, with your account data, which announcements of new features you have dismissed or discovered, so we do not show them to you again; this information is deleted along with your account. We also count the views, clicks and dismissals of these announcements in an aggregated, anonymous way, with no personal identifier. We never sell your data to third parties.",
     "s3Title": "3. Data Sharing",
     "s3Body": "Your personal data is only shared with the technical providers needed to run the service: Vercel (website hosting), Supabase (database, authentication and photo storage), Hostinger (email delivery), Google (sign in with Google and Google Meet meetings) and DiceBear (illustrated avatar generation). These providers only process your data to deliver their service to us. No data is sold or transferred for advertising purposes.",
     "s4Title": "4. Security",
@@ -1205,6 +1205,12 @@
     "viewProfile": "My profile",
     "closeMenu": "Close menu",
     "unread": "unread"
+  },
+  "whatsNew": {
+    "new": "New",
+    "discover": "Discover",
+    "close": "Dismiss this announcement",
+    "regionLabel": "What's new"
   },
   "memberNav": {
     "navLabel": "Main navigation",
