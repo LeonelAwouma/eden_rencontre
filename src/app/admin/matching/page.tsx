@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Heart, HeartHandshake, Gem, Clock, XCircle, Search, X, ChevronLeft, ChevronRight, MessageCircle, UserRound,
-  Sparkles, CalendarHeart, Users, Gauge,
+  Sparkles, CalendarHeart, Users, Gauge, RefreshCw, CheckCircle2, ArrowUpRight,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { avatarSrc } from "@/lib/avatar";
@@ -116,7 +116,7 @@ export default function AdminMatchingPage() {
     try {
       const params = new URLSearchParams({ stage, page: String(page), limit: "20" });
       if (debounced) params.set("search", debounced);
-      const res = await fetch(`/api/admin/matching/couples?${params}`);
+      const res = await fetch(`/api/admin/matching/couples?${params}`, { cache: "no-store" });
       const data = await res.json();
       if (!res.ok) { setError(data.error || "Impossible de charger les couples."); return; }
       setError(null);
@@ -137,95 +137,130 @@ export default function AdminMatchingPage() {
   const scores = useMemo(() => new Map(couples.map((c) => [c.id, compatibility(c)])), [couples]);
   const tabCount = (v: TabKey) => stats[v];
 
+  const currentTabLabel = TABS.find((t) => t.value === stage)?.label || "Tous les duos";
   return (
-    <div className="max-w-6xl">
-      <div className="mb-5">
-        <h1 className="font-headline text-2xl sm:text-3xl font-bold text-foreground tracking-tight leading-tight">Matching</h1>
-        <p className="text-sm text-[#56615A] mt-1 max-w-2xl">
-          Une alliance acceptée permet aux deux membres d&apos;échanger. Un match confirmé correspond à une demande d&apos;engagement acceptée. Chaque duo est suivi une seule fois, de l&apos;invitation à la confirmation.
-        </p>
-      </div>
-
-      {/* Deux indicateurs globaux distincts, puis les étapes de parcours. */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
-        <StatTile label="Alliances acceptées · total" value={stats.accepted} icon={HeartHandshake} hint="Inclut relations, engagements en cours et matchs confirmés" />
-        <StatTile label="Matchs confirmés" value={stats.match} icon={Gem} hint={`${stats.matchThisWeek} cette semaine · engagement accepté`} />
-        <StatTile label="Duos suivis" value={stats.all} icon={Users} hint="Toutes les demandes et alliances, sans compter deux fois un duo" />
-      </div>
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
-        <StatTile label="Alliances en cours" value={stats.relation} icon={MessageCircle} hint="Acceptées · pas encore d’engagement" />
-        <StatTile label="Engagements à valider" value={stats.engagement_pending} icon={HeartHandshake} hint="« S'engager » envoyé, en attente" />
-        <StatTile label="Refus" value={stats.declined} icon={XCircle} hint={`${stats.engagement_declined} engagement(s) refusé(s)`} />
-        <StatTile label="Demandes d'alliance" value={stats.alliance_pending} icon={Clock} hint="pas encore de réponse" />
-      </div>
-
-      {/* Étapes + recherche sur une ligne */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-2.5 mb-5">
-        <div className="flex gap-1.5 overflow-x-auto pb-1 lg:pb-0" role="tablist" aria-label="Étape">
-          {TABS.map((t) => {
-            const active = stage === t.value;
-            return (
-              <button key={t.value} role="tab" aria-selected={active} onClick={() => { setStage(t.value); setPage(1); }}
-                className={cn("flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold whitespace-nowrap border transition-colors",
-                  active ? "bg-primary text-white border-primary" : "bg-white text-[#3F4A43] border-border hover:border-primary/40")}>
-                <t.icon className="w-3.5 h-3.5" /> {t.label}
-                <span className={cn("text-[11px] tabular-nums px-1.5 rounded-full", active ? "bg-white/20" : "bg-muted text-[#6B746E]")}>{tabCount(t.value)}</span>
-              </button>
-            );
-          })}
-        </div>
-        <div className="relative flex-1 min-w-0 lg:max-w-xs lg:ml-auto">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B746E]" />
-          <input type="search" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Pseudo, nom ou email…" aria-label="Rechercher un membre"
-            className="w-full h-10 pl-10 pr-9 bg-white border border-border rounded-xl text-[13px] font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" />
-          {search && (
-            <button onClick={() => { setSearch(""); setPage(1); }} aria-label="Effacer la recherche"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-[#6B746E] hover:bg-muted"><X className="w-3.5 h-3.5" /></button>
-          )}
-        </div>
-      </div>
-
-      {!engagementsAvailable && <div role="status" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Le suivi des demandes d’engagement est indisponible : les matchs confirmés peuvent être sous-estimés.</div>}
-      {error && <div role="alert" className="mb-4 p-3 rounded-xl bg-[#B42318]/10 border border-[#B42318]/20 text-[13px] font-medium text-[#B42318]">{error}</div>}
-
-      {loading ? (
-        <div className="space-y-3" aria-busy="true">
-          {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-[132px] bg-white rounded-2xl border border-border animate-pulse" />)}
-        </div>
-      ) : couples.length === 0 && !error ? (
-        <div className="bg-white rounded-2xl border border-border py-14 px-6 text-center">
-          <HeartHandshake className="w-9 h-9 text-primary/70 mx-auto mb-3" />
-          <p className="text-[15px] font-semibold text-foreground">
-            {debounced ? "Aucun duo ne correspond" : stage === "match" ? "Pas encore de match" : stage === "accepted" ? "Aucune alliance acceptée" : "Rien dans cette étape pour l'instant"}
-          </p>
-          <p className="text-[13px] text-[#56615A] mt-1 max-w-md mx-auto">
-            {debounced ? "Essayez un autre pseudo, nom ou email."
-              : stage === "match" ? "Dès qu'un membre valide la demande d'engagement de l'autre, leur match apparaît ici."
-              : stage === "accepted" ? "Les alliances acceptées apparaissent ici, y compris celles ayant évolué vers un engagement ou un match."
-              : "Les duos apparaîtront ici au fil de leur parcours."}
+    <div className="max-w-6xl space-y-6 pb-8">
+      <header className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="font-headline text-2xl sm:text-3xl font-bold text-foreground tracking-tight">Matching et alliances</h1>
+          <p className="mt-1 text-[13px] leading-relaxed text-[#56615A] max-w-2xl">
+            Suivez chaque demande, les alliances acceptées et les engagements confirmés. Chaque duo est comptabilisé une seule fois.
           </p>
         </div>
-      ) : (
-        <ul className="space-y-3">
-          {couples.map((c) => <CoupleCard key={c.id} c={c} score={scores.get(c.id) ?? null} />)}
-        </ul>
-      )}
+        <button type="button" onClick={() => void load()} disabled={loading}
+          className="inline-flex items-center gap-2 h-9 px-3 rounded-xl border border-border bg-white text-xs font-semibold text-[#3F4A43] hover:border-primary/50 disabled:opacity-50">
+          <RefreshCw className={cn("h-4 w-4", loading && "animate-spin")} aria-hidden="true" /> Actualiser
+        </button>
+      </header>
 
-      {!loading && total > 0 && (
-        <div className="flex items-center justify-between gap-3 mt-5">
-          <p className="text-[12px] text-[#6B746E] font-medium">{total} duo{total > 1 ? "s" : ""}</p>
-          {totalPages > 1 && (
-            <div className="flex items-center gap-1.5">
-              <button onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1} aria-label="Page précédente"
-                className="w-9 h-9 rounded-lg flex items-center justify-center border border-border bg-white hover:bg-muted disabled:opacity-40"><ChevronLeft className="w-4 h-4" /></button>
-              <span className="text-[12px] font-semibold text-[#56615A] px-2 tabular-nums">{page} / {totalPages}</span>
-              <button onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages} aria-label="Page suivante"
-                className="w-9 h-9 rounded-lg flex items-center justify-center border border-border bg-white hover:bg-muted disabled:opacity-40"><ChevronRight className="w-4 h-4" /></button>
+      <section aria-labelledby="overview-title" className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 id="overview-title" className="text-[16px] font-bold text-foreground">Vue d'ensemble</h2>
+          <span className="text-xs text-[#56615A]">Dossiers distincts, tous statuts confondus</span>
+        </div>
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+          <StatTile label="Duos suivis" value={stats.all} icon={Users} hint="Ensemble des demandes" />
+          <StatTile label="En attente de réponse" value={stats.alliance_pending} icon={Clock} hint="Demandes d'alliance reçues" />
+          <StatTile label="Alliances acceptées" value={stats.accepted} icon={HeartHandshake} hint="Inclut les étapes suivantes" />
+          <StatTile label="Alliances refusées" value={stats.declined - stats.engagement_declined} icon={XCircle} hint="Demandes déclinées" />
+        </div>
+        <div className="rounded-2xl border border-border bg-white px-4 py-4 sm:px-5">
+          <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 mb-3">
+            <h3 className="text-[13px] font-bold text-foreground">Où en sont les {stats.accepted} alliances acceptées ?</h3>
+            <span className="text-[12px] text-[#6B746E]">Répartition par étape actuelle, sans doublons</span>
+          </div>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
+            {[
+              { label: "En relation", value: stats.relation, icon: MessageCircle },
+              { label: "Engagement à valider", value: stats.engagement_pending, icon: HeartHandshake },
+              { label: "Match confirmé", value: stats.match, icon: Gem },
+              { label: "Engagement refusé", value: stats.engagement_declined, icon: XCircle },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl border border-border/80 bg-[#FAFAF9] px-3 py-2.5 flex items-center gap-3">
+                <item.icon className="h-4 w-4 text-primary shrink-0" aria-hidden="true" />
+                <div className="min-w-0">
+                  <p className="text-xl leading-none font-bold tabular-nums text-foreground">{item.value}</p>
+                  <p className="mt-1 text-[11px] leading-tight text-[#56615A]">{item.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="mt-3 text-[11px] text-[#6B746E]">
+            « Alliance acceptée » ne signifie pas encore « match confirmé » : ce dernier nécessite un engagement accepté par les deux membres.
+          </p>
+        </div>
+      </section>
+
+      <section aria-labelledby="results-title" className="space-y-4">
+        <div className="rounded-2xl border border-border bg-white px-4 py-4 sm:px-5 space-y-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h2 id="results-title" className="text-[16px] font-bold text-foreground">Suivi des duos</h2>
+              <p className="text-xs text-[#56615A] mt-0.5">Choisissez un état pour afficher les dossiers correspondants.</p>
             </div>
-          )}
+            <div className="relative w-full sm:w-72">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B746E]" aria-hidden="true" />
+              <input type="search" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+                placeholder="Nom, pseudo ou e-mail" aria-label="Rechercher un membre"
+                className="w-full h-10 pl-9 pr-9 border border-border bg-white rounded-xl text-[13px] outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" />
+              {search && <button type="button" onClick={() => { setSearch(""); setPage(1); }} aria-label="Effacer la recherche"
+                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-[#6B746E] hover:bg-muted"><X className="w-4 h-4" /></button>}
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Filtrer les duos selon leur état">
+            {TABS.map((t) => {
+              const active = stage === t.value;
+              return <button key={t.value} type="button" aria-pressed={active}
+                onClick={() => { setStage(t.value); setPage(1); }}
+                className={cn("inline-flex items-center gap-2 h-9 px-3 rounded-lg border text-xs font-semibold transition-colors",
+                  active ? "bg-primary border-primary text-white" : "bg-white border-border text-[#3F4A43] hover:bg-muted hover:border-primary/40")}>
+                <t.icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+                {t.label}
+                <span className={cn("rounded-md min-w-[20px] px-1 py-0.5 text-[11px] tabular-nums",
+                  active ? "bg-white/20 text-white" : "bg-muted text-[#56615A]")}>{tabCount(t.value)}</span>
+              </button>;
+            })}
+          </div>
         </div>
-      )}
+
+        {!engagementsAvailable && <p role="status" className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">
+          Les engagements ne sont pas disponibles ; les matchs confirmés peuvent être sous-estimés.
+        </p>}
+        {error && <p role="alert" className="rounded-xl border border-[#B42318]/20 bg-[#B42318]/10 p-3 text-sm text-[#B42318]">{error}</p>}
+
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-[14px] font-bold text-foreground">{currentTabLabel}</h3>
+          <span className="text-[12px] text-[#56615A] tabular-nums">{total} résultat{total > 1 ? "s" : ""}{debounced ? " pour cette recherche" : ""}</span>
+        </div>
+
+        {loading ? (
+          <div className="space-y-2" aria-busy="true">
+            {Array.from({ length: 4 }).map((_, i) => <div key={i} className="h-32 bg-white rounded-2xl border border-border animate-pulse" />)}
+          </div>
+        ) : couples.length === 0 && !error ? (
+          <div className="bg-white rounded-2xl border border-border py-12 px-6 text-center">
+            <HeartHandshake className="w-8 h-8 text-primary/60 mx-auto mb-3" aria-hidden="true" />
+            <p className="text-sm font-semibold text-foreground">{debounced ? "Aucun duo trouvé" : "Aucun dossier dans cette catégorie"}</p>
+            <p className="text-xs text-[#56615A] mt-1">{debounced ? "Essayez un autre nom ou pseudonyme." : "Les dossiers apparaîtront ici au fil de leur progression."}</p>
+          </div>
+        ) : !error ? (
+          <ul className="space-y-2.5">
+            {couples.map((c) => <CoupleCard key={c.id} c={c} score={scores.get(c.id) ?? null} />)}
+          </ul>
+        ) : null}
+
+        {!loading && !error && total > 0 && (
+          <nav aria-label="Pagination des duos" className="flex items-center justify-between gap-3 pt-1">
+            <p className="text-xs text-[#6B746E]">Page {page} sur {totalPages} · {total} duo{total > 1 ? "s" : ""}</p>
+            {totalPages > 1 && <div className="flex items-center gap-2">
+              <button type="button" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}
+                aria-label="Page précédente" className="w-9 h-9 rounded-lg border border-border bg-white grid place-items-center disabled:opacity-40"><ChevronLeft className="w-4 h-4" /></button>
+              <button type="button" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}
+                aria-label="Page suivante" className="w-9 h-9 rounded-lg border border-border bg-white grid place-items-center disabled:opacity-40"><ChevronRight className="w-4 h-4" /></button>
+            </div>}
+          </nav>
+        )}
+      </section>
     </div>
   );
 }
@@ -265,74 +300,77 @@ function Member({ p, align }: { p: CoupleProfile; align: "left" | "right" }) {
 function CoupleCard({ c, score }: { c: Couple; score: number | null }) {
   const st = STAGE[c.stage];
   const isMatch = c.stage === "match";
-  const inRelation = c.stage !== "alliance_pending" && c.stage !== "declined";
+  const accepted = c.alliance_status === "accepted";
   const engagementBy = c.engagement?.requester_id === c.requester.id ? c.requester : c.addressee;
+  const progress = [
+    { label: "Demande envoyée", done: true },
+    { label: "Alliance acceptée", done: accepted },
+    { label: "Engagement demandé", done: !!c.engagement },
+    { label: "Match confirmé", done: isMatch },
+  ];
+  const dateLabel = isMatch ? "Match confirmé le" : accepted ? "Dossier mis à jour le" : "Demande envoyée le";
+  const dateValue = isMatch ? c.matched_at : accepted ? c.updated_at : c.requested_at;
   return (
-    <li className={cn("bg-white rounded-2xl border p-4 sm:p-5", isMatch ? "border-primary/40" : "border-border")}>
-      {/* Les deux membres, reliés par le cœur du match */}
-      <div className="grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4">
-        <Member p={c.requester} align="left" />
-        <div className="flex sm:flex-col items-center gap-2 justify-center">
-          <span className={cn("w-10 h-10 rounded-full flex items-center justify-center",
-            isMatch ? "bg-primary text-white" : inRelation ? "bg-primary/10 text-primary" : "bg-muted text-[#8A938C]")}>
-            <st.icon className="w-5 h-5" />
-          </span>
-          <span className={cn("inline-flex items-center h-6 px-2.5 rounded-full text-[11.5px] font-bold whitespace-nowrap", st.className)}>{st.label}</span>
+    <li className="rounded-2xl border border-border bg-white p-4 sm:p-5 space-y-3">
+      <div className="flex flex-col lg:flex-row lg:items-center gap-4 lg:justify-between">
+        <div className="grid flex-1 grid-cols-1 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-4 min-w-0">
+          <Member p={c.requester} align="left" />
+          <HeartHandshake className="h-5 w-5 text-primary mx-auto" aria-hidden="true" />
+          <Member p={c.addressee} align="right" />
         </div>
-        <Member p={c.addressee} align="right" />
+        <span className={cn("self-start lg:self-center inline-flex items-center gap-1.5 rounded-lg px-3 py-2 text-xs font-bold whitespace-nowrap", st.className)}>
+          <st.icon className="h-4 w-4" aria-hidden="true" />{st.label}
+        </span>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-border/70 pt-3">
-        {([
-          { label: "Demande d’alliance", active: true, done: c.alliance_status === "accepted", date: c.requested_at },
-          { label: "Alliance acceptée", active: c.alliance_status === "accepted", done: c.alliance_status === "accepted", date: c.relation_at },
-          { label: "Engagement demandé", active: !!c.engagement, done: !!c.engagement, date: c.engagement?.requested_at || null },
-          { label: "Match confirmé", active: isMatch, done: isMatch, date: c.matched_at },
-        ]).map((step, index) => <div key={step.label} className="flex items-center gap-2">
-          {index > 0 && <ChevronRight className="w-3.5 h-3.5 text-[#A0A9A2]" aria-hidden />}
-          <span title={step.date ? formatDate(step.date) : undefined}
-            className={cn("inline-flex items-center rounded-lg px-2.5 py-1.5 text-[11px] font-semibold",
-              step.done ? "bg-primary/10 text-primary" : "bg-muted text-[#6B746E]")}>
-            {step.done ? "✓ " : ""}{step.label}
-          </span>
-        </div>)}
-        {(c.stage === "declined" || c.stage === "engagement_declined") && <span className="text-xs font-semibold text-[#9A4D3C]">· {st.label}</span>}
-      </div>
-      {/* Repères du couple */}
-      <div className="mt-3 pt-3.5 border-t border-border/70 grid grid-cols-2 lg:grid-cols-4 gap-x-4 gap-y-2.5 text-[12.5px]">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 border-t border-border/70 pt-3">
         <Fact icon={Gauge} label="Compatibilité">
-          {score === null ? <span className="text-[#6B746E]">Questionnaire incomplet</span>
-            : <span className="font-bold text-foreground tabular-nums">{score} %</span>}
+          {score === null ? <span className="text-[#6B746E]">Non calculable</span>
+            : <span className="font-bold tabular-nums text-foreground">{score} %</span>}
         </Fact>
-        <Fact icon={isMatch ? CalendarHeart : Clock} label={isMatch ? "Match le" : inRelation ? "En relation depuis" : "Demande d'alliance le"}>
-          {formatDate(isMatch ? c.matched_at : inRelation ? c.relation_at : c.requested_at)}
-        </Fact>
-        <Fact icon={MessageCircle} label="Conversation">
+        <Fact icon={CalendarHeart} label={dateLabel}>{formatDate(dateValue)}</Fact>
+        <Fact icon={MessageCircle} label="Échanges">
           {c.conversation.id
-            ? <>{c.conversation.message_count} message{c.conversation.message_count > 1 ? "s" : ""}{c.conversation.last_message_at && <span className="text-[#6B746E]"> · {relative(c.conversation.last_message_at)}</span>}</>
-            : <span className="text-[#6B746E]">Pas encore commencée</span>}
+            ? <>{c.conversation.message_count} message{c.conversation.message_count > 1 ? "s" : ""}</>
+            : <span className="text-[#6B746E]">Aucun message</span>}
         </Fact>
         <Fact icon={Gem} label="Engagement">
-          {!c.engagement ? <span className="text-[#6B746E]">—</span>
-            : c.engagement.status === "accepted" ? <>Validé · demandé par {engagementBy.pseudo || engagementBy.name || "un membre"}</>
-            : c.engagement.status === "pending" ? <>Demandé par {engagementBy.pseudo || engagementBy.name || "un membre"} le {formatDate(c.engagement.requested_at)}</>
-            : <span className="text-[#6B746E]">Refusé</span>}
+          {!c.engagement ? <span className="text-[#6B746E]">Non demandé</span>
+            : c.engagement.status === "accepted" ? "Confirmé"
+            : c.engagement.status === "pending" ? "En attente"
+            : "Refusé"}
         </Fact>
       </div>
 
-      <div className="mt-3.5 flex flex-wrap gap-2">
-        <Link href={`/admin/users/${c.requester.id}`} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-[12px] font-semibold text-foreground hover:bg-muted">
-          <UserRound className="w-3.5 h-3.5" /> {c.requester.pseudo || c.requester.name || "Profil"}
-        </Link>
-        <Link href={`/admin/users/${c.addressee.id}`} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-[12px] font-semibold text-foreground hover:bg-muted">
-          <UserRound className="w-3.5 h-3.5" /> {c.addressee.pseudo || c.addressee.name || "Profil"}
-        </Link>
-        {c.conversation.id && (
-          <Link href={`/admin/chat-monitoring?user=${c.requester.id}`} className="inline-flex items-center gap-1.5 h-8 px-3 rounded-lg border border-border text-[12px] font-semibold text-primary hover:bg-primary/5">
-            <Sparkles className="w-3.5 h-3.5" /> Voir leur conversation
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border/70 pt-3">
+        <div className="flex flex-wrap items-center gap-1.5" aria-label="Parcours du duo">
+          {progress.map((step, index) => (
+            <span key={step.label} className="inline-flex items-center gap-1.5">
+              {index > 0 && <ChevronRight className="h-3 w-3 text-[#9CA59E]" aria-hidden="true" />}
+              <span className={cn("inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px]",
+                step.done ? "bg-primary/10 text-primary font-semibold" : "bg-muted text-[#6B746E]")}>
+                {step.done && <CheckCircle2 className="h-3 w-3" aria-hidden="true" />}{step.label}
+              </span>
+            </span>
+          ))}
+          {(c.stage === "declined" || c.stage === "engagement_declined") && <span className="text-xs text-[#9A4D3C] font-semibold">· {st.label}</span>}
+        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href={`/admin/users/${c.requester.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+            <UserRound className="h-3.5 w-3.5" aria-hidden="true" /> Profil demandeur
           </Link>
-        )}
+          <Link href={`/admin/users/${c.addressee.id}`} className="inline-flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+            <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" /> Profil destinataire
+          </Link>
+          {c.conversation.id && <Link href={`/admin/chat-monitoring?user=${c.requester.id}`}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-[#56615A] hover:underline">
+            <MessageCircle className="h-3.5 w-3.5" aria-hidden="true" /> Conversation
+          </Link>}
+        </div>
       </div>
+      {c.engagement?.status === "pending" && <p className="text-[11px] text-[#6B746E]">
+        Engagement demandé par {engagementBy.pseudo || engagementBy.name || "un membre"} le {formatDate(c.engagement.requested_at)}.
+      </p>}
     </li>
   );
 }
