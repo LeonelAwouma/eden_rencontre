@@ -11,7 +11,7 @@ const fixtures = [
 ];
 
 vi.mock("@/lib/whats-new", () => ({ getAnnouncement: (id: string) => fixtures.find((a) => a.id === id) }));
-vi.mock("@/lib/api-auth", () => ({ getApprovedUser: async () => mockMember }));
+vi.mock("@/lib/api-auth", () => ({ getMemberOrCoach: async () => (mockMember ? { ...mockMember, kind: "member" } : null) }));
 vi.mock("@/lib/otp", () => ({ checkRateLimit: async () => rateAllowed, recordRateLimit: async () => {} }));
 vi.mock("@/lib/supabase-admin", () => ({ getSupabaseAdmin: () => ({}) }));
 vi.mock("@/lib/whats-new-store", () => ({ writeState: (...args: unknown[]) => (writeSpy as (...a: unknown[]) => Promise<boolean>)(...args) }));

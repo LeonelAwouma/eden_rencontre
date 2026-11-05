@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest";
 import { NextRequest } from "next/server";
 
 let mockMember: { id: string } | null = null;
+let mockKind: "member" | "coach" = "member";
 let mockAdmin: { adminId: string } | null = null;
 let mockSettings: { key: string; value: unknown }[] = [];
 let mockStates: Record<string, { dismissed: boolean; discovered: boolean }> = {};
@@ -28,7 +29,7 @@ vi.mock("@/lib/whats-new", async (importOriginal) => {
   return { ...actual, ANNOUNCEMENTS: fixtures, getAnnouncement: (id: string) => fixtures.find((a) => a.id === id) };
 });
 
-vi.mock("@/lib/api-auth", () => ({ getApprovedUser: async () => mockMember }));
+vi.mock("@/lib/api-auth", () => ({ getMemberOrCoach: async () => (mockMember ? { ...mockMember, kind: mockKind } : null) }));
 vi.mock("@/lib/admin-auth", () => ({ getAdminSession: async () => mockAdmin }));
 vi.mock("@/lib/whats-new-store", () => ({ readStates: async () => mockStates }));
 vi.mock("@/lib/supabase-admin", () => ({
@@ -43,6 +44,7 @@ const get = (surface?: string) =>
 const ids = async (res: Response) => ((await res.json()).announcements as { id: string }[]).map((a) => a.id);
 
 beforeEach(() => {
+  mockKind = "member";
   mockMember = null;
   mockAdmin = null;
   mockSettings = [];
@@ -102,6 +104,16 @@ describe("GET /api/announcements", () => {
     const mine = body.announcements.find((a: { id: string }) => a.id === "pour-membres");
     expect(mine.dismissed).toBe(true);
     expect(mine.discovered).toBe(false);
+  });
+
+  test("un coach ne reçoit jamais l'annonce d'une fonction que le serveur lui refuse (messagerie, parrainage)", async () => {
+    mockMember = { id: "c1" };
+    mockKind = "coach";
+    mockSettings = [{ key: "enabled", value: true }];
+    const { GET } = await import("./route");
+    const list = await ids(await GET(get("member")));
+    expect(list).not.toContain("pour-membres");
+    expect(list).not.toContain("parrainage");
   });
 
   test("un administrateur reçoit les annonces admin", async () => {
