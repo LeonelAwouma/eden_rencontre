@@ -140,6 +140,13 @@ export default function AdminLayout({
       value={{ admin, setAdmin, sidebarCollapsed, setSidebarCollapsed, sidebarOpen, setSidebarOpen }}
     >
       <div className="eden-admin eden-admin-body min-h-screen flex bg-background text-foreground">
+        {/* Lien d'évitement : visible uniquement au focus clavier, saute la navigation. */}
+        <a
+          href="#admin-main"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[70] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2.5 focus:text-[14px] focus:font-semibold focus:text-[#1F2A23] focus:shadow-lg focus:outline-none focus:ring-2 focus:ring-primary/50"
+        >
+          Aller au contenu principal
+        </a>
         <Sidebar
           isOpen={sidebarOpen}
           isCollapsed={sidebarCollapsed}
@@ -166,7 +173,7 @@ export default function AdminLayout({
             className="w-full max-w-[1600px] mx-auto px-4 pt-4 sm:px-6 lg:px-8 empty:hidden"
           />
 
-          <main className="flex-1 px-4 py-6 sm:px-6 lg:px-8 lg:py-8 max-w-[1600px] w-full min-w-0 mx-auto">
+          <main id="admin-main" tabIndex={-1} className="flex-1 focus:outline-none px-4 py-6 sm:px-6 lg:px-8 lg:py-8 max-w-[1600px] w-full min-w-0 mx-auto">
             {children}
           </main>
         </div>

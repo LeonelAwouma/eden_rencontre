@@ -1,14 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Users, Clock, ShieldCheck, ShieldOff } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { CalendarPlus, CalendarCheck, ShieldCheck, ShieldOff, Users } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
-import { KPICard } from "@/components/admin/kpi-card";
+import { StatTile, ErrorState, btn } from "@/components/admin/admin-ui";
+import { AttentionPanel } from "@/components/admin/attention-panel";
 import { UsersChart } from "@/components/admin/users-chart";
-import { QuickActions } from "@/components/admin/quick-actions";
 import { RecentUsers } from "@/components/admin/recent-users";
 import { ActivityTimeline } from "@/components/admin/activity-timeline";
-import { MeetStats } from "@/components/admin/meet-stats";
+import { buildAttentionItems, shareOf, trendFrom } from "@/lib/admin-dashboard";
 
 interface Stats {
   totalUsers: number;
@@ -49,6 +50,8 @@ interface Growth {
   suspendedUsers: number | null;
 }
 
+interface ReportsSummary { pending: number; critical: number }
+
 const HEADER = { title: "Tableau de bord", subtitle: "Vue d’ensemble de votre plateforme" };
 
 export default function DashboardPage() {
@@ -57,26 +60,51 @@ export default function DashboardPage() {
   const [dailyRegistrations, setDailyRegistrations] = useState<{ date: string; count: number }[]>([]);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([]);
+  // `null` tant que non lu ou en cas d'échec : l'encart « À traiter » l'affiche « indisponible », jamais 0.
+  const [reports, setReports] = useState<ReportsSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = useCallback(() => {
+    setLoading(true);
+    setError(null);
+
     fetch("/api/admin/stats")
-      .then((r) => r.json())
-      .then((data) => {
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+        if (!r.ok || !data?.stats) {
+          throw new Error(data?.error || `Le serveur a répondu avec l'erreur ${r.status}.`);
+        }
         setStats(data.stats);
         setGrowth(data.growth || { totalUsers: null, approvedUsers: null, suspendedUsers: null });
         setDailyRegistrations(data.dailyRegistrations || []);
         setRecentUsers(data.recentUsers || []);
         setAuditLog(data.recentAudit || []);
       })
-      .catch(() => {});
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : "Connexion impossible."))
+      .finally(() => setLoading(false));
+
+    // Signalements : lecture secondaire. Un échec n'empêche pas le reste de la page.
+    fetch("/api/admin/reports?limit=1")
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+        if (!r.ok || !data?.stats) throw new Error("reports");
+        setReports({ pending: data.stats.pending ?? 0, critical: data.stats.critical ?? 0 });
+      })
+      .catch(() => setReports(null));
   }, []);
 
-  if (!stats) {
+  useEffect(() => { load(); }, [load]);
+
+  if (loading && !stats) {
     return (
       <div aria-busy="true" aria-label="Chargement du tableau de bord">
         <PageHeader {...HEADER} />
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-          {[...Array(4)].map((_, i) => <div key={i} className="h-[148px] bg-white border border-[#E8E5E0] rounded-2xl animate-pulse" />)}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+          {[...Array(2)].map((_, i) => <div key={i} className="h-[76px] bg-white border border-[#E8E5E0] rounded-2xl animate-pulse" />)}
+        </div>
+        <div className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6">
+          {[...Array(4)].map((_, i) => <div key={i} className="h-[76px] bg-white border border-[#E8E5E0] rounded-2xl animate-pulse" />)}
         </div>
         <div className="grid grid-cols-12 gap-4 lg:gap-6">
           <div className="col-span-12 lg:col-span-8 h-[340px] bg-white border border-[#E8E5E0] rounded-2xl animate-pulse" />
@@ -86,43 +114,66 @@ export default function DashboardPage() {
     );
   }
 
-  // Croissance réelle sur 30 jours ; sans base de comparaison, le badge est omis.
-  const trendFrom = (pct: number | null) =>
-    pct === null ? undefined : { value: `${pct > 0 ? "+" : pct < 0 ? "−" : ""}${Math.abs(pct)} % sur 30 j`, positive: pct >= 0 };
-  const shareOf = (n: number) => (stats.totalUsers > 0 ? Math.round((n / stats.totalUsers) * 100) : 0);
+  if (!stats) {
+    return (
+      <>
+        <PageHeader {...HEADER} />
+        <ErrorState
+          title="Le tableau de bord n'a pas pu être chargé"
+          description={error ?? undefined}
+          onRetry={load}
+        />
+      </>
+    );
+  }
 
-  const KPI_CARDS = [
-    { title: "Utilisateurs", value: stats.totalUsers, icon: Users, accentColor: "blue", trend: trendFrom(growth.totalUsers), hint: trendFrom(growth.totalUsers) ? undefined : "Tous comptes confondus" },
-    { title: "En attente de vérification", value: stats.pendingUsers, icon: Clock, accentColor: "orange", status: stats.pendingUsers > 0 ? "À réviser" : undefined, hint: stats.pendingUsers > 0 ? undefined : "Rien à traiter" },
-    { title: "Comptes approuvés", value: stats.approvedUsers, icon: ShieldCheck, accentColor: "green", trend: trendFrom(growth.approvedUsers), hint: `${shareOf(stats.approvedUsers)} % des inscrits` },
-    // Pour les suspensions, une hausse n'est pas une bonne nouvelle : la couleur s'inverse.
-    { title: "Comptes suspendus", value: stats.suspendedUsers, icon: ShieldOff, accentColor: "red",
-      trend: (() => { const t = trendFrom(growth.suspendedUsers); return t && { ...t, positive: (growth.suspendedUsers ?? 0) <= 0 }; })(),
-      hint: `${shareOf(stats.suspendedUsers)} % des inscrits` },
-  ];
+  const attention = buildAttentionItems({ pendingUsers: stats.pendingUsers, reports });
+  const unpublishedEvents = Math.max(0, stats.totalEvents - stats.publishedEvents);
+  const suspendedTrend = trendFrom(growth.suspendedUsers);
 
   return (
     <>
-      <PageHeader {...HEADER} />
+      <PageHeader
+        {...HEADER}
+        actions={
+          <Link href="/admin/events/new" className={btn.primary}>
+            <CalendarPlus className="w-4 h-4" aria-hidden="true" /> Créer un événement
+          </Link>
+        }
+      />
 
-      {/* KPI : 4 sur une ligne (desktop), 2 × 2 (tablette), 1 par ligne (mobile) */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 lg:gap-6 mb-6 lg:mb-8">
-        {KPI_CARDS.map((card, i) => <KPICard key={card.title} {...card} index={i} />)}
-      </div>
+      <AttentionPanel items={attention} className="mb-6" />
 
-      {/* Grille 12 colonnes */}
+      {/* Indicateurs de supervision : chaque tuile mène à la liste détaillée. */}
+      <section aria-label="Indicateurs clés" className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6 lg:mb-8">
+        <StatTile
+          icon={Users} tone="blue" label="Membres inscrits" value={stats.totalUsers}
+          trend={trendFrom(growth.totalUsers)} hint={growth.totalUsers === null ? "Tous comptes confondus" : undefined}
+          href="/admin/users"
+        />
+        <StatTile
+          icon={ShieldCheck} tone="green" label="Comptes approuvés" value={stats.approvedUsers}
+          trend={trendFrom(growth.approvedUsers)} hint={`${shareOf(stats.approvedUsers, stats.totalUsers)} % des inscrits`}
+          href="/admin/users?status=approved"
+        />
+        <StatTile
+          icon={ShieldOff} tone="red" label="Comptes suspendus" value={stats.suspendedUsers}
+          // Pour les suspensions, une hausse n'est pas une bonne nouvelle : la couleur s'inverse.
+          trend={suspendedTrend && { ...suspendedTrend, positive: (growth.suspendedUsers ?? 0) <= 0 }}
+          hint={`${shareOf(stats.suspendedUsers, stats.totalUsers)} % des inscrits`}
+          href="/admin/users?status=suspended"
+        />
+        <StatTile
+          icon={CalendarCheck} tone="amber" label="Événements publiés" value={stats.publishedEvents}
+          hint={`${unpublishedEvents} non publié${unpublishedEvents > 1 ? "s" : ""}`}
+          href="/admin/events"
+        />
+      </section>
+
       <div className="grid grid-cols-12 gap-4 lg:gap-6">
         <UsersChart data={dailyRegistrations} className="col-span-12 lg:col-span-8" />
-        <QuickActions pendingUsers={stats.pendingUsers} className="col-span-12 lg:col-span-4" />
-        <RecentUsers users={recentUsers} className="col-span-12 lg:col-span-8" />
         <ActivityTimeline entries={auditLog} className="col-span-12 lg:col-span-4" />
-        <MeetStats
-          className="col-span-12"
-          publishedEvents={stats.publishedEvents}
-          totalEvents={stats.totalEvents}
-          totalUsers={stats.totalUsers}
-          approvedUsers={stats.approvedUsers}
-        />
+        <RecentUsers users={recentUsers} className="col-span-12" />
       </div>
     </>
   );

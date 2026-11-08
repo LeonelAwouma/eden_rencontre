@@ -8,7 +8,8 @@
  */
 
 import { useEffect, useState, type ReactNode } from "react";
-import { ChevronLeft, ChevronRight, X, type LucideIcon } from "lucide-react";
+import Link from "next/link";
+import { AlertTriangle, ChevronLeft, ChevronRight, RefreshCw, X, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { avatarSrc } from "@/lib/avatar";
 
@@ -86,24 +87,41 @@ export function SectionTitle({ title, subtitle, actions, id }: { title: string; 
   );
 }
 
-/** Statistique compacte (≈ 76 px) : pastille d'icône, valeur, libellé. */
-export function StatTile({ icon: Icon, label, value, tone = "green", hint }: {
+/**
+ * Statistique compacte (≈ 76 px) : pastille d'icône, valeur, libellé.
+ * `href` rend toute la tuile cliquable (lien vers la liste détaillée) ;
+ * `trend` affiche une évolution réelle (jamais de valeur par défaut).
+ */
+export function StatTile({ icon: Icon, label, value, tone = "green", hint, href, trend }: {
   icon: LucideIcon; label: string; value: number | string; tone?: Tone; hint?: string;
+  href?: string; trend?: { value: string; positive: boolean };
 }) {
-  return (
-    <Card className="flex items-center gap-3 px-4 py-3.5">
+  const body = (
+    <>
       <span className={cn("w-10 h-10 rounded-xl flex items-center justify-center shrink-0", toneBg[tone], toneText[tone])}>
         <Icon className="w-[18px] h-[18px]" aria-hidden="true" />
       </span>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-[24px] font-bold leading-none text-[#1F2A23] tabular-nums" style={HEADING_FONT}>
           {typeof value === "number" ? value.toLocaleString("fr-FR") : value}
         </p>
         <p className="text-[13px] text-[#56615A] mt-1 leading-tight truncate">{label}</p>
+        {trend && (
+          <p className={cn("text-[12px] font-semibold leading-tight mt-0.5", trend.positive ? "text-primary" : "text-[#B83333]")}>{trend.value}</p>
+        )}
         {hint && <p className="text-[12px] text-[#5F6B63] leading-tight">{hint}</p>}
       </div>
-    </Card>
+      {href && <ChevronRight className="w-4 h-4 shrink-0 text-[#9AA39D]" aria-hidden="true" />}
+    </>
   );
+  if (href) {
+    return (
+      <Link href={href} className={cn("block rounded-2xl", focusRing)}>
+        <Card className="flex items-center gap-3 px-4 py-3.5 transition-colors duration-150 hover:border-[#D9D4CC] hover:bg-[#FCFBF9]">{body}</Card>
+      </Link>
+    );
+  }
+  return <Card className="flex items-center gap-3 px-4 py-3.5">{body}</Card>;
 }
 
 // ── Onglets de filtre (contrôle segmenté) ──────────────────────
@@ -185,6 +203,29 @@ export function EmptyBlock({ icon: Icon, title, description, action }: { icon: L
       <p className="text-[15px] font-semibold text-[#1F2A23]">{title}</p>
       {description && <p className="text-[13px] text-[#5F6B63] mt-1 max-w-sm">{description}</p>}
       {action && <div className="mt-4">{action}</div>}
+    </Card>
+  );
+}
+
+/**
+ * Échec de chargement : dit ce qui s'est passé (message réel quand on l'a) et
+ * propose de réessayer, au lieu d'un écran vide ou d'un chargement sans fin.
+ */
+export function ErrorState({ title = "Impossible de charger les données", description, onRetry }: {
+  title?: string; description?: string; onRetry?: () => void;
+}) {
+  return (
+    <Card role="alert" className="flex flex-col items-center justify-center text-center py-12 px-6 border-[#D64545]/25">
+      <span className="w-12 h-12 rounded-2xl bg-[#D64545]/[0.08] flex items-center justify-center mb-3">
+        <AlertTriangle className="w-5 h-5 text-[#B83333]" aria-hidden="true" />
+      </span>
+      <p className="text-[15px] font-semibold text-[#1F2A23]">{title}</p>
+      {description && <p className="text-[13px] text-[#5F6B63] mt-1 max-w-sm">{description}</p>}
+      {onRetry && (
+        <button type="button" onClick={onRetry} className={cn(btn.secondary, "mt-4")}>
+          <RefreshCw className="w-4 h-4" aria-hidden="true" /> Réessayer
+        </button>
+      )}
     </Card>
   );
 }
