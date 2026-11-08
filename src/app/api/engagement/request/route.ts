@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { getAuthenticatedUser } from "@/lib/api-auth";
+import { requireApprovedMember } from "@/lib/api-auth";
 
 // POST — Send an engagement request to the other member of a conversation
 export async function POST(req: NextRequest) {
@@ -9,7 +9,7 @@ export async function POST(req: NextRequest) {
     const { conversationId, requesterId, recipientId } = await req.json();
     // Un « vrai match » naît de cette demande : on vérifie qui l'envoie
     // (sans cela, n'importe qui pouvait écrire au nom d'un autre membre).
-    const user = await getAuthenticatedUser(req);
+    const user = await requireApprovedMember(req);
     if (!user) return NextResponse.json({ error: "Connectez-vous pour continuer." }, { status: 401 });
     if (user.id !== requesterId) return NextResponse.json({ error: "Action non autorisée." }, { status: 403 });
 

@@ -10,6 +10,8 @@ import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { LoadingScreen } from "@/components/loading-screen";
 import { authHeaders } from "@/lib/auth";
+import { fetchActiveCoach } from "@/lib/coach/client";
+import { isMemberLandingPath } from "@/lib/post-login-route";
 
 /**
  * Espace membre réservé aux comptes approuvés par l'admin.
@@ -56,8 +58,24 @@ export function MemberGate({ children }: { children: React.ReactNode }) {
         router.replace(`/login?next=${encodeURIComponent(pathname || "/dashboard")}`);
         return;
       }
-      // Le coach approuvé accède directement aux pages membres sans profil matrimonial.
-      if (account.status === "approved" && account.isCoach) { setAllowed(true); return; }
+      // Un coach n'est JAMAIS autorisé sur la seule foi de profiles.status = « approved » : le serveur
+      // (/api/coach/me → coach_accounts actif + profil coach approuvé) doit le confirmer.
+      if (account.isCoach) {
+        const active = await fetchActiveCoach();
+        if (cancelled) return;
+        if (active === null) { setUnavailable(true); return; }          // erreur technique : écran d'erreur, pas d'accès
+        if (!active) {                                                  // désactivé : session fermée
+          await logout();
+          if (cancelled) return;
+          router.replace("/login?blocked=suspended");
+          return;
+        }
+        // Coach actif : espace professionnel pour les pages d'atterrissage membre ;
+        // les pages partagées (salle de séance, formation) restent ouvertes, sans profil matrimonial.
+        if (isMemberLandingPath(pathname)) { router.replace("/coach"); return; }
+        setAllowed(true);
+        return;
+      }
       // Profil de base incomplet (souvent une inscription Google interrompue) : on
       // garde la session et on renvoie vers le formulaire, avant tout le reste.
       if (!account.profileComplete && account.status !== "rejected" && account.status !== "suspended") {

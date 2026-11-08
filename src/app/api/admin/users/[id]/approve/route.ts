@@ -3,6 +3,7 @@ import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { sendAccountApprovedEmail, getLastEmailError } from "@/lib/email";
 import { reevaluateReferral } from "@/lib/referrals";
+import { refuseIfCoach } from "@/lib/coach/guard";
 
 export async function POST(
   request: NextRequest,
@@ -12,6 +13,9 @@ export async function POST(
     const admin = await requireAdmin();
     const db = getSupabaseAdmin();
     const { id } = await params;
+
+    const coachRefusal = await refuseIfCoach(db, id);
+    if (coachRefusal) return coachRefusal;
 
     // Get the user
     const { data: user, error: fetchError } = await db

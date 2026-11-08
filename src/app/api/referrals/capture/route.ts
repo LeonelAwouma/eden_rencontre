@@ -16,6 +16,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getAuthenticatedUser } from "@/lib/api-auth";
 import { captureReferral } from "@/lib/referrals";
+import { refuseCoachSession } from "@/lib/coach/guard";
 
 export async function POST(request: NextRequest) {
   const user = await getAuthenticatedUser(request);
@@ -26,6 +27,9 @@ export async function POST(request: NextRequest) {
   if (!nonce) return NextResponse.json({ ok: true }); // rien à capturer, jamais une erreur
 
   const db = getSupabaseAdmin();
+  // Un coach n'est jamais parrainé : refus (le parrainage est réservé aux candidats membres).
+  const coachRefusal = await refuseCoachSession(db, user.id);
+  if (coachRefusal) return coachRefusal;
   await captureReferral(db, nonce, user.id);
   return NextResponse.json({ ok: true });
 }

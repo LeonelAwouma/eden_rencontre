@@ -7,6 +7,7 @@ import { reportRegistrationFailure } from "@/lib/registration-incident";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { readRegistrationSelfie, discardLivenessFrames, resolveRegistrationAvatar } from "@/lib/registration-media";
 import { captureReferral, REFERRAL_COOKIE } from "@/lib/referrals";
+import { refuseCoachSession } from "@/lib/coach/guard";
 
 export const maxDuration = 60;
 
@@ -142,6 +143,10 @@ export async function POST(request: NextRequest) {
         { status: 401 }
       );
     }
+
+    // Un coach ne passe jamais par l'inscription membre (profil matrimonial, charte, photos).
+    const coachRefusal = await refuseCoachSession(db, userId);
+    if (coachRefusal) return coachRefusal;
 
     // Unicité du pseudonyme (insensible à la casse), en excluant le compte de
     // l'appelant lui-même (userId résolu ci-dessus depuis sa propre session,

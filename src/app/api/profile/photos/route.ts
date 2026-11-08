@@ -6,7 +6,7 @@
  * écrivaient profile_photos).
  *
  * Sécurité :
- * - Identité uniquement depuis la session authentifiée (getAuthenticatedUser),
+ * - Identité uniquement depuis la session authentifiée (requireApprovedMember),
  *   jamais un identifiant fourni par le client.
  * - Les chemins doivent respecter le même motif que registration-media.ts et
  *   appartenir au dossier déjà associé au membre (ou, si aucune photo
@@ -23,7 +23,7 @@
 import { randomUUID } from "crypto";
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { getAuthenticatedUser } from "@/lib/api-auth";
+import { requireApprovedMember } from "@/lib/api-auth";
 import { REGISTRATION_BUCKET, isMediaPath, resolveMediaUrls } from "@/lib/registration-media";
 
 /** Dossier déjà utilisé par ce membre (une de ses photos existantes), ou un nouveau si aucune n'est conforme. */
@@ -37,7 +37,7 @@ export function folderOf(existingPhotos: unknown): string {
 
 /** Adresses signées des photos déjà enregistrées (bucket privé) — pour les afficher au membre lui-même. */
 export async function GET(request: NextRequest) {
-  const user = await getAuthenticatedUser(request);
+  const user = await requireApprovedMember(request);
   if (!user) return NextResponse.json({ error: "Session expirée. Veuillez vous reconnecter." }, { status: 401 });
   const db = getSupabaseAdmin();
   const { data: profile } = await db.from("profiles").select("profile_photos").eq("id", user.id).maybeSingle();
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const user = await getAuthenticatedUser(request);
+  const user = await requireApprovedMember(request);
   if (!user) return NextResponse.json({ error: "Session expirée. Veuillez vous reconnecter." }, { status: 401 });
 
   const db = getSupabaseAdmin();
@@ -69,7 +69,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function PUT(request: NextRequest) {
-  const user = await getAuthenticatedUser(request);
+  const user = await requireApprovedMember(request);
   if (!user) return NextResponse.json({ error: "Session expirée. Veuillez vous reconnecter." }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));

@@ -9,12 +9,12 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/api-auth";
+import { requireApprovedMember } from "@/lib/api-auth";
 import { deleteCredentials } from "@/lib/google-meet";
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getAuthenticatedUser(request);
+    const user = await requireApprovedMember(request);
     if (!user) {
       return NextResponse.json(
         { error: "Session expirée. Veuillez vous reconnecter." },

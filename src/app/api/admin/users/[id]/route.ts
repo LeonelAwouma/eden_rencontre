@@ -4,6 +4,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { resolveMediaUrl, resolveMediaUrls, isMediaPath, deleteMedia } from "@/lib/registration-media";
 import { clientIp } from "@/lib/api-auth";
 import { summarizeFormation } from "@/lib/formation/admin-summary";
+import { refuseIfCoach } from "@/lib/coach/guard";
 
 export async function GET(
   _request: NextRequest,
@@ -64,6 +65,9 @@ export async function DELETE(
   try { admin = await requireAdmin(); } catch { return NextResponse.json({ error: "Non autorisé" }, { status: 401 }); }
   const db = getSupabaseAdmin();
   const { id } = await params;
+
+  const coachRefusal = await refuseIfCoach(db, id);
+  if (coachRefusal) return coachRefusal;
 
   const [{ data: profile }, { data: authData }] = await Promise.all([
     db.from("profiles").select("email, name, pseudo, status, selfie_url, profile_photos").eq("id", id).maybeSingle(),

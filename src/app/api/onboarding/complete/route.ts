@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { checkQuestionnaireCompletion } from "@/lib/onboarding";
 import { evaluateVerificationBadge } from "@/lib/verification-badge";
 import { reevaluateReferral } from "@/lib/referrals";
+import { refuseCoachSession } from "@/lib/coach/guard";
 
 /**
  * POST — Fin du questionnaire d'onboarding.
@@ -23,6 +24,9 @@ export async function POST(req: NextRequest) {
     const { data: auth } = await supabase.auth.getUser(token);
     const userId = auth.user?.id;
     if (!userId) return NextResponse.json({ error: "Session expirée. Veuillez vous reconnecter." }, { status: 401 });
+
+    const coachRefusal = await refuseCoachSession(supabase, userId);
+    if (coachRefusal) return coachRefusal;
 
     const body = await req.json().catch(() => ({}));
     const answers = body && typeof body.answers === "object" && body.answers !== null && !Array.isArray(body.answers)

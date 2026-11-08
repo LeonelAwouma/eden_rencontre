@@ -1,7 +1,8 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Check, Copy, KeyRound, Pencil, RefreshCw, ShieldCheck, Trash2, UserPlus, X } from "lucide-react";
+import { ArrowLeft, Check, Copy, KeyRound, Pencil, RefreshCw, ShieldCheck, Trash2, UserPlus, Users, X } from "lucide-react";
+import { CoachAssignments } from "@/components/admin/coach-assignments";
 
 type Coach = { user_id: string; email: string; display_name: string; active: boolean; created_at: string; last_login_at?: string | null };
 type Pending = { kind: "delete" | "reset"; coach: Coach } | null;
@@ -36,6 +37,7 @@ export default function AdminCoaches() {
   // Mot de passe temporaire : affiché une seule fois, jamais conservé après fermeture.
   const [temp, setTemp] = useState<{ email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
+  const [showMembers, setShowMembers] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -167,9 +169,11 @@ export default function AdminCoaches() {
                     <div className="flex flex-wrap gap-2">
                       <button disabled={busy} onClick={() => setEditing({ id: c.user_id, name: c.display_name })} className="inline-flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-sm disabled:opacity-50"><Pencil className="w-3.5 h-3.5" />Modifier le nom</button>
                       <button disabled={busy} onClick={() => setPending({ kind: "reset", coach: c })} className="inline-flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-sm disabled:opacity-50"><KeyRound className="w-3.5 h-3.5" />Réinitialiser le mot de passe</button>
+                      <button disabled={busy} onClick={() => setShowMembers(showMembers === c.user_id ? null : c.user_id)} aria-expanded={showMembers === c.user_id} className="inline-flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-sm disabled:opacity-50"><Users className="w-3.5 h-3.5" />Membres</button>
                       <button disabled={busy} onClick={() => void toggle(c)} className="border px-3 py-1.5 rounded-lg text-sm disabled:opacity-50">{busy ? "…" : c.active ? "Suspendre" : "Réactiver"}</button>
                       <button disabled={busy} onClick={() => setPending({ kind: "delete", coach: c })} className="inline-flex items-center gap-1.5 border border-[#E3C5BF] text-[#8A3B2E] px-3 py-1.5 rounded-lg text-sm disabled:opacity-50"><Trash2 className="w-3.5 h-3.5" />Supprimer</button>
                     </div>
+                    {showMembers === c.user_id && <CoachAssignments coachId={c.user_id} coachActive={c.active} />}
                   </li>
                 );
               })}

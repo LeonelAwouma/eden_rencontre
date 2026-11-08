@@ -43,3 +43,6 @@ next-env.d.ts
 # firebase
 firebase-debug.log
 firestore-debug.log
+# fichiers de test temporaires (peuvent contenir des clés) — ne jamais committer
+phase0-tmp-test.mjs
+*-tmp-test.mjs

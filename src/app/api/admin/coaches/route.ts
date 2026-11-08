@@ -4,6 +4,8 @@ import { clientIp } from "@/lib/api-auth";
 import { generateTemporaryPassword } from "@/lib/coach-password";
 import { checkRateLimit, recordRateLimit } from "@/lib/otp";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { mapAssignmentError } from "@/lib/coach/assignment-errors";
+import { restoreCoachSessions, revokeCoachSessions } from "@/lib/coach/lifecycle";
 
 /**
  * Gestion administrative des comptes Coach. Toutes les opérations exigent une session admin.
@@ -94,7 +96,18 @@ export async function POST(req: NextRequest) {
   const { data: created, error: createError } = await db.auth.admin.createUser({
     email, password, email_confirm: true, user_metadata: { name, account_type: "coach" },
   });
-  if (createError || !created?.user) return json({ error: "Création impossible : adresse déjà utilisée ou identifiants invalides." }, 409);
+  if (createError || !created?.user) {
+    // La réponse à l'administrateur reste volontairement générique ; la cause réelle (code, statut, message
+    // de Supabase Auth : adresse déjà utilisée, mot de passe refusé par la politique d'Auth…) est journalisée
+    // côté serveur pour le diagnostic. Jamais le mot de passe, jamais l'adresse saisie.
+    const e = createError as { code?: string; status?: number; message?: string } | null;
+    console.error("[admin/coaches] createUser refusé :", {
+      code: e?.code ?? null,
+      status: e?.status ?? null,
+      message: typeof e?.message === "string" ? e.message.slice(0, 200) : null,
+    });
+    return json({ error: "Création impossible : adresse déjà utilisée ou identifiants invalides." }, 409);
+  }
   const id = created.user.id;
 
   // Annule TOUT ce qui a été créé (le profil part en cascade avec l'utilisateur Auth).
@@ -172,21 +185,34 @@ export async function PATCH(req: NextRequest) {
 
   const active = body.active as boolean;
   if (!coach.profile) return json({ error: "Profil du coach introuvable : intervention nécessaire." }, 409);
-  const previousActive = coach.account.active;
-  const previousStatus = coach.profile.status;
-  const { data, error } = await db.from("coach_accounts")
-    .update({ active, updated_at: new Date().toISOString() }).eq("user_id", id).select("user_id,active").maybeSingle();
-  if (error || !data) return json({ error: "Coach introuvable ou modification impossible" }, 404);
-  const { error: profileError } = await db.from("profiles")
-    .update({ status: active ? "approved" : "suspended" }).eq("id", id);
-  if (profileError) {
-    // Aucune mise à jour partielle : on rétablit la première table.
-    await db.from("coach_accounts").update({ active: previousActive }).eq("user_id", id);
-    await db.from("profiles").update({ status: previousStatus }).eq("id", id);
-    return json({ error: "Statut de profil incohérent, modification annulée." }, 500);
+
+  // Une seule transaction PostgreSQL : coach_accounts, profiles, fin des attributions, audit.
+  // Toute erreur annule l'ensemble : aucun état intermédiaire possible.
+  const { data: result, error } = await db.rpc("coach_set_active", {
+    p_coach: id, p_active: active, p_admin: admin.email || admin.adminId || "admin",
+  });
+  if (error) {
+    const failure = mapAssignmentError(error);
+    return json({ error: failure.message, code: failure.code }, failure.status);
   }
-  await audit(admin, req, active ? "coach_reactivated" : "coach_suspended", id, { email: coach.account.email });
-  return json({ coach: data });
+
+  // Après validation de la transaction (accès déjà refusé en base) : sessions.
+  // Un échec de révocation ne rétablit rien : il est journalisé et signalé dans Pannes.
+  let sessionsRevoked: boolean | undefined;
+  let sessionsRestored: boolean | undefined;
+  if (active) sessionsRestored = await restoreCoachSessions(db, id);
+  else sessionsRevoked = await revokeCoachSessions(db, id, admin.email || admin.adminId || "admin");
+
+  await audit(admin, req, active ? "coach_reactivated" : "coach_suspended", id, {
+    email: coach.account.email,
+    assignments_ended: (result as { assignments_ended?: number } | null)?.assignments_ended ?? 0,
+  });
+  return json({
+    coach: { user_id: id, active },
+    assignments_ended: (result as { assignments_ended?: number } | null)?.assignments_ended ?? 0,
+    ...(sessionsRevoked === false ? { warning: "sessions_not_revoked" } : {}),
+    ...(sessionsRestored === false ? { warning: "sessions_not_restored" } : {}),
+  });
 }
 
 export async function DELETE(req: NextRequest) {
@@ -199,6 +225,15 @@ export async function DELETE(req: NextRequest) {
   const db = getSupabaseAdmin();
   const coach = await loadCoach(db, id); // refuse tout compte qui n'est pas un coach
   if (!coach) return json({ error: "Coach introuvable" }, 404);
+
+  // Un coach qui a un historique d'accompagnements n'est pas supprimé : l'historique doit être conservé
+  // (la base le refuse aussi : clé étrangère RESTRICT). On le suspend à la place. Erreur de lecture : refus.
+  const { count: historyCount, error: historyError } = await db.from("coach_member_assignments")
+    .select("id", { count: "exact", head: true }).eq("coach_id", id);
+  if (historyError) return json({ error: "Vérification de l'historique impossible, suppression refusée." }, 500);
+  if ((historyCount ?? 0) > 0) {
+    return json({ error: "Ce coach a un historique d'accompagnements : suspendez-le plutôt que de le supprimer, afin de conserver les dossiers.", code: "coach_has_history" }, 409);
+  }
 
   const { error } = await db.auth.admin.deleteUser(id);
   if (error) return json({ error: "Suppression impossible." }, 500);

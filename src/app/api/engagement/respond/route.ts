@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { getAuthenticatedUser } from "@/lib/api-auth";
+import { requireApprovedMember } from "@/lib/api-auth";
 
 // POST — Accept or decline a pending engagement request
 export async function POST(req: NextRequest) {
@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
     const db = getSupabaseAdmin();
     const { requestId, responderId, accept } = await req.json();
     // La validation de l'engagement crée le match : elle doit venir du destinataire lui-même.
-    const user = await getAuthenticatedUser(req);
+    const user = await requireApprovedMember(req);
     if (!user) return NextResponse.json({ error: "Connectez-vous pour continuer." }, { status: 401 });
     if (user.id !== responderId) return NextResponse.json({ error: "Action non autorisée." }, { status: 403 });
 

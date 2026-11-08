@@ -9,11 +9,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { getAuthenticatedUser } from "@/lib/api-auth";
+import { requireApprovedMember } from "@/lib/api-auth";
 import { evaluateVerificationBadge } from "@/lib/verification-badge";
 
 export async function POST(req: NextRequest) {
-  const user = await getAuthenticatedUser(req);
+  const user = await requireApprovedMember(req);
   if (!user) return NextResponse.json({ error: "Connectez-vous pour continuer." }, { status: 401 });
   const result = await evaluateVerificationBadge(getSupabaseAdmin(), user.id);
   if (!result) return NextResponse.json({ error: "Profil introuvable." }, { status: 404 });

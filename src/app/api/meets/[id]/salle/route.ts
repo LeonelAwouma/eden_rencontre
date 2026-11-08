@@ -9,7 +9,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getAuthenticatedUser } from "@/lib/api-auth";
+import { getMemberOrCoach } from "@/lib/api-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { buildJoinInfo, isJitsiConfigured, roomOf } from "@/lib/jitsi";
 import { absoluteAvatarUrl } from "@/lib/avatar";
@@ -18,7 +18,7 @@ const OPENS_BEFORE_MIN = 30;
 const CLOSES_AFTER_MIN = 60;
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
-  const user = await getAuthenticatedUser(request);
+  const user = await getMemberOrCoach(request);
   if (!user) return NextResponse.json({ error: "Connectez-vous pour rejoindre la réunion.", code: "unauthenticated" }, { status: 401 });
 
   const { id } = await params;

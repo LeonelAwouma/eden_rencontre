@@ -152,7 +152,14 @@ export async function getAccountKind(userId: string): Promise<AccountKind | null
   let { data, error } = await db.from("profiles").select("status, account_type").eq("id", userId).maybeSingle();
   if (error && (error as { code?: string }).code === "42703") {
     // Colonne account_type absente (migration coachs non exécutée) : seuls des membres peuvent exister.
-    const legacy = await db.from("profiles").select("status").eq("id", userId).maybeSingle();
+    // Garde-fou : si une ligne coach_accounts existe malgré tout, le type est INCONNU → refus
+    // (jamais de repli « membre » pour un compte qui pourrait être un coach).
+    const [legacy, coachRow] = await Promise.all([
+      db.from("profiles").select("status").eq("id", userId).maybeSingle(),
+      db.from("coach_accounts").select("user_id").eq("user_id", userId).maybeSingle(),
+    ]);
+    const coachTableMissing = (coachRow.error as { code?: string } | null)?.code === "42P01"; // table absente : aucun coach possible
+    if (coachRow.data || (coachRow.error && !coachTableMissing)) return null;
     data = legacy.data ? { ...legacy.data, account_type: "member" } : null;
     error = legacy.error;
   }
@@ -176,6 +183,15 @@ export async function getApprovedUser(request: NextRequest): Promise<Authenticat
 
 /** Alias explicite de getApprovedUser. */
 export const getApprovedMember = getApprovedUser;
+
+/**
+ * Garde des routes réservées aux membres : fine enveloppe de getApprovedUser (mêmes règles,
+ * aucune duplication) — profil approuvé ET account_type = 'member'. Type inconnu, coach,
+ * erreur de lecture : refus (null).
+ */
+export async function requireApprovedMember(request: NextRequest): Promise<AuthenticatedUser | null> {
+  return getApprovedUser(request);
+}
 
 /**
  * Membre approuvé OU coach actif. À réserver aux fonctions EXPLICITEMENT partagées

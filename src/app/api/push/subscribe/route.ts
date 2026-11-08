@@ -6,11 +6,11 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { getAuthenticatedUser } from "@/lib/api-auth";
+import { getAuthenticatedUser, getMemberOrCoach } from "@/lib/api-auth";
 import { isPushConfigured, sendPushToUsers } from "@/lib/push-server";
 
 export async function POST(req: NextRequest) {
-  const user = await getAuthenticatedUser(req);
+  const user = await getMemberOrCoach(req);
   if (!user) return NextResponse.json({ error: "Connectez-vous pour continuer." }, { status: 401 });
   if (!isPushConfigured()) return NextResponse.json({ error: "Les notifications ne sont pas encore configurées sur le serveur." }, { status: 503 });
 
@@ -46,6 +46,8 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
+// DELETE : volontairement ouvert à tout jeton valide, même d'un compte désormais suspendu — il ne peut
+// que retirer SA propre souscription (filtre user_id) ; lui interdire ce geste maintiendrait les notifications.
 export async function DELETE(req: NextRequest) {
   const user = await getAuthenticatedUser(req);
   if (!user) return NextResponse.json({ error: "Connectez-vous pour continuer." }, { status: 401 });

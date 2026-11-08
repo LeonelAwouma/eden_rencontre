@@ -5,12 +5,17 @@ type Row = Record<string, unknown>;
 const w = vi.hoisted(() => ({
   admin: true,
   rateOk: true,
-  tables: { coach_accounts: new Map<string, Row>(), profiles: new Map<string, Row>() } as Record<string, Map<string, Row>>,
+  tables: {
+    coach_accounts: new Map<string, Row>(), profiles: new Map<string, Row>(),
+    coach_audit_logs: new Map<string, Row>(), admin_notifications: new Map<string, Row>(), coach_member_assignments: new Map<string, Row>(),
+  } as Record<string, Map<string, Row>>,
   fail: {} as Record<string, boolean>, // "table:op" -> erreur simulée
   authCreateFails: false,
   authUpdateFails: false,
   authDeleteFails: false,
-  spies: { create: [] as unknown[], update: [] as unknown[], del: [] as string[], audit: [] as unknown[][] },
+  rpcError: null as null | { code?: string; message: string }, // erreur de la fonction SQL = rollback complet
+  assignmentsToEnd: 0,
+  spies: { create: [] as unknown[], update: [] as unknown[], del: [] as string[], audit: [] as unknown[][], rpc: [] as { fn: string; args: Record<string, unknown> }[] },
 }));
 
 vi.mock("@/lib/admin-auth", () => ({
@@ -40,6 +45,23 @@ vi.mock("@/lib/supabase-admin", () => ({
         },
       },
     },
+    // Fonction SQL transactionnelle : tout ou rien (w.rpcError = rollback, aucune table modifiée).
+    rpc: async (fn: string, args: Record<string, unknown>) => {
+      w.spies.rpc.push({ fn, args });
+      if (w.rpcError) return { data: null, error: w.rpcError };
+      if (fn === "coach_set_active") {
+        const id = args.p_coach as string;
+        const active = args.p_active as boolean;
+        const account = w.tables.coach_accounts.get(id);
+        const profile = w.tables.profiles.get(id);
+        if (!account) return { data: null, error: { message: "coach_not_found" } };
+        if (!profile || profile.account_type !== "coach") return { data: null, error: { message: "not_a_coach" } };
+        account.active = active;
+        profile.status = active ? "approved" : "suspended";
+        return { data: { active, assignments_ended: active ? 0 : w.assignmentsToEnd }, error: null };
+      }
+      return { data: null, error: { message: "unknown_function" } };
+    },
     from: (table: string) => {
       let op = "select";
       let payload: Row = {};
@@ -53,7 +75,7 @@ vi.mock("@/lib/supabase-admin", () => ({
         if (op === "upsert") { const id = payload[keyOf(table)] as string; map.set(id, { ...(map.get(id) || {}), ...payload }); return { data: null, error: null }; }
         if (op === "update") { rows.forEach((r) => Object.assign(r, payload)); return { data: rows[0] ?? null, error: null }; }
         if (op === "delete") { rows.forEach((r) => map.delete(r[keyOf(table)] as string)); return { data: null, error: null }; }
-        return { data: rows, error: null };
+        return { data: rows, error: null, count: rows.length };
       };
       let single = false;
       Object.assign(q, {
@@ -93,8 +115,10 @@ const VALID = { name: "Awa", email: "Awa@X.fr", password: "motdepasse123" };
 beforeEach(() => {
   w.admin = true; w.rateOk = true; w.fail = {};
   w.authCreateFails = false; w.authUpdateFails = false; w.authDeleteFails = false;
+  w.rpcError = null; w.assignmentsToEnd = 0;
   w.tables.coach_accounts.clear(); w.tables.profiles.clear();
-  w.spies.create.length = 0; w.spies.update.length = 0; w.spies.del.length = 0; w.spies.audit.length = 0;
+  w.tables.coach_audit_logs.clear(); w.tables.admin_notifications.clear(); w.tables.coach_member_assignments.clear();
+  w.spies.create.length = 0; w.spies.update.length = 0; w.spies.del.length = 0; w.spies.audit.length = 0; w.spies.rpc.length = 0;
 });
 
 describe("accès administrateur", () => {
@@ -143,6 +167,22 @@ describe("création", () => {
     const { POST } = await import("./route");
     expect((await POST(call("POST", VALID))).status).toBe(409);
     expect(w.tables.coach_accounts.size).toBe(0);
+  });
+
+  test("refus d'Auth : la cause réelle est journalisée côté serveur (sans mot de passe ni adresse), la réponse reste générique", async () => {
+    w.authCreateFails = true;
+    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { POST } = await import("./route");
+    const res = await POST(call("POST", VALID));
+    expect(res.status).toBe(409);
+    expect((await res.json()).error).toBe("Création impossible : adresse déjà utilisée ou identifiants invalides.");
+    const logged = spy.mock.calls.find((c) => String(c[0]).includes("[admin/coaches] createUser refusé"));
+    expect(logged).toBeDefined();
+    expect(logged![1]).toEqual({ code: null, status: null, message: "exists" });
+    const text = JSON.stringify(spy.mock.calls);
+    expect(text).not.toContain("motdepasse123");
+    expect(text.toLowerCase()).not.toContain("awa@x.fr");
+    spy.mockRestore();
   });
 
   test("échec de coach_accounts : rollback du compte Auth", async () => {
@@ -240,13 +280,59 @@ describe("suspension et réactivation", () => {
     expect(actions()).toEqual(["coach_reactivated"]);
   });
 
-  test("échec du profil : retour à l'état initial, aucun état contradictoire", async () => {
+  test("la désactivation passe par la fonction transactionnelle coach_set_active", async () => {
     seedCoach();
-    w.fail["profiles:update"] = true;
+    const { PATCH } = await import("./route");
+    await PATCH(call("PATCH", { id: ID, active: false }));
+    expect(w.spies.rpc).toEqual([{ fn: "coach_set_active", args: { p_coach: ID, p_active: false, p_admin: "admin@x.fr" } }]);
+  });
+
+  test("erreur en base : rollback complet, aucun état contradictoire, aucun journal, sessions intactes", async () => {
+    seedCoach();
+    w.rpcError = { code: "XX000", message: "boom" };
     const { PATCH } = await import("./route");
     expect((await PATCH(call("PATCH", { id: ID, active: false }))).status).toBe(500);
     expect(w.tables.coach_accounts.get(ID)?.active).toBe(true);
+    expect(w.tables.profiles.get(ID)?.status).toBe("approved");
     expect(actions()).toEqual([]);
+    expect(w.spies.update).toEqual([]); // aucune révocation de session tentée avant le succès de la transaction
+  });
+
+  test("désactivation : les attributions actives sont terminées et le nombre est renvoyé", async () => {
+    seedCoach();
+    w.assignmentsToEnd = 3;
+    const { PATCH } = await import("./route");
+    const res = await PATCH(call("PATCH", { id: ID, active: false }));
+    expect((await res.json()).assignments_ended).toBe(3);
+  });
+
+  test("désactivation : les sessions sont révoquées APRÈS la transaction (blocage du compte)", async () => {
+    seedCoach();
+    const { PATCH } = await import("./route");
+    await PATCH(call("PATCH", { id: ID, active: false }));
+    expect(w.spies.update).toEqual([{ id: ID, p: { ban_duration: "876000h" } }]);
+  });
+
+  test("échec de révocation des sessions : l'accès n'est JAMAIS rétabli, l'échec est journalisé et signalé", async () => {
+    seedCoach();
+    w.authUpdateFails = true;
+    const { PATCH } = await import("./route");
+    const res = await PATCH(call("PATCH", { id: ID, active: false }));
+    const body = await res.json();
+    expect(res.status).toBe(200);
+    expect(body.warning).toBe("sessions_not_revoked");
+    expect(w.tables.coach_accounts.get(ID)?.active).toBe(false);
+    expect(w.tables.profiles.get(ID)?.status).toBe("suspended");
+    expect([...w.tables.coach_audit_logs.values()].map((r) => r.action)).toEqual(["signout_failed"]);
+    expect([...w.tables.admin_notifications.values()][0]?.metadata).toMatchObject({ kind: "coach_session_revocation_failed", user_id: ID });
+    expect(w.spies.update).toHaveLength(3); // 3 tentatives
+  });
+
+  test("réactivation : le blocage de session est levé", async () => {
+    seedCoach({ active: false }, { id: ID, status: "suspended", account_type: "coach" });
+    const { PATCH } = await import("./route");
+    await PATCH(call("PATCH", { id: ID, active: true }));
+    expect(w.spies.update).toEqual([{ id: ID, p: { ban_duration: "none" } }]);
   });
 
   test("profil absent : refus explicite (409) plutôt qu'un état partiel", async () => {
@@ -306,6 +392,25 @@ describe("suppression", () => {
     w.tables.coach_accounts.clear(); w.tables.profiles.clear();
     expect((await DELETE(call("DELETE", { id: ID }))).status).toBe(404);
     expect(w.spies.del).toHaveLength(0);
+  });
+
+  test("un coach qui a un historique d'accompagnements n'est PAS supprimé (409) : on le suspend à la place", async () => {
+    seedCoach();
+    w.tables.coach_member_assignments.set("a1", { id: "a1", coach_id: ID, member_id: "22222222-2222-4222-8222-222222222222", status: "ended" });
+    const { DELETE } = await import("./route");
+    const res = await DELETE(call("DELETE", { id: ID }));
+    expect(res.status).toBe(409);
+    expect((await res.json()).code).toBe("coach_has_history");
+    expect(w.spies.del).toEqual([]);
+    expect(w.tables.coach_member_assignments.size).toBe(1);
+  });
+
+  test("lecture de l'historique impossible : suppression refusée (fail-closed)", async () => {
+    seedCoach();
+    w.fail["coach_member_assignments:select"] = true;
+    const { DELETE } = await import("./route");
+    expect((await DELETE(call("DELETE", { id: ID }))).status).toBe(500);
+    expect(w.spies.del).toEqual([]);
   });
 
   test("échec Auth : 500, pas de journal de suppression", async () => {

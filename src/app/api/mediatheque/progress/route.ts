@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApprovedMember } from "@/lib/api-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
-function extractUser(request: NextRequest): { token: string } | null {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) return null;
-  return { token: authHeader.substring(7) };
-}
-
+// Progression personnelle : réservée aux membres approuvés.
 export async function GET(request: NextRequest) {
   try {
-    const auth = extractUser(request);
-    if (!auth) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-    const db = getSupabaseAdmin();
-    const { data: { user } } = await db.auth.getUser(auth.token);
+    const user = await requireApprovedMember(request);
     if (!user) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
+    const db = getSupabaseAdmin();
 
     const { searchParams } = new URL(request.url);
     const resourceId = searchParams.get("resource_id");
@@ -36,11 +30,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = extractUser(request);
-    if (!auth) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-    const db = getSupabaseAdmin();
-    const { data: { user } } = await db.auth.getUser(auth.token);
+    const user = await requireApprovedMember(request);
     if (!user) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
+    const db = getSupabaseAdmin();
 
     const body = await request.json();
     const { resource_id, status, progress_percent, last_position } = body;

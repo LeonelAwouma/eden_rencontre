@@ -15,15 +15,12 @@ import { useI18n } from "@/lib/i18n";
 import { LoadingScreen } from "@/components/loading-screen";
 import { cn } from "@/lib/utils";
 import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
+import { postLoginDestination } from "@/lib/post-login-route";
+import { fetchActiveCoach } from "@/lib/coach/client";
+import { canAttemptCoachSync, markCoachSyncAttempt, readLastCoachSyncAttempt, syncCoachSessionCookie } from "@/lib/coach/session-cookie";
 
 // Page à rouvrir après connexion (?next=/dashboard/academie). Seuls les chemins
 // internes sont acceptés, pour qu'un lien piégé ne puisse pas rediriger ailleurs.
-function nextPath(): string | null {
-  if (typeof window === "undefined") return null;
-  const next = new URLSearchParams(window.location.search).get("next");
-  return next && next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : null;
-}
-
 export default function LoginPage() {
   const router = useRouter();
   const { t } = useI18n();
@@ -57,12 +54,22 @@ export default function LoginPage() {
     // Reconnexion automatique : si une session existe déjà, on saute la connexion.
     getSession().then(async (session) => {
       if (!session) { setCheckingSession(false); return; }
-      try {
-        const { authHeaders } = await import("@/lib/auth");
-        const response = await fetch("/api/coach/me", { headers: await authHeaders(), cache: "no-store" });
-        if (response.ok) { router.replace(nextPath() || "/dashboard"); return; }
-      } catch { /* Le contrôle d'accès membre vérifie ensuite la session. */ }
-      router.replace(nextPath() || "/searching?returning=1");
+      // Un coach actif (confirmé par le serveur) retrouve son espace professionnel ; sinon parcours membre.
+      const activeCoach = await fetchActiveCoach();
+      const next = new URLSearchParams(window.location.search).get("next");
+      if (activeCoach === true) {
+        // L'espace Coach est protégé par une garde SERVEUR qui lit un cookie (la session du navigateur, elle, vit dans
+        // localStorage). On le ré-établit avant de rediriger. Garde-fou anti-boucle : au plus une tentative automatique
+        // par fenêtre de 20 s, et jamais de redirection si le serveur n'a pas confirmé.
+        if (!canAttemptCoachSync(Date.now(), readLastCoachSyncAttempt())) {
+          setError(t("login.errorCoachSession")); setCheckingSession(false); return;
+        }
+        markCoachSyncAttempt();
+        if (!(await syncCoachSessionCookie())) { setError(t("login.errorCoachSession")); setCheckingSession(false); return; }
+        router.replace(postLoginDestination("coach", next, true));
+        return;
+      }
+      router.replace(postLoginDestination("member", next, true));
     }).catch(() => setCheckingSession(false));
   }, [router]);
 
@@ -123,7 +130,7 @@ export default function LoginPage() {
         });
       }
 
-      router.push(data.user?.role === "coach" ? (nextPath() || "/dashboard") : (nextPath() || "/searching"));
+      router.push(postLoginDestination(data.user?.role === "coach" ? "coach" : "member", new URLSearchParams(window.location.search).get("next")));
     } catch {
       setError(t("login.errorServer"));
       setIsLoading(false);

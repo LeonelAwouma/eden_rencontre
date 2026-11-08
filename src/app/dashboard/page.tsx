@@ -68,6 +68,7 @@ import { useI18n } from "@/lib/i18n";
 import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
 import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
 import { PushOptIn } from "@/components/push-opt-in";
+import { CoachProposalCard } from "@/components/dashboard/coach-proposal-card";
 import { AutoSaveIndicator } from "@/components/autosave-indicator";
 
 // Sentinel activeConvId used before any real conversation with Admin exists yet —
@@ -871,7 +872,8 @@ export default function DashboardPage() {
     // Le pseudonyme est exigé en amont par MemberGate (dashboard/layout.tsx).
     getSession().then((u) => setUser(u));
     authHeaders().then(h => fetch("/api/coach/me", { headers:h, cache:"no-store" }))
-      .then(r => { if(r.ok) setCoachAccess(true); }).catch(() => {});
+      // Coach actif (confirmé par le serveur) : son espace est /coach, pas le tableau de bord membre.
+      .then(r => { if(r.ok) { setCoachAccess(true); router.replace("/coach"); } }).catch(() => {});
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
     if (tabParam && (TABS as string[]).includes(tabParam)) setActiveTab(tabParam as Tab);
@@ -1330,6 +1332,9 @@ export default function DashboardPage() {
 
                 {/* Notifications sur le téléphone : invitation masquable */}
                 <PushOptIn variant="banner" />
+
+                {/* Proposition d'accompagnement d'un coach (consentement) ou suivi actif : rien sinon. */}
+                <CoachProposalCard />
 
                 {/* Nouveauté : une seule carte à la fois, dans le flux (jamais fixe), absente des écrans immersifs. */}
                 <MemberAnnouncement />

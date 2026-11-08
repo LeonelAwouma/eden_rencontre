@@ -356,6 +356,12 @@ export async function signInWithGoogle(): Promise<{ ok: boolean; error?: string 
 }
 
 export async function logout() {
+  // Les cookies de session `httpOnly` posés à la connexion ne sont pas effaçables côté navigateur : sans cet appel
+  // ils resteraient valides (≈ 1 h) après la déconnexion, et la garde serveur de /coach comme les API acceptant le
+  // cookie reconnaîtraient encore l'utilisateur. Échec silencieux : la déconnexion du navigateur a lieu quoi qu'il arrive.
+  if (typeof window !== "undefined") {
+    try { await fetch("/api/auth/session", { method: "DELETE", credentials: "same-origin", cache: "no-store" }); } catch { /* hors ligne */ }
+  }
   if (supabase) {
     await supabase.auth.signOut();
     return;
