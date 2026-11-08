@@ -45,10 +45,12 @@ describe("layout /coach : composant serveur, décision avant tout rendu", () => 
 
   it("aucune seconde logique d'autorisation : la garde réutilise les fonctions du lot 1", () => {
     const guard = stripComments(read("src/lib/coach/page-guard.ts"));
-    for (const reused of ["getAuthenticatedUser", "getActiveCoachByUserId", "getAccountKind", "classifyTarget"]) expect(guard).toContain(reused);
+    // getVerifiedSession = la MÊME résolution d'authentification que getAuthenticatedUser (qui l'enveloppe), avec le jeton vérifié.
+    for (const reused of ["getVerifiedSession", "getActiveCoachByUserId", "getAccountKind", "classifyTarget"]) expect(guard).toContain(reused);
+    expect(stripComments(read("src/lib/api-auth.ts"))).toMatch(/getAuthenticatedUser[\s\S]*?getVerifiedSession\(request\)\)\?\.user/);
     expect(guard).not.toMatch(/\.from\(["']/); // aucune requête propre : tout passe par les fonctions partagées
     const apiGuard = stripComments(read("src/lib/coach-auth.ts"));
-    expect(apiGuard).toMatch(/getActiveCoach\(req[^)]*\)[\s\S]*getActiveCoachByUserId\(user\.id\)/); // les API utilisent la MÊME règle
+    expect(apiGuard).toMatch(/getActiveCoach\(req[^)]*\)[\s\S]*getActiveCoachByUserId\(session\.user\.id\)/); // les API utilisent la MÊME règle
   });
 
   it("le middleware n'est pas le mécanisme de garde (un contrôle de présence de JWT ne prouve rien)", () => {
@@ -104,11 +106,16 @@ describe("aucun traitement client ne conclut « suspendu » ni ne déconnecte su
 });
 
 describe("déconnexion et reconnexion : cookies de session", () => {
-  it("logout() efface aussi les cookies httpOnly côté serveur", () => {
+  it("logout() passe par le déroulé de révocation : DELETE serveur (cookies httpOnly + sessions A/B) puis signOut local", () => {
     const auth = stripComments(read("src/lib/auth.ts"));
     const logout = auth.slice(auth.indexOf("export async function logout"), auth.indexOf("export function isProfileComplete"));
-    expect(logout).toMatch(/fetch\("\/api\/auth\/session",\s*\{\s*method:\s*"DELETE"/);
-    expect(logout).toContain("signOut");
+    expect(logout).toContain("performLogout(browserLogoutDeps())");
+    const browser = stripComments(read("src/lib/logout-browser.ts"));
+    expect(browser).toMatch(/fetch\("\/api\/auth\/session",\s*\{[\s\S]*?method:\s*"DELETE"/);
+    expect(browser).toContain('signOut({ scope: "local" })');
+    const flow = stripComments(read("src/lib/logout-flow.ts"));
+    expect(flow.indexOf("deps.deleteSession(")).toBeGreaterThan(-1);
+    expect(flow.indexOf("deps.signOutLocal")).toBeGreaterThan(flow.indexOf("deps.deleteSession(")); // révocation serveur AVANT le nettoyage local
   });
 
   it("la page de connexion resynchronise le cookie AVANT de rediriger un coach, avec garde-fou anti-boucle", () => {

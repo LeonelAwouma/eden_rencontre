@@ -1,5 +1,6 @@
 import { NextRequest } from "next/server";
-import { getAuthenticatedUser } from "@/lib/api-auth";
+import { getVerifiedSession } from "@/lib/api-auth";
+import { isCoachSessionAccepted } from "@/lib/session-guard";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 /**
@@ -35,7 +36,10 @@ export async function getActiveCoachByUserId(userId: string): Promise<ActiveCoac
 }
 
 export async function getActiveCoach(req: NextRequest): Promise<ActiveCoach | null> {
-  const user = await getAuthenticatedUser(req);
-  if (!user) return null;
-  return getActiveCoachByUserId(user.id);
+  const session = await getVerifiedSession(req);
+  if (!session) return null;
+  const coach = await getActiveCoachByUserId(session.user.id);
+  if (!coach) return null;
+  // Option B : un ancien JWT de coach (session révoquée) est refusé quand COACH_REQUIRE_ACTIVE_SESSION est activé.
+  return (await isCoachSessionAccepted(session.accessToken)) ? coach : null;
 }

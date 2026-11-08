@@ -19,7 +19,8 @@ export async function fetchActiveCoach(): Promise<boolean | null> {
 /** Identité du coach, fournie par la garde serveur du layout `/coach` (jamais déduite côté navigateur). */
 export interface CoachMe { id: string; email: string; name: string }
 
-export type CoachApiResult<T> = { ok: true; data: T } | { ok: false; status: number };
+/** `code` / `candidates` : code d'erreur stable de l'API (jamais un message technique) ; heures proposées si l'heure locale est ambiguë. */
+export type CoachApiResult<T> = { ok: true; data: T } | { ok: false; status: number; code?: string; candidates?: [string, string] };
 
 /** Appel d'une route `/api/coach/*` avec le jeton de session. `status` 0 = erreur réseau. */
 export async function coachApi<T>(path: string, init?: { method?: string; body?: unknown }): Promise<CoachApiResult<T>> {
@@ -31,7 +32,16 @@ export async function coachApi<T>(path: string, init?: { method?: string; body?:
       body: init?.body !== undefined ? JSON.stringify(init.body) : undefined,
       cache: "no-store",
     });
-    if (!res.ok) return { ok: false, status: res.status };
+    if (!res.ok) {
+      let code: string | undefined;
+      let candidates: [string, string] | undefined;
+      try {
+        const j = (await res.json()) as { code?: unknown; candidates?: unknown };
+        if (typeof j.code === "string") code = j.code;
+        if (Array.isArray(j.candidates) && j.candidates.length === 2 && j.candidates.every((c) => typeof c === "string")) candidates = [j.candidates[0], j.candidates[1]] as [string, string];
+      } catch { /* corps absent ou illisible */ }
+      return { ok: false, status: res.status, code, candidates };
+    }
     return { ok: true, data: (await res.json()) as T };
   } catch {
     return { ok: false, status: 0 };

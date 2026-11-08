@@ -10,6 +10,7 @@
 
 import { NextRequest } from "next/server";
 import { getSupabaseAdmin } from "./supabase-admin";
+import { isCoachSessionAccepted } from "./session-guard";
 
 export interface AuthenticatedUser {
   id: string;
@@ -30,7 +31,31 @@ export interface AuthenticatedUser {
 export async function getAuthenticatedUser(
   request: NextRequest
 ): Promise<AuthenticatedUser | null> {
+  return (await getVerifiedSession(request))?.user ?? null;
+}
+
+/** Utilisateur ET jeton d'accès que le service d'authentification vient de vérifier (`getUser`). */
+export interface VerifiedSession {
+  user: AuthenticatedUser;
+  /** Jeton déjà authentifié par le service Auth : seul un tel jeton peut être décodé pour lire son `session_id`. */
+  accessToken: string;
+}
+
+/**
+ * Même résolution que `getAuthenticatedUser` (une seule logique d'authentification), mais retourne aussi le jeton
+ * vérifié. Sert à la vérification « la session existe-t-elle encore ? » des routes Coach, sans WeakMap globale :
+ * le jeton est transmis explicitement à l'appelant.
+ */
+export async function getVerifiedSession(
+  request: NextRequest
+): Promise<VerifiedSession | null> {
   const db = getSupabaseAdmin();
+  const verified = async (token: string): Promise<VerifiedSession | null> => {
+    const {
+      data: { user },
+    } = await db.auth.getUser(token);
+    return user?.id && user?.email ? { user: { id: user.id, email: user.email }, accessToken: token } : null;
+  };
 
   // ── Strategy 1: Authorization header ──────────────────────
   const authHeader = request.headers.get("authorization");
@@ -38,12 +63,8 @@ export async function getAuthenticatedUser(
     const token = authHeader.substring(7).trim();
     if (token) {
       try {
-        const {
-          data: { user },
-        } = await db.auth.getUser(token);
-        if (user?.id && user?.email) {
-          return { id: user.id, email: user.email };
-        }
+        const v = await verified(token);
+        if (v) return v;
       } catch {
         // Invalid token — continue to next strategy
       }
@@ -83,12 +104,8 @@ export async function getAuthenticatedUser(
       }
 
       if (accessToken) {
-        const {
-          data: { user },
-        } = await db.auth.getUser(accessToken);
-        if (user?.id && user?.email) {
-          return { id: user.id, email: user.email };
-        }
+        const v = await verified(accessToken);
+        if (v) return v;
       }
     } catch {
       // Continue to next cookie
@@ -102,12 +119,8 @@ export async function getAuthenticatedUser(
 
   if (simpleToken) {
     try {
-      const {
-        data: { user },
-      } = await db.auth.getUser(simpleToken);
-      if (user?.id && user?.email) {
-        return { id: user.id, email: user.email };
-      }
+      const v = await verified(simpleToken);
+      if (v) return v;
     } catch {
       // Invalid token
     }
@@ -200,10 +213,14 @@ export async function requireApprovedMember(request: NextRequest): Promise<Authe
 export async function getMemberOrCoach(
   request: NextRequest
 ): Promise<(AuthenticatedUser & { kind: AccountKind }) | null> {
-  const user = await getAuthenticatedUser(request);
-  if (!user) return null;
-  const kind = await getAccountKind(user.id);
-  return kind ? { ...user, kind } : null;
+  const session = await getVerifiedSession(request);
+  if (!session) return null;
+  const kind = await getAccountKind(session.user.id);
+  if (!kind) return null;
+  // Un Coach dont la session a été révoquée ne peut pas contourner la garde via une route partagée.
+  // Les membres ne passent jamais par cette vérification.
+  if (kind === "coach" && !(await isCoachSessionAccepted(session.accessToken))) return null;
+  return { ...session.user, kind };
 }
 
 /** Adresse IP du client (Vercel renseigne x-forwarded-for), pour les limites de tentatives. */

@@ -4,7 +4,9 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { useRouter } from "next/navigation";
 import { logout as authLogout } from "@/lib/auth";
 import type { CoachMe } from "@/lib/coach/client";
+import { createCookieSyncScheduler, startCookieSync } from "@/lib/coach/cookie-sync";
 import { COACH_COOKIE_REFRESH_MS, syncCoachSessionCookie } from "@/lib/coach/session-cookie";
+import { isLoggingOut } from "@/lib/logout-state";
 
 interface CoachChromeValue {
   coach: CoachMe;
@@ -38,12 +40,21 @@ export function CoachChromeProvider({ coach, children }: { coach: CoachMe; child
   }, [router]);
 
   // Le cookie de session lu par la garde serveur expire avec le jeton (≈ 1 h) alors que la session du navigateur,
-  // elle, est renouvelée : on le rafraîchit régulièrement pour qu'un rechargement de page n'oblige pas à repasser
-  // par la connexion. Échec silencieux : la garde serveur reste l'autorité.
+  // elle, est renouvelée : on le resynchronise toutes les 30 min, au retour de l'onglet (après une veille) et au retour
+  // du réseau. Un seul planificateur : single-flight, délai minimal, aucune synchro onglet masqué / hors ligne / après
+  // déconnexion. Un refus du serveur (suspension…) redemande au SERVEUR de rejouer la garde : jamais de cookie accordé
+  // parce que le navigateur se réveille. Une erreur réseau ne déconnecte personne.
   useEffect(() => {
-    const id = setInterval(() => { void syncCoachSessionCookie(); }, COACH_COOKIE_REFRESH_MS);
-    return () => clearInterval(id);
-  }, []);
+    const scheduler = createCookieSyncScheduler({
+      now: () => Date.now(),
+      isVisible: () => document.visibilityState === "visible",
+      isOnline: () => navigator.onLine !== false,
+      isLoggingOut,
+      sync: syncCoachSessionCookie,
+      onDenied: () => { void onDenied(); },
+    });
+    return startCookieSync(scheduler, { doc: document, win: window, setInterval: (fn, ms) => setInterval(fn, ms), clearInterval: (id) => clearInterval(id as ReturnType<typeof setInterval>) }, COACH_COOKIE_REFRESH_MS);
+  }, [onDenied]);
 
   const value = useMemo<CoachChromeValue>(() => ({
     coach,

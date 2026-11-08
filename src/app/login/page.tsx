@@ -17,6 +17,7 @@ import { cn } from "@/lib/utils";
 import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 import { postLoginDestination } from "@/lib/post-login-route";
 import { fetchActiveCoach } from "@/lib/coach/client";
+import { LogoutNotice } from "@/components/logout-notice";
 import { canAttemptCoachSync, markCoachSyncAttempt, readLastCoachSyncAttempt, syncCoachSessionCookie } from "@/lib/coach/session-cookie";
 
 // Page à rouvrir après connexion (?next=/dashboard/academie). Seuls les chemins
@@ -65,7 +66,7 @@ export default function LoginPage() {
           setError(t("login.errorCoachSession")); setCheckingSession(false); return;
         }
         markCoachSyncAttempt();
-        if (!(await syncCoachSessionCookie())) { setError(t("login.errorCoachSession")); setCheckingSession(false); return; }
+        if ((await syncCoachSessionCookie()) !== "ok") { setError(t("login.errorCoachSession")); setCheckingSession(false); return; }
         router.replace(postLoginDestination("coach", next, true));
         return;
       }
@@ -317,6 +318,8 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
+
+            <LogoutNotice />
 
             {error && (
               <div className="flex items-start gap-3 bg-destructive/10 border border-destructive/20 rounded-xl p-4 animate-in fade-in slide-in-from-top-1 duration-300">

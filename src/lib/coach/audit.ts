@@ -4,8 +4,8 @@ type Db = ReturnType<typeof getSupabaseAdmin>;
 
 export type CoachActorKind = "admin" | "coach" | "member" | "system";
 
-/** Clés qui ne doivent JAMAIS entrer dans le journal (contenu de notes, secrets). */
-const FORBIDDEN_KEY = /(content|note|notes|body|observation|password|passwd|token|secret|key|authorization)/i;
+/** Clés qui ne doivent JAMAIS entrer dans le journal (contenu de notes, de comptes rendus et d'actions, secrets). */
+const FORBIDDEN_KEY = /(content|note|notes|body|observation|objectives?|topics?|steps?|points|summary|title|description|password|passwd|token|secret|key|authorization)/i;
 
 /** Ne garde que des informations opérationnelles : identifiants, compteurs, codes courts. */
 export function sanitizeAuditMetadata(meta: Record<string, unknown> | undefined): Record<string, unknown> {
