@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { getAuthenticatedUser } from "@/lib/api-auth";
+import { getMemberOrCoach } from "@/lib/api-auth";
 
 // GET — Get meeting notifications for the authenticated user
 export async function GET(req: NextRequest) {
   try {
-    const authUser = await getAuthenticatedUser(req);
+    const authUser = await getMemberOrCoach(req);
     if (!authUser) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }
@@ -31,7 +31,7 @@ export async function GET(req: NextRequest) {
 // PATCH — Mark notification(s) as read
 export async function PATCH(req: NextRequest) {
   try {
-    const authUser = await getAuthenticatedUser(req);
+    const authUser = await getMemberOrCoach(req);
     if (!authUser) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }

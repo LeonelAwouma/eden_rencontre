@@ -33,6 +33,9 @@ export async function GET(request: NextRequest) {
       .or(`name.ilike.%${q}%,pseudo.ilike.%${q}%,email.ilike.%${q}%`)
       .neq("email", ADMIN_SYSTEM_EMAIL);
     if (!allStatuses) query = query.eq("status", "approved");
+    // kind=member : comptes membres uniquement, filtre APPLIQUÉ ICI (jamais seulement dans l'interface).
+    // Utilisé par le sélecteur d'attribution d'un coach : un coach n'est pas attribuable.
+    if (searchParams.get("kind") === "member") query = query.eq("account_type", "member");
     const { data: users, error } = await query.order("name", { ascending: true }).limit(limit);
 
     if (error) {

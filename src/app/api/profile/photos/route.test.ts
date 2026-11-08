@@ -33,6 +33,7 @@ const createSignedUploadUrlSpy = vi.fn();
 
 vi.mock("@/lib/api-auth", () => ({
   getAuthenticatedUser: async () => mockUser,
+  requireApprovedMember: async () => mockUser,
   clientIp: () => "test-ip",
 }));
 

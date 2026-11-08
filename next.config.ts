@@ -13,6 +13,12 @@ const nextConfig: NextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // L'espace Coach est personnalisé (garde serveur par session) : jamais mis en cache par un navigateur ou un relais.
+  async headers() {
+    return [
+      { source: '/coach/:path*', headers: [{ key: 'Cache-Control', value: 'private, no-store' }] },
+    ];
+  },
   // L'Académie admin vit désormais dans la médiathèque.
   async redirects() {
     return [

@@ -66,16 +66,33 @@ export async function POST(request: NextRequest) {
     }
 
     // Check profile status
-    const { data: profile } = await db
+    let { data: profile, error: profileError } = await db
       .from("profiles")
-      .select("status, name, email")
+      .select("status, name, email, account_type")
       .eq("id", userId)
-      .single();
+      .maybeSingle();
+    if (profileError && (profileError as { code?: string }).code === "42703") {
+      // Colonne account_type absente (migration coachs non exécutée) : seuls des membres existent.
+      const legacy = await db.from("profiles").select("status, name, email").eq("id", userId).maybeSingle();
+      profile = legacy.data ? { ...legacy.data, account_type: "member" } : null;
+    }
 
     const { data: coachAccount } = await db.from("coach_accounts")
       .select("user_id, active").eq("user_id", userId).maybeSingle();
-    const coachActive = coachAccount?.active === true;
-    const status = coachActive ? "approved" : profile?.status || "pending";
+
+    // Compte Coach = ligne coach_accounts OU profil marqué coach. Les deux doivent exister et
+    // concorder : un coach incohérent est REFUSÉ, jamais rétrogradé en membre ni promu approuvé.
+    const isCoachAccount = !!coachAccount || profile?.account_type === "coach";
+    if (isCoachAccount && !(coachAccount && profile && profile.account_type === "coach")) {
+      console.info(`[login] compte Coach incohérent (profil/coach_accounts) pour le compte ${userId}`);
+      await db.auth.admin.signOut(authData.session?.access_token || "");
+      return NextResponse.json(
+        { error: "coach_inconsistent", message: "Accès Coach indisponible. Contactez l'administration." },
+        { status: 403 }
+      );
+    }
+    // Un coach désactivé est suspendu, même si son profil indiquait encore « approuvé ».
+    const status = isCoachAccount && coachAccount?.active !== true ? "suspended" : profile?.status || "pending";
 
     // Connexion refusée (403) : le motif apparaît dans les logs Vercel, pour savoir
     // tout de suite s'il s'agit d'un compte en attente, refusé ou suspendu.
@@ -117,6 +134,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Garde finale : tout statut inattendu est refusé (aucune connexion « par défaut »).
+    if (status !== "approved") {
+      await db.auth.admin.signOut(authData.session?.access_token || "");
+      return NextResponse.json({ error: "forbidden", message: "Accès refusé." }, { status: 403 });
+    }
+
+    // Dernière connexion d'un Coach (échec silencieux si la migration n'est pas encore exécutée).
+    if (isCoachAccount) {
+      try {
+        await db.from("coach_accounts").update({ last_login_at: new Date().toISOString() }).eq("user_id", userId);
+      } catch { /* non bloquant */ }
+    }
+
     // User is approved — return session info
     // Set the session cookie
     const response = NextResponse.json({
@@ -126,7 +156,7 @@ export async function POST(request: NextRequest) {
         name: profile?.name,
         email: profile?.email || cleanEmail,
         status,
-        role: coachActive ? "coach" : "member",
+        role: isCoachAccount ? "coach" : "member",
       },
     });
 

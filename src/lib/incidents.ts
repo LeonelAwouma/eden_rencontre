@@ -51,6 +51,12 @@ const KINDS: Record<string, KindInfo> = {
     explanation: "L'envoi des photos vers le serveur a échoué depuis le navigateur du membre. « Failed to fetch » signifie que la connexion a été interrompue (réseau mobile instable, photos lourdes).",
     advice: "Le membre peut réessayer avec une meilleure connexion. À défaut, importez ses photos depuis Admin → Photos pour le débloquer.",
   },
+  // ── Espace Coach (metadata.kind, écrit par src/lib/coach/lifecycle.ts) ──
+  coach_session_revocation_failed: {
+    category: "access", label: "Coach : sessions non révoquées", severity: "high",
+    explanation: "Un coach a été désactivé : son accès est bien coupé (la base de données refuse déjà toutes ses requêtes), mais la révocation de ses sessions de connexion a échoué. Sa session actuelle ne lui donne plus aucun droit.",
+    advice: "Ouvrez Admin → Utilisateurs → Coachs et relancez la désactivation du coach pour retenter la révocation. L'accès reste refusé en attendant.",
+  },
   // ── Inscription en échec (metadata.step) ──
   account_creation: {
     category: "registration", label: "Inscription : création du compte", severity: "high",

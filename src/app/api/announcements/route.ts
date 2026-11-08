@@ -12,7 +12,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { getApprovedUser } from "@/lib/api-auth";
+import { getMemberOrCoach } from "@/lib/api-auth";
+import type { AvailabilityKey } from "@/lib/whats-new";
 import { getAdminSession } from "@/lib/admin-auth";
 import { listLive, toView } from "@/lib/whats-new-server";
 import { readStates } from "@/lib/whats-new-store";
@@ -21,6 +22,12 @@ import type { Surface } from "@/lib/whats-new";
 const SURFACES: readonly Surface[] = ["public", "member", "admin"];
 const NO_STORE = { "Cache-Control": "no-store" };
 
+/**
+ * Un coach n'a accès qu'aux fonctionnalités explicitement partagées (formation). Il ne reçoit
+ * jamais l'annonce d'une fonction que le serveur lui refuserait (messagerie, parrainage…).
+ */
+const COACH_VISIBLE: readonly AvailabilityKey[] = ["formation_pillars"];
+
 export async function GET(request: NextRequest) {
   const surface = request.nextUrl.searchParams.get("surface") as Surface | null;
   if (!surface || !SURFACES.includes(surface)) {
@@ -28,10 +35,12 @@ export async function GET(request: NextRequest) {
   }
 
   let userId: string | null = null;
+  let isCoach = false;
   if (surface === "member") {
-    const user = await getApprovedUser(request);
+    const user = await getMemberOrCoach(request);
     if (!user) return NextResponse.json({ error: "Non autorisé." }, { status: 401, headers: NO_STORE });
     userId = user.id;
+    isCoach = user.kind === "coach";
   } else if (surface === "admin") {
     const session = await getAdminSession();
     if (!session) return NextResponse.json({ error: "Non autorisé." }, { status: 401, headers: NO_STORE });
@@ -39,7 +48,8 @@ export async function GET(request: NextRequest) {
 
   try {
     const db = getSupabaseAdmin();
-    const live = await listLive(surface, { db, userId });
+    const found = await listLive(surface, { db, userId });
+    const live = isCoach ? found.filter((a) => COACH_VISIBLE.includes(a.availability)) : found;
     const states = userId ? await readStates(db, userId) : {};
     return NextResponse.json(
       { announcements: live.map((a) => toView(a, states[a.id])) },

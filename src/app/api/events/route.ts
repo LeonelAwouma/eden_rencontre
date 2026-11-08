@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApprovedMember } from "@/lib/api-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 /**
@@ -13,14 +14,10 @@ export async function GET(request: NextRequest) {
   try {
     const db = getSupabaseAdmin();
 
-    const token = request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-    if (!token) return NextResponse.json({ error: "Non connecté." }, { status: 401 });
-    const { data: auth } = await db.auth.getUser(token);
-    const userId = auth.user?.id;
-    if (!userId) return NextResponse.json({ error: "Non connecté." }, { status: 401 });
-
-    const { data: profile } = await db.from("profiles").select("status").eq("id", userId).maybeSingle();
-    if (profile?.status !== "approved") return NextResponse.json({ error: "Accès réservé aux membres approuvés." }, { status: 403 });
+    // Membres approuvés uniquement (account_type = 'member' vérifié côté serveur : un coach n'est pas un membre).
+    const member = await requireApprovedMember(request);
+    if (!member) return NextResponse.json({ error: "Accès réservé aux membres approuvés." }, { status: 403 });
+    const userId = member.id;
 
     const { searchParams } = new URL(request.url);
     const page = Math.max(parseInt(searchParams.get("page") || "1", 10) || 1, 1);

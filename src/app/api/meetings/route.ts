@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { getAuthenticatedUser } from "@/lib/api-auth";
+import { getMemberOrCoach } from "@/lib/api-auth";
 
 // GET — Get meetings for the authenticated user (participant only)
 export async function GET(req: NextRequest) {
   try {
     // L'identité vient de la session, jamais d'un paramètre d'URL :
     // sinon n'importe qui lit les rendez-vous d'autrui (IDOR).
-    const authUser = await getAuthenticatedUser(req);
+    const authUser = await getMemberOrCoach(req);
     if (!authUser) {
       return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
     }

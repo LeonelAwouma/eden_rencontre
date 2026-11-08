@@ -22,7 +22,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { getApprovedUser } from "@/lib/api-auth";
+import { getMemberOrCoach } from "@/lib/api-auth";
 import { findLesson } from "@/lib/formation/batir-sur-le-roc";
 import { pillarOfLesson } from "@/lib/formation/structure";
 import { hasFeatureAccess } from "@/lib/subscription/effective";
@@ -59,7 +59,7 @@ async function resolveLessonAssets(db: ReturnType<typeof getSupabaseAdmin>, less
 }
 
 export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
-  const user = await getApprovedUser(request);
+  const user = await getMemberOrCoach(request);
   if (!user) return NextResponse.json({ error: "Session expirée ou compte non approuvé." }, { status: 401 });
 
   const { slug } = await params;

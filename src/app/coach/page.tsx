@@ -1,39 +1,108 @@
 "use client";
-import { useEffect, useState } from "react";
-import { authHeaders, logout } from "@/lib/auth";
-import { useRouter } from "next/navigation";
+
 import Link from "next/link";
-import { BookOpen, Home, LogOut, ShieldCheck, Users } from "lucide-react";
-type Coach={ id:string; email:string; name:string };
-export default function CoachHome(){
-  const router=useRouter();
-  const [coach,setCoach]=useState<Coach|null>(null);
-  const [error,setError]=useState(false);
-  useEffect(()=>{
-    let active=true;
-    authHeaders().then(headers=>fetch("/api/coach/me",{headers,cache:"no-store"}))
-      .then(async res=>{if(!res.ok)throw Error("Unauthorized");return res.json()})
-      .then(data=>{if(active)setCoach(data.coach)})
-      .catch(()=>{if(active)setError(true)});
-    return ()=>{active=false};
-  },[]);
-  if(error)return <main className="min-h-screen grid place-items-center p-6"><div className="space-y-4 text-center"><h1 className="text-xl font-semibold">Accès Coach indisponible</h1><p>Vérifiez votre compte auprès de l'administration.</p><Link href="/login" className="text-primary underline">Revenir à la connexion</Link></div></main>;
-  if(!coach)return <main className="min-h-screen grid place-items-center" role="status">Vérification de votre accès Coach…</main>;
-  return <main className="min-h-screen bg-[#FAF9F6] p-6 sm:p-12"><div className="mx-auto max-w-4xl space-y-8">
-    <header className="flex flex-wrap items-center justify-between gap-4">
-      <div><p className="text-sm font-semibold text-primary">Garden of Alliance</p><h1 className="text-3xl font-bold">Espace Coach</h1></div>
-      <button onClick={async()=>{await logout();router.replace("/login")}} className="inline-flex gap-2 items-center border rounded-xl px-4 py-2 bg-white"><LogOut className="w-4 h-4"/>Se déconnecter</button>
-    </header>
-    <section className="rounded-2xl border bg-white p-6 space-y-3">
-      <ShieldCheck className="text-primary"/><h2 className="text-xl font-semibold">Bienvenue, {coach.name}</h2>
-      <p className="text-sm text-[#56615A]">Compte professionnel : {coach.email}</p>
-      <p>Votre accès a été créé directement par l'administration. Aucun questionnaire de matching, selfie ou inscription membre n'est requis.</p>
-    </section>
-    <section className="grid sm:grid-cols-3 gap-4">
-      <Link href="/dashboard" className="rounded-2xl border bg-white p-5 space-y-2 hover:border-primary"><Users className="text-primary"/><h2 className="font-semibold">Espace membre</h2><p className="text-sm text-[#56615A]">Visiter le tableau de bord des membres avec votre compte Coach.</p></Link>
-      <Link href="/" className="rounded-2xl border bg-white p-5 space-y-2 hover:border-primary"><Home className="text-primary"/><h2 className="font-semibold">Découvrir la plateforme</h2><p className="text-sm text-[#56615A]">Consulter les contenus publics de Garden of Alliance.</p></Link>
-      <Link href="/mediatheque" className="rounded-2xl border bg-white p-5 space-y-2 hover:border-primary"><BookOpen className="text-primary"/><h2 className="font-semibold">Médiathèque</h2><p className="text-sm text-[#56615A]">Accéder aux ressources publiques disponibles.</p></Link>
-    </section>
-    <p className="text-xs text-[#6B746E]">Le compte Coach permet de visiter l'espace membre, mais n'autorise pas les demandes d'alliance, les matchs ni la lecture des conversations privées. Il ne donne aucun droit d'administration.</p>
-  </div></main>;
+import { BookOpen, GraduationCap, Hourglass, Sprout, Users } from "lucide-react";
+import { Card, MemberAvatar, SectionTitle, StatTile } from "@/components/admin/admin-ui";
+import { CoverageNotice, DataState, EmptyBlock, PageTitle, fmtDate } from "@/components/coach/coach-ui";
+import { useCoachChrome } from "@/components/coach/coach-chrome";
+import { useCoachData } from "@/components/coach/use-coach-data";
+import type { DashboardStats } from "@/lib/coach/members-view";
+import { useI18n } from "@/lib/i18n";
+import { cn } from "@/lib/utils";
+
+/** Vue d'ensemble : indicateurs réels uniquement (aucun chiffre de séances ou de comptes rendus). */
+export default function CoachOverviewPage() {
+  const { t, locale } = useI18n();
+  const { coach } = useCoachChrome();
+  const { state, reload } = useCoachData<DashboardStats>("/api/coach/dashboard");
+
+  return (
+    <>
+      <PageTitle title={t("coachDashboard.title")} subtitle={t("coachDashboard.subtitle", { name: coach.name })} />
+      <DataState state={state} reload={reload}>
+        {(s) => {
+          const empty = s.activeMembers === 0 && s.pendingProposals === 0;
+          return (
+            <div className="space-y-8">
+              <CoverageNotice coverage={s} />
+
+              <section aria-label={t("coachDashboard.cardsLabel")} className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                <StatTile icon={Users} tone="green" label={t("coachDashboard.cardActive")} value={s.activeMembers} />
+                <StatTile icon={Hourglass} tone="amber" label={t("coachDashboard.cardPending")} value={s.pendingProposals}
+                  hint={s.pendingProposals > 0 ? t("coachDashboard.cardPendingHint") : undefined} />
+                <StatTile icon={GraduationCap} tone="green" label={t("coachDashboard.cardCompleted")} value={s.formationCompleted} />
+                <StatTile icon={BookOpen} tone="blue" label={t("coachDashboard.cardInProgress")} value={s.formationInProgress} />
+              </section>
+
+              {empty && (
+                <EmptyBlock icon={Sprout} title={t("coachDashboard.emptyTitle")} description={t("coachDashboard.emptyDesc")} />
+              )}
+
+              <div className="grid lg:grid-cols-2 gap-6">
+                <Card as="section" className="p-5">
+                  <SectionTitle title={t("coachDashboard.recentMembersTitle")} />
+                  {s.recentMembers.length === 0 ? (
+                    <p className="text-sm text-[#56615A]">{t("coachDashboard.recentMembersEmpty")}</p>
+                  ) : (
+                    <ul className="divide-y divide-[#F0F2EF]">
+                      {s.recentMembers.map((m) => (
+                        <li key={m.id}>
+                          <Link href={`/coach/members/${m.id}`} className="flex items-center gap-3 py-3 rounded-lg hover:bg-[#F6FAF5] -mx-2 px-2">
+                            <MemberAvatar name={m.pseudo ?? ""} url={m.avatarUrl ?? undefined} size={40} />
+                            <span className="min-w-0">
+                              <span className="block text-sm font-semibold text-[#1C241F] truncate">{m.pseudo ?? t("coachMembers.noPseudo")}</span>
+                              <span className="block text-xs text-[#56615A]">{t("coachDashboard.consentedOn", { date: fmtDate(m.consentAt, locale) })}</span>
+                            </span>
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Card>
+
+                <Card as="section" className="p-5">
+                  <SectionTitle title={t("coachDashboard.activityTitle")} />
+                  {s.recentActivity.length === 0 ? (
+                    <p className="text-sm text-[#56615A]">{t("coachDashboard.activityEmpty")}</p>
+                  ) : (
+                    <ul className="divide-y divide-[#F0F2EF]">
+                      {s.recentActivity.map((a) => (
+                        <li key={a.id} className="py-3 flex items-start gap-2">
+                          <span aria-hidden="true" className={cn("mt-1.5 w-2 h-2 rounded-full shrink-0", a.read ? "bg-[#D5DBD6]" : "bg-[#28543C]")} />
+                          <span className="min-w-0">
+                            <span className={cn("block text-sm text-[#1C241F]", !a.read && "font-semibold")}>{t(`coachDashboard.activity.${a.kind}`)}</span>
+                            <span className="block text-xs text-[#56615A]">{fmtDate(a.createdAt, locale)}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </Card>
+              </div>
+
+              <Card as="section" className="p-5">
+                <SectionTitle title={t("coachDashboard.formationPanelTitle")}
+                  subtitle={s.truncated ? t("coachDashboard.formationScopeTruncated", { loaded: s.loadedMembers }) : undefined}
+                  actions={<Link href="/coach/formation" className="text-sm font-semibold text-[#28543C] hover:underline">{t("coachDashboard.seeFormation")}</Link>} />
+                <dl className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-sm">
+                  {([
+                    ["completed", s.formationCompleted],
+                    ["inProgress", s.formationInProgress],
+                    ["notStarted", s.formationNotStarted],
+                    ["unavailable", s.formationUnavailable],
+                  ] as const).map(([key, value]) => (
+                    <div key={key}>
+                      <dt className="text-xs text-[#56615A]">{t(`coachMembers.state.${key}`)}</dt>
+                      <dd className="text-2xl font-bold text-[#1C241F] tabular-nums">{value}</dd>
+                    </div>
+                  ))}
+                </dl>
+                <p className="mt-3 text-xs text-[#56615A]">{t("coachDashboard.evaluated", { count: s.formationEvaluatedMembers })}</p>
+              </Card>
+            </div>
+          );
+        }}
+      </DataState>
+    </>
+  );
 }

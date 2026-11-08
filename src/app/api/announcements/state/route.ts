@@ -11,7 +11,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { getApprovedUser } from "@/lib/api-auth";
+import { getMemberOrCoach } from "@/lib/api-auth";
 import { checkRateLimit, recordRateLimit } from "@/lib/otp";
 import { getAnnouncement } from "@/lib/whats-new";
 import { writeState } from "@/lib/whats-new-store";
@@ -19,7 +19,7 @@ import { writeState } from "@/lib/whats-new-store";
 const MAX_WRITES_PER_HOUR = 60;
 
 export async function POST(request: NextRequest) {
-  const user = await getApprovedUser(request);
+  const user = await getMemberOrCoach(request);
   if (!user) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
 
   const body = await request.json().catch(() => ({}));

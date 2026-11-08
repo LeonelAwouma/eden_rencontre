@@ -116,18 +116,94 @@ export async function getAuthenticatedUser(
   return null;
 }
 /**
- * Membre connecté ET approuvé par l'admin, sinon null.
+ * Rôles de l'espace connecté.
  *
  * Les routes API utilisent la clé de service, qui contourne la RLS : la règle
- * « espace réservé aux comptes approuvés » doit donc y être revérifiée. Depuis
- * que la page d'attente garde la session des comptes en attente, un jeton
- * valide ne suffit plus à prouver l'accès à l'espace membre.
+ * « qui peut faire quoi » doit donc y être revérifiée, à partir des données
+ * serveur (jamais d'un rôle envoyé par le navigateur).
+ *
+ *  - member : profil approuvé, account_type = 'member'  → fonctions matrimoniales
+ *  - coach  : profil approuvé, account_type = 'coach' ET ligne coach_accounts active
+ *             → espace professionnel et fonctions explicitement partagées
+ *
+ * Un statut « approved » ne suffit donc JAMAIS à prouver qu'on est un membre.
+ */
+export type AccountKind = "member" | "coach";
+
+export interface ProfileRoleRow {
+  status: string | null;
+  account_type: string | null;
+}
+
+/** Fonction pure (testée) : déduit le rôle à partir des lignes lues en base. Toute incohérence = null. */
+export function classifyAccount(
+  profile: ProfileRoleRow | null | undefined,
+  coach: { active: boolean | null } | null | undefined
+): AccountKind | null {
+  if (!profile || profile.status !== "approved") return null;
+  if (profile.account_type === "coach") return coach?.active === true ? "coach" : null;
+  if (profile.account_type === "member") return "member";
+  return null;
+}
+
+/** Lit le rôle d'un compte. Aucune exception : en cas d'erreur de lecture, on refuse. */
+export async function getAccountKind(userId: string): Promise<AccountKind | null> {
+  const db = getSupabaseAdmin();
+  let { data, error } = await db.from("profiles").select("status, account_type").eq("id", userId).maybeSingle();
+  if (error && (error as { code?: string }).code === "42703") {
+    // Colonne account_type absente (migration coachs non exécutée) : seuls des membres peuvent exister.
+    // Garde-fou : si une ligne coach_accounts existe malgré tout, le type est INCONNU → refus
+    // (jamais de repli « membre » pour un compte qui pourrait être un coach).
+    const [legacy, coachRow] = await Promise.all([
+      db.from("profiles").select("status").eq("id", userId).maybeSingle(),
+      db.from("coach_accounts").select("user_id").eq("user_id", userId).maybeSingle(),
+    ]);
+    const coachTableMissing = (coachRow.error as { code?: string } | null)?.code === "42P01"; // table absente : aucun coach possible
+    if (coachRow.data || (coachRow.error && !coachTableMissing)) return null;
+    data = legacy.data ? { ...legacy.data, account_type: "member" } : null;
+    error = legacy.error;
+  }
+  if (error || !data) return null;
+  if (data.account_type !== "coach") return classifyAccount(data as ProfileRoleRow, null);
+  const { data: coach } = await db.from("coach_accounts").select("active").eq("user_id", userId).maybeSingle();
+  return classifyAccount(data as ProfileRoleRow, coach);
+}
+
+/**
+ * Membre connecté ET approuvé par l'admin, sinon null. Les coachs sont REFUSÉS :
+ * c'est la garde de toutes les fonctions matrimoniales (alliances, messages privés,
+ * parrainage, activité, etc.). Depuis que la page d'attente garde la session des
+ * comptes en attente, un jeton valide ne suffit pas non plus à prouver l'accès.
  */
 export async function getApprovedUser(request: NextRequest): Promise<AuthenticatedUser | null> {
   const user = await getAuthenticatedUser(request);
   if (!user) return null;
-  const { data } = await getSupabaseAdmin().from("profiles").select("status").eq("id", user.id).maybeSingle();
-  return data?.status === "approved" ? user : null;
+  return (await getAccountKind(user.id)) === "member" ? user : null;
+}
+
+/** Alias explicite de getApprovedUser. */
+export const getApprovedMember = getApprovedUser;
+
+/**
+ * Garde des routes réservées aux membres : fine enveloppe de getApprovedUser (mêmes règles,
+ * aucune duplication) — profil approuvé ET account_type = 'member'. Type inconnu, coach,
+ * erreur de lecture : refus (null).
+ */
+export async function requireApprovedMember(request: NextRequest): Promise<AuthenticatedUser | null> {
+  return getApprovedUser(request);
+}
+
+/**
+ * Membre approuvé OU coach actif. À réserver aux fonctions EXPLICITEMENT partagées
+ * (formation, annonces) — jamais aux opérations matrimoniales.
+ */
+export async function getMemberOrCoach(
+  request: NextRequest
+): Promise<(AuthenticatedUser & { kind: AccountKind }) | null> {
+  const user = await getAuthenticatedUser(request);
+  if (!user) return null;
+  const kind = await getAccountKind(user.id);
+  return kind ? { ...user, kind } : null;
 }
 
 /** Adresse IP du client (Vercel renseigne x-forwarded-for), pour les limites de tentatives. */

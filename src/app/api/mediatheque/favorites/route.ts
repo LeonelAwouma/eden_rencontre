@@ -1,19 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { requireApprovedMember } from "@/lib/api-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
-function extractUser(request: NextRequest): { token: string } | null {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) return null;
-  return { token: authHeader.substring(7) };
-}
-
+// Favoris personnels : réservés aux membres approuvés (la lecture des ressources publiées reste publique).
 export async function GET(request: NextRequest) {
   try {
-    const auth = extractUser(request);
-    if (!auth) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-    const db = getSupabaseAdmin();
-    const { data: { user } } = await db.auth.getUser(auth.token);
+    const user = await requireApprovedMember(request);
     if (!user) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
+    const db = getSupabaseAdmin();
 
     const { data } = await db.from("mediatheque_user_favorites")
       .select("id,resource_id,created_at, resource:mediatheque_resources(id,title,slug,description,thumbnail_url,type,level,author)")
@@ -28,11 +22,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = extractUser(request);
-    if (!auth) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
-    const db = getSupabaseAdmin();
-    const { data: { user } } = await db.auth.getUser(auth.token);
+    const user = await requireApprovedMember(request);
     if (!user) return NextResponse.json({ error: "Non autorisé." }, { status: 401 });
+    const db = getSupabaseAdmin();
 
     const { resource_id } = await request.json();
     if (!resource_id) return NextResponse.json({ error: "resource_id requis." }, { status: 400 });

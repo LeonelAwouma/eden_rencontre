@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { getAuthenticatedUser } from "@/lib/api-auth";
+import { requireApprovedMember } from "@/lib/api-auth";
 
 // POST — Un membre signale un autre membre (depuis la messagerie).
 // Le signalement apparaît dans Admin → Signalements (table user_reports).
@@ -20,7 +20,7 @@ const TYPE_LABELS: Record<ReportType, string> = {
 const ESCALATION_THRESHOLD = 3;
 
 export async function POST(req: NextRequest) {
-  const user = await getAuthenticatedUser(req);
+  const user = await requireApprovedMember(req);
   if (!user) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
 
   try {

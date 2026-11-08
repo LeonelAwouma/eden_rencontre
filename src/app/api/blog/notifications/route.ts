@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { getAuthenticatedUser } from "@/lib/api-auth";
+import { getMemberOrCoach } from "@/lib/api-auth";
 
 // Notifications du membre connecté uniquement : l'identifiant vient de la
 // session, plus d'un paramètre user_id (qui permettait de lire celles d'un autre).
 
 // GET — Get blog notifications for the signed-in user
 export async function GET(req: NextRequest) {
-  const user = await getAuthenticatedUser(req);
+  const user = await getMemberOrCoach(req);
   if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   try {
     const supabase = getSupabaseAdmin();
@@ -29,7 +29,7 @@ export async function GET(req: NextRequest) {
 
 // PATCH — Mark blog notification(s) as read
 export async function PATCH(req: NextRequest) {
-  const user = await getAuthenticatedUser(req);
+  const user = await getMemberOrCoach(req);
   if (!user) return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
   try {
     const supabase = getSupabaseAdmin();
