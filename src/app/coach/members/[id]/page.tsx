@@ -2,9 +2,10 @@
 
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { ArrowLeft, CalendarClock, EyeOff, Search } from "lucide-react";
+import { ArrowLeft, EyeOff, Search } from "lucide-react";
 import { Badge, Card, DetailItem, MemberAvatar, SectionTitle } from "@/components/admin/admin-ui";
 import { CoachFormationPanel } from "@/components/coach/coach-formation-panel";
+import { MemberFollowUp } from "@/components/coach/member-followup";
 import { DataState, EmptyBlock, FormationStateBadge, fmtDate } from "@/components/coach/coach-ui";
 import { useCoachData } from "@/components/coach/use-coach-data";
 import type { CoachFormationSummary, FormationState } from "@/lib/coach/members-view";
@@ -78,9 +79,8 @@ export default function CoachMemberPage() {
               </ul>
             </Card>
 
-            <p className="flex items-start gap-2 rounded-xl border border-[#E6EAE5] bg-white px-4 py-3 text-sm text-[#56615A]">
-              <CalendarClock className="w-4 h-4 mt-0.5 shrink-0" aria-hidden="true" /> {t("coachMembers.sessionsLater")}
-            </p>
+            {/* Lot 3 : séances, notes privées, compte rendu partagé et actions de CE membre. */}
+            <MemberFollowUp memberId={d.member.id} pseudo={d.member.pseudo} />
           </div>
         )}
       </DataState>

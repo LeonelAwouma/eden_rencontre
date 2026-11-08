@@ -1,20 +1,25 @@
 "use client";
 
 import Link from "next/link";
-import { BookOpen, GraduationCap, Hourglass, Sprout, Users } from "lucide-react";
+import { BookOpen, CalendarClock, ClipboardList, GraduationCap, Hourglass, ListChecks, Sprout, Users } from "lucide-react";
 import { Card, MemberAvatar, SectionTitle, StatTile } from "@/components/admin/admin-ui";
 import { CoverageNotice, DataState, EmptyBlock, PageTitle, fmtDate } from "@/components/coach/coach-ui";
 import { useCoachChrome } from "@/components/coach/coach-chrome";
 import { useCoachData } from "@/components/coach/use-coach-data";
+import { SessionRows, type SessionListItem } from "@/components/coach/session-ui";
 import type { DashboardStats } from "@/lib/coach/members-view";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
-/** Vue d'ensemble : indicateurs réels uniquement (aucun chiffre de séances ou de comptes rendus). */
+/** Vue d'ensemble : indicateurs réels uniquement (aucune estimation). */
+interface FollowUpStats {
+  upcomingSessions: number; pendingActions: number; reportsToComplete: number;
+  nextSessions: { id: string; memberId: string; scheduledAt: string; durationMinutes: number; timezone: string; type: string; topic: string | null }[];
+}
 export default function CoachOverviewPage() {
   const { t, locale } = useI18n();
   const { coach } = useCoachChrome();
-  const { state, reload } = useCoachData<DashboardStats>("/api/coach/dashboard");
+  const { state, reload } = useCoachData<DashboardStats & { followUp: FollowUpStats }>("/api/coach/dashboard");
 
   return (
     <>
@@ -32,6 +37,12 @@ export default function CoachOverviewPage() {
                   hint={s.pendingProposals > 0 ? t("coachDashboard.cardPendingHint") : undefined} />
                 <StatTile icon={GraduationCap} tone="green" label={t("coachDashboard.cardCompleted")} value={s.formationCompleted} />
                 <StatTile icon={BookOpen} tone="blue" label={t("coachDashboard.cardInProgress")} value={s.formationInProgress} />
+              </section>
+
+              <section aria-label={t("coachSessions.title")} className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                <StatTile icon={CalendarClock} tone="blue" label={t("coachSessions.dash.cardUpcoming")} value={s.followUp.upcomingSessions} />
+                <StatTile icon={ListChecks} tone="amber" label={t("coachSessions.dash.cardActions")} value={s.followUp.pendingActions} />
+                <StatTile icon={ClipboardList} tone="green" label={t("coachSessions.dash.cardReports")} value={s.followUp.reportsToComplete} hint={t("coachSessions.dash.cardReportsHint")} />
               </section>
 
               {empty && (
@@ -79,6 +90,16 @@ export default function CoachOverviewPage() {
                   )}
                 </Card>
               </div>
+
+              <Card as="section" className="p-5">
+                <SectionTitle title={t("coachSessions.dash.upcomingTitle")}
+                  actions={<Link href="/coach/sessions" className="text-sm font-semibold text-[#28543C] hover:underline">{t("coachSessions.dash.seeSessions")}</Link>} />
+                {s.followUp.nextSessions.length === 0 ? (
+                  <p className="text-sm text-[#56615A]">{t("coachSessions.dash.upcomingEmpty")}</p>
+                ) : (
+                  <SessionRows showMember={false} sessions={s.followUp.nextSessions.map((n) => ({ ...n, type: n.type as SessionListItem["type"], status: "scheduled" as const }))} />
+                )}
+              </Card>
 
               <Card as="section" className="p-5">
                 <SectionTitle title={t("coachDashboard.formationPanelTitle")}

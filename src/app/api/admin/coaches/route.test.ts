@@ -11,6 +11,9 @@ const w = vi.hoisted(() => ({
   } as Record<string, Map<string, Row>>,
   fail: {} as Record<string, boolean>, // "table:op" -> erreur simulée
   authCreateFails: false,
+  authCreateError: null as null | Record<string, unknown>, // erreur Auth structurée (code, name, status, message)
+  authCreateThrows: false, // createUser lève au lieu de retourner { error }
+  adminInitThrows: false,  // getSupabaseAdmin() lève (variable d'environnement absente)
   authUpdateFails: false,
   authDeleteFails: false,
   rpcError: null as null | { code?: string; message: string }, // erreur de la fonction SQL = rollback complet
@@ -28,11 +31,15 @@ vi.mock("@/lib/otp", () => ({ checkRateLimit: async () => w.rateOk, recordRateLi
 const keyOf = (table: string) => (table === "coach_accounts" ? "user_id" : "id");
 
 vi.mock("@/lib/supabase-admin", () => ({
-  getSupabaseAdmin: () => ({
+  getSupabaseAdmin: () => {
+    if (w.adminInitThrows) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY environment variables");
+    return {
     auth: {
       admin: {
         createUser: async (p: Record<string, unknown>) => {
           w.spies.create.push(p);
+          if (w.authCreateThrows) throw new Error("fetch failed: ECONNRESET 10.0.0.5");
+          if (w.authCreateError) return { data: { user: null }, error: w.authCreateError };
           if (w.authCreateFails) return { data: { user: null }, error: { message: "exists" } };
           return { data: { user: { id: "11111111-1111-4111-8111-111111111111" } }, error: null };
         },
@@ -95,7 +102,8 @@ vi.mock("@/lib/supabase-admin", () => ({
       });
       return q;
     },
-  }),
+  };
+  },
 }));
 
 const ID = "11111111-1111-4111-8111-111111111111";
@@ -114,7 +122,7 @@ const VALID = { name: "Awa", email: "Awa@X.fr", password: "motdepasse123" };
 
 beforeEach(() => {
   w.admin = true; w.rateOk = true; w.fail = {};
-  w.authCreateFails = false; w.authUpdateFails = false; w.authDeleteFails = false;
+  w.authCreateFails = false; w.authCreateError = null; w.authCreateThrows = false; w.adminInitThrows = false; w.authUpdateFails = false; w.authDeleteFails = false;
   w.rpcError = null; w.assignmentsToEnd = 0;
   w.tables.coach_accounts.clear(); w.tables.profiles.clear();
   w.tables.coach_audit_logs.clear(); w.tables.admin_notifications.clear(); w.tables.coach_member_assignments.clear();
@@ -162,27 +170,105 @@ describe("création", () => {
     expect(w.spies.create).toHaveLength(0);
   });
 
-  test("adresse déjà utilisée : 409, rien n'est écrit", async () => {
-    w.authCreateFails = true;
-    const { POST } = await import("./route");
-    expect((await POST(call("POST", VALID))).status).toBe(409);
-    expect(w.tables.coach_accounts.size).toBe(0);
-  });
-
-  test("refus d'Auth : la cause réelle est journalisée côté serveur (sans mot de passe ni adresse), la réponse reste générique", async () => {
-    w.authCreateFails = true;
-    const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+  test("adresse déjà utilisée : 409 `email_exists`, rien n'est écrit", async () => {
+    w.authCreateError = { code: "email_exists", name: "AuthApiError", status: 422, message: "A user with this email address has already been registered" };
     const { POST } = await import("./route");
     const res = await POST(call("POST", VALID));
     expect(res.status).toBe(409);
-    expect((await res.json()).error).toBe("Création impossible : adresse déjà utilisée ou identifiants invalides.");
-    const logged = spy.mock.calls.find((c) => String(c[0]).includes("[admin/coaches] createUser refusé"));
-    expect(logged).toBeDefined();
-    expect(logged![1]).toEqual({ code: null, status: null, message: "exists" });
-    const text = JSON.stringify(spy.mock.calls);
-    expect(text).not.toContain("motdepasse123");
-    expect(text.toLowerCase()).not.toContain("awa@x.fr");
-    spy.mockRestore();
+    expect((await res.json()).code).toBe("email_exists");
+    expect(w.tables.coach_accounts.size).toBe(0);
+    expect(w.tables.profiles.size).toBe(0);
+  });
+
+  describe("création : la cause réelle est visible (code stable + message sûr), jamais le message brut", () => {
+    const CASES: [string, Record<string, unknown>, number, string][] = [
+      ["email_exists", { code: "email_exists", name: "AuthApiError", status: 422 }, 409, "email_exists"],
+      ["user_already_exists", { code: "user_already_exists", name: "AuthApiError", status: 422 }, 409, "email_exists"],
+      ["weak_password", { code: "weak_password", name: "AuthApiError", status: 422 }, 422, "weak_password"],
+      ["email_address_invalid", { code: "email_address_invalid", name: "AuthApiError", status: 400 }, 400, "invalid_email"],
+      ["validation_failed (≠ adresse invalide)", { code: "validation_failed", name: "AuthApiError", status: 400 }, 400, "auth_validation_failed"],
+      ["email_provider_disabled", { code: "email_provider_disabled", name: "AuthApiError", status: 422 }, 500, "email_provider_disabled"],
+      ["bad_jwt", { code: "bad_jwt", name: "AuthApiError", status: 401 }, 500, "supabase_admin_auth_rejected"],
+      ["no_authorization", { code: "no_authorization", name: "AuthApiError", status: 401 }, 500, "supabase_admin_auth_rejected"],
+      ["not_admin", { code: "not_admin", name: "AuthApiError", status: 403 }, 500, "supabase_admin_auth_rejected"],
+      ["401 sans code", { name: "AuthApiError", status: 401 }, 500, "supabase_admin_auth_rejected"],
+      ["over_request_rate_limit", { code: "over_request_rate_limit", name: "AuthApiError", status: 429 }, 429, "auth_rate_limited"],
+      ["unexpected_failure", { code: "unexpected_failure", name: "AuthApiError", status: 500 }, 502, "auth_internal_error"],
+      ["erreur réseau (AuthRetryableFetchError)", { name: "AuthRetryableFetchError", status: 0 }, 502, "auth_internal_error"],
+      ["502 sans code", { name: "AuthApiError", status: 502 }, 502, "auth_internal_error"],
+      ["code inconnu", { code: "quelque_chose_de_nouveau", name: "AuthApiError", status: 422 }, 502, "auth_create_failed"],
+      ["erreur sans aucun champ", {}, 502, "auth_create_failed"],
+    ];
+
+    test.each(CASES)("%s", async (_label, authError, httpStatus, apiCode) => {
+      w.authCreateError = { ...authError, message: "MESSAGE-BRUT-SECRET awa@x.fr motdepasse123 eyJhbGciOi.service.key" };
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const { POST } = await import("./route");
+      const res = await POST(call("POST", VALID));
+      const body = await res.json();
+      expect(res.status).toBe(httpStatus);
+      expect(body.code).toBe(apiCode);
+      expect(body.error).toEqual(expect.any(String));
+      // Rien de brut dans la réponse ni dans les journaux : message de Supabase, mot de passe, adresse, clé.
+      const out = JSON.stringify(body) + JSON.stringify(spy.mock.calls);
+      for (const secret of ["MESSAGE-BRUT-SECRET", "motdepasse123", "awa@x.fr", "eyJhbGciOi", "service.key"]) expect(out.toLowerCase()).not.toContain(secret.toLowerCase());
+      // Le journal garde le diagnostic assaini (code, nom, statut, code API).
+      const logged = spy.mock.calls.find((c) => String(c[0]).includes("[admin/coaches] createUser refusé"));
+      expect(logged![1]).toMatchObject({ apiCode });
+      expect(Object.keys(logged![1] as object).sort()).toEqual(["apiCode", "code", "name", "status"]);
+      // Aucune écriture partielle.
+      expect(w.tables.coach_accounts.size).toBe(0);
+      expect(w.tables.profiles.size).toBe(0);
+      expect(w.spies.del).toHaveLength(0);
+      expect(w.spies.audit).toHaveLength(0);
+      spy.mockRestore();
+    });
+
+    test("le 409 est réservé aux vrais conflits : aucun autre cas ne le renvoie", async () => {
+      for (const [, authError, , apiCode] of CASES) {
+        if (apiCode === "email_exists") continue;
+        w.authCreateError = authError;
+        const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+        const { POST } = await import("./route");
+        expect((await POST(call("POST", VALID))).status).not.toBe(409);
+        spy.mockRestore();
+      }
+    });
+
+    test("createUser LÈVE une exception (réseau) : 502 auth_internal_error, sans trace ni détail", async () => {
+      w.authCreateThrows = true;
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const { POST } = await import("./route");
+      const res = await POST(call("POST", VALID));
+      const body = await res.json();
+      expect(res.status).toBe(502);
+      expect(body.code).toBe("auth_internal_error");
+      expect(JSON.stringify(body) + JSON.stringify(spy.mock.calls)).not.toMatch(/ECONNRESET|10\.0\.0\.5|fetch failed|at \w+ \(/);
+      expect(w.tables.coach_accounts.size).toBe(0);
+      spy.mockRestore();
+    });
+
+    test("getSupabaseAdmin() lève (variable d'environnement absente) : 500 server_misconfigured, aucune variable ni valeur exposée", async () => {
+      w.adminInitThrows = true;
+      const spy = vi.spyOn(console, "error").mockImplementation(() => {});
+      const { POST } = await import("./route");
+      const res = await POST(call("POST", VALID));
+      const body = await res.json();
+      expect(res.status).toBe(500);
+      expect(body.code).toBe("server_misconfigured");
+      expect(JSON.stringify(body) + JSON.stringify(spy.mock.calls)).not.toMatch(/SUPABASE_URL|SERVICE_ROLE|Missing/);
+      expect(w.spies.create).toHaveLength(0);
+      spy.mockRestore();
+    });
+
+    test("aucun compte membre existant n'est promu ni écrasé : l'échec d'adresse déjà utilisée ne touche à aucune table", async () => {
+      w.tables.profiles.set("22222222-2222-4222-8222-222222222222", { id: "22222222-2222-4222-8222-222222222222", account_type: "member", status: "approved", email: "awa@x.fr" });
+      w.authCreateError = { code: "email_exists", name: "AuthApiError", status: 422 };
+      const { POST } = await import("./route");
+      expect((await POST(call("POST", VALID))).status).toBe(409);
+      expect(w.tables.profiles.get("22222222-2222-4222-8222-222222222222")).toMatchObject({ account_type: "member", status: "approved" });
+      expect(w.tables.coach_accounts.size).toBe(0);
+    });
   });
 
   test("échec de coach_accounts : rollback du compte Auth", async () => {

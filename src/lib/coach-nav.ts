@@ -1,7 +1,7 @@
 /**
  * Navigation de l'espace Coach : donnée pure (testable sous vitest, environnement `node`).
- * Elle ne contient QUE les entrées qui existent : Vue d'ensemble, Mes membres, Formation, Mon profil.
- * Les fonctions des lots suivants (séances, comptes rendus, ressources) n'apparaissent qu'avec leur lot.
+ * Elle ne contient QUE les entrées qui existent : Vue d'ensemble, Mes membres, Formation, Rendez-vous, Comptes rendus
+ * (lot 3), Mon profil. Les ressources (lot 4) n'apparaissent qu'avec leur lot ; aucune messagerie Coach-Membre.
  */
 
 export type CoachDest =
@@ -18,6 +18,8 @@ export const COACH_GROUPS: CoachGroup[] = [
       { kind: "route", id: "overview", labelKey: "coachNav.overview", href: "/coach" },
       { kind: "route", id: "members", labelKey: "coachNav.members", href: "/coach/members" },
       { kind: "route", id: "formation", labelKey: "coachNav.formation", href: "/coach/formation" },
+      { kind: "route", id: "sessions", labelKey: "coachNav.sessions", href: "/coach/sessions" },
+      { kind: "route", id: "reports", labelKey: "coachNav.reports", href: "/coach/reports" },
     ],
   },
   {
@@ -31,7 +33,7 @@ export const COACH_GROUPS: CoachGroup[] = [
 ];
 
 /** Entrées de la barre inférieure mobile ; « Menu » ouvre le tiroir (profil, langue, déconnexion). */
-export const COACH_PRIMARY_IDS = ["overview", "members", "formation"] as const;
+export const COACH_PRIMARY_IDS = ["overview", "members", "sessions", "reports"] as const;
 
 export const COACH_DESTS: Record<string, CoachDest> = Object.fromEntries(
   COACH_GROUPS.flatMap((g) => g.dests).map((d) => [d.id, d])

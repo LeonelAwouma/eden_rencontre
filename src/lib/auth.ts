@@ -5,6 +5,8 @@
 
 import { supabase } from "./supabase";
 import { isRegistrationComplete } from "./registration-rules";
+import { performLogout, type LogoutOutcomeFacts } from "./logout-flow";
+import { browserLogoutDeps } from "./logout-browser";
 
 export interface EdenUser {
   id?: string;
@@ -355,19 +357,24 @@ export async function signInWithGoogle(): Promise<{ ok: boolean; error?: string 
   return { ok: true };
 }
 
-export async function logout() {
-  // Les cookies de session `httpOnly` posés à la connexion ne sont pas effaçables côté navigateur : sans cet appel
-  // ils resteraient valides (≈ 1 h) après la déconnexion, et la garde serveur de /coach comme les API acceptant le
-  // cookie reconnaîtraient encore l'utilisateur. Échec silencieux : la déconnexion du navigateur a lieu quoi qu'il arrive.
-  if (typeof window !== "undefined") {
-    try { await fetch("/api/auth/session", { method: "DELETE", credentials: "same-origin", cache: "no-store" }); } catch { /* hors ligne */ }
+/**
+ * Déconnexion. Ne lève jamais et retourne les FAITS constatés (voir `logout-flow.ts`) : session locale effacée,
+ * instructions de suppression des cookies émises, révocation serveur prouvée ou non. Un nettoyage local réussi
+ * n'est jamais présenté comme une révocation confirmée ; si elle ne l'est pas, la page de connexion l'indique.
+ *
+ * Les cookies de session `httpOnly` ne sont pas effaçables côté navigateur ; la révocation (sessions A cookie et
+ * B navigateur, scope « local » : les autres appareils restent connectés) est faite par `DELETE /api/auth/session`.
+ */
+export async function logout(): Promise<LogoutOutcomeFacts | null> {
+  if (typeof window === "undefined") return null;
+  if (!supabase) {
+    window.localStorage.removeItem(SESSION_KEY);
+    return null;
   }
-  if (supabase) {
-    await supabase.auth.signOut();
-    return;
-  }
-  if (typeof window === "undefined") return;
-  window.localStorage.removeItem(SESSION_KEY);
+  const facts = await performLogout(browserLogoutDeps());
+  // Nettoyage de secours : l'état du client Supabase en mémoire peut être périmé → rechargement complet.
+  if (facts.manualLocalCleanup) window.location.assign("/login");
+  return facts;
 }
 
 // Checks whether the user's profile has all required fields filled in.

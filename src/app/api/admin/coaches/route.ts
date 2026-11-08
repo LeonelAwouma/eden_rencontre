@@ -6,6 +6,7 @@ import { checkRateLimit, recordRateLimit } from "@/lib/otp";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { mapAssignmentError } from "@/lib/coach/assignment-errors";
 import { restoreCoachSessions, revokeCoachSessions } from "@/lib/coach/lifecycle";
+import { classifyCreateUserError, failure, sanitizedDiagnostic, type AuthErrorInfo } from "@/lib/coach/create-user-errors";
 
 /**
  * Gestion administrative des comptes Coach. Toutes les opérations exigent une session admin.
@@ -92,21 +93,30 @@ export async function POST(req: NextRequest) {
   if (!(await underLimit(admin, "coach_create"))) return json({ error: "Trop de créations. Réessayez plus tard." }, 429);
   await countAction(admin, "coach_create");
 
-  const db = getSupabaseAdmin();
-  const { data: created, error: createError } = await db.auth.admin.createUser({
-    email, password, email_confirm: true, user_metadata: { name, account_type: "coach" },
-  });
-  if (createError || !created?.user) {
-    // La réponse à l'administrateur reste volontairement générique ; la cause réelle (code, statut, message
-    // de Supabase Auth : adresse déjà utilisée, mot de passe refusé par la politique d'Auth…) est journalisée
-    // côté serveur pour le diagnostic. Jamais le mot de passe, jamais l'adresse saisie.
-    const e = createError as { code?: string; status?: number; message?: string } | null;
-    console.error("[admin/coaches] createUser refusé :", {
-      code: e?.code ?? null,
-      status: e?.status ?? null,
-      message: typeof e?.message === "string" ? e.message.slice(0, 200) : null,
+  // Exceptions (variable d'environnement absente, réseau) : jamais de trace ni de valeur dans la réponse.
+  let db: Db;
+  try { db = getSupabaseAdmin(); } catch {
+    console.error("[admin/coaches] configuration Supabase incomplète", { apiCode: "server_misconfigured" });
+    const f = failure("server_misconfigured");
+    return json({ error: f.message, code: f.code }, f.status);
+  }
+  let created: Awaited<ReturnType<Db["auth"]["admin"]["createUser"]>>["data"] | null = null;
+  let createError: AuthErrorInfo | null = null;
+  try {
+    const res = await db.auth.admin.createUser({
+      email, password, email_confirm: true, user_metadata: { name, account_type: "coach" },
     });
-    return json({ error: "Création impossible : adresse déjà utilisée ou identifiants invalides." }, 409);
+    created = res.data;
+    createError = (res.error as AuthErrorInfo | null) ?? null;
+  } catch (thrown) {
+    createError = { name: thrown instanceof Error ? thrown.name : undefined, code: "unexpected_failure" };
+  }
+  if (createError || !created?.user) {
+    // Cause réelle rendue visible à l'administrateur par un CODE stable et un message sûr ; le message brut de
+    // Supabase n'est ni renvoyé ni journalisé (il peut contenir des données personnelles). Journal : code, nom, statut.
+    const f = classifyCreateUserError(createError);
+    console.error("[admin/coaches] createUser refusé :", sanitizedDiagnostic(createError, f.code));
+    return json({ error: f.message, code: f.code }, f.status);
   }
   const id = created.user.id;
 

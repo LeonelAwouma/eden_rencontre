@@ -10,6 +10,12 @@ type Pending = { kind: "delete" | "reset"; coach: Coach } | null;
 const fmt = (iso?: string | null) =>
   iso ? new Date(iso).toLocaleString("fr-FR", { dateStyle: "short", timeStyle: "short" }) : "—";
 
+/** Erreur de l'API avec son code stable (affiché sous le message pour faciliter le diagnostic). */
+class ApiError extends Error {
+  code?: string;
+  constructor(message: string, code?: string) { super(message); this.code = code; }
+}
+
 async function call(method: string, body?: unknown) {
   const res = await fetch("/api/admin/coaches", {
     method,
@@ -18,7 +24,7 @@ async function call(method: string, body?: unknown) {
     cache: "no-store",
   });
   const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || "Opération refusée");
+  if (!res.ok) throw new ApiError(data.error || "Opération refusée", typeof data.code === "string" ? data.code : undefined);
   return data;
 }
 
@@ -27,7 +33,11 @@ export default function AdminCoaches() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
-  const [error, setError] = useState("");
+  const [error, setErrorText] = useState("");
+  const [errorCode, setErrorCode] = useState("");
+  /** Message + code stable de l'API ; setError("") efface les deux. */
+  const setError = (message: string, code = "") => { setErrorText(message); setErrorCode(code); };
+  const fail = (e: unknown, fallback: string) => setError(e instanceof Error ? e.message : fallback, e instanceof ApiError ? e.code ?? "" : "");
   const [notice, setNotice] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -48,7 +58,7 @@ export default function AdminCoaches() {
       setCoaches(data.coaches || []);
       setError("");
     } catch (e) {
-      setError(e instanceof Error ? e.message : "Erreur de chargement");
+      fail(e, "Erreur de chargement");
     } finally {
       setLoading(false);
     }
@@ -58,7 +68,7 @@ export default function AdminCoaches() {
   const run = async (id: string, fn: () => Promise<void>) => {
     setBusyId(id); setError(""); setNotice("");
     try { await fn(); await load(); }
-    catch (e) { setError(e instanceof Error ? e.message : "Erreur"); }
+    catch (e) { fail(e, "Erreur"); }
     finally { setBusyId(null); }
   };
 
@@ -69,7 +79,7 @@ export default function AdminCoaches() {
       setName(""); setEmail(""); setPassword("");
       setNotice("Compte Coach créé. Il peut se connecter avec son adresse e-mail et son mot de passe.");
       await load();
-    } catch (err) { setError(err instanceof Error ? err.message : "Erreur de création"); }
+    } catch (err) { fail(err, "Erreur de création"); }
     finally { setSaving(false); }
   };
 
@@ -199,7 +209,12 @@ export default function AdminCoaches() {
         </div>
       )}
 
-      {error && <p role="alert" className="text-sm text-red-700">{error}</p>}
+      {error && (
+        <div role="alert" className="text-sm text-red-700">
+          <p>{error}</p>
+          {errorCode && <p className="mt-0.5 text-xs text-red-700/80">Code : {errorCode}</p>}
+        </div>
+      )}
       {notice && <p role="status" className="text-sm text-primary">{notice}</p>}
     </main>
   );

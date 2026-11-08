@@ -12,7 +12,8 @@
  * déclenchée ici : un membre qui ouvre `/coach` garde sa session.
  */
 import type { NextRequest } from "next/server";
-import { getAccountKind, getAuthenticatedUser } from "@/lib/api-auth";
+import { getAccountKind, getVerifiedSession } from "@/lib/api-auth";
+import { isCoachSessionAccepted } from "@/lib/session-guard";
 import { getActiveCoachByUserId, type ActiveCoach } from "@/lib/coach-auth";
 import { classifyTarget } from "@/lib/coach/guard";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
@@ -33,12 +34,18 @@ export type CoachPageAccess =
   | { decision: "unavailable" };
 
 export async function resolveCoachPageAccess(req: NextRequest): Promise<CoachPageAccess> {
-  let user: Awaited<ReturnType<typeof getAuthenticatedUser>>;
-  try { user = await getAuthenticatedUser(req); } catch { return { decision: "unavailable" }; }
-  if (!user) return { decision: "redirect", to: COACH_LOGIN_REDIRECT, reason: "anonymous" };
+  let session: Awaited<ReturnType<typeof getVerifiedSession>>;
+  try { session = await getVerifiedSession(req); } catch { return { decision: "unavailable" }; }
+  if (!session) return { decision: "redirect", to: COACH_LOGIN_REDIRECT, reason: "anonymous" };
+  const user = session.user;
 
   const coach = await getActiveCoachByUserId(user.id);
-  if (coach) return { decision: "allow", coach };
+  if (coach) {
+    // Option B : session révoquée (drapeau COACH_REQUIRE_ACTIVE_SESSION) → comme une session absente : connexion.
+    // Le jeton transmis ici est celui que le service Auth vient de vérifier (jamais une `NextRequest` globale).
+    if (!(await isCoachSessionAccepted(session.accessToken))) return { decision: "redirect", to: COACH_LOGIN_REDIRECT, reason: "anonymous" };
+    return { decision: "allow", coach };
+  }
 
   // Pas un coach actif : pourquoi ? (fail-closed : une panne de lecture n'est jamais prise pour un refus de rôle)
   const kind = await getAccountKind(user.id);

@@ -4,12 +4,17 @@ import { describe, expect, it } from "vitest";
 import en from "@/locales/en.json";
 import fr from "@/locales/fr.json";
 import { ACTIVITY_KINDS, COACH_STATE_FILTERS } from "./members-view";
+import { ACTION_STATUSES, NOTE_FIELDS } from "./notes-model";
+import { SESSION_ERROR_STATUS, SESSION_STATUSES, SESSION_TYPES } from "./sessions-model";
 
 /**
  * Un libellé absent s'affiche sous forme de clé brute (`t()` renvoie la clé) sans aucune erreur au build :
  * ces tests verrouillent la parité fr/en des nouveaux espaces de noms ET l'existence de chaque clé utilisée.
  */
-const NAMESPACES = ["coachNav", "coachDashboard", "coachMembers", "coachFormation", "coachProfile", "coachCommon", "coachMember"] as const;
+const NAMESPACES = [
+  "coachNav", "coachDashboard", "coachMembers", "coachFormation", "coachProfile", "coachCommon", "coachMember",
+  "coachSessions", "coachNotes", "coachReports", "coachActions", "coachFollowUp",
+] as const;
 
 const leafKeys = (obj: unknown, prefix = ""): string[] =>
   obj && typeof obj === "object" && !Array.isArray(obj)
@@ -57,6 +62,26 @@ describe("espaces de noms coach*", () => {
     for (const s of ["done", "inProgress", "todo", "locked"]) expect(resolve(fr, `coachMembers.pillarStatus.${s}`), s).toEqual(expect.any(String));
     for (const k of ["quiz", "reflections", "readingPositions"]) expect(resolve(fr, `coachMembers.unavailableItems.${k}`), k).toEqual(expect.any(String));
   });
+
+  it("lot 3 : une traduction existe pour chaque statut, type, champ de note et statut d'action", () => {
+    for (const dict of [fr, en]) {
+      for (const k of SESSION_STATUSES) expect(resolve(dict, `coachSessions.status.${k}`), k).toEqual(expect.any(String));
+      for (const k of SESSION_TYPES) expect(resolve(dict, `coachSessions.type.${k}`), k).toEqual(expect.any(String));
+      for (const k of NOTE_FIELDS) expect(resolve(dict, `coachNotes.fields.${k}`), k).toEqual(expect.any(String));
+      for (const k of ACTION_STATUSES) expect(resolve(dict, `coachActions.status.${k}`), k).toEqual(expect.any(String));
+    }
+  });
+
+  it("lot 3 : chaque code d'erreur de séance a un message (sauf ambiguë, gérée par un choix) et un message générique existe", () => {
+    for (const dict of [fr, en]) {
+      expect(resolve(dict, "coachSessions.errors.generic")).toEqual(expect.any(String));
+      for (const code of Object.keys(SESSION_ERROR_STATUS)) {
+        if (code === "ambiguous_local_time") continue;
+        expect(resolve(dict, `coachSessions.errors.${code}`), code).toEqual(expect.any(String));
+      }
+      for (const ns of ["coachNotes", "coachReports", "coachActions"]) expect(resolve(dict, `${ns}.errors.generic`), ns).toEqual(expect.any(String));
+    }
+  });
 });
 
 function sourceFiles(dir: string, out: string[] = []): string[] {
@@ -75,6 +100,7 @@ describe("aucune clé brute dans l'interface", () => {
       ...sourceFiles(join(root, "src/components/coach")),
       ...sourceFiles(join(root, "src/app/coach")),
       join(root, "src/components/dashboard/coach-proposal-card.tsx"),
+      join(root, "src/components/dashboard/coach-follow-up-card.tsx"),
       join(root, "src/lib/coach-nav.ts"),
     ];
     const used = new Set<string>();

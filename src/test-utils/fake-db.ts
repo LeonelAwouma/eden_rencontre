@@ -26,6 +26,8 @@ export interface FakeWorld {
   authAdminCalls?: string[];
   /** Si défini, `auth.getUser(token)` ne reconnaît QUE ces jetons (sinon : n'importe quel jeton, comme avant). */
   validTokens?: string[];
+  /** Valeurs par défaut de la base (ex. `published_at: null`) fusionnées sous le contenu d'un insert, par table. */
+  insertDefaults?: Record<string, Record<string, unknown>>;
 }
 
 export const newWorld = (): FakeWorld => ({ tables: {}, user: null, log: [], rpcCalls: [], authAdminCalls: [] });
@@ -44,7 +46,8 @@ function compare(a: unknown, b: unknown, asc: boolean): number {
 }
 
 export function createFakeDb(world: FakeWorld) {
-  let idCounter = 0;
+  // Compteur porté par le « monde » : chaque getSupabaseAdmin() crée un NOUVEAU faux client, les identifiants ne doivent pas se répéter.
+  const seq = world as FakeWorld & { idSeq?: number };
   const db = {
     auth: {
       getUser: async (token?: string) => {
@@ -72,6 +75,7 @@ export function createFakeDb(world: FakeWorld) {
       const filters: [string, string, unknown][] = [];
       const orders: Order[] = [];
       let single = false;
+      let returning: string | null = null; // colonnes demandées par .select() APRÈS un insert / update
 
       const q: Record<string, unknown> = {};
       const exec = () => {
@@ -89,14 +93,28 @@ export function createFakeDb(world: FakeWorld) {
           return true;
         });
 
+        const projectCols = (cols: string, r: Row): Row => {
+          const wantedCols = cols === "*" ? null : cols.split(",").map((c) => c.trim()).filter(Boolean);
+          return wantedCols ? Object.fromEntries(wantedCols.filter((c) => c in r).map((c) => [c, r[c]])) : { ...r };
+        };
         if (op === "insert") {
-          const row = { id: `fake-${++idCounter}`, ...payload };
+          // Identifiants de forme UUID : les routes les valident (isUuid).
+          const row = { id: `00000000-0000-4000-8000-${String((seq.idSeq = (seq.idSeq ?? 0) + 1)).padStart(12, "0")}`, ...(world.insertDefaults?.[table] ?? {}), ...payload };
           all.push(row);
+          if (returning !== null) {
+            const out = projectCols(returning, row);
+            return { data: single ? out : [out], error: null, count: null };
+          }
           return { data: null, error: null, count: null };
         }
         if (op === "update") {
-          all.filter(matches).forEach((r) => Object.assign(r, payload));
-          const hit = all.filter(matches)[0];
+          const hits = all.filter(matches);
+          hits.forEach((r) => Object.assign(r, payload));
+          if (returning !== null) {
+            const out = hits.map((r) => projectCols(returning!, r));
+            return { data: single ? (out[0] ?? null) : out, error: null, count: null };
+          }
+          const hit = hits[0];
           return { data: single ? (hit ? { id: hit.id } : null) : null, error: null, count: null };
         }
         if (op === "delete") {
@@ -123,6 +141,7 @@ export function createFakeDb(world: FakeWorld) {
       Object.assign(q, {
         select: (cols?: string, opts?: { count?: string; head?: boolean }) => {
           if (op === "select") columns = cols ?? "*";
+          else if (op === "insert" || op === "update") returning = cols ?? "*";
           countExact = opts?.count === "exact";
           head = !!opts?.head;
           return q;

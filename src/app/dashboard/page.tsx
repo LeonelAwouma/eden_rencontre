@@ -69,6 +69,7 @@ import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
 import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
 import { PushOptIn } from "@/components/push-opt-in";
 import { CoachProposalCard } from "@/components/dashboard/coach-proposal-card";
+import { CoachFollowUpCard } from "@/components/dashboard/coach-follow-up-card";
 import { AutoSaveIndicator } from "@/components/autosave-indicator";
 
 // Sentinel activeConvId used before any real conversation with Admin exists yet —
@@ -1335,6 +1336,7 @@ export default function DashboardPage() {
 
                 {/* Proposition d'accompagnement d'un coach (consentement) ou suivi actif : rien sinon. */}
                 <CoachProposalCard />
+                <CoachFollowUpCard />
 
                 {/* Nouveauté : une seule carte à la fois, dans le flux (jamais fixe), absente des écrans immersifs. */}
                 <MemberAnnouncement />

@@ -12,12 +12,15 @@ const allDests = COACH_GROUPS.flatMap((g) => g.dests);
 const routes = allDests.filter((d) => d.kind === "route");
 
 describe("coach-nav", () => {
-  it("n'expose QUE les 4 entrées du lot 2 (rien des lots 3 et 4)", () => {
-    expect(routes.map((d) => (d.kind === "route" ? d.href : ""))).toEqual(["/coach", "/coach/members", "/coach/formation", "/coach/profile"]);
+  it("n'expose QUE les entrées des lots 2 et 3 : rien du lot 4 (ressources, supervision), aucune messagerie", () => {
+    expect(routes.map((d) => (d.kind === "route" ? d.href : ""))).toEqual([
+      "/coach", "/coach/members", "/coach/formation", "/coach/sessions", "/coach/reports", "/coach/profile",
+    ]);
     for (const d of routes) {
       if (d.kind !== "route") continue;
-      expect(d.href).not.toMatch(/session|rendez|appointment|note|report|compte|resource|ressource/i);
+      expect(d.href).not.toMatch(/message|messag|chat|resource|ressource|supervis|couple|admin/i);
     }
+    for (const d of allDests) expect(d.id).not.toMatch(/message|chat|resource|couple/i);
   });
 
   it("traduit chaque libellé et chaque titre de groupe en français et en anglais", () => {

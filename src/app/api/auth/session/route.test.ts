@@ -14,6 +14,9 @@ vi.mock("@/lib/supabase-admin", async () => {
   return { getSupabaseAdmin: () => createFakeDb(world as never) };
 });
 
+// Limiteur de l'application : couvert dans route.delete.test.ts ; ici, jamais dépassé.
+vi.mock("@/lib/otp", () => ({ checkRateLimit: async () => true, recordRateLimit: async () => {} }));
+
 const U = "c0000000-0000-4000-8000-000000000001";
 type Kind = "coach_active" | "coach_suspended" | "coach_desync" | "member";
 function seed(kind: Kind, token: string) {
@@ -45,7 +48,7 @@ describe("POST /api/auth/session : ré-établit le cookie de la garde serveur, p
     const { POST } = await import("./route");
     const res = await POST(post(bearer(token)));
     expect(res.status).toBe(200);
-    expect(await res.json()).toEqual({ ok: true });
+    expect(await res.json()).toEqual({ ok: true, oldSession: "none" });
     const c = res.cookies.get(COOKIE);
     expect(c).toMatchObject({ name: COOKIE, value: token, httpOnly: true, sameSite: "lax", path: "/" });
     expect(c!.maxAge).toBeGreaterThan(0);
@@ -130,14 +133,27 @@ describe("POST /api/auth/session : ré-établit le cookie de la garde serveur, p
   });
 });
 
-describe("DELETE /api/auth/session : déconnexion côté serveur", () => {
-  it("efface les deux cookies de session (Max-Age 0), sans authentification, et ne se met jamais en cache", async () => {
+describe("DELETE /api/auth/session : révocation (scénarios détaillés dans route.delete.test.ts)", () => {
+  const del = (headers: Record<string, string>) => new NextRequest("http://localhost:3000/api/auth/session", { method: "DELETE", headers });
+
+  it("sans credentials : cookie d'accès effacé, MAIS rien n'est confirmé (no_cookie / no_bearer) ; jamais mis en cache", async () => {
+    world.tables = {};
     const { DELETE } = await import("./route");
-    const res = await DELETE();
+    const res = await DELETE(del({ origin: "http://localhost:3000", host: "localhost:3000" }));
     expect(res.status).toBe(200);
-    for (const name of [COOKIE, "sb-refresh-token"]) {
-      expect(res.cookies.get(name), name).toMatchObject({ value: "", maxAge: 0, httpOnly: true, path: "/" });
-    }
+    const body = await res.json();
+    expect(body).toMatchObject({ confirmed: false, legs: { cookie: "no_cookie", bearer: "no_bearer" }, serverCookieClearIssued: true, pendingRetry: false });
+    expect(res.cookies.get(COOKIE)).toMatchObject({ value: "", maxAge: 0, httpOnly: true, path: "/" });
     expect(res.headers.get("cache-control")).toBe("private, no-store");
+  });
+
+  it("origine absente ou étrangère → 403, rien n'est lu ni effacé", async () => {
+    const { DELETE } = await import("./route");
+    for (const headers of [{}, { origin: "https://evil.example", host: "localhost:3000" }] as Record<string, string>[]) {
+      const res = await DELETE(del(headers));
+      expect(res.status).toBe(403);
+      expect(res.headers.get("set-cookie")).toBeNull();
+      expect((await res.json()).confirmed).toBe(false);
+    }
   });
 });

@@ -67,17 +67,33 @@ export function markCoachSyncAttempt(nowMs: number = Date.now()): void {
 }
 
 /**
- * (Navigateur) Demande au serveur de ré-établir le cookie de session du coach à partir de la session courante.
- * true seulement si le serveur a confirmé : jeton valide ET coach actif. Aucune redirection n'est faite ici.
+ * Interprète la réponse du serveur à la synchronisation. Fonction pure : le statut décide, sans confondre un refus
+ * d'autorisation (401/403/409 → `denied`) avec une panne (réseau, 5xx → `network_error`) ni avec une ancienne session
+ * serveur qu'il n'a pas pu traiter (502/503 avec `oldSession` → `unconfirmed_old_session`).
  */
-export async function syncCoachSessionCookie(): Promise<boolean> {
+export function interpretSyncResponse(status: number, body: unknown): "ok" | "denied" | "network_error" | "unconfirmed_old_session" {
+  if (status === 200) return "ok";
+  if (status === 401 || status === 403 || status === 409) return "denied";
+  const hasOldSession = Boolean(body && typeof body === "object" && "oldSession" in (body as Record<string, unknown>));
+  if ((status === 502 || status === 503) && hasOldSession) return "unconfirmed_old_session";
+  return "network_error";
+}
+
+/**
+ * (Navigateur) Demande au serveur de ré-établir le cookie de session du coach à partir de la session courante.
+ * `authHeaders()` passe par `supabase.auth.getSession()`, qui renouvelle le jeton si nécessaire. Le résultat est
+ * typé : seul `ok` signifie « jeton valide ET coach actif, cookie posé ». Aucune redirection ni déconnexion ici.
+ */
+export async function syncCoachSessionCookie(): Promise<"ok" | "denied" | "network_error" | "no_session" | "unconfirmed_old_session"> {
   try {
     const { authHeaders } = await import("@/lib/auth");
     const headers = await authHeaders();
-    if (!headers.Authorization) return false;
+    if (!headers.Authorization) return "no_session";
     const res = await fetch("/api/auth/session", { method: "POST", headers, credentials: "same-origin", cache: "no-store" });
-    return res.ok;
+    let body: unknown = null;
+    try { body = await res.json(); } catch { /* corps illisible */ }
+    return interpretSyncResponse(res.status, body);
   } catch {
-    return false;
+    return "network_error";
   }
 }
