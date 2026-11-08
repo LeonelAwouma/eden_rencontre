@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Monogram } from "@/components/ornaments";
@@ -11,8 +11,10 @@ import {
   LayoutDashboard, Users, CalendarDays, ShieldCheck, BarChart3,
   CreditCard, Settings, LogOut, X, Heart, MessageSquare,
   MessageCircle, PanelLeftClose, PanelLeftOpen, Video, Library,
-  BookOpen, Send, Keyboard, MessagesSquare, Accessibility, FileUp, Gift, Megaphone,
+  BookOpen, Send, MessagesSquare, Accessibility, FileUp, Gift, Megaphone,
+  UserCog, CalendarClock, GraduationCap, type LucideIcon,
 } from "lucide-react";
+import { ADMIN_NAV_GROUPS, ADMIN_NAV_ITEMS, activeAdminNavHref, type AdminNavItem } from "@/lib/admin-nav";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -27,39 +29,36 @@ interface SidebarProps {
 
 const BRAND_GREEN = "#486B46";
 
-const NAV_ITEMS = [
-  { label: "Tableau de bord", href: "/admin/dashboard", icon: LayoutDashboard, section: "main", shortcut: "⌘D" },
-  { label: "Utilisateurs", href: "/admin/users", icon: Users, section: "main", shortcut: "⌘U" },
-  { label: "Import de fichiers", href: "/admin/photos", icon: FileUp, section: "main" },
-  { label: "Matching", href: "/admin/matching", icon: Heart, section: "main" },
-  { label: "Témoignages", href: "/admin/testimonials", icon: MessageSquare, section: "content" },
-  { label: "Surveillance de la discussion", href: "/admin/chat-monitoring", icon: MessageCircle, section: "content" },
-  { label: "Messagerie", href: "/admin/messages", icon: Send, section: "content" },
-  { label: "Événements", href: "/admin/events", icon: CalendarDays, section: "content" },
-  { label: "Visioconférences", href: "/admin/meets", icon: Video, section: "content" },
-  { label: "Médiathèque", href: "/admin/mediatheque", icon: Library, section: "content" },
-  { label: "Forum", href: "/admin/forum", icon: MessagesSquare, section: "content" },
-  { label: "Blog", href: "/admin/blog", icon: BookOpen, section: "content" },
-  { label: "Accessibilité", href: "/admin/accessibilite", icon: Accessibility, section: "platform" },
-  { label: "Rapports", href: "/admin/reports", icon: ShieldCheck, section: "platform" },
-  { label: "Parrainages et récompenses", href: "/admin/referrals", icon: Gift, section: "platform" },
-  { label: "Paiements", href: "/admin/payments", icon: CreditCard, section: "platform" },
-  { label: "Analytics", href: "/admin/analytics", icon: BarChart3, section: "platform" },
-  { label: "Annonces", href: "/admin/announcements", icon: Megaphone, section: "platform" },
-  { label: "Paramètres", href: "/admin/settings", icon: Settings, section: "platform" },
-];
-
-const SECTIONS = [
-  { key: "main", label: "Général" },
-  { key: "content", label: "Contenu & Communication" },
-  { key: "platform", label: "Plateforme" },
-];
+/** Icône de chaque entrée de `ADMIN_NAV_ITEMS` (la structure vit dans src/lib/admin-nav.ts). */
+const NAV_ICONS: Record<string, LucideIcon> = {
+  dashboard: LayoutDashboard,
+  users: Users,
+  photos: FileUp,
+  accessibility: Accessibility,
+  coaches: UserCog,
+  matching: Heart,
+  "chat-monitoring": MessageCircle,
+  messages: Send,
+  forum: MessagesSquare,
+  reports: ShieldCheck,
+  testimonials: MessageSquare,
+  events: CalendarDays,
+  meets: Video,
+  meetings: CalendarClock,
+  mediatheque: Library,
+  blog: BookOpen,
+  announcements: Megaphone,
+  payments: CreditCard,
+  referrals: Gift,
+  analytics: BarChart3,
+  "analytics-lessons": GraduationCap,
+  settings: Settings,
+};
 
 export function Sidebar({
   isOpen, isCollapsed, onClose, onToggleCollapse, onLogout, adminName, newHrefs = [],
 }: SidebarProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   // Tooltip du mode réduit : rendu hors de la nav (qui défile et rognerait un
   // tooltip en position absolue), aligné sur l'élément survolé.
   const [tooltip, setTooltip] = useState<{ label: string; y: number } | null>(null);
@@ -83,15 +82,9 @@ export function Sidebar({
     };
   }, [isOpen, onClose]);
 
-  const isActive = (item: (typeof NAV_ITEMS)[0]) => {
-    const itemPath = item.href.split("?")[0];
-    const itemSearchParams = new URL(item.href, "http://localhost").searchParams;
-    if (item.href === "/admin/dashboard") return pathname === "/admin/dashboard";
-    if (itemSearchParams.has("status")) {
-      return pathname === itemPath && searchParams.get("status") === itemSearchParams.get("status");
-    }
-    return pathname.startsWith(itemPath);
-  };
+  // Une seule entrée active à la fois : la plus précise (voir activeAdminNavHref).
+  const activeHref = activeAdminNavHref(pathname ?? "");
+  const isActive = (item: AdminNavItem) => item.href === activeHref;
 
   return (
     <>
@@ -125,7 +118,7 @@ export function Sidebar({
                   <p className="font-headline text-[18px] leading-tight font-bold text-[#1F3328] truncate">
                     Garden <span className="italic font-normal" style={{ color: BRAND_GREEN }}>of Alliance</span>
                   </p>
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-zinc-500">Administration</p>
+                  <p className="text-[12px] font-semibold tracking-[0.04em] text-[#5F6B63]">Administration</p>
                 </div>
               </motion.div>
             )}
@@ -140,23 +133,24 @@ export function Sidebar({
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 custom-scrollbar">
-          {SECTIONS.map((section, sectionIndex) => {
-            const items = NAV_ITEMS.filter((i) => i.section === section.key);
+          {ADMIN_NAV_GROUPS.map((section, sectionIndex) => {
+            const items = ADMIN_NAV_ITEMS.filter((i) => i.group === section.id);
             return (
-              <div key={section.key} className={cn(sectionIndex > 0 && (isCollapsed ? "mt-2" : "mt-6"))}>
+              <div key={section.id} role="group" aria-label={section.label}
+                className={cn(sectionIndex > 0 && (isCollapsed ? "mt-2" : "mt-5"))}>
                 <AnimatePresence>
                   {!isCollapsed && (
                     <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#5F6B63] px-3 pb-2">
+                      className="text-[12px] font-semibold tracking-[0.02em] text-[#5F6B63] px-3 pb-1.5">
                       {section.label}
                     </motion.p>
                   )}
                 </AnimatePresence>
                 {isCollapsed && sectionIndex > 0 && <div className="mx-2 mb-2 h-px bg-[#ECE8E1]" />}
-                <div className="space-y-1">
+                <div className="space-y-0.5">
                   {items.map((item) => {
                     const active = isActive(item);
-                    const Icon = item.icon;
+                    const Icon = NAV_ICONS[item.id] ?? LayoutDashboard;
                     const isNew = newHrefs.includes(item.href);
                     return (
                       <div key={item.href} className="relative group">
@@ -170,7 +164,7 @@ export function Sidebar({
                           className={cn(
                             "flex items-center gap-3 rounded-[10px] transition-colors duration-150 relative",
                             "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                            isCollapsed ? "justify-center w-11 h-10 mx-auto" : "px-3 py-2 min-h-[38px]",
+                            isCollapsed ? "justify-center w-11 h-10 mx-auto" : "px-3 py-2 min-h-[40px]",
                             active ? "bg-primary/[0.08] text-[#486B46]" : "text-[#4A534D] hover:bg-[#F5F3EF] hover:text-[#1F2A23]"
                           )}>
                           <Icon className={cn("w-[18px] h-[18px] flex-shrink-0 transition-colors duration-150",
@@ -182,12 +176,6 @@ export function Sidebar({
                           )}
                           {!isCollapsed && isNew && <NewBadge />}
                           {isCollapsed && isNew && <span className="absolute top-1 right-1"><NewBadge variant="dot" /></span>}
-                          {!isCollapsed && item.shortcut && (
-                            <span className={cn("text-[10px] font-mono px-1.5 py-0.5 rounded border opacity-0 group-hover:opacity-100 transition-opacity duration-150",
-                              active ? "text-primary/70 border-primary/15 bg-primary/5" : "text-[#6B746E] border-zinc-200 bg-zinc-50")}>
-                              {item.shortcut}
-                            </span>
-                          )}
                         </Link>
                       </div>
                     );
@@ -204,18 +192,6 @@ export function Sidebar({
             <div className="relative bg-[#1F2A23] text-white text-[12px] font-medium px-3 py-1.5 rounded-lg whitespace-nowrap shadow-lg">
               {tooltip.label}
               <span className="absolute right-full top-1/2 -translate-y-1/2 border-4 border-transparent border-r-[#1F2A23]" />
-            </div>
-          </div>
-        )}
-
-        {/* Keyboard shortcuts hint */}
-        {!isCollapsed && (
-          <div className="mx-3 mb-1">
-            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-zinc-50 border border-zinc-100">
-              <Keyboard className="w-3.5 h-3.5 text-[#6B746E]" aria-hidden="true" />
-              <span className="text-[11px] text-[#5F6B63] font-medium">
-                Appuyez sur <kbd className="px-1 py-0.5 bg-white rounded border border-zinc-200 text-zinc-500 font-mono text-[9px]">?</kbd> pour les raccourcis
-              </span>
             </div>
           </div>
         )}

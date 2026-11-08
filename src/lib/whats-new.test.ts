@@ -1,5 +1,5 @@
-import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
+import { ADMIN_NAV_ITEMS } from "./admin-nav";
 import { MEMBER_GROUPS, destHref } from "./member-nav";
 import { RESOLVERS } from "./whats-new-server";
 import {
@@ -64,12 +64,12 @@ describe("registre des nouveautés", () => {
 
   it("badge une entrée de menu réelle (navHref ?? href), sans exiger que href figure au menu", () => {
     const memberMenu = new Set(MEMBER_GROUPS.flatMap((g) => g.dests).map(destHref).filter(Boolean));
-    const adminSidebar = readFileSync("src/components/admin/sidebar.tsx", "utf8");
+    const adminMenu = new Set(ADMIN_NAV_ITEMS.map((i) => i.href));
 
     for (const a of ANNOUNCEMENTS) {
       const target = badgeTarget(a);
       if (a.surface === "member") expect(memberMenu.has(target), `${a.id} → ${target}`).toBe(true);
-      if (a.surface === "admin") expect(adminSidebar.includes(`href: "${target}"`), `${a.id} → ${target}`).toBe(true);
+      if (a.surface === "admin") expect(adminMenu.has(target), `${a.id} → ${target}`).toBe(true);
     }
   });
 
