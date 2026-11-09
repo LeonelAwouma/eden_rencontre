@@ -5,28 +5,48 @@ type Row = Record<string, unknown> | null;
 const w = vi.hoisted(() => ({
   profile: null as Row,
   coach: null as Row,
+  profileError: null as null | { code: string },
+  coachError: null as null | { code: string },
   lastLoginWrites: 0,
   signOuts: 0,
+  authSignIns: 0,
+  adminTables: [] as string[],
 }));
 
 vi.mock("@/lib/api-auth", () => ({ clientIp: () => "1.2.3.4" }));
 vi.mock("@/lib/otp", () => ({ checkRateLimit: async () => true, recordRateLimit: async () => {} }));
+
+// Le client Auth public et le client service_role sont volontairement distincts.
+vi.mock("@/lib/supabase-auth-server", () => ({
+  getSupabaseAuthClient: () => ({
+    auth: {
+      signInWithPassword: async () => {
+        w.authSignIns++;
+        return {
+          data: { user: { id: "u1" }, session: { access_token: "a", refresh_token: "r", expires_in: 3600 } },
+          error: null,
+        };
+      },
+    },
+  }),
+}));
+
 vi.mock("@/lib/supabase-admin", () => ({
   getSupabaseAdmin: () => ({
     auth: {
-      signInWithPassword: async () => ({
-        data: { user: { id: "u1" }, session: { access_token: "a", refresh_token: "r", expires_in: 3600 } },
-        error: null,
-      }),
-      admin: { signOut: async () => { w.signOuts++; } },
+      admin: { signOut: async () => { w.signOuts++; return { error: null }; } },
     },
     from: (table: string) => {
+      w.adminTables.push(table);
       const q: Record<string, unknown> = {};
       Object.assign(q, {
         select: () => q,
         eq: () => q,
         update: () => { if (table === "coach_accounts") w.lastLoginWrites++; return q; },
-        maybeSingle: async () => ({ data: table === "profiles" ? w.profile : w.coach, error: null }),
+        maybeSingle: async () => ({
+          data: table === "profiles" ? w.profile : w.coach,
+          error: table === "profiles" ? w.profileError : w.coachError,
+        }),
         then: (res: (v: unknown) => unknown) => Promise.resolve({ data: null, error: null }).then(res),
       });
       return q;
@@ -41,9 +61,30 @@ const login = () =>
     headers: { "Content-Type": "application/json" },
   });
 
-beforeEach(() => { w.profile = null; w.coach = null; w.lastLoginWrites = 0; w.signOuts = 0; });
+beforeEach(() => {
+  w.profile = null;
+  w.coach = null;
+  w.profileError = null;
+  w.coachError = null;
+  w.lastLoginWrites = 0;
+  w.signOuts = 0;
+  w.authSignIns = 0;
+  w.adminTables.length = 0;
+});
 
 describe("POST /api/auth/login", () => {
+  test("la vérification du mot de passe utilise le client Auth dédié ; les lectures restent sur le client admin", async () => {
+    w.profile = { status: "approved", name: "C", email: "a@x.fr", account_type: "coach" };
+    w.coach = { user_id: "u1", active: true };
+    const { POST } = await import("./route");
+    const res = await POST(login());
+    expect(res.status).toBe(200);
+    expect(w.authSignIns).toBe(1);
+    expect(w.adminTables).toContain("profiles");
+    expect(w.adminTables).toContain("coach_accounts");
+    expect((await res.json()).user.role).toBe("coach");
+  });
+
   test("membre approuvé : connexion, rôle member, aucune écriture de dernière connexion coach", async () => {
     w.profile = { status: "approved", name: "M", email: "a@x.fr", account_type: "member" };
     const { POST } = await import("./route");
@@ -102,6 +143,25 @@ describe("POST /api/auth/login", () => {
     w.coach = { user_id: "u1", active: true };
     const { POST } = await import("./route");
     expect((await POST(login())).status).toBe(403);
+  });
+
+  test("une panne de lecture de coach_accounts renvoie 503 et non une fausse incohérence 403", async () => {
+    w.profile = { status: "approved", name: "C", email: "a@x.fr", account_type: "coach" };
+    w.coachError = { code: "42501" };
+    const { POST } = await import("./route");
+    const res = await POST(login());
+    expect(res.status).toBe(503);
+    expect((await res.json()).error).toBe("account_status_unavailable");
+    expect(w.signOuts).toBe(1);
+  });
+
+  test("une panne de lecture du profil renvoie 503 et révoque la session provisoire", async () => {
+    w.profileError = { code: "XX000" };
+    const { POST } = await import("./route");
+    const res = await POST(login());
+    expect(res.status).toBe(503);
+    expect((await res.json()).error).toBe("account_status_unavailable");
+    expect(w.signOuts).toBe(1);
   });
 
   test("membre en attente : 403 pending", async () => {
