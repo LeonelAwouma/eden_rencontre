@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { CoachShell } from "@/components/coach/coach-shell";
 import { CoachUnavailable } from "@/components/coach/coach-unavailable";
 import { enforceCoachPageAccess } from "@/lib/coach/layout-guard";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
 
 /**
  * Layout de l'espace professionnel : composant SERVEUR. L'accès est décidé ICI, avant qu'aucune page ne soit
@@ -21,5 +22,11 @@ export default async function CoachLayout({ children }: { children: ReactNode })
   // La décision est prise (et la redirection levée) AVANT que `children` ne soit rendu.
   const coach = await enforceCoachPageAccess(await headers());
   if (coach === "unavailable") return <CoachUnavailable />;
-  return <CoachShell coach={coach}>{children}</CoachShell>;
+  // Photo : lecture serveur de la seule ligne du coach connecté ; une erreur de lecture n'empêche rien (initiale).
+  let avatarUrl: string | null = null;
+  try {
+    const { data } = await getSupabaseAdmin().from("profiles").select("avatar_url").eq("id", coach.id).maybeSingle();
+    avatarUrl = (data as { avatar_url?: string | null } | null)?.avatar_url ?? null;
+  } catch { /* photo facultative */ }
+  return <CoachShell coach={{ ...coach, avatarUrl }}>{children}</CoachShell>;
 }

@@ -6,6 +6,7 @@ import { checkRateLimit, recordRateLimit } from "@/lib/otp";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { mapAssignmentError } from "@/lib/coach/assignment-errors";
 import { restoreCoachSessions, revokeCoachSessions } from "@/lib/coach/lifecycle";
+import { checkAvatarFile, removeAvatarFile, uploadCoachAvatar, type AvatarCheck } from "@/lib/coach/avatar";
 import { classifyCreateUserError, failure, sanitizedDiagnostic, type AuthErrorInfo } from "@/lib/coach/create-user-errors";
 
 /**
@@ -73,19 +74,48 @@ export async function GET() {
       .select("user_id,email,display_name,active,created_at").order("created_at", { ascending: false }) as typeof res;
   }
   if (res.error) return json({ error: "Impossible de consulter les coachs" }, 500);
-  return json({ coaches: res.data || [] });
+  const rows = (res.data || []) as Array<{ user_id: string }>;
+  // Photos : lues dans profiles (source de vérité de l'avatar). Une lecture en échec n'empêche pas la liste.
+  const avatars = new Map<string, string | null>();
+  if (rows.length > 0) {
+    const { data: profs } = await db.from("profiles").select("id,avatar_url").in("id", rows.map(r => r.user_id));
+    for (const p of (profs || []) as Array<{ id: string; avatar_url: string | null }>) avatars.set(p.id, p.avatar_url);
+  }
+  return json({ coaches: rows.map(r => ({ ...r, avatar_url: avatars.get(r.user_id) ?? null })) });
 }
 
 export async function POST(req: NextRequest) {
   const admin = await adminSession();
   if (!admin) return json({ error: "Non autorisé" }, 401);
-  const body = await req.json().catch(() => null);
+  // JSON (réinitialisation, création sans photo) ou multipart (création avec photo facultative).
+  const isMultipart = (req.headers.get("content-type") || "").toLowerCase().startsWith("multipart/form-data");
+  let body: Record<string, unknown> | null = null;
+  let photo: unknown = null;
+  if (isMultipart) {
+    const form = await req.formData().catch(() => null);
+    if (form) {
+      body = {
+        email: form.get("email"), password: form.get("password"), name: form.get("name"),
+      };
+      const file = form.get("photo");
+      if (file && typeof file === "object") photo = file;
+    }
+  } else {
+    body = await req.json().catch(() => null);
+  }
 
   if (body?.action === "reset_password") return resetPassword(admin, req, body.id);
 
   const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   const password = typeof body?.password === "string" ? body.password : "";
   const name = typeof body?.name === "string" && body.name.trim() ? body.name.trim() : "Coach";
+  // La photo est contrôlée AVANT toute création : une image refusée ne laisse aucun compte à moitié créé.
+  let avatar: Extract<AvatarCheck, { ok: true }> | null = null;
+  if (photo) {
+    const check = await checkAvatarFile(photo);
+    if (!check.ok) return json({ error: check.message, code: check.code }, check.code === "avatar_too_large" ? 413 : 400);
+    avatar = check;
+  }
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || name.length > 100
     || password.length < 12 || password.length > 128 || !/\d/.test(password) || !/[A-Za-z]/.test(password)) {
     return json({ error: "Adresse e-mail et mot de passe de 12 caractères minimum (lettres et chiffres) requis." }, 400);
@@ -120,8 +150,10 @@ export async function POST(req: NextRequest) {
   }
   const id = created.user.id;
 
-  // Annule TOUT ce qui a été créé (le profil part en cascade avec l'utilisateur Auth).
+  let uploadedPath: string | null = null;
+  // Annule TOUT ce qui a été créé (le profil part en cascade avec l'utilisateur Auth), fichier de photo compris.
   const rollback = async () => {
+    await removeAvatarFile(db, uploadedPath);
     try { await db.from("coach_accounts").delete().eq("user_id", id); } catch { /* best effort */ }
     try { await db.auth.admin.deleteUser(id); } catch { /* best effort */ }
   };
@@ -134,6 +166,17 @@ export async function POST(req: NextRequest) {
     .upsert({ id, email, name, status: "approved", account_type: "coach" }, { onConflict: "id" });
   if (profileError) { await rollback(); return json({ error: "Impossible d'isoler le compte Coach." }, 500); }
 
+  // Photo : envoi puis enregistrement de l'URL. Un échec annule tout (compte + fichier), jamais de compte partiel.
+  let avatarUrl: string | null = null;
+  if (avatar) {
+    const up = await uploadCoachAvatar(db, id, avatar);
+    if (!up) { await rollback(); return json({ error: "Envoi de la photo impossible, création annulée.", code: "avatar_upload_failed" }, 500); }
+    uploadedPath = up.path;
+    const { error: avatarError } = await db.from("profiles").update({ avatar_url: up.url }).eq("id", id);
+    if (avatarError) { await rollback(); return json({ error: "Enregistrement de la photo impossible, création annulée.", code: "avatar_save_failed" }, 500); }
+    avatarUrl = up.url;
+  }
+
   // Relecture : on ne déclare le succès qu'après avoir constaté la cohérence des trois sources.
   const state = await loadCoach(db, id);
   if (!state || !state.profile || state.profile.account_type !== "coach" || state.profile.status !== "approved" || state.account.active !== true) {
@@ -141,8 +184,8 @@ export async function POST(req: NextRequest) {
     return json({ error: "Création incohérente, opération annulée." }, 500);
   }
 
-  await audit(admin, req, "coach_created", id, { email, name });
-  return json({ id, email, name, active: true }, 201);
+  await audit(admin, req, "coach_created", id, { email, name, with_photo: !!avatarUrl });
+  return json({ id, email, name, active: true, avatar_url: avatarUrl }, 201);
 }
 
 async function resetPassword(admin: AdminSession, req: NextRequest, id: unknown) {

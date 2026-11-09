@@ -3,8 +3,18 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { ArrowLeft, Check, Copy, KeyRound, Pencil, RefreshCw, ShieldCheck, Trash2, UserPlus, Users, X } from "lucide-react";
 import { CoachAssignments } from "@/components/admin/coach-assignments";
+import { CoachAvatar } from "@/components/coach/coach-avatar";
 
-type Coach = { user_id: string; email: string; display_name: string; active: boolean; created_at: string; last_login_at?: string | null };
+type Coach = { user_id: string; email: string; display_name: string; active: boolean; created_at: string; last_login_at?: string | null; avatar_url?: string | null };
+
+const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
+const PHOTO_MAX = 3 * 1024 * 1024;
+/** Contrôle rapide côté navigateur (le serveur revérifie le type réel et la taille). */
+function photoProblem(file: File): string {
+  if (!PHOTO_TYPES.includes(file.type)) return "Format refusé : utilisez une image JPEG, PNG ou WebP.";
+  if (file.size > PHOTO_MAX) return "Image trop lourde (3 Mo maximum).";
+  return "";
+}
 type Pending = { kind: "delete" | "reset"; coach: Coach } | null;
 
 const fmt = (iso?: string | null) =>
@@ -48,6 +58,34 @@ export default function AdminCoaches() {
   const [temp, setTemp] = useState<{ email: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [showMembers, setShowMembers] = useState<string | null>(null);
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState("");
+
+  const pickPhoto = (file: File | null) => {
+    setPhotoError("");
+    if (preview) URL.revokeObjectURL(preview);
+    if (!file) { setPhoto(null); setPreview(null); return; }
+    const problem = photoProblem(file);
+    if (problem) { setPhoto(null); setPreview(null); setPhotoError(problem); return; }
+    setPhoto(file); setPreview(URL.createObjectURL(file));
+  };
+  useEffect(() => () => { if (preview) URL.revokeObjectURL(preview); }, [preview]);
+
+  /** Remplace la photo d'un coach existant (réservé à l'administrateur). */
+  const replacePhoto = (c: Coach, file: File | null) => {
+    if (!file) return;
+    const problem = photoProblem(file);
+    if (problem) { setError(problem); return; }
+    return run(c.user_id, async () => {
+      const form = new FormData();
+      form.append("photo", file);
+      const res = await fetch(`/api/admin/coaches/${c.user_id}/avatar`, { method: "PUT", body: form, cache: "no-store" });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new ApiError(data.error || "Remplacement impossible", typeof data.code === "string" ? data.code : undefined);
+      setNotice("Photo mise à jour.");
+    });
+  };
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -75,8 +113,16 @@ export default function AdminCoaches() {
   const create = async (e: React.FormEvent) => {
     e.preventDefault(); setSaving(true); setError(""); setNotice("");
     try {
-      await call("POST", { name, email, password });
-      setName(""); setEmail(""); setPassword("");
+      if (photo) {
+        const form = new FormData();
+        form.append("name", name); form.append("email", email); form.append("password", password); form.append("photo", photo);
+        const res = await fetch("/api/admin/coaches", { method: "POST", body: form, cache: "no-store" });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok) throw new ApiError(data.error || "Opération refusée", typeof data.code === "string" ? data.code : undefined);
+      } else {
+        await call("POST", { name, email, password });
+      }
+      setName(""); setEmail(""); setPassword(""); pickPhoto(null);
       setNotice("Compte Coach créé. Il peut se connecter avec son adresse e-mail et son mot de passe.");
       await load();
     } catch (err) { fail(err, "Erreur de création"); }
@@ -147,6 +193,21 @@ export default function AdminCoaches() {
           <label className="block text-sm font-medium">Nom du coach (facultatif)<input value={name} onChange={e => setName(e.target.value)} maxLength={100} className="mt-1 block w-full border rounded-lg px-3 py-2" /></label>
           <label className="block text-sm font-medium">Adresse e-mail<input required type="email" autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" /></label>
           <label className="block text-sm font-medium">Mot de passe initial<input required type="password" autoComplete="new-password" minLength={12} value={password} onChange={e => setPassword(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" /><span className="text-xs text-[#56615A]">12 caractères minimum, lettres et chiffres. Transmettez-le par un canal sécurisé.</span></label>
+          <div className="text-sm font-medium">
+            <span>Photo de profil du coach (facultative)</span>
+            <div className="mt-1 flex items-center gap-3">
+              <CoachAvatar url={preview} name={name || email} size={64} />
+              <div className="flex flex-wrap gap-2">
+                <label className="cursor-pointer border rounded-lg px-3 py-1.5 text-sm font-normal">
+                  {photo ? "Remplacer" : "Choisir une image"}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" onChange={e => { pickPhoto(e.target.files?.[0] ?? null); e.target.value = ""; }} />
+                </label>
+                {photo && <button type="button" onClick={() => pickPhoto(null)} className="border rounded-lg px-3 py-1.5 text-sm font-normal">Retirer</button>}
+              </div>
+            </div>
+            <span className="block text-xs font-normal text-[#56615A] mt-1">JPEG, PNG ou WebP, 3 Mo maximum.</span>
+            {photoError && <span role="alert" className="block text-xs text-red-700 mt-1">{photoError}</span>}
+          </div>
           <button disabled={saving} className="rounded-xl bg-[#486B46] text-white px-4 py-2 w-full disabled:opacity-50">{saving ? "Création…" : "Créer le compte Coach"}</button>
         </form>
 
@@ -163,7 +224,8 @@ export default function AdminCoaches() {
                 return (
                   <li key={c.user_id} className="py-4 space-y-3">
                     <div className="flex flex-wrap items-start justify-between gap-3">
-                      <div className="min-w-0">
+                      <CoachAvatar url={c.avatar_url} name={c.display_name} size={64} />
+                      <div className="min-w-0 flex-1">
                         {isEditing ? (
                           <form onSubmit={e => { e.preventDefault(); void rename(); }} className="flex items-center gap-2">
                             <input autoFocus value={editing.name} maxLength={100} onChange={e => setEditing({ id: c.user_id, name: e.target.value })} aria-label="Nom du coach" className="border rounded-lg px-3 py-1.5 text-sm" />
@@ -178,6 +240,10 @@ export default function AdminCoaches() {
                     <p className="text-xs text-[#56615A]">Créé le {fmt(c.created_at)} · Dernière connexion : {fmt(c.last_login_at)}</p>
                     <div className="flex flex-wrap gap-2">
                       <button disabled={busy} onClick={() => setEditing({ id: c.user_id, name: c.display_name })} className="inline-flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-sm disabled:opacity-50"><Pencil className="w-3.5 h-3.5" />Modifier le nom</button>
+                      <label className={`inline-flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-sm cursor-pointer ${busy ? "opacity-50 pointer-events-none" : ""}`}>
+                        Changer la photo
+                        <input type="file" accept="image/jpeg,image/png,image/webp" className="sr-only" disabled={busy} onChange={e => { void replacePhoto(c, e.target.files?.[0] ?? null); e.target.value = ""; }} />
+                      </label>
                       <button disabled={busy} onClick={() => setPending({ kind: "reset", coach: c })} className="inline-flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-sm disabled:opacity-50"><KeyRound className="w-3.5 h-3.5" />Réinitialiser le mot de passe</button>
                       <button disabled={busy} onClick={() => setShowMembers(showMembers === c.user_id ? null : c.user_id)} aria-expanded={showMembers === c.user_id} className="inline-flex items-center gap-1.5 border px-3 py-1.5 rounded-lg text-sm disabled:opacity-50"><Users className="w-3.5 h-3.5" />Membres</button>
                       <button disabled={busy} onClick={() => void toggle(c)} className="border px-3 py-1.5 rounded-lg text-sm disabled:opacity-50">{busy ? "…" : c.active ? "Suspendre" : "Réactiver"}</button>
