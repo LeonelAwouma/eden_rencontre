@@ -5,7 +5,7 @@ import { checkRateLimit, recordRateLimit } from "@/lib/otp";
 import { clientIp } from "@/lib/api-auth";
 
 // Échecs tolérés sur 15 minutes avant blocage temporaire : par compte visé
-// (essais de mots de passe sur une adresse) et par adresse IP (essais en masse.
+// (essais de mots de passe sur une adresse) et par adresse IP (essais en masse).
 const MAX_FAILURES_PER_EMAIL = 8;
 const MAX_FAILURES_PER_IP = 30;
 const WINDOW_SECONDS = 15 * 60;
