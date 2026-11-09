@@ -40,6 +40,7 @@ export const ADMIN_NAV_ITEMS: ReadonlyArray<AdminNavItem> = [
   { id: "accessibility", label: "Accessibilité", href: "/admin/accessibilite", group: "members" },
 
   { id: "coaches", label: "Coachs", href: "/admin/users/coaches", group: "coaches" },
+  { id: "coach-assignments", label: "Affectation aux coachs", href: "/admin/users/coach-assignments", group: "coaches" },
 
   { id: "matching", label: "Matching", href: "/admin/matching", group: "matching" },
 

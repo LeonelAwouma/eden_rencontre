@@ -45,8 +45,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
- fix/coach-access-hardening
-    const db = getSupabaseAdmin();
     // « email » peut être une adresse e-mail OU un numéro international (+237…) : les comptes
     // « téléphone seul » se connectent avec leur numéro (adresse technique, lib/phone-identity.ts).
     const cleanEmail = loginIdentifierToEmail(email);
@@ -57,9 +55,6 @@ export async function POST(request: NextRequest) {
       );
     }
     const phoneLogin = isSyntheticEmail(cleanEmail);
-=======
-    const cleanEmail = email.trim().toLowerCase();
- main
     const ip = clientIp(request);
     const emailKey = `login:${cleanEmail}`;
     const ipKey = `login-ip:${ip}`;

@@ -18,6 +18,7 @@ const w = vi.hoisted(() => ({
   authDeleteFails: false,
   rpcError: null as null | { code?: string; message: string }, // erreur de la fonction SQL = rollback complet
   assignmentsToEnd: 0,
+  storage: { files: new Set<string>(), uploadFails: false, removed: [] as string[] },
   spies: { create: [] as unknown[], update: [] as unknown[], del: [] as string[], audit: [] as unknown[][], rpc: [] as { fn: string; args: Record<string, unknown> }[] },
 }));
 
@@ -52,6 +53,16 @@ vi.mock("@/lib/supabase-admin", () => ({
         },
       },
     },
+    storage: {
+      from: () => ({
+        upload: async (path: string) => {
+          if (w.storage.uploadFails) return { data: null, error: { message: "boom" } };
+          w.storage.files.add(path); return { data: { path }, error: null };
+        },
+        getPublicUrl: (path: string) => ({ data: { publicUrl: `https://p.supabase.co/storage/v1/object/public/chat-images/${path}` } }),
+        remove: async (paths: string[]) => { for (const p of paths) { w.storage.files.delete(p); w.storage.removed.push(p); } return { data: null, error: null }; },
+      }),
+    },
     // Fonction SQL transactionnelle : tout ou rien (w.rpcError = rollback, aucune table modifiée).
     rpc: async (fn: string, args: Record<string, unknown>) => {
       w.spies.rpc.push({ fn, args });
@@ -73,11 +84,13 @@ vi.mock("@/lib/supabase-admin", () => ({
       let op = "select";
       let payload: Row = {};
       const filters: Row = {};
+      const inFilters: Record<string, unknown[]> = {};
       const q: Record<string, unknown> = {};
       const exec = () => {
         if (w.fail[`${table}:${op}`]) return { data: null, error: { code: "XX", message: "boom" } };
         const map = w.tables[table];
-        const rows = [...map.values()].filter((r) => Object.entries(filters).every(([k, v]) => r[k] === v));
+        const rows = [...map.values()].filter((r) => Object.entries(filters).every(([k, v]) => r[k] === v)
+          && Object.entries(inFilters).every(([k, vs]) => vs.includes(r[k])));
         if (op === "insert") { map.set(payload[keyOf(table)] as string, { ...payload }); return { data: null, error: null }; }
         if (op === "upsert") { const id = payload[keyOf(table)] as string; map.set(id, { ...(map.get(id) || {}), ...payload }); return { data: null, error: null }; }
         if (op === "update") { rows.forEach((r) => Object.assign(r, payload)); return { data: rows[0] ?? null, error: null }; }
@@ -89,6 +102,7 @@ vi.mock("@/lib/supabase-admin", () => ({
         select: () => q,
         order: () => q,
         eq: (c: string, v: unknown) => { filters[c] = v; return q; },
+        in: (c: string, vs: unknown[]) => { inFilters[c] = vs; return q; },
         insert: (p: Row) => { op = "insert"; payload = p; return q; },
         upsert: (p: Row) => { op = "upsert"; payload = p; return q; },
         update: (p: Row) => { op = "update"; payload = p; return q; },
@@ -124,6 +138,7 @@ beforeEach(() => {
   w.admin = true; w.rateOk = true; w.fail = {};
   w.authCreateFails = false; w.authCreateError = null; w.authCreateThrows = false; w.adminInitThrows = false; w.authUpdateFails = false; w.authDeleteFails = false;
   w.rpcError = null; w.assignmentsToEnd = 0;
+  w.storage.files.clear(); w.storage.uploadFails = false; w.storage.removed.length = 0;
   w.tables.coach_accounts.clear(); w.tables.profiles.clear();
   w.tables.coach_audit_logs.clear(); w.tables.admin_notifications.clear(); w.tables.coach_member_assignments.clear();
   w.spies.create.length = 0; w.spies.update.length = 0; w.spies.del.length = 0; w.spies.audit.length = 0; w.spies.rpc.length = 0;
@@ -138,6 +153,78 @@ describe("accès administrateur", () => {
     expect((await r.PATCH(call("PATCH", { id: ID, active: false }))).status).toBe(401);
     expect((await r.DELETE(call("DELETE", { id: ID }))).status).toBe(401);
     expect(w.spies.create).toHaveLength(0);
+  });
+});
+
+const PNG = new Uint8Array([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 0]);
+const multipart = (photo?: Blob, over: Record<string, string> = {}) => {
+  const f = new FormData();
+  for (const [k, v] of Object.entries({ ...VALID, ...over })) f.append(k, v);
+  if (photo) f.append("photo", photo, "p.png");
+  return new NextRequest("http://x/api/admin/coaches", { method: "POST", body: f });
+};
+
+describe("photo du coach à la création", () => {
+  test("avec photo : fichier déposé, avatar_url enregistré dans profiles, compte complet", async () => {
+    const { POST } = await import("./route");
+    const res = await POST(multipart(new Blob([PNG], { type: "image/png" })));
+    expect(res.status).toBe(201);
+    expect(w.storage.files.size).toBe(1);
+    const path = [...w.storage.files][0];
+    expect(path).toMatch(new RegExp(`^avatars/coach-${ID}-\\d+\\.png$`));
+    expect(w.tables.profiles.get(ID)).toMatchObject({ account_type: "coach", status: "approved" });
+    expect(String(w.tables.profiles.get(ID)?.avatar_url)).toContain(path);
+    expect((await res.json()).avatar_url).toContain(path);
+  });
+
+  test("sans photo : création inchangée (multipart ou JSON), aucun fichier", async () => {
+    const { POST } = await import("./route");
+    expect((await POST(multipart())).status).toBe(201);
+    expect(w.storage.files.size).toBe(0);
+    expect(w.tables.profiles.get(ID)?.avatar_url).toBeUndefined();
+  });
+
+  test("image invalide (type réel) : refus 400 AVANT toute création de compte", async () => {
+    const { POST } = await import("./route");
+    const res = await POST(multipart(new Blob([new TextEncoder().encode("<?php echo 1;")], { type: "image/png" })));
+    expect(res.status).toBe(400);
+    expect((await res.json()).code).toBe("avatar_invalid_type");
+    expect(w.spies.create).toHaveLength(0);
+    expect(w.storage.files.size).toBe(0);
+  });
+
+  test("image trop lourde (> 3 Mo) : refus 413 sans compte", async () => {
+    const { POST } = await import("./route");
+    const big = new Uint8Array(3 * 1024 * 1024 + 1); big.set(PNG);
+    const res = await POST(multipart(new Blob([big], { type: "image/png" })));
+    expect(res.status).toBe(413);
+    expect(w.spies.create).toHaveLength(0);
+  });
+
+  test("échec de l'envoi : compte annulé, aucun fichier orphelin", async () => {
+    w.storage.uploadFails = true;
+    const { POST } = await import("./route");
+    const res = await POST(multipart(new Blob([PNG], { type: "image/png" })));
+    expect(res.status).toBe(500);
+    expect(w.tables.coach_accounts.size).toBe(0);
+    expect(w.spies.del).toContain(ID);
+    expect(w.storage.files.size).toBe(0);
+  });
+
+  test("échec de l'enregistrement de l'URL : fichier supprimé et compte annulé", async () => {
+    w.fail["profiles:update"] = true;
+    const { POST } = await import("./route");
+    const res = await POST(multipart(new Blob([PNG], { type: "image/png" })));
+    expect(res.status).toBe(500);
+    expect(w.storage.files.size).toBe(0);
+    expect(w.tables.coach_accounts.size).toBe(0);
+  });
+
+  test("la liste renvoie la photo de chaque coach", async () => {
+    seedCoach({}, { id: ID, status: "approved", account_type: "coach", name: "Coach", avatar_url: "https://x/a.png" });
+    const { GET } = await import("./route");
+    const body = await (await GET()).json();
+    expect(body.coaches[0].avatar_url).toBe("https://x/a.png");
   });
 });
 

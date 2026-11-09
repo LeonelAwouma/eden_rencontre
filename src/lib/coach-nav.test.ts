@@ -14,7 +14,7 @@ const routes = allDests.filter((d) => d.kind === "route");
 describe("coach-nav", () => {
   it("n'expose QUE les entrées des lots 2 et 3 : rien du lot 4 (ressources, supervision), aucune messagerie", () => {
     expect(routes.map((d) => (d.kind === "route" ? d.href : ""))).toEqual([
-      "/coach", "/coach/members", "/coach/formation", "/coach/sessions", "/coach/reports", "/coach/profile",
+      "/coach", "/coach/members", "/coach/formation", "/coach/academie", "/coach/sessions", "/coach/reports", "/coach/profile",
     ]);
     for (const d of routes) {
       if (d.kind !== "route") continue;

@@ -9,12 +9,9 @@ const w = vi.hoisted(() => ({
   coachError: null as null | { code: string },
   lastLoginWrites: 0,
   signOuts: 0,
- fix/coach-access-hardening
   signedInWith: "" as string,
-=======
   authSignIns: 0,
   adminTables: [] as string[],
- main
 }));
 
 vi.mock("@/lib/api-auth", () => ({ clientIp: () => "1.2.3.4" }));
@@ -24,8 +21,9 @@ vi.mock("@/lib/otp", () => ({ checkRateLimit: async () => true, recordRateLimit:
 vi.mock("@/lib/supabase-auth-server", () => ({
   getSupabaseAuthClient: () => ({
     auth: {
-      signInWithPassword: async () => {
+      signInWithPassword: async ({ email }: { email: string }) => {
         w.authSignIns++;
+        w.signedInWith = email;
         return {
           data: { user: { id: "u1" }, session: { access_token: "a", refresh_token: "r", expires_in: 3600 } },
           error: null,
@@ -38,18 +36,7 @@ vi.mock("@/lib/supabase-auth-server", () => ({
 vi.mock("@/lib/supabase-admin", () => ({
   getSupabaseAdmin: () => ({
     auth: {
- fix/coach-access-hardening
-      signInWithPassword: async ({ email }: { email: string }) => {
-        w.signedInWith = email;
-        return {
-          data: { user: { id: "u1" }, session: { access_token: "a", refresh_token: "r", expires_in: 3600 } },
-          error: null,
-        };
-      },
-      admin: { signOut: async () => { w.signOuts++; } },
-=======
       admin: { signOut: async () => { w.signOuts++; return { error: null }; } },
- main
     },
     from: (table: string) => {
       w.adminTables.push(table);
@@ -76,8 +63,17 @@ const login = () =>
     headers: { "Content-Type": "application/json" },
   });
 
- fix/coach-access-hardening
-beforeEach(() => { w.profile = null; w.coach = null; w.lastLoginWrites = 0; w.signOuts = 0; w.signedInWith = ""; });
+beforeEach(() => {
+  w.profile = null;
+  w.coach = null;
+  w.profileError = null;
+  w.coachError = null;
+  w.lastLoginWrites = 0;
+  w.signOuts = 0;
+  w.authSignIns = 0;
+  w.signedInWith = "";
+  w.adminTables.length = 0;
+});
 
 const loginWith = (identifier: string) =>
   new NextRequest("http://x/api/auth/login", {
@@ -108,17 +104,6 @@ describe("POST /api/auth/login : compte « téléphone seul »", () => {
     const { POST } = await import("./route");
     expect((await POST(loginWith("690123456"))).status).toBe(400);
   });
-=======
-beforeEach(() => {
-  w.profile = null;
-  w.coach = null;
-  w.profileError = null;
-  w.coachError = null;
-  w.lastLoginWrites = 0;
-  w.signOuts = 0;
-  w.authSignIns = 0;
-  w.adminTables.length = 0;
- main
 });
 
 describe("POST /api/auth/login", () => {

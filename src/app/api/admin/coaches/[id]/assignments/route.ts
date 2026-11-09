@@ -60,6 +60,13 @@ export async function POST(req: NextRequest, { params }: Ctx) {
   if (!isUuid(id) || !isUuid(body?.member_id)) return json({ error: "Paramètres invalides" }, 400);
 
   const db = getSupabaseAdmin();
+  // Ancien coach (s'il y en a un) : conservé dans le journal d'audit ; la base clôt l'ancien dossier (« reassigned »).
+  let previousCoach: string | null = null;
+  try {
+    const { data: prev } = await db.from("coach_member_assignments").select("coach_id")
+      .eq("member_id", body.member_id).in("status", ["pending", "active"]).maybeSingle();
+    previousCoach = (prev as { coach_id?: string } | null)?.coach_id ?? null;
+  } catch { /* information d'audit seulement */ }
   const { data, error } = await db.rpc("coach_assign_member", {
     p_coach: id, p_member: body.member_id, p_admin: adminLabel(admin),
   });
@@ -67,7 +74,10 @@ export async function POST(req: NextRequest, { params }: Ctx) {
     const failure = mapAssignmentError(error);
     return json({ error: failure.message, code: failure.code }, failure.status);
   }
-  await audit(admin, req, "coach_assignment_proposed", id, { member_id: body.member_id, assignment_id: data });
+  await audit(admin, req, "coach_assignment_proposed", id, {
+    member_id: body.member_id, assignment_id: data, previous_coach_id: previousCoach, new_coach_id: id,
+    reassigned: !!previousCoach && previousCoach !== id,
+  });
   return json({ id: data, status: "pending", consent_status: "pending" }, 201);
 }
 

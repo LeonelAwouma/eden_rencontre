@@ -18,6 +18,7 @@ export const COACH_GROUPS: CoachGroup[] = [
       { kind: "route", id: "overview", labelKey: "coachNav.overview", href: "/coach" },
       { kind: "route", id: "members", labelKey: "coachNav.members", href: "/coach/members" },
       { kind: "route", id: "formation", labelKey: "coachNav.formation", href: "/coach/formation" },
+      { kind: "route", id: "academie", labelKey: "coachNav.academie", href: "/coach/academie" },
       { kind: "route", id: "sessions", labelKey: "coachNav.sessions", href: "/coach/sessions" },
       { kind: "route", id: "reports", labelKey: "coachNav.reports", href: "/coach/reports" },
     ],
