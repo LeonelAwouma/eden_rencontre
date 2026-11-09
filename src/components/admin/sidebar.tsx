@@ -12,7 +12,7 @@ import {
   CreditCard, Settings, LogOut, X, Heart, MessageSquare,
   MessageCircle, PanelLeftClose, PanelLeftOpen, Video, Library,
   BookOpen, Send, MessagesSquare, Accessibility, FileUp, Gift, Megaphone,
-  UserCog, CalendarClock, GraduationCap, type LucideIcon,
+  UserCog, CalendarClock, GraduationCap, KeyRound, type LucideIcon,
 } from "lucide-react";
 import { ADMIN_NAV_GROUPS, ADMIN_NAV_ITEMS, activeAdminNavHref, type AdminNavItem } from "@/lib/admin-nav";
 
@@ -34,6 +34,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   dashboard: LayoutDashboard,
   users: Users,
   photos: FileUp,
+  "password-resets": KeyRound,
   accessibility: Accessibility,
   coaches: UserCog,
   matching: Heart,

@@ -53,7 +53,9 @@ interface UserProfile {
   id: string;
   name: string;
   pseudo?: string | null;
-  email: string;
+  email: string | null;
+  /** Inscrit par téléphone seul : pas d'e-mail, le numéro sert de contact. */
+  phone?: string | null;
   gender: string;
   status: string;
   city: string;
@@ -348,7 +350,7 @@ export default function AdminUsersPage() {
           <div className="relative flex-1">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <input
-              placeholder="Rechercher nom, email, ville…"
+              placeholder="Rechercher nom, email, téléphone, ville…"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-white border border-border rounded-xl text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-success/20 focus:border-success transition-all font-medium"
@@ -428,7 +430,7 @@ export default function AdminUsersPage() {
                                 <span className="text-muted-foreground font-normal"> · {user.pseudo}</span>
                               )}
                             </p>
-                            <p className="text-[11px] text-muted-foreground font-medium">{user.email}</p>
+                            <p className="text-[11px] text-muted-foreground font-medium">{user.email || user.phone || "—"}</p>
                           </div>
                         </Link>
                       </td>
@@ -579,7 +581,7 @@ export default function AdminUsersPage() {
                           <span className="text-muted-foreground font-normal"> · {user.pseudo}</span>
                         )}
                       </p>
-                      <p className="text-[11px] text-muted-foreground truncate font-medium">{user.email}</p>
+                      <p className="text-[11px] text-muted-foreground truncate font-medium">{user.email || user.phone || "—"}</p>
                     </div>
                     <span
                       className={cn(
@@ -760,7 +762,7 @@ export default function AdminUsersPage() {
                     <span className="text-muted-foreground font-normal"> · {viewingUser.pseudo}</span>
                   )}
                 </p>
-                <p className="text-[12px] text-muted-foreground truncate">{viewingUser.email}</p>
+                <p className="text-[12px] text-muted-foreground truncate">{viewingUser.email || viewingUser.phone || "—"}</p>
               </div>
               <Link
                 href={`/admin/users/${viewingUser.id}`}

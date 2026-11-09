@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSupabaseAuthClient } from "@/lib/supabase-auth-server";
 import { checkRateLimit, recordRateLimit } from "@/lib/otp";
 import { clientIp } from "@/lib/api-auth";
+import { isSyntheticEmail, loginIdentifierToEmail, realEmailOrNull } from "@/lib/phone-identity";
 
 // Échecs tolérés sur 15 minutes avant blocage temporaire : par compte visé
 // (essais de mots de passe sur une adresse) et par adresse IP (essais en masse).
@@ -44,7 +45,21 @@ export async function POST(request: NextRequest) {
       );
     }
 
+ fix/coach-access-hardening
+    const db = getSupabaseAdmin();
+    // « email » peut être une adresse e-mail OU un numéro international (+237…) : les comptes
+    // « téléphone seul » se connectent avec leur numéro (adresse technique, lib/phone-identity.ts).
+    const cleanEmail = loginIdentifierToEmail(email);
+    if (!cleanEmail) {
+      return NextResponse.json(
+        { error: "Adresse e-mail ou numéro de téléphone invalide (avec l'indicatif, ex. +237…)." },
+        { status: 400 }
+      );
+    }
+    const phoneLogin = isSyntheticEmail(cleanEmail);
+=======
     const cleanEmail = email.trim().toLowerCase();
+ main
     const ip = clientIp(request);
     const emailKey = `login:${cleanEmail}`;
     const ipKey = `login-ip:${ip}`;
@@ -70,7 +85,7 @@ export async function POST(request: NextRequest) {
       if (/Invalid login credentials/i.test(authError.message)) {
         await Promise.all([recordRateLimit(emailKey, "login_failure"), recordRateLimit(ipKey, "login_failure")]);
         return NextResponse.json(
-          { error: "Email ou mot de passe incorrect." },
+          { error: phoneLogin ? "Numéro ou mot de passe incorrect." : "Email ou mot de passe incorrect." },
           { status: 401 }
         );
       }
@@ -141,7 +156,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "pending",
-          message: "Votre compte est en cours de validation. Vous recevrez un email une fois approuvé.",
+          message: phoneLogin
+            ? "Votre compte est en cours de validation par l'administration. Revenez vous connecter un peu plus tard."
+            : "Votre compte est en cours de validation. Vous recevrez un email une fois approuvé.",
         },
         { status: 403 }
       );
@@ -193,7 +210,7 @@ export async function POST(request: NextRequest) {
       user: {
         id: userId,
         name: profile?.name,
-        email: profile?.email || cleanEmail,
+        email: realEmailOrNull(profile?.email) ?? realEmailOrNull(cleanEmail),
         status,
         role: isCoachAccount ? "coach" : "member",
       },

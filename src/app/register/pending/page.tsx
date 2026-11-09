@@ -26,6 +26,8 @@ function PendingContent() {
   const router = useRouter();
   const { t } = useI18n();
   const email = searchParams.get("email") || "";
+  // Inscription par numéro seulement : aucun e-mail n'est envoyé, l'admin valide à la main.
+  const phoneOnly = searchParams.get("method") === "phone";
   /** Inscription terminée sans photos : consignes pour les envoyer à l'équipe. */
   const photosPending = searchParams.get("photos") === "pending";
   const [approved, setApproved] = useState(false);
@@ -153,10 +155,14 @@ function PendingContent() {
         <div className="bg-primary/5 border border-primary/10 rounded-2xl p-6 text-left">
           <div className="flex items-center gap-3 mb-3">
             <Mail className="w-5 h-5 text-primary" />
-            <p className="font-bold text-sm text-foreground">{t("registerPending.confirmationSent")}</p>
+            <p className="font-bold text-sm text-foreground">
+              {phoneOnly ? t("registerPending.phoneOnlyTitle") : t("registerPending.confirmationSent")}
+            </p>
           </div>
           <p className="text-sm text-foreground/50 leading-relaxed">
-            {t("registerPending.confirmationBody", { email: email || t("registerPending.yourEmail") })}
+            {phoneOnly
+              ? t("registerPending.phoneOnlyBody")
+              : t("registerPending.confirmationBody", { email: email || t("registerPending.yourEmail") })}
           </p>
         </div>
 

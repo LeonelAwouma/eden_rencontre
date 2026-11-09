@@ -9,8 +9,12 @@ const w = vi.hoisted(() => ({
   coachError: null as null | { code: string },
   lastLoginWrites: 0,
   signOuts: 0,
+ fix/coach-access-hardening
+  signedInWith: "" as string,
+=======
   authSignIns: 0,
   adminTables: [] as string[],
+ main
 }));
 
 vi.mock("@/lib/api-auth", () => ({ clientIp: () => "1.2.3.4" }));
@@ -34,7 +38,18 @@ vi.mock("@/lib/supabase-auth-server", () => ({
 vi.mock("@/lib/supabase-admin", () => ({
   getSupabaseAdmin: () => ({
     auth: {
+ fix/coach-access-hardening
+      signInWithPassword: async ({ email }: { email: string }) => {
+        w.signedInWith = email;
+        return {
+          data: { user: { id: "u1" }, session: { access_token: "a", refresh_token: "r", expires_in: 3600 } },
+          error: null,
+        };
+      },
+      admin: { signOut: async () => { w.signOuts++; } },
+=======
       admin: { signOut: async () => { w.signOuts++; return { error: null }; } },
+ main
     },
     from: (table: string) => {
       w.adminTables.push(table);
@@ -61,6 +76,39 @@ const login = () =>
     headers: { "Content-Type": "application/json" },
   });
 
+ fix/coach-access-hardening
+beforeEach(() => { w.profile = null; w.coach = null; w.lastLoginWrites = 0; w.signOuts = 0; w.signedInWith = ""; });
+
+const loginWith = (identifier: string) =>
+  new NextRequest("http://x/api/auth/login", {
+    method: "POST",
+    body: JSON.stringify({ email: identifier, password: "motdepasse123" }),
+    headers: { "Content-Type": "application/json" },
+  });
+
+describe("POST /api/auth/login : compte « téléphone seul »", () => {
+  test("le numéro est converti en adresse technique, jamais renvoyée au navigateur", async () => {
+    w.profile = { status: "approved", name: "Awa", email: null, account_type: "member" };
+    const { POST } = await import("./route");
+    const res = await POST(loginWith("+237 690 12 34 56"));
+    expect(res.status).toBe(200);
+    expect(w.signedInWith).toBe("237690123456@phone.eden.invalid");
+    expect((await res.json()).user.email).toBeNull();
+  });
+
+  test("numéro en attente de validation : 403 pending", async () => {
+    w.profile = { status: "pending", name: "Awa", email: null, account_type: "member" };
+    const { POST } = await import("./route");
+    const res = await POST(loginWith("+237690123456"));
+    expect(res.status).toBe(403);
+    expect((await res.json()).error).toBe("pending");
+  });
+
+  test("identifiant ni e-mail ni numéro international : 400", async () => {
+    const { POST } = await import("./route");
+    expect((await POST(loginWith("690123456"))).status).toBe(400);
+  });
+=======
 beforeEach(() => {
   w.profile = null;
   w.coach = null;
@@ -70,6 +118,7 @@ beforeEach(() => {
   w.signOuts = 0;
   w.authSignIns = 0;
   w.adminTables.length = 0;
+ main
 });
 
 describe("POST /api/auth/login", () => {

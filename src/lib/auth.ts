@@ -4,6 +4,7 @@
 // Le profil (nom, ville, valeurs…) est stocké dans les métadonnées utilisateur Supabase.
 
 import { supabase } from "./supabase";
+import { loginIdentifierToEmail, realEmailOrNull } from "./phone-identity";
 import { isRegistrationComplete } from "./registration-rules";
 import { performLogout, type LogoutOutcomeFacts } from "./logout-flow";
 import { browserLogoutDeps } from "./logout-browser";
@@ -58,11 +59,11 @@ function mapSupabaseUser(u: any): EdenUser {
   const m = (u?.user_metadata as Record<string, any>) || {};
   return {
     id: u?.id,
-    name: m.name || m.full_name || (u?.email ? String(u.email).split("@")[0] : "Membre"),
+    name: m.name || m.full_name || (realEmailOrNull(u?.email) ? String(u.email).split("@")[0] : "Membre"),
     pseudo: m.pseudo,
     firstName: m.firstName,
     lastName: m.lastName,
-    email: u?.email || "",
+    email: realEmailOrNull(u?.email) || "", // jamais l'adresse technique d'un compte « téléphone seul »
     gender: m.gender,
     birthDate: m.birthDate,
     discoverySource: m.discoverySource,
@@ -141,7 +142,8 @@ export async function registerUser(data: RegisterInput): Promise<AuthResult> {
 }
 
 export async function loginUser(emailRaw: string, password: string): Promise<AuthResult> {
-  const email = emailRaw.trim().toLowerCase();
+  // Adresse e-mail ou numéro de téléphone (compte « téléphone seul »).
+  const email = loginIdentifierToEmail(emailRaw) ?? emailRaw.trim().toLowerCase();
   if (!email || !password) {
     return { ok: false, error: "Veuillez renseigner votre email et votre mot de passe." };
   }
