@@ -7,6 +7,7 @@
 import nodemailer from "nodemailer";
 import MailComposer from "nodemailer/lib/mail-composer";
 import { saveToSentFolder } from "./email-sent-copy";
+import { isSyntheticEmail } from "./phone-identity";
 import {
   CONTACT_EMAIL,
   LOGO_CID,
@@ -136,6 +137,11 @@ async function sendEmail(
   kind: EmailKind = "account",
   headers?: Record<string, string>
 ): Promise<boolean> {
+  // Compte « téléphone seul » : pas d'adresse réelle (voir lib/phone-identity.ts).
+  if (!to || !to.trim() || isSyntheticEmail(to)) {
+    console.log("📧 E-mail non envoyé : le destinataire n'a pas d'adresse e-mail.");
+    return false;
+  }
   const settings = await getEmailSettings();
   if (kind === "meeting" && !settings.meetingEmailsEnabled) {
     console.log(`📧 E-mail de réunion non envoyé à ${to} : désactivé dans Admin → Paramètres.`);

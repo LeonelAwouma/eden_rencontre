@@ -16,6 +16,8 @@ import {
   ArrowLeft,
 } from "lucide-react";
 import { Monogram } from "@/components/ornaments";
+import { normalizePhone } from "@/lib/phone-identity";
+import { SUPPORT_WHATSAPP_URL } from "@/lib/contact";
 import { ImposingFloralCorners } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -29,11 +31,22 @@ export default function ForgotPasswordPage() {
   const [success, setSuccess] = useState(false);
   const [emailError, setEmailError] = useState<string | null>(null);
 
+  // Numéro (sans « @ ») = compte « téléphone seul » : demande transmise à l'administration, pas d'OTP.
+  const phoneMode = !!email.trim() && !email.includes("@") && /\d/.test(email);
+
   const validateEmail = (value: string): boolean => {
     const trimmed = value.trim();
     if (!trimmed) {
       setEmailError(t("forgotPassword.emailRequired"));
       return false;
+    }
+    if (!trimmed.includes("@") && /\d/.test(trimmed)) {
+      if (!normalizePhone(trimmed)) {
+        setEmailError(t("forgotPassword.phoneInvalid"));
+        return false;
+      }
+      setEmailError(null);
+      return true;
     }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed)) {
       setEmailError(t("forgotPassword.emailInvalid"));
@@ -55,7 +68,7 @@ export default function ForgotPasswordPage() {
       const res = await fetch("/api/auth/forgot-password", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: email.trim().toLowerCase() }),
+        body: JSON.stringify(phoneMode ? { phone: normalizePhone(email) } : { email: email.trim().toLowerCase() }),
       });
 
       const data = await res.json();
@@ -173,9 +186,10 @@ export default function ForgotPasswordPage() {
                     {t("forgotPassword.emailLabel")}
                   </Label>
                   <Input
-                    type="email"
+                    type="text"
+                    inputMode="email"
                     required
-                    placeholder={t("forgotPassword.emailPlaceholder")}
+                    placeholder={t("login.identifierPlaceholder")}
                     value={email}
                     onChange={(e) => {
                       setEmail(e.target.value);
@@ -184,11 +198,13 @@ export default function ForgotPasswordPage() {
                     onBlur={() => email && validateEmail(email)}
                     className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30 text-base"
                   />
-                  {emailError && (
+                  {emailError ? (
                     <p className="text-sm text-destructive flex items-center gap-1.5 mt-1">
                       <AlertCircle className="w-3.5 h-3.5" />
                       {emailError}
                     </p>
+                  ) : (
+                    <p className="text-[11px] text-foreground/40 leading-relaxed">{t("forgotPassword.phoneHint")}</p>
                   )}
                 </div>
 
@@ -218,6 +234,28 @@ export default function ForgotPasswordPage() {
                 </Button>
               </form>
             </>
+          ) : phoneMode ? (
+            /* Compte « téléphone seul » : demande assistée par l'administration */
+            <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-500">
+              <div className="flex flex-col items-center text-center space-y-4">
+                <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center">
+                  <CheckCircle2 className="w-10 h-10 text-primary" />
+                </div>
+                <h2 className="font-headline text-2xl sm:text-3xl font-bold text-foreground">
+                  {t("forgotPassword.adminTitle")}
+                </h2>
+                <p className="text-foreground/50 text-base max-w-sm">{t("forgotPassword.adminDesc")}</p>
+              </div>
+              <a
+                href={`${SUPPORT_WHATSAPP_URL}?text=${encodeURIComponent(`${t("forgotPassword.adminTitle")} — ${normalizePhone(email) ?? ""}`)}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={cn("flex w-full h-14 items-center justify-center gap-2 text-base", EDEN_SOLID_BUTTON)}
+              >
+                {t("forgotPassword.adminContact")}
+                <ArrowRight className="w-5 h-5" />
+              </a>
+            </div>
           ) : (
             /* Success State */
             <div className="space-y-6 animate-in fade-in slide-in-from-top-2 duration-500">

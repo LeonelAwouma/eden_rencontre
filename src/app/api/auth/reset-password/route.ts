@@ -4,8 +4,14 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { verifyResetToken, checkRateLimit, recordRateLimit } from "@/lib/otp";
-import { sendPasswordResetSuccessEmail } from "@/lib/email";
+import { verifyResetToken, checkRateLimit, recordRateLimit } from "@/lib/otp";import { sendPasswordResetSuccessEmail } from "@/lib/email";
+import { realEmailOrNull } from "@/lib/phone-identity";
+import {
+  consumeAdminResetToken,
+  isAdminResetToken,
+  logResetUsed,
+  releaseAdminResetToken,
+} from "@/lib/password-reset-requests";
 
 // ── Password validation ─────────────────────────────────────
 function validatePassword(password: string): string | null {
@@ -151,22 +157,40 @@ export async function POST(request: NextRequest) {
     await recordRateLimit(ip, "reset_password");
 
     // ── Verify temporary reset token ───────────────────────
-    const tokenResult = verifyResetToken(temporaryResetToken);
+    const db = getSupabaseAdmin();
+    // Deux sortes de jetons : le jeton HMAC du parcours OTP e-mail, et le lien à usage unique
+    // émis par l'admin pour un compte « téléphone seul » (lib/password-reset-requests.ts).
+    let userId: string;
+    let adminRequestId: string | null = null;
+    if (isAdminResetToken(temporaryResetToken)) {
+      const consumed = await consumeAdminResetToken(db, temporaryResetToken);
+      if (!consumed) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Ce lien est invalide, expiré ou déjà utilisé. Demandez un nouveau lien à l'administration.",
+          },
+          { status: 400 }
+        );
+      }
+      userId = consumed.userId;
+      adminRequestId = consumed.requestId;
+    } else {
+      const tokenResult = verifyResetToken(temporaryResetToken);
 
-    if (!tokenResult.valid || !tokenResult.userId) {
-      return NextResponse.json(
-        {
-          success: false,
-          message: "Token de réinitialisation invalide ou expiré. Veuillez recommencer le processus.",
-        },
-        { status: 400 }
-      );
+      if (!tokenResult.valid || !tokenResult.userId) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Token de réinitialisation invalide ou expiré. Veuillez recommencer le processus.",
+          },
+          { status: 400 }
+        );
+      }
+      userId = tokenResult.userId;
     }
 
-    const userId = tokenResult.userId;
-
     // ── Update password via Supabase Admin ─────────────────
-    const db = getSupabaseAdmin();
 
     // Get user info for the success email
     const { data: userData, error: getUserError } =
@@ -174,6 +198,7 @@ export async function POST(request: NextRequest) {
 
     if (getUserError || !userData?.user) {
       console.error("[ResetPassword] Error fetching user:", getUserError);
+      if (adminRequestId) await releaseAdminResetToken(db, adminRequestId);
       return NextResponse.json(
         { success: false, message: "Utilisateur introuvable." },
         { status: 400 }
@@ -189,6 +214,8 @@ export async function POST(request: NextRequest) {
 
     if (updateError) {
       console.error("[ResetPassword] Error updating password:", updateError);
+      // Le lien reste utilisable : la personne n'a pas pu changer son mot de passe.
+      if (adminRequestId) await releaseAdminResetToken(db, adminRequestId);
       return NextResponse.json(
         {
           success: false,
@@ -217,15 +244,20 @@ export async function POST(request: NextRequest) {
       user.user_metadata?.full_name ||
       user.email?.split("@")[0];
 
-    sendPasswordResetSuccessEmail(user.email!, userName).catch((err) => {
-      console.error("[ResetPassword] Failed to send success email:", err);
-    });
+    // Compte « téléphone seul » : pas d'adresse, donc pas d'e-mail de confirmation.
+    const realEmail = realEmailOrNull(user.email);
+    if (realEmail) {
+      sendPasswordResetSuccessEmail(realEmail, userName).catch((err) => {
+        console.error("[ResetPassword] Failed to send success email:", err);
+      });
+    }
 
     // ── Audit log ──────────────────────────────────────────
     console.log(
       `[OTP-AUDIT] ${new Date().toISOString()} | PASSWORD_RESET_SUCCESS |`,
-      JSON.stringify({ userId, email: user.email })
+      JSON.stringify({ userId, email: realEmail })
     );
+    if (adminRequestId) await logResetUsed(db, userId, adminRequestId, ip === "unknown" ? null : ip);
 
     return NextResponse.json({
       success: true,

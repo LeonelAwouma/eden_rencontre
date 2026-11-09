@@ -25,7 +25,7 @@ export function applyUserFilters<Q extends Filterable<Q>>(query: Q, { status, pl
   // Virgules et parenthèses font partie de la syntaxe du filtre « or » : on les retire de la saisie.
   const term = search?.replace(/[,()]/g, " ").trim();
   if (term) {
-    query = query.or(`name.ilike.%${term}%,email.ilike.%${term}%,city.ilike.%${term}%,country.ilike.%${term}%`);
+    query = query.or(`name.ilike.%${term}%,email.ilike.%${term}%,phone.ilike.%${term}%,city.ilike.%${term}%,country.ilike.%${term}%`);
   }
   return query;
 }

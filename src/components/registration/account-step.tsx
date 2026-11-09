@@ -47,7 +47,7 @@ export function RegistrationAccountStep({
   googleUserEmail,
 }: {
   mode: RegistrationMode;
-  formData: Pick<RegistrationFormData, "pseudo" | "email" | "password">;
+  formData: Pick<RegistrationFormData, "pseudo" | "email" | "password" | "signupMethod">;
   setFormData: (patch: Partial<RegistrationFormData>) => void;
   onContinue: () => void;
   /** Google uniquement : `Bearer <token>` de la session en cours, pour exclure son propre pseudo de la vérification. */
@@ -144,7 +144,9 @@ export function RegistrationAccountStep({
     );
   }
 
-  const canContinue = pseudoValid && !pseudoTaken && !checkingPseudo && emailValid && !emailTaken && !checkingEmail && formData.password.length >= 8;
+  const phoneOnly = formData.signupMethod === "phone";
+  const emailOk = phoneOnly || (emailValid && !emailTaken && !checkingEmail);
+  const canContinue = pseudoValid && !pseudoTaken && !checkingPseudo && emailOk && formData.password.length >= 8;
 
   return (
     <div className="space-y-8">
@@ -175,6 +177,18 @@ export function RegistrationAccountStep({
           )}
         </div>
 
+        {phoneOnly ? (
+          <p className="rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm leading-relaxed text-foreground/70">
+            {t("register.signupPhoneHint")}{" "}
+            <button
+              type="button"
+              onClick={() => setFormData({ signupMethod: "email" })}
+              className="font-semibold text-primary underline underline-offset-2"
+            >
+              {t("register.signupMethodEmail")}
+            </button>
+          </p>
+        ) : (
         <div className="space-y-2">
           <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.emailLabel")}</Label>
           <div className="relative">
@@ -203,7 +217,15 @@ export function RegistrationAccountStep({
               </Link>
             </p>
           )}
+          <button
+            type="button"
+            onClick={() => { setFormData({ signupMethod: "phone" }); setEmailTaken(false); }}
+            className="text-xs text-foreground/50 underline underline-offset-2 hover:text-primary transition-colors"
+          >
+            {t("register.signupMethodPhone")}
+          </button>
         </div>
+        )}
 
         <div className="space-y-2">
           <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">{t("register.passwordLabel")}</Label>

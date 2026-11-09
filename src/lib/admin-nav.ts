@@ -36,6 +36,7 @@ export const ADMIN_NAV_ITEMS: ReadonlyArray<AdminNavItem> = [
 
   { id: "users", label: "Utilisateurs", href: "/admin/users", group: "members" },
   { id: "photos", label: "Import de fichiers", href: "/admin/photos", group: "members" },
+  { id: "password-resets", label: "Demandes de réinitialisation", href: "/admin/password-resets", group: "members" },
   { id: "accessibility", label: "Accessibilité", href: "/admin/accessibilite", group: "members" },
 
   { id: "coaches", label: "Coachs", href: "/admin/users/coaches", group: "coaches" },

@@ -9,6 +9,8 @@ export type RegistrationMode = "classic" | "google";
  */
 export interface RegistrationFormData {
   pseudo: string;
+  /** « phone » : inscription sans e-mail, par numéro seulement (validation manuelle de l'admin, aucun OTP). */
+  signupMethod: "email" | "phone";
   email: string;
   password: string;
   firstName: string;
@@ -28,6 +30,7 @@ export interface RegistrationFormData {
 
 export const INITIAL_REGISTRATION_FORM_DATA: RegistrationFormData = {
   pseudo: "",
+  signupMethod: "email",
   email: "",
   password: "",
   firstName: "",

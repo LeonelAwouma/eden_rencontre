@@ -258,7 +258,7 @@ export default function AdminUserDetailPage() {
           <h1 className="text-2xl font-bold text-gray-900">
             {user.pseudo || "Sans pseudo"} <span className="text-gray-400 font-normal text-lg">· {user.name || "Sans nom"}</span>
           </h1>
-          <p className="text-sm text-gray-500">{user.email}</p>
+          <p className="text-sm text-gray-500">{user.email || user.phone || "—"}</p>
         </div>
         <span
           className={`text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-full border ${
@@ -678,7 +678,7 @@ export default function AdminUserDetailPage() {
               </button>
             </div>
             <p className="text-sm text-gray-600">
-              Le compte de <strong>{user.email}</strong>, son profil, ses conversations, alliances et photos d&apos;inscription seront supprimés. Cette action est irréversible. Aucun e-mail n&apos;est envoyé au membre.
+              Le compte de <strong>{user.email || user.phone || user.pseudo || "ce membre"}</strong>, son profil, ses conversations, alliances et photos d&apos;inscription seront supprimés. Cette action est irréversible. Aucun e-mail n&apos;est envoyé au membre.
             </p>
             <div className="space-y-2">
               <Label htmlFor="delete-confirm" className="text-xs font-bold uppercase tracking-widest text-gray-500">

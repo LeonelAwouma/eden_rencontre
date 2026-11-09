@@ -12,6 +12,9 @@ import {
   cleanupOldRateLimits,
 } from "@/lib/otp";
 import { sendOTPEmail } from "@/lib/email";
+import { getSupabaseAdmin } from "@/lib/supabase-admin";
+import { normalizePhone } from "@/lib/phone-identity";
+import { createResetRequestForPhone } from "@/lib/password-reset-requests";
 
 // ── Input validation ────────────────────────────────────────
 function isValidEmail(email: string): boolean {
@@ -29,7 +32,7 @@ const GENERIC_RESPONSE = {
 export async function POST(request: NextRequest) {
   try {
     // ── Parse and validate input ───────────────────────────
-    let body: { email?: string };
+    let body: { email?: string; phone?: string };
     try {
       body = await request.json();
     } catch {
@@ -37,6 +40,38 @@ export async function POST(request: NextRequest) {
         { success: false, message: "Requête invalide." },
         { status: 400 }
       );
+    }
+
+    // ── Compte « téléphone seul » : demande transmise à l'administration (aucun OTP) ──
+    if (body.phone !== undefined) {
+      const phone = normalizePhone(body.phone);
+      if (!phone) {
+        return NextResponse.json(
+          { success: false, message: "Numéro de téléphone invalide." },
+          { status: 400 }
+        );
+      }
+      const phoneIp =
+        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+        request.headers.get("x-real-ip") ||
+        "unknown";
+      if (!(await checkRateLimit(phoneIp, "forgot_password", 5, 3600))) {
+        return NextResponse.json(
+          { success: false, message: "Trop de demandes. Veuillez réessayer dans quelques minutes." },
+          { status: 429 }
+        );
+      }
+      await recordRateLimit(phoneIp, "forgot_password");
+      try {
+        await createResetRequestForPhone(getSupabaseAdmin(), phone);
+      } catch (err) {
+        console.error("[ForgotPassword] demande par téléphone:", err);
+      }
+      // Même réponse que le numéro existe ou non : pas d'énumération des comptes.
+      return NextResponse.json({
+        success: true,
+        message: "Si un compte existe avec ce numéro, votre demande a été transmise à l'administration.",
+      });
     }
 
     const rawEmail = body.email;

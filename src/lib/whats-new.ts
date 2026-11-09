@@ -153,6 +153,23 @@ export const ANNOUNCEMENTS: readonly Announcement[] = [
       description: "Review the views, clicks and dismissals of each announcement, as aggregated measures.",
     },
   },
+  {
+    id: "admin-password-reset-requests",
+    surface: "admin",
+    active: false, // → true quand l'inscription par téléphone et la migration 20261111 sont en production
+    activatesAt: "2026-11-11T00:00:00Z", // PROVISOIRE : à remplacer par la date de mise en ligne réelle
+    availability: "always",
+    href: "/admin/password-resets",
+    navHref: "/admin/password-resets",
+    fr: {
+      title: "Réinitialisations de mot de passe",
+      description: "Les membres inscrits par téléphone demandent un lien sécurisé ici, après votre vérification.",
+    },
+    en: {
+      title: "Password reset requests",
+      description: "Members who signed up by phone ask for a secure link here, after your identity check.",
+    },
+  },
 ];
 
 // ── Sélection (pure) ───────────────────────────────────────────────────────

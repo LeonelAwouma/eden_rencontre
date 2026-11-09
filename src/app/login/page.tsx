@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, ArrowRight, Heart, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 import { signInWithGoogle, getSession } from "@/lib/auth";
+import { isSyntheticEmail, loginIdentifierToEmail } from "@/lib/phone-identity";
 import { Monogram } from "@/components/ornaments";
 import { ImposingFloralCorners } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
@@ -80,7 +81,9 @@ export default function LoginPage() {
     // automatique (Firefox notamment) peut remplir les champs sans onChange,
     // et la requête partait alors sans identifiants.
     const form = new FormData(e.currentTarget);
+    // Adresse e-mail OU numéro de téléphone (comptes « téléphone seul », lib/phone-identity.ts).
     const email = String(form.get("email") ?? formData.email).trim();
+    const loginEmail = loginIdentifierToEmail(email) ?? email.toLowerCase();
     const password = String(form.get("password") ?? formData.password);
     setFormData((prev) => ({ ...prev, email, password }));
     setError(null);
@@ -101,9 +104,9 @@ export default function LoginPage() {
           // page d'attente fasse entrer le membre dès la validation.
           try {
             const { supabase } = await import("@/lib/supabase");
-            await supabase?.auth.signInWithPassword({ email: email.toLowerCase(), password });
+            await supabase?.auth.signInWithPassword({ email: loginEmail, password });
           } catch { /* non bloquant */ }
-          router.push(`/register/pending?email=${encodeURIComponent(email)}`);
+          router.push(isSyntheticEmail(loginEmail) ? "/register/pending?method=phone" : `/register/pending?email=${encodeURIComponent(email)}`);
           return;
         }
         if (data.error === "rejected") {
@@ -126,7 +129,7 @@ export default function LoginPage() {
       const { supabase } = await import("@/lib/supabase");
       if (supabase) {
         await supabase.auth.signInWithPassword({
-          email: email.toLowerCase(),
+          email: loginEmail,
           password,
         });
       }
@@ -272,14 +275,15 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">
-                {t("login.emailLabel")}
+                {t("login.identifierLabel")}
               </Label>
               <Input
-                type="email"
+                type="text"
+                inputMode="email"
                 name="email"
                 autoComplete="username"
                 required
-                placeholder={t("login.emailPlaceholder")}
+                placeholder={t("login.identifierPlaceholder")}
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30 text-base"

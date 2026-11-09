@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -46,8 +47,32 @@ export function RegistrationProfileStep({
     setFormData({ country, region: findCountry(country)?.region ?? "", phoneIso: phoneIsoFor(country) });
   };
 
-  const phoneValid = !!toE164(dialOfIso(formData.phoneIso), formData.phoneLocal);
+  const phoneE164 = toE164(dialOfIso(formData.phoneIso), formData.phoneLocal);
+  const phoneValid = !!phoneE164;
+
+  // Un numéro = un compte : alerte anticipée (la soumission finale tranche si la vérification échoue).
+  const [phoneTaken, setPhoneTaken] = useState(false);
+  useEffect(() => {
+    setPhoneTaken(false);
+    if (!phoneE164 || mode !== "classic") return;
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/auth/check-phone", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone: phoneE164 }),
+        });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (!cancelled && data.available === false) setPhoneTaken(true);
+      } catch { /* la soumission tranchera */ }
+    }, 500);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [phoneE164, mode]);
+
   const canContinue =
+    !phoneTaken &&
     (mode === "google" || (formData.firstName.trim() && formData.lastName.trim())) &&
     !!formData.gender &&
     ageValid &&
@@ -149,6 +174,9 @@ export function RegistrationProfileStep({
         onIso={(phoneIso) => setFormData({ phoneIso })}
         onLocal={(phoneLocal) => setFormData({ phoneLocal })}
       />
+      {phoneTaken && (
+        <p role="alert" className="-mt-4 text-sm text-destructive">{t("register.phoneTaken")}</p>
+      )}
 
       <Button
         onClick={onContinue}

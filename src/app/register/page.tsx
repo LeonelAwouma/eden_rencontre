@@ -11,6 +11,7 @@ import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { uploadRegistrationMedia } from "@/lib/registration-media-client";
 import { dialOfIso, toE164 } from "@/lib/geo";
+import { phoneToSyntheticEmail } from "@/lib/phone-identity";
 import { MAX_UPLOAD_PAYLOAD } from "@/lib/image-compress";
 import { useMobileContinueGate, MobileContinueGate } from "@/components/mobile-continue-gate";
 import { ShieldCheck, Heart } from "lucide-react";
@@ -68,7 +69,8 @@ export default function RegisterPage() {
         pseudo: formData.pseudo,
         firstName: formData.firstName,
         lastName: formData.lastName,
-        email: formData.email,
+        signupMethod: formData.signupMethod,
+        email: formData.signupMethod === "phone" ? undefined : formData.email,
         password: formData.password,
         gender: formData.gender,
         birthDate: formData.birthDate,
@@ -105,6 +107,13 @@ export default function RegisterPage() {
           setStep(0);
           return;
         }
+        if (res.status === 409 && /téléphone/i.test(data.error || "")) {
+          // Numéro déjà utilisé : retour à l'étape qui le contient (profil), avec le message.
+          setCreateError(data.error);
+          setCreating(false);
+          setStep(1);
+          return;
+        }
         if (res.status === 409) {
           setCreating(false);
           setStep(0);
@@ -117,11 +126,20 @@ export default function RegisterPage() {
 
       try {
         const { supabase } = await import("@/lib/supabase");
-        await supabase?.auth.signInWithPassword({ email: formData.email.trim().toLowerCase(), password: formData.password });
+        // Téléphone seul : on se connecte avec l'adresse technique dérivée du numéro.
+        const loginEmail = formData.signupMethod === "phone"
+          ? phoneToSyntheticEmail(toE164(dialOfIso(formData.phoneIso), formData.phoneLocal))
+          : formData.email.trim().toLowerCase();
+        if (loginEmail) await supabase?.auth.signInWithPassword({ email: loginEmail, password: formData.password });
       } catch { /* non bloquant */ }
 
       clearProgress();
-      router.push(`/register/pending?email=${encodeURIComponent(formData.email)}${photosDeferred && !photo ? "&photos=pending" : ""}`);
+      const pendingParams = new URLSearchParams();
+      if (formData.signupMethod === "phone") pendingParams.set("method", "phone");
+      else pendingParams.set("email", formData.email);
+      if (photosDeferred && !photo) pendingParams.set("photos", "pending");
+      const pendingQuery = pendingParams.toString();
+      router.push(`/register/pending${pendingQuery ? `?${pendingQuery}` : ""}`);
     } catch {
       setCreateError("Erreur de connexion au serveur.");
       setCreating(false);

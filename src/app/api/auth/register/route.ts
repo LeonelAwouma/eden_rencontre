@@ -10,6 +10,7 @@ import { clientIp } from "@/lib/api-auth";
  */
 const MAX_REGISTRATIONS_PER_IP = 20;
 import { isValidE164 } from "@/lib/geo";
+import { phoneToSyntheticEmail } from "@/lib/phone-identity";
 import { normalizeGender } from "@/lib/verses";
 import { isAdultBirthDate } from "@/lib/registration-rules";
 import { reportRegistrationFailure } from "@/lib/registration-incident";
@@ -60,9 +61,17 @@ export async function POST(request: NextRequest) {
     // le selfie aux photos depuis la fiche du membre (SelfieCheckPanel).
     const registration = readRegistrationSelfie(body);
 
-    if (!email || !password || !name || !pseudo || !firstName || !lastName) {
+    // Inscription « téléphone seul » : pas d'e-mail, pas d'OTP. Le compte est créé avec
+    // une adresse technique dérivée du numéro (lib/phone-identity.ts) et attend la
+    // validation manuelle de l'admin comme tous les autres.
+    const phoneOnly = body.signupMethod === "phone";
+    if (!password || !name || !pseudo || !firstName || !lastName || (!phoneOnly && !email)) {
       return NextResponse.json(
-        { error: "Email, mot de passe, pseudo, prénom et nom requis." },
+        {
+          error: phoneOnly
+            ? "Mot de passe, pseudo, prénom et nom requis."
+            : "Email, mot de passe, pseudo, prénom et nom requis.",
+        },
         { status: 400 }
       );
     }
@@ -79,8 +88,21 @@ export async function POST(request: NextRequest) {
     const cleanPseudo = String(pseudo).trim();
 
     const db = getSupabaseAdmin();
-    const cleanEmail = email.trim().toLowerCase();
-    reportEmail = cleanEmail;
+    const cleanPhone = phone as string;
+    // authEmail : adresse de connexion Supabase ; cleanEmail : vraie adresse (null si téléphone seul).
+    const cleanEmail: string | null = phoneOnly ? null : String(email).trim().toLowerCase();
+    const authEmail = cleanEmail ?? (phoneToSyntheticEmail(cleanPhone) as string);
+    const contactLabel = cleanEmail ?? cleanPhone;
+    reportEmail = contactLabel;
+
+    // Un numéro = un profil (index unique profiles_phone_unique_idx, 20261111_phone_signup.sql ;
+    // ce contrôle anticipé donne un message clair avant de créer le compte).
+    {
+      const { data: phoneConflict } = await db.from("profiles").select("id").eq("phone", cleanPhone).limit(1).maybeSingle();
+      if (phoneConflict) {
+        return NextResponse.json({ error: "Un compte existe déjà avec ce numéro de téléphone." }, { status: 409 });
+      }
+    }
 
     // Unicité du pseudonyme (insensible à la casse) : ici, retour anticipé non
     // bloquant ; l'index unique profiles_pseudo_unique_idx (20261102_simplified_registration.sql)
@@ -113,7 +135,7 @@ export async function POST(request: NextRequest) {
       marriageVision: cleanMarriageVision,
     }).filter(([, v]) => v !== undefined && v !== null && v !== ""));
     const { data: authData, error: authError } = await db.auth.admin.createUser({
-      email: cleanEmail,
+      email: authEmail,
       password,
       email_confirm: true, // Auto-confirm email since we manage approval manually
       user_metadata: metadata,
@@ -123,14 +145,14 @@ export async function POST(request: NextRequest) {
       const msg = authError.message || "";
       if (/already|exists/i.test(msg)) {
         return NextResponse.json(
-          { error: "Un compte existe déjà avec cet email." },
+          { error: phoneOnly ? "Un compte existe déjà avec ce numéro de téléphone." : "Un compte existe déjà avec cet email." },
           { status: 409 }
         );
       }
       if (/password/i.test(msg)) {
         return NextResponse.json({ error: "Mot de passe refusé : choisissez-en un plus long ou plus complexe." }, { status: 400 });
       }
-      await reportRegistrationFailure("account_creation", msg, { email: cleanEmail, flow: "classique" });
+      await reportRegistrationFailure("account_creation", msg, { email: contactLabel, flow: "classique" });
       return NextResponse.json(
         { error: "Erreur lors de la création du compte. L'équipe a été prévenue ; réessayez dans quelques minutes." },
         { status: 500 }
@@ -139,7 +161,7 @@ export async function POST(request: NextRequest) {
 
     const userId = authData.user?.id;
     if (!userId) {
-      await reportRegistrationFailure("account_creation", "Compte créé sans identifiant renvoyé.", { email: cleanEmail, flow: "classique" });
+      await reportRegistrationFailure("account_creation", "Compte créé sans identifiant renvoyé.", { email: contactLabel, flow: "classique" });
       return NextResponse.json(
         { error: "Erreur lors de la création du compte." },
         { status: 500 }
@@ -165,7 +187,8 @@ export async function POST(request: NextRequest) {
     // 3. Upsert profile with "pending" status
     const profileRow = {
       id: userId,
-      email: cleanEmail,
+      email: cleanEmail, // null pour un compte « téléphone seul »
+      phone: cleanPhone,
       name,
       pseudo: cleanPseudo,
       first_name: firstName,
@@ -202,7 +225,7 @@ export async function POST(request: NextRequest) {
       // existait sans photos ni selfie, et personne ne savait pourquoi. On annule
       // le compte pour que le membre puisse réessayer avec la même adresse, et
       // l'admin reçoit la cause exacte.
-      await reportRegistrationFailure("profile_save", profileError.message, { email: cleanEmail, userId, flow: "classique" });
+      await reportRegistrationFailure("profile_save", profileError.message, { email: contactLabel, userId, flow: "classique" });
       const { error: rollbackError } = await db.auth.admin.deleteUser(userId);
       if (rollbackError) console.error("[inscription] annulation du compte impossible:", rollbackError.message);
       // Course gagnée par l'index unique profiles_pseudo_unique_idx (deux inscriptions
@@ -210,6 +233,9 @@ export async function POST(request: NextRequest) {
       // pas totalement, c'est l'index qui tranche en dernier ressort.
       if (profileError.code === "23505" && /pseudo/i.test(profileError.message)) {
         return NextResponse.json({ error: "Ce pseudonyme est déjà utilisé." }, { status: 409 });
+      }
+      if (profileError.code === "23505" && /phone/i.test(profileError.message)) {
+        return NextResponse.json({ error: "Un compte existe déjà avec ce numéro de téléphone." }, { status: 409 });
       }
       return NextResponse.json(
         { error: "Votre profil n'a pas pu être enregistré. L'équipe a été prévenue ; réessayez dans quelques minutes." },
@@ -227,27 +253,23 @@ export async function POST(request: NextRequest) {
       if (nonce) await captureReferral(db, nonce, userId);
     }
 
-    // Téléphone : colonne profiles.phone (20261002_profiles_phone.sql). Sans elle, l'inscription continue.
-    {
-      const { error: phoneError } = await db.from("profiles").update({ phone }).eq("id", userId);
-      if (phoneError) console.warn("[inscription] téléphone non enregistré:", phoneError.message);
-    }
-
     // Rafale de l'ancien formulaire (preuve de présence automatique, abandonnée) : non conservée.
-    const verifiedUserId = userId;
     after(() => discardLivenessFrames(db, registration));
 
     // 4. Send confirmation email — après la réponse, le membre n'attend pas le serveur d'e-mail.
-    after(() => sendRegistrationReceivedEmail(cleanEmail, name).then(() => undefined));
+    // Compte « téléphone seul » : pas d'adresse, donc pas d'e-mail (il suit l'état sur /register/pending).
+    if (cleanEmail) {
+      after(() => sendRegistrationReceivedEmail(cleanEmail, name).then(() => undefined));
+    }
 
     // 5. Create admin notification for new registration
     try {
       await db.from("admin_notifications").insert({
         type: "user",
         title: "Nouvelle inscription",
-        message: `${name} (${cleanEmail}) s'est inscrit et attend votre validation.`,
+        message: `${name} (${contactLabel}) s'est inscrit${phoneOnly ? " par téléphone" : ""} et attend votre validation.`,
         link: `/admin/users/${userId}`,
-        metadata: { user_id: userId, name, email: cleanEmail, city, country },
+        metadata: { user_id: userId, name, email: cleanEmail, phone: cleanPhone, signup_method: phoneOnly ? "phone" : "email", city, country },
       });
     } catch (notifErr) {
       console.error("Failed to create registration notification:", notifErr);
@@ -260,9 +282,9 @@ export async function POST(request: NextRequest) {
         await db.from("admin_notifications").insert({
           type: "user",
           title: "Photos à importer",
-          message: `${name} (${cleanEmail}) n'a pas réussi à importer ses photos et s'est inscrit sans. Importez-les dès que vous les recevez.`,
+          message: `${name} (${contactLabel}) n'a pas réussi à importer ses photos et s'est inscrit sans. Importez-les dès que vous les recevez.`,
           link: `/admin/photos?user=${userId}`,
-          metadata: { user_id: userId, name, email: cleanEmail, photos_deferred: true },
+          metadata: { user_id: userId, name, email: cleanEmail, phone: cleanPhone, photos_deferred: true },
         });
       } catch (notifErr) {
         console.error("Failed to create photos-deferred notification:", notifErr);
