@@ -4,13 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Heart, HeartHandshake, Gem, Clock, XCircle, Search, X, ChevronLeft, ChevronRight, MessageCircle, UserRound,
-  Sparkles, CalendarHeart, Users, Gauge,
+  Sparkles, CalendarHeart, Users, Gauge, RotateCcw, Inbox, Handshake, Flag,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { avatarSrc } from "@/lib/avatar";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { computeDisplayMatch, type AdapterInput } from "@/lib/matching/adapter";
 import { pickMatchFields } from "@/lib/social";
+import {
+  MATCH_CATEGORIES, DEFAULT_CATEGORY, DEFAULT_SUB, compatibleSub, subFiltersOf, categoryCount, subFilterCount,
+  emptyStageCounts, type MatchCategory, type MatchStage, type StageCounts,
+} from "@/lib/matching/admin-filters";
 
 /**
  * Admin → Matching : chaque couple et son parcours.
@@ -19,7 +23,7 @@ import { pickMatchFields } from "@/lib/social";
  * Données : /api/admin/matching/couples.
  */
 
-type Stage = "alliance_pending" | "relation" | "engagement_pending" | "match" | "engagement_declined" | "declined";
+type Stage = MatchStage;
 
 interface CoupleProfile {
   id: string; name?: string | null; pseudo?: string | null; email?: string | null; gender?: string | null;
@@ -33,18 +37,8 @@ interface Couple {
   engagement: { status: string; requested_at: string; responded_at: string | null; requester_id: string } | null;
   conversation: { id: string | null; message_count: number; last_message_at: string | null };
 }
-interface Stats { accepted: number; engagement_declined: number; match: number; matchThisWeek: number; engagement_pending: number; relation: number; alliance_pending: number; declined: number; all: number }
-type TabKey = "accepted" | "match" | "engagement_pending" | "relation" | "alliance_pending" | "declined" | "all";
-
-const TABS: { value: TabKey; label: string; icon: typeof Heart }[] = [
-  { value: "accepted", label: "Alliances acceptées", icon: HeartHandshake },
-  { value: "match", label: "Matchs", icon: Gem },
-  { value: "engagement_pending", label: "Engagement à valider", icon: HeartHandshake },
-  { value: "relation", label: "En relation", icon: MessageCircle },
-  { value: "alliance_pending", label: "Demandes d'alliance", icon: Clock },
-  { value: "declined", label: "Refusés", icon: XCircle },
-  { value: "all", label: "Tout", icon: Users },
-];
+interface Stats { accepted: number; engagement_declined: number; match: number; matchThisWeek: number; engagement_pending: number; relation: number; alliance_pending: number; declined: number; all: number; stageCounts: StageCounts }
+const CATEGORY_ICONS: Record<MatchCategory, typeof Heart> = { all: Users, todo: Clock, ongoing: Handshake, done: Flag };
 
 const STAGE: Record<Stage, { label: string; className: string; icon: typeof Heart }> = {
   alliance_pending: { label: "Demande d'alliance", className: "bg-[#F4F1EA] text-[#6B5A2E]", icon: Clock },
@@ -95,8 +89,9 @@ function compatibility(c: Couple): number | null {
 
 export default function AdminMatchingPage() {
   const [couples, setCouples] = useState<Couple[]>([]);
-  const [stats, setStats] = useState<Stats>({ accepted: 0, engagement_declined: 0, match: 0, matchThisWeek: 0, engagement_pending: 0, relation: 0, alliance_pending: 0, declined: 0, all: 0 });
-  const [stage, setStage] = useState<TabKey>("accepted");
+  const [stats, setStats] = useState<Stats>({ accepted: 0, engagement_declined: 0, match: 0, matchThisWeek: 0, engagement_pending: 0, relation: 0, alliance_pending: 0, declined: 0, all: 0, stageCounts: emptyStageCounts() });
+  const [category, setCategory] = useState<MatchCategory>(DEFAULT_CATEGORY);
+  const [sub, setSub] = useState<string>(DEFAULT_SUB);
   const [search, setSearch] = useState("");
   const [debounced, setDebounced] = useState("");
   const [page, setPage] = useState(1);
@@ -114,7 +109,7 @@ export default function AdminMatchingPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const params = new URLSearchParams({ stage, page: String(page), limit: "20" });
+      const params = new URLSearchParams({ category, sub, page: String(page), limit: "20" });
       if (debounced) params.set("search", debounced);
       const res = await fetch(`/api/admin/matching/couples?${params}`);
       const data = await res.json();
@@ -130,12 +125,17 @@ export default function AdminMatchingPage() {
     } finally {
       setLoading(false);
     }
-  }, [stage, page, debounced]);
+  }, [category, sub, page, debounced]);
 
   useEffect(() => { load(); }, [load]);
 
   const scores = useMemo(() => new Map(couples.map((c) => [c.id, compatibility(c)])), [couples]);
-  const tabCount = (v: TabKey) => stats[v];
+  const counts = stats.stageCounts ?? emptyStageCounts();
+  const subs = subFiltersOf(category);
+  const filtersActive = category !== DEFAULT_CATEGORY || sub !== DEFAULT_SUB || search.trim() !== "";
+  const changeCategory = (next: MatchCategory) => { setCategory(next); setSub((cur) => compatibleSub(next, cur)); setPage(1); };
+  const changeSub = (next: string) => { setSub(next); setPage(1); };
+  const resetFilters = () => { setCategory(DEFAULT_CATEGORY); setSub(DEFAULT_SUB); setSearch(""); setDebounced(""); setPage(1); };
 
   return (
     <div className="max-w-6xl">
@@ -159,31 +159,70 @@ export default function AdminMatchingPage() {
         <StatTile label="Demandes d'alliance" value={stats.alliance_pending} icon={Clock} hint="pas encore de réponse" />
       </div>
 
-      {/* Étapes + recherche sur une ligne */}
-      <div className="flex flex-col lg:flex-row lg:items-center gap-2.5 mb-5">
-        <div className="flex gap-1.5 overflow-x-auto pb-1 lg:pb-0" role="tablist" aria-label="Étape">
-          {TABS.map((t) => {
-            const active = stage === t.value;
+      {/* Filtres : recherche, catégories (niveau 1), puis sous-filtres de la catégorie active (niveau 2) */}
+      <div className="mb-5 space-y-3">
+        <div className="flex flex-col sm:flex-row gap-2.5">
+          <div className="relative flex-1 min-w-0">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B746E]" aria-hidden />
+            <input type="search" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
+              placeholder="Rechercher par pseudo, prénom, nom ou e-mail…" aria-label="Rechercher un membre"
+              className="w-full h-11 pl-10 pr-10 bg-white border border-border rounded-xl text-[13.5px] font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" />
+            {search && (
+              <button type="button" onClick={() => { setSearch(""); setDebounced(""); setPage(1); }} aria-label="Effacer la recherche"
+                className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 rounded-md text-[#6B746E] hover:bg-muted focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"><X className="w-3.5 h-3.5" /></button>
+            )}
+          </div>
+          {filtersActive && (
+            <button type="button" onClick={resetFilters}
+              className="inline-flex items-center justify-center gap-1.5 h-11 px-4 rounded-xl border border-border bg-white text-[13px] font-semibold text-[#3F4A43] hover:border-primary/40 hover:text-primary transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40">
+              <RotateCcw className="w-3.5 h-3.5" aria-hidden /> Réinitialiser
+            </button>
+          )}
+        </div>
+
+        {/* Niveau 1 : quatre catégories compactes, sans défilement horizontal (2 x 2 sur mobile). */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-2" role="tablist" aria-label="Catégorie de duos">
+          {MATCH_CATEGORIES.map((c) => {
+            const active = category === c.id;
+            const Icon = CATEGORY_ICONS[c.id];
+            const n = c.id === "all" ? stats.all : categoryCount(counts, c.id);
             return (
-              <button key={t.value} role="tab" aria-selected={active} onClick={() => { setStage(t.value); setPage(1); }}
-                className={cn("flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-semibold whitespace-nowrap border transition-colors",
+              <button key={c.id} type="button" role="tab" aria-selected={active} onClick={() => changeCategory(c.id)}
+                className={cn("flex items-center gap-2 min-h-[44px] px-3 rounded-xl border text-[13px] font-semibold text-left transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
                   active ? "bg-primary text-white border-primary" : "bg-white text-[#3F4A43] border-border hover:border-primary/40")}>
-                <t.icon className="w-3.5 h-3.5" /> {t.label}
-                <span className={cn("text-[11px] tabular-nums px-1.5 rounded-full", active ? "bg-white/20" : "bg-muted text-[#6B746E]")}>{tabCount(t.value)}</span>
+                <Icon className="w-4 h-4 shrink-0" aria-hidden />
+                <span className="flex-1 min-w-0 leading-tight">{c.label}</span>
+                <span className={cn("text-[11px] tabular-nums px-1.5 py-0.5 rounded-full", active ? "bg-white/20" : "bg-muted text-[#6B746E]")}>{n.toLocaleString("fr-FR")}</span>
               </button>
             );
           })}
         </div>
-        <div className="relative flex-1 min-w-0 lg:max-w-xs lg:ml-auto">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#6B746E]" />
-          <input type="search" value={search} onChange={(e) => { setSearch(e.target.value); setPage(1); }}
-            placeholder="Pseudo, nom ou email…" aria-label="Rechercher un membre"
-            className="w-full h-10 pl-10 pr-9 bg-white border border-border rounded-xl text-[13px] font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/10" />
-          {search && (
-            <button onClick={() => { setSearch(""); setPage(1); }} aria-label="Effacer la recherche"
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 rounded-md text-[#6B746E] hover:bg-muted"><X className="w-3.5 h-3.5" /></button>
-          )}
-        </div>
+
+        {/* Niveau 2 : uniquement les sous-filtres de la catégorie active. */}
+        {subs.length > 0 && (
+          <>
+            <div className="hidden sm:flex flex-wrap items-center gap-1.5" role="group" aria-label="Statut">
+              {subs.map((f) => {
+                const active = sub === f.id;
+                return (
+                  <button key={f.id} type="button" aria-pressed={active} onClick={() => changeSub(f.id)}
+                    className={cn("inline-flex items-center gap-1.5 h-8 px-3 rounded-full text-[12.5px] font-semibold border transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                      active ? "bg-primary/10 text-primary border-primary/40" : "bg-white text-[#56615A] border-border hover:border-primary/40")}>
+                    {f.label}
+                    <span className="tabular-nums text-[11px] text-[#6B746E]">{subFilterCount(counts, category, f.id).toLocaleString("fr-FR")}</span>
+                  </button>
+                );
+              })}
+            </div>
+            <div className="sm:hidden">
+              <label htmlFor="matching-sub" className="sr-only">Statut</label>
+              <select id="matching-sub" value={sub} onChange={(e) => changeSub(e.target.value)}
+                className="w-full h-11 px-3 bg-white border border-border rounded-xl text-[13.5px] font-medium outline-none focus:border-primary focus:ring-2 focus:ring-primary/10">
+                {subs.map((f) => <option key={f.id} value={f.id}>{f.label} ({subFilterCount(counts, category, f.id)})</option>)}
+              </select>
+            </div>
+          </>
+        )}
       </div>
 
       {!engagementsAvailable && <div role="status" className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800">Le suivi des demandes d’engagement est indisponible : les matchs confirmés peuvent être sous-estimés.</div>}
@@ -195,14 +234,15 @@ export default function AdminMatchingPage() {
         </div>
       ) : couples.length === 0 && !error ? (
         <div className="bg-white rounded-2xl border border-border py-14 px-6 text-center">
-          <HeartHandshake className="w-9 h-9 text-primary/70 mx-auto mb-3" />
+          <Inbox className="w-9 h-9 text-primary/70 mx-auto mb-3" aria-hidden />
           <p className="text-[15px] font-semibold text-foreground">
-            {debounced ? "Aucun duo ne correspond" : stage === "match" ? "Pas encore de match" : stage === "accepted" ? "Aucune alliance acceptée" : "Rien dans cette étape pour l'instant"}
+            {debounced ? "Aucun duo ne correspond" : sub === "match" ? "Pas encore de match" : category === "todo" ? "Rien à traiter pour l'instant" : category === "ongoing" ? "Aucune alliance en cours" : "Rien dans cette sélection pour l'instant"}
           </p>
           <p className="text-[13px] text-[#56615A] mt-1 max-w-md mx-auto">
-            {debounced ? "Essayez un autre pseudo, nom ou email."
-              : stage === "match" ? "Dès qu'un membre valide la demande d'engagement de l'autre, leur match apparaît ici."
-              : stage === "accepted" ? "Les alliances acceptées apparaissent ici, y compris celles ayant évolué vers un engagement ou un match."
+            {debounced ? "Essayez un autre pseudo, prénom, nom ou e-mail, ou réinitialisez les filtres."
+              : sub === "match" ? "Dès qu'un membre valide la demande d'engagement de l'autre, leur match apparaît ici."
+              : category === "todo" ? "Les demandes d'alliance et les engagements en attente de réponse apparaissent ici."
+              : category === "ongoing" ? "Les alliances acceptées, sans demande d'engagement, apparaissent ici."
               : "Les duos apparaîtront ici au fil de leur parcours."}
           </p>
         </div>

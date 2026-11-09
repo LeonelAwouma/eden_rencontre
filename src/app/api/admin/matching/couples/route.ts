@@ -1,5 +1,6 @@
 /**
- * GET /api/admin/matching/couples?stage=accepted|match|engagement_pending|relation|alliance_pending|declined|all&search=…&page=1
+ * GET /api/admin/matching/couples?category=all|todo|ongoing|done&sub=…&search=…&page=1
+ * (ancien paramètre `stage=accepted|match|…` toujours accepté ; voir lib/matching/admin-filters.ts)
  *
  * Les couples de la plateforme et leur parcours. Définition retenue par
  * l'équipe : un VRAI match, c'est quand un membre clique sur « S'engager » dans
@@ -20,8 +21,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { ADMIN_SYSTEM_EMAIL } from "@/lib/admin-system-shared";
+import { countStages, stagesFromParams, type MatchStage } from "@/lib/matching/admin-filters";
 
-type Stage = "alliance_pending" | "relation" | "engagement_pending" | "match" | "engagement_declined" | "declined";
+type Stage = MatchStage;
 
 interface FriendshipRow {
   id: string; requester_id: string; addressee_id: string; status: string; created_at: string; updated_at: string;
@@ -39,7 +41,10 @@ export async function GET(req: NextRequest) {
   try { await requireAdmin(); } catch { return NextResponse.json({ error: "Non autorisé" }, { status: 401 }); }
 
   const { searchParams } = new URL(req.url);
-  const stageFilter = searchParams.get("stage") || "accepted";
+  const stages = stagesFromParams({
+    category: searchParams.get("category"), sub: searchParams.get("sub"), stage: searchParams.get("stage") || "accepted",
+  });
+  const isMatchOnly = stages.length === 1 && stages[0] === "match";
   const search = (searchParams.get("search") || "").replace(/[,()%*\\]/g, " ").trim();
   const rawPage = Number(searchParams.get("page") || "1");
   const rawLimit = Number(searchParams.get("limit") || "20");
@@ -136,26 +141,23 @@ export async function GET(req: NextRequest) {
     alliance_pending: count("alliance_pending"),
     declined: count("declined") + count("engagement_declined"),
     all: couples.length,
+    // Un compteur par étape (exclusives) : les catégories et sous-filtres en sont de simples sommes.
+    stageCounts: countStages(couples.map((c) => c.stage)),
   };
 
   // Filtre par étape (« Refusés » regroupe alliance et engagement refusés).
-  let filtered = couples.filter((c) =>
-    stageFilter === "all" ? true
-      : stageFilter === "accepted" ? c.status === "accepted"
-      : stageFilter === "declined" ? c.stage === "declined" || c.stage === "engagement_declined"
-      : c.stage === stageFilter
-  );
+  let filtered = couples.filter((c) => stages.includes(c.stage));
   // Parcours récents en premier, et validation la plus récente parmi les matchs.
   filtered.sort((a, b) => {
     const dateOf = (c: FriendshipRow) =>
-      stageFilter === "match" ? matchedAt(c) || c.updated_at : c.updated_at;
+      isMatchOnly ? matchedAt(c) || c.updated_at : c.updated_at;
     return new Date(dateOf(b)).getTime() - new Date(dateOf(a)).getTime();
   });
 
   // Recherche par pseudo, nom ou email de l'un des deux membres.
   if (search) {
     const { data: hits } = await db.from("profiles").select("id")
-      .or(`name.ilike.%${search}%,pseudo.ilike.%${search}%,email.ilike.%${search}%`).limit(500);
+      .or(`name.ilike.%${search}%,pseudo.ilike.%${search}%,first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%`).limit(500);
     const ids = new Set((hits || []).map((h) => h.id));
     filtered = filtered.filter((c) => ids.has(c.requester_id) || ids.has(c.addressee_id));
   }
