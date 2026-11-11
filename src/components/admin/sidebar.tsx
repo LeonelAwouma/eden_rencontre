@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -12,9 +12,13 @@ import {
   CreditCard, Settings, LogOut, X, Heart, MessageSquare,
   MessageCircle, PanelLeftClose, PanelLeftOpen, Video, Library,
   BookOpen, Send, MessagesSquare, Accessibility, FileUp, Gift, Megaphone,
-  UserCog, CalendarClock, GraduationCap, KeyRound, type LucideIcon,
+  UserCog, CalendarClock, GraduationCap, KeyRound, ChevronDown, Compass,
+  HeartHandshake, Wallet, UserCheck, type LucideIcon,
 } from "lucide-react";
-import { ADMIN_NAV_GROUPS, ADMIN_NAV_ITEMS, activeAdminNavHref, type AdminNavItem } from "@/lib/admin-nav";
+import {
+  ADMIN_NAV_GROUPS, ADMIN_NAV_ITEMS, ADMIN_SETTINGS_ITEM, activeAdminGroupId, activeAdminNavHref,
+  parseOpenGroups, withActiveGroupOpen, type AdminNavGroupId, type AdminNavItem,
+} from "@/lib/admin-nav";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -28,6 +32,17 @@ interface SidebarProps {
 }
 
 const BRAND_GREEN = "#486B46";
+const OPEN_GROUPS_KEY = "admin-nav-open-groups";
+
+/** Icône de chaque rubrique (les libellés vivent dans src/lib/admin-nav.ts). */
+const GROUP_ICONS: Record<AdminNavGroupId, LucideIcon> = {
+  pilotage: Compass,
+  members: Users,
+  encounters: HeartHandshake,
+  community: MessagesSquare,
+  content: Library,
+  finance: Wallet,
+};
 
 /** Icône de chaque entrée de `ADMIN_NAV_ITEMS` (la structure vit dans src/lib/admin-nav.ts). */
 const NAV_ICONS: Record<string, LucideIcon> = {
@@ -37,6 +52,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   "password-resets": KeyRound,
   accessibility: Accessibility,
   coaches: UserCog,
+  "coach-assignments": UserCheck,
   matching: Heart,
   "chat-monitoring": MessageCircle,
   messages: Send,
@@ -85,7 +101,79 @@ export function Sidebar({
 
   // Une seule entrée active à la fois : la plus précise (voir activeAdminNavHref).
   const activeHref = activeAdminNavHref(pathname ?? "");
+  const activeGroup = activeAdminGroupId(pathname ?? "");
   const isActive = (item: AdminNavItem) => item.href === activeHref;
+
+  // Rubriques ouvertes : plusieurs à la fois, mémorisées d'une visite à l'autre.
+  // La rubrique de la page consultée est toujours ouverte, quoi qu'on ait mémorisé.
+  const [openGroups, setOpenGroups] = useState<Set<AdminNavGroupId>>(() => withActiveGroupOpen(new Set(), activeGroup));
+  const [restored, setRestored] = useState(false);
+
+  // Lecture après montage (pas pendant le rendu) pour rester identique au rendu serveur.
+  useEffect(() => {
+    let stored: AdminNavGroupId[] = [];
+    try { stored = parseOpenGroups(window.localStorage.getItem(OPEN_GROUPS_KEY)); } catch { /* stockage indisponible */ }
+    setOpenGroups((prev) => withActiveGroupOpen(new Set([...prev, ...stored]), activeGroup));
+    setRestored(true);
+    // Au montage seulement : les changements de page sont gérés par l'effet suivant.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Navigation vers une autre rubrique : elle s'ouvre, les autres ne bougent pas.
+  useEffect(() => {
+    if (!activeGroup) return;
+    setOpenGroups((prev) => (prev.has(activeGroup) ? prev : withActiveGroupOpen(prev, activeGroup)));
+  }, [activeGroup]);
+
+  useEffect(() => {
+    if (!restored) return;
+    try { window.localStorage.setItem(OPEN_GROUPS_KEY, JSON.stringify([...openGroups])); } catch { /* stockage indisponible */ }
+  }, [openGroups, restored]);
+
+  const toggleGroup = useCallback((id: AdminNavGroupId) => {
+    setOpenGroups((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  }, []);
+
+  const hideTooltip = () => setTooltip(null);
+
+  /** Lien d'une entrée (sous-entrée d'une rubrique, ou Paramètres en bas). */
+  const renderLink = (item: AdminNavItem, nested: boolean) => {
+    const active = isActive(item);
+    const Icon = NAV_ICONS[item.id] ?? LayoutDashboard;
+    const isNew = newHrefs.includes(item.href);
+    return (
+      <div key={item.href} className="relative group">
+        <Link href={item.href}
+          aria-current={active ? "page" : undefined}
+          aria-label={isCollapsed ? `${item.label}${isNew ? " (nouveau)" : ""}` : undefined}
+          onMouseEnter={showTooltip(item.label)}
+          onMouseLeave={hideTooltip}
+          onFocus={showTooltip(item.label)}
+          onBlur={hideTooltip}
+          className={cn(
+            "flex items-center gap-3 rounded-[10px] transition-colors duration-150 relative",
+            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+            isCollapsed ? "justify-center w-11 h-10 mx-auto" : "px-3 py-2 min-h-[40px]",
+            !isCollapsed && nested && "pl-3",
+            active ? "bg-primary/[0.08] text-[#486B46]" : "text-[#4A534D] hover:bg-[#F5F3EF] hover:text-[#1F2A23]"
+          )}>
+          <Icon className={cn("w-[18px] h-[18px] flex-shrink-0 transition-colors duration-150",
+            active ? "text-primary" : "text-[#6B746E] group-hover:text-[#3A443E]")} aria-hidden="true" />
+          {!isCollapsed && (
+            <span className={cn("text-[14px] leading-snug flex-1 min-w-0", active ? "font-semibold" : "font-medium")}>
+              {item.label}
+            </span>
+          )}
+          {!isCollapsed && isNew && <NewBadge />}
+          {isCollapsed && isNew && <span className="absolute top-1 right-1"><NewBadge variant="dot" /></span>}
+        </Link>
+      </div>
+    );
+  };
 
   return (
     <>
@@ -132,56 +220,51 @@ export function Sidebar({
           </button>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 custom-scrollbar">
+        {/* Navigation : six rubriques repliables (réduit : icônes seules, toutes les destinations restent des liens) */}
+        <nav aria-label="Rubriques de l'administration" className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-3 custom-scrollbar">
           {ADMIN_NAV_GROUPS.map((section, sectionIndex) => {
             const items = ADMIN_NAV_ITEMS.filter((i) => i.group === section.id);
+            const GroupIcon = GROUP_ICONS[section.id];
+            const open = openGroups.has(section.id);
+            const hasActive = activeGroup === section.id;
+            const hasNew = items.some((i) => newHrefs.includes(i.href));
+            const panelId = `admin-nav-${section.id}`;
             return (
               <div key={section.id} role="group" aria-label={section.label}
-                className={cn(sectionIndex > 0 && (isCollapsed ? "mt-2" : "mt-5"))}>
-                <AnimatePresence>
-                  {!isCollapsed && (
-                    <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                      className="text-[12px] font-semibold tracking-[0.02em] text-[#5F6B63] px-3 pb-1.5">
-                      {section.label}
-                    </motion.p>
-                  )}
-                </AnimatePresence>
-                {isCollapsed && sectionIndex > 0 && <div className="mx-2 mb-2 h-px bg-[#ECE8E1]" />}
-                <div className="space-y-0.5">
-                  {items.map((item) => {
-                    const active = isActive(item);
-                    const Icon = NAV_ICONS[item.id] ?? LayoutDashboard;
-                    const isNew = newHrefs.includes(item.href);
-                    return (
-                      <div key={item.href} className="relative group">
-                        <Link href={item.href}
-                          aria-current={active ? "page" : undefined}
-                          aria-label={isCollapsed ? `${item.label}${isNew ? " (nouveau)" : ""}` : undefined}
-                          onMouseEnter={showTooltip(item.label)}
-                          onMouseLeave={() => setTooltip(null)}
-                          onFocus={showTooltip(item.label)}
-                          onBlur={() => setTooltip(null)}
-                          className={cn(
-                            "flex items-center gap-3 rounded-[10px] transition-colors duration-150 relative",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
-                            isCollapsed ? "justify-center w-11 h-10 mx-auto" : "px-3 py-2 min-h-[40px]",
-                            active ? "bg-primary/[0.08] text-[#486B46]" : "text-[#4A534D] hover:bg-[#F5F3EF] hover:text-[#1F2A23]"
-                          )}>
-                          <Icon className={cn("w-[18px] h-[18px] flex-shrink-0 transition-colors duration-150",
-                            active ? "text-primary" : "text-[#6B746E] group-hover:text-[#3A443E]")} aria-hidden="true" />
-                          {!isCollapsed && (
-                            <span className={cn("text-[14px] leading-snug flex-1 min-w-0", active ? "font-semibold" : "font-medium")}>
-                              {item.label}
-                            </span>
-                          )}
-                          {!isCollapsed && isNew && <NewBadge />}
-                          {isCollapsed && isNew && <span className="absolute top-1 right-1"><NewBadge variant="dot" /></span>}
-                        </Link>
-                      </div>
-                    );
-                  })}
-                </div>
+                className={cn(sectionIndex > 0 && (isCollapsed ? "mt-2" : "mt-1.5"))}>
+                {isCollapsed ? (
+                  <>
+                    {sectionIndex > 0 && <div className="mx-2 mb-2 h-px bg-[#ECE8E1]" />}
+                    <div className="space-y-0.5">{items.map((item) => renderLink(item, false))}</div>
+                  </>
+                ) : (
+                  <>
+                    <button type="button" onClick={() => toggleGroup(section.id)}
+                      aria-expanded={open} aria-controls={panelId}
+                      className={cn(
+                        "flex items-center gap-3 w-full px-3 py-2.5 min-h-[44px] rounded-[10px] text-left transition-colors duration-150",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40",
+                        "hover:bg-[#F5F3EF]", hasActive ? "text-[#486B46]" : "text-[#1F2A23]"
+                      )}>
+                      <GroupIcon className={cn("w-[18px] h-[18px] flex-shrink-0", hasActive ? "text-primary" : "text-[#4A534D]")} aria-hidden="true" />
+                      <span className="flex-1 min-w-0 text-[14px] font-semibold leading-snug">{section.label}</span>
+                      {!open && hasNew && <NewBadge variant="dot" />}
+                      <ChevronDown aria-hidden="true"
+                        className={cn("w-4 h-4 flex-shrink-0 text-[#6B746E] transition-transform duration-200", open && "rotate-180")} />
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {open && (
+                        <motion.div id={panelId} initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.18, ease: "easeOut" }}
+                          className="overflow-hidden">
+                          <div className="ml-[22px] mt-0.5 mb-1 pl-2 border-l border-[#ECE8E1] space-y-0.5">
+                            {items.map((item) => renderLink(item, true))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </>
+                )}
               </div>
             );
           })}
@@ -208,6 +291,8 @@ export function Sidebar({
 
         {/* User / Logout */}
         <div className={cn("border-t border-[#ECE8E1]", isCollapsed ? "p-2" : "p-3")}>
+          {/* Paramètres : entrée indépendante, séparée des rubriques métier */}
+          <div className="mb-1">{renderLink(ADMIN_SETTINGS_ITEM, false)}</div>
           <div className={cn("flex items-center mb-1", isCollapsed ? "justify-center px-0 py-2" : "gap-3 px-3 py-2")}>
             <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
               {adminName.charAt(0).toUpperCase()}
