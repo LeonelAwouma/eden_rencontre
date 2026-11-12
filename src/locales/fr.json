@@ -2465,6 +2465,28 @@
     "toastStale": "Cette proposition n’est plus d’actualité. Votre espace a été actualisé.",
     "toastError": "L’opération n’a pas pu aboutir. Réessayez.",
     "loadError": "Impossible de vérifier votre accompagnement pour le moment.",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "proposalBadge": "Proposition d’accompagnement",
+    "proposedOn": "Proposé le {date}",
+    "activeBadge": "Accompagnement actif",
+    "activeHint": "Vos séances, comptes rendus et actions de suivi apparaissent juste en dessous.",
+    "declinedTitle": "Proposition refusée",
+    "declinedDesc": "Vous avez refusé la proposition de {name}. Rien n’a été partagé et l’historique est conservé.",
+    "dismiss": "Fermer"
+  },
+  "coachMemberNotif": {
+    "title": "Accompagnement",
+    "markAll": "Tout marquer comme lu",
+    "markOne": "Marquer comme lue",
+    "open": "Voir la proposition",
+    "unread": "Non lue",
+    "coach_assignment_proposed": {
+      "title": "Un accompagnement vous est proposé",
+      "body": "Un coach souhaite vous accompagner. Vous pouvez accepter ou refuser ce suivi."
+    },
+    "assignment_ended": {
+      "title": "Votre accompagnement a pris fin",
+      "body": "Votre historique d’accompagnement reste consultable."
+    }
   }
 }

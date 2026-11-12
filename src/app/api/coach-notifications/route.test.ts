@@ -16,9 +16,9 @@ vi.mock("@/lib/supabase-admin", () => ({
   getSupabaseAdmin: () => ({
     from: () => {
       const filters: Record<string, unknown> = {};
-      let op = "select"; let payload: Record<string, unknown> = {}; let nullRead = false; let single = false;
+      let op = "select"; let payload: Record<string, unknown> = {}; let nullRead = false; let single = false; let head = false;
       const q: Record<string, unknown> = {
-        select: () => q, order: () => q, limit: () => q,
+        select: (_c?: string, o?: { head?: boolean }) => { head = !!o?.head; return q; }, order: () => q, limit: () => q,
         eq: (c: string, v: unknown) => { filters[c] = v; return q; },
         is: () => { nullRead = true; return q; },
         update: (p: Record<string, unknown>) => { op = "update"; payload = p; return q; },
@@ -26,6 +26,7 @@ vi.mock("@/lib/supabase-admin", () => ({
         then: (res: (v: unknown) => unknown, rej?: (e: unknown) => unknown) => {
           const matched = w.rows.filter((r) => Object.entries(filters).every(([k, v]) => (r as Record<string, unknown>)[k] === v) && (!nullRead || r.read_at === null));
           if (op === "update") matched.forEach((r) => Object.assign(r, payload));
+          if (head) return Promise.resolve({ data: null, count: matched.length, error: null }).then(res, rej);
           const data = single ? (matched[0] ? { id: matched[0].id } : null) : matched;
           return Promise.resolve({ data, error: null }).then(res, rej);
         },
@@ -49,6 +50,12 @@ describe("notifications Coach : isolation par destinataire", () => {
     const body = await (await GET(new NextRequest("http://x/api/coach-notifications?recipient_id=" + OTHER))).json();
     expect(body.notifications.map((n: Row) => n.title)).toEqual(["pour moi"]);
     expect(body.unread).toBe(1);
+  });
+  test("unread est un comptage exact : il dépasse les 30 notifications renvoyées", async () => {
+    w.rows = Array.from({ length: 45 }, (_, i) => ({ id: "id" + i, recipient_id: ME, read_at: null, title: "n" + i }));
+    const { GET } = await import("./route");
+    const body = await (await GET(new NextRequest("http://x/api/coach-notifications"))).json();
+    expect(body.unread).toBe(45);
   });
   test("un coach ne lit pas les notifications d'un membre, ni l'inverse", async () => {
     w.user = { id: OTHER, email: "c@x.fr", kind: "coach" };

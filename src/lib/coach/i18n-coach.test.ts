@@ -13,7 +13,7 @@ import { SESSION_ERROR_STATUS, SESSION_STATUSES, SESSION_TYPES } from "./session
  */
 const NAMESPACES = [
   "coachNav", "coachDashboard", "coachMembers", "coachFormation", "coachProfile", "coachCommon", "coachMember",
-  "coachSessions", "coachNotes", "coachReports", "coachActions", "coachFollowUp",
+  "coachSessions", "coachNotes", "coachReports", "coachActions", "coachFollowUp", "coachMemberNotif",
 ] as const;
 
 const leafKeys = (obj: unknown, prefix = ""): string[] =>
@@ -101,12 +101,13 @@ describe("aucune clé brute dans l'interface", () => {
       ...sourceFiles(join(root, "src/app/coach")),
       join(root, "src/components/dashboard/coach-proposal-card.tsx"),
       join(root, "src/components/dashboard/coach-follow-up-card.tsx"),
+      join(root, "src/components/dashboard/member-coach-notifications.tsx"),
       join(root, "src/lib/coach-nav.ts"),
     ];
     const used = new Set<string>();
     for (const file of files) {
       const src = readFileSync(file, "utf8");
-      for (const m of src.matchAll(/["'`]((?:coachNav|coachDashboard|coachMembers|coachFormation|coachProfile|coachCommon|coachMember)\.[A-Za-z0-9_.]+)["'`]/g)) {
+      for (const m of src.matchAll(/["'`]((?:coachNav|coachDashboard|coachMembers|coachFormation|coachProfile|coachCommon|coachMember|coachMemberNotif)\.[A-Za-z0-9_.]+)["'`]/g)) {
         used.add(m[1]);
       }
     }

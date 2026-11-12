@@ -2465,6 +2465,28 @@
     "toastStale": "This proposal is no longer current. Your space has been refreshed.",
     "toastError": "The operation couldn’t be completed. Please try again.",
     "loadError": "We can’t check your coaching right now.",
-    "retry": "Try again"
+    "retry": "Try again",
+    "proposalBadge": "Coaching offer",
+    "proposedOn": "Offered on {date}",
+    "activeBadge": "Coaching active",
+    "activeHint": "Your sessions, reports and follow-up actions appear just below.",
+    "declinedTitle": "Offer declined",
+    "declinedDesc": "You declined {name}’s offer. Nothing was shared and the history is kept.",
+    "dismiss": "Close"
+  },
+  "coachMemberNotif": {
+    "title": "Coaching",
+    "markAll": "Mark all as read",
+    "markOne": "Mark as read",
+    "open": "View the offer",
+    "unread": "Unread",
+    "coach_assignment_proposed": {
+      "title": "A coaching offer is waiting for you",
+      "body": "A coach would like to support you. You can accept or decline."
+    },
+    "assignment_ended": {
+      "title": "Your coaching has ended",
+      "body": "Your coaching history remains available."
+    }
   }
 }

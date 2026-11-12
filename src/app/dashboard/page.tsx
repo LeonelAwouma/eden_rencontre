@@ -72,6 +72,9 @@ import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
 import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
 import { PushOptIn } from "@/components/push-opt-in";
 import { CoachProposalCard } from "@/components/dashboard/coach-proposal-card";
+import { MemberCoachNotificationsPanel, useMemberCoachNotifications } from "@/components/dashboard/member-coach-notifications";
+import { COACH_PROPOSAL_ANCHOR, proposalAnchorFromHash } from "@/lib/coach/member-notifications";
+import { useScrollToElement } from "@/hooks/use-scroll-to-element";
 import { CoachFollowUpCard } from "@/components/dashboard/coach-follow-up-card";
 import { AutoSaveIndicator } from "@/components/autosave-indicator";
 
@@ -420,12 +423,19 @@ export default function DashboardPage() {
     })().catch(() => {});
   }, [user?.id]);
 
+  // Notifications d'accompagnement (coach_notifications) : chargées dès la connexion pour un compteur exact.
+  const coachNotifs = useMemberCoachNotifications(!!user?.id);
+  // Deep link vers la carte de validation du coach : on attend que l'onglet Accueil et la carte soient réellement rendus.
+  const [scrollTarget, setScrollTarget] = useState<string | null>(null);
+  useScrollToElement(scrollTarget, activeTab === "Home" || activeTab === "Accueil", () => setScrollTarget(null));
+  const openCoachProposal = () => { setActiveTab("Home"); setScrollTarget(COACH_PROPOSAL_ANCHOR); void coachNotifs.reload(); };
+
   const ENGAGEMENT_NOTIF_TYPES = ["engagement_request", "engagement_accepted", "engagement_declined"];
   const unreadMeetingNotifs = meetingNotifs.filter((n) => !n.is_read && n.notification_type !== "verification_approved" && n.notification_type !== "verification_rejected" && n.notification_type !== "verification_pending" && !ENGAGEMENT_NOTIF_TYPES.includes(n.notification_type));
   const unreadBlogNotifs = blogNotifs.filter((n) => !n.is_read);
   const unreadVerificationNotifs = verificationNotifs.filter((n) => !n.is_read);
   const unreadEngagementNotifs = engagementNotifs.filter((n) => !n.is_read);
-  const notifCount = unreadMeetingNotifs.length + unreadBlogNotifs.length + unreadVerificationNotifs.length + unreadEngagementNotifs.length;
+  const notifCount = unreadMeetingNotifs.length + unreadBlogNotifs.length + unreadVerificationNotifs.length + unreadEngagementNotifs.length + coachNotifs.unread;
 
   // La chrome du layout (en-tête, barre inférieure, tiroir) lit ces valeurs : ce composant reste leur source de vérité.
   const { registerTabController, publishBadges } = useMemberChrome();
@@ -875,6 +885,7 @@ export default function DashboardPage() {
     const params = new URLSearchParams(window.location.search);
     const tabParam = params.get("tab");
     if (tabParam && (TABS as string[]).includes(tabParam)) setActiveTab(tabParam as Tab);
+    if (proposalAnchorFromHash(window.location.hash)) { setActiveTab("Home"); setScrollTarget(COACH_PROPOSAL_ANCHOR); }
     const conv = params.get("conv");
     if (conv) setPendingConv(conv);
   }, []);
@@ -2646,6 +2657,9 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* Accompagnement (coach_notifications) */}
+            <MemberCoachNotificationsPanel state={coachNotifs} onOpenProposal={openCoachProposal} />
+
             {/* Message notifications */}
             {messageNotifs.length > 0 && (
               <div className="space-y-2">
@@ -2699,7 +2713,7 @@ export default function DashboardPage() {
             )}
 
             {/* Empty state when no notifications at all */}
-            {meetingNotifs.length === 0 && messageNotifs.length === 0 && blogNotifs.length === 0 && verificationNotifs.length === 0 && engagementNotifs.length === 0 && (
+            {meetingNotifs.length === 0 && messageNotifs.length === 0 && blogNotifs.length === 0 && verificationNotifs.length === 0 && engagementNotifs.length === 0 && coachNotifs.items.length === 0 && (
               <div className="rounded-2xl overflow-hidden" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
                 {[
                   { icon: Heart, text: t("dashboard.viewActivityNotifsHere"), when: "" },

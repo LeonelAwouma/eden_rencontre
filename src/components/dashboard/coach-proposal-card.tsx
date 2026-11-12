@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { HeartHandshake, Loader2, RefreshCw } from "lucide-react";
+import { HeartHandshake, Loader2, RefreshCw, X } from "lucide-react";
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -11,6 +11,8 @@ import {
   actionOutcome, buildConsentPayload, buildStopPayload, coachCardMode, coachDisplayName,
   type CardAssignment,
 } from "@/lib/coach/card-mode";
+import { avatarSrc } from "@/lib/avatar";
+import { COACH_PROPOSAL_ANCHOR } from "@/lib/coach/member-notifications";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
 
@@ -29,6 +31,9 @@ export function CoachProposalCard() {
   const [busy, setBusy] = useState(false);
   const [confirmStop, setConfirmStop] = useState(false);
   const [slow, setSlow] = useState(false);
+  // Confirmation persistante après un refus (la proposition disparaît, l'historique reste côté serveur).
+  const [declined, setDeclined] = useState<{ name: string } | null>(null);
+  const [photoFailed, setPhotoFailed] = useState(false);
   const busyRef = useRef(false); // verrou synchrone : empêche une double soumission avant le re-rendu
 
   const reload = useCallback(async () => {
@@ -70,6 +75,8 @@ export function CoachProposalCard() {
       const outcome = actionOutcome(res.status, body, expected);
 
       if (outcome === "success") {
+        if (kind === "decline") setDeclined({ name: coachDisplayName(current.coachName) ?? t("coachMember.fallbackCoach") });
+        else setDeclined(null);
         toast({ title: t(kind === "accept" ? "coachMember.toastAccepted" : kind === "decline" ? "coachMember.toastDeclined" : "coachMember.toastStopped") });
       } else if (outcome === "stale") {
         toast({ title: t("coachMember.toastStale"), variant: "destructive" });
@@ -103,18 +110,44 @@ export function CoachProposalCard() {
 
   const current = load.current;
   const mode = coachCardMode(current);
-  if (mode === "none" || !current) return null;
+  if (mode === "none" || !current) {
+    if (!declined) return null;
+    return (
+      <section id={COACH_PROPOSAL_ANCHOR} tabIndex={-1} role="status" aria-label={t("coachMember.sectionLabel")}
+        className="rounded-2xl border border-[#DCE6DA] bg-white p-4 flex items-start justify-between gap-3 outline-none">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[#1C241F]">{t("coachMember.declinedTitle")}</p>
+          <p className="mt-1 text-sm text-[#56615A]">{t("coachMember.declinedDesc", { name: declined.name })}</p>
+        </div>
+        <button type="button" onClick={() => setDeclined(null)} aria-label={t("coachMember.dismiss")}
+          className="shrink-0 rounded-lg p-1.5 text-[#56615A] hover:bg-[#F0F4EF]">
+          <X className="w-4 h-4" aria-hidden="true" />
+        </button>
+      </section>
+    );
+  }
 
   const name = coachDisplayName(current.coachName) ?? t("coachMember.fallbackCoach");
   const initial = (name.trim()[0] || "C").toUpperCase();
+  const photo = !photoFailed ? avatarSrc(current.coachAvatarUrl, 128) : undefined;
+  const dateOf = (iso: string | null) => (iso ? new Date(iso).toLocaleDateString(locale, { dateStyle: "medium" }) : "—");
   const primary = "inline-flex items-center justify-center gap-2 rounded-xl bg-[#1F4D3A] px-4 py-2.5 text-sm font-semibold text-white hover:bg-[#173b2d] disabled:opacity-60";
   const secondary = "inline-flex items-center justify-center gap-2 rounded-xl border border-[#E6EAE5] bg-white px-4 py-2.5 text-sm font-semibold text-[#1C241F] hover:bg-[#F0F4EF] disabled:opacity-60";
 
   return (
-    <section aria-label={t("coachMember.sectionLabel")} className="rounded-2xl border border-[#DCE6DA] bg-gradient-to-br from-[#F3F8F2] to-white p-5">
+    <section id={COACH_PROPOSAL_ANCHOR} tabIndex={-1} aria-label={t("coachMember.sectionLabel")}
+      className="rounded-2xl border border-[#DCE6DA] bg-gradient-to-br from-[#F3F8F2] to-white p-5 scroll-mt-24 outline-none">
       <div className="flex items-start gap-4">
-        <span className="w-11 h-11 shrink-0 rounded-full bg-[#EEF5EE] text-[#28543C] font-semibold flex items-center justify-center ring-1 ring-[#DCE6DA]" aria-hidden="true">{initial}</span>
+        <span className="w-12 h-12 shrink-0 overflow-hidden rounded-full bg-[#EEF5EE] text-[#28543C] font-semibold flex items-center justify-center ring-1 ring-[#DCE6DA]">
+          {photo
+            // eslint-disable-next-line @next/next/no-img-element -- avatar du coach : repli sur l'initiale si l'image échoue
+            ? <img src={photo} alt={name} className="h-full w-full object-cover" onError={() => setPhotoFailed(true)} />
+            : <span aria-hidden="true">{initial}</span>}
+        </span>
         <div className="min-w-0 flex-1">
+          <p className="mb-1 inline-flex items-center rounded-full bg-[#E6F0E4] px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide text-[#28543C]">
+            {mode === "proposal" ? t("coachMember.proposalBadge") : t("coachMember.activeBadge")}
+          </p>
           <h2 className="flex items-center gap-2 text-base font-semibold text-[#1C241F]">
             <HeartHandshake className="w-4 h-4 text-[#3F704D]" aria-hidden="true" />
             {mode === "proposal" ? t("coachMember.proposalTitle") : t("coachMember.activeTitle")}
@@ -124,7 +157,9 @@ export function CoachProposalCard() {
               ? t("coachMember.proposalDesc", { name })
               : t("coachMember.activeDesc", { name, date: current.consentAt ? new Date(current.consentAt).toLocaleDateString(locale, { dateStyle: "medium" }) : "—" })}
           </p>
+          {mode === "proposal" && <p className="mt-1 text-xs font-medium text-[#3F704D]">{t("coachMember.proposedOn", { date: dateOf(current.assignedAt) })}</p>}
           {mode === "proposal" && <p className="mt-1 text-xs text-[#6B746E]">{t("coachMember.shareNote")}</p>}
+          {mode === "active" && <p className="mt-1 text-xs text-[#6B746E]">{t("coachMember.activeHint")}</p>}
 
           <div className="mt-4 flex flex-wrap gap-2">
             {mode === "proposal" ? (

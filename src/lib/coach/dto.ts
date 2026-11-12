@@ -24,17 +24,20 @@ export interface MemberAssignmentDto {
   status: string;
   consentStatus: string;
   coachName: string | null;
+  /** Photo de profil du coach (profiles.avatar_url), ou null : la carte affiche alors son initiale. */
+  coachAvatarUrl: string | null;
   assignedAt: string;
   consentAt: string | null;
   endedAt: string | null;
 }
 
-export function toMemberAssignmentDto(row: Record<string, unknown>, coachName: string | null): MemberAssignmentDto {
+export function toMemberAssignmentDto(row: Record<string, unknown>, coachName: string | null, coachAvatarUrl: string | null = null): MemberAssignmentDto {
   return {
     id: String(row.id),
     status: String(row.status),
     consentStatus: String(row.consent_status),
     coachName,
+    coachAvatarUrl: coachAvatarUrl && coachAvatarUrl.trim() ? coachAvatarUrl : null,
     assignedAt: String(row.assigned_at),
     consentAt: (row.consent_at as string | null) ?? null,
     endedAt: (row.ended_at as string | null) ?? null,

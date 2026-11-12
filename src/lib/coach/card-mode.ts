@@ -10,6 +10,7 @@ export interface CardAssignment {
   status: string;
   consentStatus: string;
   coachName: string | null;
+  coachAvatarUrl?: string | null;
   assignedAt: string;
   consentAt: string | null;
 }
