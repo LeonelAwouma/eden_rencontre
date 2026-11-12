@@ -515,7 +515,7 @@ export function inactivityReminderEmail(name: string, days: 7 | 21 | 45, unsubsc
       p("Cela fait un moment que vous n'avez pas visité Garden of Alliance. Votre espace est toujours disponible, et vous pouvez reprendre votre parcours à votre rythme.") +
       p("Si vous le souhaitez, retrouvez votre profil et les ressources de l'Académie du mariage.") +
       button(`${appUrl()}/login`, "Retrouver mon espace") +
-      fine(`Vous recevez ce rappel parce que vous avez choisi de recevoir les e-mails de réactivation. Pour ne plus en recevoir : ${link(unsubscribeUrl, "désactiver les rappels")}.`),
-    footer: `Vous avez choisi de recevoir les rappels d'inactivité. ${link(unsubscribeUrl, "Se désinscrire des rappels")}`,
+      fine(`Vous recevez ce rappel car vous avez un compte membre Garden of Alliance. Pour ne plus en recevoir : ${link(unsubscribeUrl, "arrêter les rappels")}.`),
+    footer: `Ce rappel est lié à votre compte membre. ${link(unsubscribeUrl, "Arrêter les rappels")}`,
   });
 }
