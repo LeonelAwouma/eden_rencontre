@@ -2283,7 +2283,6 @@
     "members": "My members",
     "formation": "Training",
     "academie": "Marriage Academy",
-    "mediatheque": "Resource Library",
     "profile": "My profile",
     "logout": "Log out",
     "menu": "Menu",
@@ -2444,25 +2443,6 @@
       "denied": "Your access does not allow this change right now.",
       "generic": "The photo could not be updated. Try again."
     }
-  },
-  "coachMediatheque": {
-    "title": "Resource Library",
-    "subtitle": "Published resources from the general library, for browsing.",
-    "searchLabel": "Search a resource",
-    "searchPlaceholder": "Search…",
-    "filterType": "Resource type",
-    "filterLevel": "Level",
-    "filterCategory": "Category",
-    "allTypes": "All types",
-    "allLevels": "All levels",
-    "allCategories": "All categories",
-    "empty": "No resources",
-    "emptyDesc": "No published resource matches these filters.",
-    "back": "Back to the resource library",
-    "notFound": "Resource not found.",
-    "openLink": "Open link",
-    "pages": "{n} pages",
-    "related": "Related resources"
   },
   "coachMember": {
     "sectionLabel": "Coaching",

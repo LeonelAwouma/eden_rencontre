@@ -2283,7 +2283,6 @@
     "members": "Mes membres",
     "formation": "Formation",
     "academie": "Académie du Mariage",
-    "mediatheque": "Médiathèque",
     "profile": "Mon profil",
     "logout": "Se déconnecter",
     "menu": "Menu",
@@ -2444,25 +2443,6 @@
       "denied": "Votre accès ne permet pas cette modification pour le moment.",
       "generic": "La photo n’a pas pu être mise à jour. Réessayez."
     }
-  },
-  "coachMediatheque": {
-    "title": "Médiathèque",
-    "subtitle": "Ressources publiées de la médiathèque générale, en consultation.",
-    "searchLabel": "Rechercher une ressource",
-    "searchPlaceholder": "Rechercher…",
-    "filterType": "Type de ressource",
-    "filterLevel": "Niveau",
-    "filterCategory": "Catégorie",
-    "allTypes": "Tous les types",
-    "allLevels": "Tous les niveaux",
-    "allCategories": "Toutes les catégories",
-    "empty": "Aucune ressource",
-    "emptyDesc": "Aucune ressource publiée ne correspond à ces filtres.",
-    "back": "Retour à la médiathèque",
-    "notFound": "Ressource introuvable.",
-    "openLink": "Ouvrir le lien",
-    "pages": "{n} pages",
-    "related": "Ressources liées"
   },
   "coachMember": {
     "sectionLabel": "Accompagnement",
