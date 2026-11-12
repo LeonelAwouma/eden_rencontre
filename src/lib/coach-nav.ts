@@ -1,7 +1,7 @@
 /**
  * Navigation de l'espace Coach : donnée pure (testable sous vitest, environnement `node`).
  * Elle ne contient QUE les entrées qui existent : Vue d'ensemble, Mes membres, Formation, Académie du Mariage,
- * Médiathèque (lecture seule, /api/coach/mediatheque), Rendez-vous, Comptes rendus, Mon profil.
+ * Rendez-vous, Comptes rendus, Mon profil.
  * Aucune messagerie Coach-Membre, aucun écran d'administration.
  */
 
@@ -20,7 +20,6 @@ export const COACH_GROUPS: CoachGroup[] = [
       { kind: "route", id: "members", labelKey: "coachNav.members", href: "/coach/members" },
       { kind: "route", id: "formation", labelKey: "coachNav.formation", href: "/coach/formation" },
       { kind: "route", id: "academie", labelKey: "coachNav.academie", href: "/coach/academie" },
-      { kind: "route", id: "mediatheque", labelKey: "coachNav.mediatheque", href: "/coach/mediatheque" },
       { kind: "route", id: "sessions", labelKey: "coachNav.sessions", href: "/coach/sessions" },
       { kind: "route", id: "reports", labelKey: "coachNav.reports", href: "/coach/reports" },
     ],

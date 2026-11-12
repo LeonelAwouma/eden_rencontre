@@ -12,6 +12,8 @@ const w = vi.hoisted(() => ({
   rpcData: "active" as unknown,
   assignments: [] as Record<string, unknown>[],
   filters: [] as [string, unknown][],
+  tables: [] as string[],
+  photos: [{ id: "c1", avatar_url: "/avatars/coach.png" }] as Record<string, unknown>[],
 }));
 
 vi.mock("@/lib/api-auth", () => ({ requireApprovedMember: async () => w.member }));
@@ -19,10 +21,11 @@ vi.mock("@/lib/supabase-admin", () => ({
   getSupabaseAdmin: () => ({
     rpc: async (fn: string, args: Record<string, unknown>) => { w.rpc.push({ fn, args }); return { data: w.rpcError ? null : w.rpcData, error: w.rpcError }; },
     from: (table: string) => {
+      w.tables.push(table);
       const q: Record<string, unknown> = {
         select: () => q, order: () => q, limit: () => q, in: () => q,
         eq: (c: string, v: unknown) => { w.filters.push([c, v]); return q; },
-        then: (res: (v: unknown) => unknown) => Promise.resolve({ data: table === "coach_member_assignments" ? w.assignments : [{ user_id: "c1", display_name: "Coach Awa" }], error: null }).then(res),
+        then: (res: (v: unknown) => unknown) => Promise.resolve({ data: table === "coach_member_assignments" ? w.assignments : table === "profiles" ? w.photos : [{ user_id: "c1", display_name: "Coach Awa" }], error: null }).then(res),
       };
       return q;
     },
@@ -32,7 +35,7 @@ vi.mock("@/lib/supabase-admin", () => ({
 const post = (url: string, body: unknown) => new NextRequest("http://x" + url, { method: "POST", body: JSON.stringify(body), headers: { "Content-Type": "application/json" } });
 
 beforeEach(() => {
-  w.member = { id: ME, email: "m@x.fr" }; w.rpc.length = 0; w.rpcError = null; w.rpcData = "active"; w.assignments = []; w.filters.length = 0;
+  w.member = { id: ME, email: "m@x.fr" }; w.rpc.length = 0; w.rpcError = null; w.rpcData = "active"; w.assignments = []; w.filters.length = 0; w.tables.length = 0;
 });
 
 describe("POST /api/member/coach/consent", () => {
@@ -99,6 +102,19 @@ describe("GET /api/member/coach", () => {
     expect(w.filters).not.toContainEqual(["member_id", OTHER]);
     expect(body.current).toMatchObject({ id: A, status: "pending", coachName: "Coach Awa" });
     expect(JSON.stringify(body)).not.toContain("admin@x.fr");
+  });
+  test("renvoie la photo du coach (profiles.avatar_url) et la date de proposition", async () => {
+    w.assignments = [{ id: A, coach_id: "c1", status: "pending", consent_status: "pending", assigned_at: "2026-11-08T10:00:00Z", consent_at: null, ended_at: null }];
+    const { GET } = await import("./route");
+    const body = await (await GET(new NextRequest("http://x/api/member/coach"))).json();
+    expect(body.current).toMatchObject({ coachAvatarUrl: "/avatars/coach.png", assignedAt: "2026-11-08T10:00:00Z" });
+    expect(w.tables).toContain("profiles");
+  });
+  test("sans photo : coachAvatarUrl vaut null (la carte affiche l'initiale)", async () => {
+    w.photos = [{ id: "c1", avatar_url: null }];
+    w.assignments = [{ id: A, coach_id: "c1", status: "pending", consent_status: "pending", assigned_at: "2026-11-08T10:00:00Z", consent_at: null, ended_at: null }];
+    const { GET } = await import("./route");
+    expect((await (await GET(new NextRequest("http://x/api/member/coach"))).json()).current.coachAvatarUrl).toBeNull();
   });
   test("non membre : 401", async () => {
     w.member = null;

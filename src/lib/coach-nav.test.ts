@@ -1,3 +1,5 @@
+import { existsSync } from "node:fs";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import en from "@/locales/en.json";
 import fr from "@/locales/fr.json";
@@ -12,15 +14,25 @@ const allDests = COACH_GROUPS.flatMap((g) => g.dests);
 const routes = allDests.filter((d) => d.kind === "route");
 
 describe("coach-nav", () => {
-  it("n'expose QUE les entrées des lots 2 et 3 (+ médiathèque, lecture seule) : rien de la supervision, aucune messagerie", () => {
+  it("n'expose QUE les entrées des lots 2 et 3 (la médiathèque Coach est retirée) : rien de la supervision, aucune messagerie", () => {
     expect(routes.map((d) => (d.kind === "route" ? d.href : ""))).toEqual([
-      "/coach", "/coach/members", "/coach/formation", "/coach/academie", "/coach/mediatheque", "/coach/sessions", "/coach/reports", "/coach/profile",
+      "/coach", "/coach/members", "/coach/formation", "/coach/academie", "/coach/sessions", "/coach/reports", "/coach/profile",
     ]);
     for (const d of routes) {
       if (d.kind !== "route") continue;
       expect(d.href).not.toMatch(/message|messag|chat|supervis|couple|admin/i);
     }
     for (const d of allDests) expect(d.id).not.toMatch(/message|chat|couple/i);
+  });
+
+  it("la médiathèque Coach n'est plus au menu, ni dans le tiroir, ni dans la barre mobile, et ses pages n'existent plus", () => {
+    expect(allDests.map((d) => d.id)).not.toContain("mediatheque");
+    expect(COACH_PRIMARY_IDS).not.toContain("mediatheque");
+    expect(COACH_NAV_ICONS).not.toHaveProperty("mediatheque");
+    expect(resolve(fr, "coachNav.mediatheque")).toBeUndefined();
+    expect(resolve(en, "coachNav.mediatheque")).toBeUndefined();
+    expect(existsSync(join(process.cwd(), "src/app/coach/mediatheque"))).toBe(false);
+    expect(existsSync(join(process.cwd(), "src/app/api/coach/mediatheque"))).toBe(false);
   });
 
   it("traduit chaque libellé et chaque titre de groupe en français et en anglais", () => {

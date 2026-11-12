@@ -9,7 +9,6 @@ import { completeOnboarding, getQuestionnaires, applyAnswer, isFieldVisible, eff
 import { archivedLegacyValues, classifyDiscoverySource, classifyMarriageVision, mergeLegacyAnswers, pendingLegacyValues, type LegacyColumns } from "@/lib/onboarding-legacy";
 import { discoverySourceLabel, marriageVisionLabel } from "@/lib/questionnaire-choices";
 import { LegacyAnswersNotice } from "@/components/questionnaire/legacy-answers-notice";
-import { ReactivationEmailPreference } from "@/components/reactivation-email-preference";
 import { useLogoutGuard, useMemberHeader } from "@/components/dashboard/member-chrome";
 import {
   User, Edit3, Save, X, CheckCircle, AlertCircle, Loader2, ChevronDown, ChevronRight,
@@ -850,7 +849,6 @@ export default function ProfilePage() {
               </span>
               <ChevronRight className="w-5 h-5 text-[#777777] shrink-0" aria-hidden="true" />
             </Link>
-            <ReactivationEmailPreference />
           </>
         ) : (
           // Anciennes réponses du profil reprises dans l'éditeur tant que la question n'a pas de réponse enregistrée.

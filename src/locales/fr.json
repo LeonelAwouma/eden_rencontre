@@ -2283,7 +2283,6 @@
     "members": "Mes membres",
     "formation": "Formation",
     "academie": "Académie du Mariage",
-    "mediatheque": "Médiathèque",
     "profile": "Mon profil",
     "logout": "Se déconnecter",
     "menu": "Menu",
@@ -2445,25 +2444,6 @@
       "generic": "La photo n’a pas pu être mise à jour. Réessayez."
     }
   },
-  "coachMediatheque": {
-    "title": "Médiathèque",
-    "subtitle": "Ressources publiées de la médiathèque générale, en consultation.",
-    "searchLabel": "Rechercher une ressource",
-    "searchPlaceholder": "Rechercher…",
-    "filterType": "Type de ressource",
-    "filterLevel": "Niveau",
-    "filterCategory": "Catégorie",
-    "allTypes": "Tous les types",
-    "allLevels": "Tous les niveaux",
-    "allCategories": "Toutes les catégories",
-    "empty": "Aucune ressource",
-    "emptyDesc": "Aucune ressource publiée ne correspond à ces filtres.",
-    "back": "Retour à la médiathèque",
-    "notFound": "Ressource introuvable.",
-    "openLink": "Ouvrir le lien",
-    "pages": "{n} pages",
-    "related": "Ressources liées"
-  },
   "coachMember": {
     "sectionLabel": "Accompagnement",
     "proposalTitle": "Un accompagnement vous est proposé",
@@ -2485,6 +2465,28 @@
     "toastStale": "Cette proposition n’est plus d’actualité. Votre espace a été actualisé.",
     "toastError": "L’opération n’a pas pu aboutir. Réessayez.",
     "loadError": "Impossible de vérifier votre accompagnement pour le moment.",
-    "retry": "Réessayer"
+    "retry": "Réessayer",
+    "proposalBadge": "Proposition d’accompagnement",
+    "proposedOn": "Proposé le {date}",
+    "activeBadge": "Accompagnement actif",
+    "activeHint": "Vos séances, comptes rendus et actions de suivi apparaissent juste en dessous.",
+    "declinedTitle": "Proposition refusée",
+    "declinedDesc": "Vous avez refusé la proposition de {name}. Rien n’a été partagé et l’historique est conservé.",
+    "dismiss": "Fermer"
+  },
+  "coachMemberNotif": {
+    "title": "Accompagnement",
+    "markAll": "Tout marquer comme lu",
+    "markOne": "Marquer comme lue",
+    "open": "Voir la proposition",
+    "unread": "Non lue",
+    "coach_assignment_proposed": {
+      "title": "Un accompagnement vous est proposé",
+      "body": "Un coach souhaite vous accompagner. Vous pouvez accepter ou refuser ce suivi."
+    },
+    "assignment_ended": {
+      "title": "Votre accompagnement a pris fin",
+      "body": "Votre historique d’accompagnement reste consultable."
+    }
   }
 }

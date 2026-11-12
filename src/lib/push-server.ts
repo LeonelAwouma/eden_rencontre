@@ -17,6 +17,12 @@ export interface PushContent {
   tag?: string;
 }
 
+/**
+ * `failed` = échecs temporaires (réseau, 5xx…), donc à reprendre ; `removed` = abonnements expirés (404/410),
+ * définitivement sans objet ; `subscriptions` = 0 signifie « aucun appareil », pas une erreur.
+ */
+export interface PushResult { sent: number; removed: number; failed: number; subscriptions: number }
+
 let configured: boolean | null = null;
 
 export function isPushConfigured(): boolean {
@@ -37,15 +43,18 @@ export async function sendPushToUsers(
   db: Db,
   userIds: string[],
   content: (locale: "fr" | "en") => PushContent
-): Promise<{ sent: number; removed: number }> {
-  if (!isPushConfigured() || userIds.length === 0) return { sent: 0, removed: 0 };
+): Promise<PushResult> {
+  if (!isPushConfigured() || userIds.length === 0) return { sent: 0, removed: 0, failed: 0, subscriptions: 0 };
 
-  const { data: subs } = await db
+  const { data: subs, error: subsError } = await db
     .from("push_subscriptions")
     .select("id, endpoint, p256dh, auth, locale")
     .in("user_id", userIds);
+  // Lecture des abonnements impossible : échec temporaire (à reprendre), pas « aucun abonnement ».
+  if (subsError) return { sent: 0, removed: 0, failed: 1, subscriptions: 0 };
 
   let sent = 0;
+  let failed = 0;
   const stale: string[] = [];
   const used: string[] = [];
 
@@ -69,11 +78,14 @@ export async function sendPushToUsers(
     } catch (err) {
       const status = (err as { statusCode?: number }).statusCode;
       if (status === 404 || status === 410) stale.push(s.id);
-      else console.warn("[push] envoi échoué:", status, (err as Error).message);
+      else {
+        failed++;
+        console.warn("[push] envoi échoué:", status, (err as Error).message);
+      }
     }
   }));
 
   if (stale.length) await db.from("push_subscriptions").delete().in("id", stale);
   if (used.length) await db.from("push_subscriptions").update({ last_used_at: new Date().toISOString() }).in("id", used);
-  return { sent, removed: stale.length };
+  return { sent, removed: stale.length, failed, subscriptions: (subs || []).length };
 }
