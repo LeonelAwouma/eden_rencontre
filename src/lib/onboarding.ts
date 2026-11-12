@@ -3,6 +3,10 @@
 
 import { supabase } from "./supabase";
 import { QUESTIONNAIRES_EN } from "./onboarding.en";
+import { DISCOVERY_SOURCE_CHOICES_FR, MARRIAGE_VISION_CHOICES_FR, MARRIAGE_VISION_MAX, MARRIAGE_VISION_MIN, type Choice } from "./questionnaire-choices";
+import { answersForCompletion, mergeLegacyAnswers, type LegacyColumns } from "./onboarding-legacy";
+
+export type { Choice } from "./questionnaire-choices";
 
 export type FieldType = "text" | "textarea" | "single" | "multi" | "qcm" | "agerange";
 
@@ -13,8 +17,12 @@ export interface Field {
   label: string;
   type: FieldType;
   options?: string[];
+  // Choix à VALEUR canonique : la réponse enregistrée est `value` (identique en français et en anglais),
+  // seul `label` est traduit. Réservé aux questions synchronisées avec une colonne de `profiles`.
+  choices?: Choice[];
   placeholder?: string;
   help?: string;
+  min?: number; // pour "multi" : on ne descend pas sous ce nombre de valeurs une fois atteint
   max?: number; // pour "multi"
   // Question de suivi (« Si oui… », « Si non… ») : affichée seulement quand le champ parent
   // a l'une de ces options. Indices dans parent.options — identiques en FR et EN (parité).
@@ -229,6 +237,8 @@ export const QUESTIONNAIRES: Questionnaire[] = [
         title: "Vos attentes pour la relation",
         fields: [
           { id: "attentes", label: "Vos attentes pour cette relation", type: "multi", options: ["Sécurité affective", "Croissance spirituelle", "Fonder une famille", "Une amitié sincère", "Un partenaire de ministère", "Un soutien mutuel dans les projets"], help: "Choisissez jusqu'à 3 réponses", max: 3 },
+          // Synchronisée avec profiles.marriage_vision (src/lib/onboarding-legacy.ts) : valeurs = identifiants de MARRIAGE_VALUES.
+          { id: "marriageVision", label: "Votre vision du mariage : les valeurs qui comptent le plus pour vous", type: "multi", choices: MARRIAGE_VISION_CHOICES_FR, help: "Choisissez de 1 à 3 valeurs", min: MARRIAGE_VISION_MIN, max: MARRIAGE_VISION_MAX },
           { id: "trancheAge", label: "Tranche d'âge souhaitée pour votre partenaire", type: "agerange" },
           { id: "qualites", label: "3 qualités essentielles que vous recherchez chez un(e) partenaire", type: "text" },
           { id: "defauts", label: "3 défauts que vous ne pourriez pas tolérer", type: "text" },
@@ -298,6 +308,8 @@ export const QUESTIONNAIRES: Questionnaire[] = [
           { id: "mariageReussi", label: "Votre définition d'un mariage réussi selon les standards bibliques", type: "textarea" },
           { id: "heritage", label: "Quel héritage spirituel espérez-vous laisser ?", type: "textarea" },
           { id: "criteresMatching", label: "Quels sont, selon vous, les critères non négociables pour un matching réussi ?", type: "textarea" },
+          // Synchronisée avec profiles.discovery_source ; facultative comme toute cette section.
+          { id: "discoverySource", label: "Comment avez-vous connu Garden of Alliance ?", type: "single", choices: DISCOVERY_SOURCE_CHOICES_FR, help: "Facultatif" },
         ],
       },
     ],
@@ -305,6 +317,29 @@ export const QUESTIONNAIRES: Questionnaire[] = [
 ];
 
 // ── Questionnaire field helpers (shared, no client deps) ──
+
+/** Choix d'une question : valeur enregistrée + libellé affiché (pour les questions classiques, les deux sont identiques). */
+export function fieldChoices(field: Field): Choice[] {
+  return field.choices ?? (field.options ?? []).map((o) => ({ value: o, label: o }));
+}
+
+/** Libellé à afficher pour une valeur enregistrée (une valeur inconnue s'affiche telle quelle : rien ne disparaît). */
+export function answerLabel(field: Field, value: unknown): string {
+  const v = String(value ?? "");
+  return field.choices?.find((c) => c.value === v)?.label ?? v;
+}
+
+/**
+ * Bascule d'un choix multiple en respectant `min` / `max` : au-delà du maximum rien n'est ajouté, et la dernière
+ * valeur d'une question à minimum ne se retire pas (une réponse obligatoire ne redevient pas vide).
+ */
+export function toggleMultiValue(field: Pick<Field, "min" | "max">, current: unknown, value: string): string[] {
+  // Quand rien ne change, la liste reçue est renvoyée telle quelle (même référence) : l'appelant peut s'en servir
+  // pour ne pas déclencher de sauvegarde inutile.
+  const arr: string[] = Array.isArray(current) ? (current as string[]) : [];
+  if (arr.includes(value)) return field.min && arr.length <= field.min ? arr : arr.filter((v) => v !== value);
+  return field.max && arr.length >= field.max ? arr : [...arr, value];
+}
 
 /**
  * Returns all field IDs from the questionnaire definitions,
@@ -376,6 +411,21 @@ export function checkQuestionnaireCompletion(
   };
 }
 
+/**
+ * Complétion « effective » : même règle pour le badge, le tableau de bord, le profil, le parrainage et
+ * l'administration. Une vision du mariage déjà renseignée dans `profiles.marriage_vision` (inscription ou
+ * ancien profil) répond à la question, même si le questionnaire enregistré ne la contient pas encore.
+ * Rien n'est écrit : le questionnaire en base n'est jamais modifié pour ce calcul.
+ */
+export function effectiveQuestionnaireCompletion(
+  answers: Record<string, unknown> | null | undefined,
+  /** Ligne de `profiles` (ou seulement ses colonnes historiques) : seule `marriage_vision` est lue. */
+  profile: LegacyColumns | Record<string, unknown> | null | undefined,
+  options?: { excludeOptional?: boolean }
+) {
+  return checkQuestionnaireCompletion(answersForCompletion(answers, profile as LegacyColumns | null | undefined), options);
+}
+
 // ── Locale-aware questionnaire getter ──
 export function getQuestionnaires(locale: SupportedLocale = "fr"): Questionnaire[] {
   return locale === "en" ? QUESTIONNAIRES_EN : QUESTIONNAIRES;
@@ -424,23 +474,34 @@ export function describeMissingQuestions(ids: string[], locale: SupportedLocale 
  * questionnaire des membres qui l'avaient fini), ni ouvrir un questionnaire
  * vide (la sauvegarde automatique y écraserait leurs réponses).
  */
-export async function getMyOnboarding(): Promise<{ answers: Record<string, any>; completed: boolean; unavailable: boolean }> {
-  if (!supabase) return { answers: {}, completed: false, unavailable: false };
+export async function getMyOnboarding(): Promise<{ answers: Record<string, any>; completed: boolean; unavailable: boolean; legacy: LegacyColumns }> {
+  if (!supabase) return { answers: {}, completed: false, unavailable: false, legacy: {} };
   // Session locale (rafraîchie si besoin) plutôt que getUser(), qui interroge
   // Supabase Auth à chaque appel et échoue sur une connexion instable.
   const { data: auth, error: authError } = await supabase.auth.getSession();
   const me = auth.session?.user?.id;
-  if (authError || !me) return { answers: {}, completed: false, unavailable: true };
-  const { data, error } = await supabase.from("profiles").select("questionnaire, onboarding_completed").eq("id", me).maybeSingle();
+  if (authError || !me) return { answers: {}, completed: false, unavailable: true, legacy: {} };
+  const { data, error } = await supabase.from("profiles").select("questionnaire, onboarding_completed, marriage_vision").eq("id", me).maybeSingle();
   if (error || !data) {
     if (error) console.error("[Eden] lecture du questionnaire impossible:", error.message);
-    return { answers: {}, completed: false, unavailable: true };
+    return { answers: {}, completed: false, unavailable: true, legacy: {} };
   }
-  const answers = (data.questionnaire as Record<string, any>) || {};
+  // Lecture séparée et tolérante : la colonne facultative discovery_source peut manquer sur une ancienne base,
+  // et son absence ne doit jamais rendre le questionnaire « indisponible ».
+  let discovery: unknown = null;
+  try {
+    const res = await supabase.from("profiles").select("discovery_source").eq("id", me).maybeSingle();
+    if (!res.error) discovery = (res.data as { discovery_source?: unknown } | null)?.discovery_source ?? null;
+  } catch { /* colonne absente : aucune ancienne valeur à reprendre */ }
+  const legacy: LegacyColumns = { marriage_vision: (data as any).marriage_vision ?? null, discovery_source: discovery };
+
+  const stored = (data.questionnaire as Record<string, any>) || {};
   // Des comptes Google ont été marqués « terminé » sans aucune réponse (ancien bug
   // de /api/auth/google-onboarding) : un questionnaire vide n'est jamais terminé.
-  const completed = !!(data as any).onboarding_completed && Object.keys(answers).length > 0;
-  return { answers, completed, unavailable: false };
+  // Calculé sur les réponses ENREGISTRÉES : un pré-remplissage ne « commence » pas un questionnaire.
+  const completed = !!(data as any).onboarding_completed && Object.keys(stored).length > 0;
+  // Anciennes réponses (inscription, ancien profil) reprises dans l'éditeur tant que la question n'a pas de réponse.
+  return { answers: mergeLegacyAnswers(stored, legacy), completed, unavailable: false, legacy };
 }
 
 export async function saveOnboarding(answers: Record<string, any>, completed: boolean): Promise<{ ok: boolean; error?: string }> {
@@ -459,21 +520,31 @@ export async function saveOnboarding(answers: Record<string, any>, completed: bo
   return { ok: true };
 }
 
-/** Sauvegarde automatique : enregistre les réponses sans toucher à onboarding_completed. */
+/**
+ * Sauvegarde automatique : enregistre les réponses sans toucher à onboarding_completed.
+ * Passe par le serveur (POST /api/onboarding/answers), qui valide les réponses synchronisées avec les colonnes
+ * historiques, met ces colonnes à jour et préserve les archives des anciennes réponses.
+ */
 export async function saveQuestionnaireAnswers(answers: Record<string, any>): Promise<{ ok: boolean; error?: string }> {
   if (!supabase) return { ok: false, error: "Supabase non configuré." };
-  const { data: auth } = await supabase.auth.getUser();
-  const me = auth.user?.id;
-  if (!me) return { ok: false, error: "Vous devez être connecté." };
-  const { error } = await supabase
-    .from("profiles")
-    .update({ questionnaire: answers, updated_at: new Date().toISOString() })
-    .eq("id", me);
-  if (error) {
-    console.error("[Eden] sauvegarde automatique du questionnaire échouée:", error.message);
-    return { ok: false, error: error.message };
+  const { data } = await supabase.auth.getSession();
+  const token = data.session?.access_token;
+  if (!token) return { ok: false, error: "Vous devez être connecté." };
+  try {
+    const res = await fetch("/api/onboarding/answers", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ answers }),
+      // Onglet masqué ou page quittée : la requête doit survivre à la fermeture de la page.
+      keepalive: typeof document !== "undefined" && document.visibilityState === "hidden",
+    });
+    if (res.ok) return { ok: true };
+    const body = await res.json().catch(() => ({}));
+    console.error("[Eden] sauvegarde automatique du questionnaire échouée:", body.code || res.status);
+    return { ok: false, error: body.error || "Enregistrement impossible." };
+  } catch {
+    return { ok: false, error: "Erreur réseau. Vérifiez votre connexion." };
   }
-  return { ok: true };
 }
 
 /**

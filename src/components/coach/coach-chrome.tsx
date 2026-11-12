@@ -4,13 +4,20 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { useRouter } from "next/navigation";
 import { logout as authLogout } from "@/lib/auth";
 import type { CoachMe } from "@/lib/coach/client";
+import { applyAvatar, syncCoachFromServer } from "@/lib/coach/chrome-state";
 import { createCookieSyncScheduler, startCookieSync } from "@/lib/coach/cookie-sync";
 import { COACH_COOKIE_REFRESH_MS, syncCoachSessionCookie } from "@/lib/coach/session-cookie";
 import { isLoggingOut } from "@/lib/logout-state";
 
 interface CoachChromeValue {
+  /**
+   * Coach connecté — SOURCE UNIQUE de son identité affichée (nom, photo) dans tout l'espace Coach : en-tête, barre
+   * latérale, tiroir mobile et page « Mon profil » lisent tous cette valeur, jamais une copie.
+   */
   coach: CoachMe;
   initial: string;
+  /** Photo remplacée avec succès : met le contexte à jour immédiatement, puis le serveur est relu (`router.refresh()`). */
+  updateAvatar: (url: string | null) => void;
   menuOpen: boolean;
   setMenuOpen: (open: boolean) => void;
   /** Déconnexion volontaire (bouton « Se déconnecter »). */
@@ -26,9 +33,25 @@ interface CoachChromeValue {
 const CoachChromeContext = createContext<CoachChromeValue | null>(null);
 
 /** Contexte de l'espace Coach : identité validée par le serveur, tiroir mobile, sorties de session. */
-export function CoachChromeProvider({ coach, children }: { coach: CoachMe; children: ReactNode }) {
+export function CoachChromeProvider({ coach: serverCoach, children }: { coach: CoachMe; children: ReactNode }) {
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
+
+  // Le coach est tenu en ÉTAT : une mise à jour locale (nouvelle photo) est visible partout tout de suite.
+  // Les props du layout serveur restent la référence : dès qu'elles changent (navigation, `router.refresh()`),
+  // l'état est réaligné sur elles — l'affichage ne peut donc pas diverger durablement de la base.
+  const [coach, setCoach] = useState<CoachMe>(serverCoach);
+  const { id, email, name } = serverCoach;
+  const serverAvatarUrl = serverCoach.avatarUrl ?? null;
+  useEffect(() => {
+    setCoach((prev) => syncCoachFromServer(prev, { id, email, name, avatarUrl: serverAvatarUrl }));
+  }, [id, email, name, serverAvatarUrl]);
+
+  const updateAvatar = useCallback((url: string | null) => {
+    setCoach((prev) => applyAvatar(prev, url));
+    // Le layout serveur relit `profiles.avatar_url` : ses nouvelles props confirment (ou corrigent) l'état local.
+    router.refresh();
+  }, [router]);
 
   const logout = useCallback(async () => {
     await authLogout();
@@ -59,11 +82,12 @@ export function CoachChromeProvider({ coach, children }: { coach: CoachMe; child
   const value = useMemo<CoachChromeValue>(() => ({
     coach,
     initial: (coach.name.trim()[0] || "C").toUpperCase(),
+    updateAvatar,
     menuOpen,
     setMenuOpen,
     logout,
     onDenied,
-  }), [coach, menuOpen, logout, onDenied]);
+  }), [coach, updateAvatar, menuOpen, logout, onDenied]);
 
   return <CoachChromeContext.Provider value={value}>{children}</CoachChromeContext.Provider>;
 }

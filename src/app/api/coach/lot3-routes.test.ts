@@ -503,6 +503,21 @@ describe("comptes rendus partagés", () => {
     expect((await (await GET(req("/api/coach/reports?state=draft"))).json()).reports).toHaveLength(1);
     expect((await GET(req("/api/coach/reports?state=bogus"))).status).toBe(400);
   });
+
+  it("liste globale : `members` donne les membres accompagnés (pour créer un compte rendu depuis cette page) — jamais un membre en attente ni d'un autre coach", async () => {
+    const { GET } = await import("./reports/route");
+    const body = await (await GET(req("/api/coach/reports"))).json();
+    expect(body.members.map((m: { id: string }) => m.id).sort()).toEqual([M1, M7].sort());
+    expect(body.members.every((m: { pseudo: string | null }) => typeof m.pseudo === "string" || m.pseudo === null)).toBe(true);
+    const member = await (await import("./members/[id]/reports/route")).GET(req("/x"), ctx(M1));
+    expect(member.status).toBe(200); // la route par membre n'est pas affectée par cet ajout
+  });
+
+  it("aucun membre accompagné : `members` vide, le compte rendu ne peut être créé pour personne", async () => {
+    world.tables.coach_member_assignments = [];
+    const { GET } = await import("./reports/route");
+    expect((await (await GET(req("/api/coach/reports"))).json()).members).toEqual([]);
+  });
 });
 
 describe("CONFIDENTIALITÉ côté membre : jamais de note privée, jamais de brouillon", () => {

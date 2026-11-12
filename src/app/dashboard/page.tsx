@@ -32,9 +32,12 @@ import { FormationLock } from "@/components/formation-lock";
 import { useFormationProgress, hasStarted } from "@/lib/formation/progress";
 import { Textarea } from "@/components/ui/textarea";
 import { PROFILES } from "@/lib/profiles";
-import { MARRIAGE_VALUES, getValue } from "@/lib/values";
+import { getValue } from "@/lib/values";
+import { displayedMarriageVision, pendingLegacyValues, type LegacyColumns } from "@/lib/onboarding-legacy";
+import { marriageVisionLabel } from "@/lib/questionnaire-choices";
+import { LegacyAnswersNotice } from "@/components/questionnaire/legacy-answers-notice";
 import { computeDisplayMatch, filterAndRankByReciprocalMatch } from "@/lib/matching/adapter";
-import { getMyOnboarding, getQuestionnaires, completeOnboarding, applyAnswer, isFieldVisible, describeMissingQuestions, type Questionnaire, type Field, type SupportedLocale } from "@/lib/onboarding";
+import { getMyOnboarding, getQuestionnaires, completeOnboarding, applyAnswer, isFieldVisible, describeMissingQuestions, fieldChoices, answerLabel, toggleMultiValue, type Questionnaire, type Field, type SupportedLocale } from "@/lib/onboarding";
 import { supabase } from "@/lib/supabase";
 import {
   upsertMyProfile, searchUsers, listConversations, getMessages,
@@ -271,7 +274,9 @@ export default function DashboardPage() {
   const [avatarWelcome, setAvatarWelcome] = useState(false);
   const welcomeAvatarInputRef = useRef<HTMLInputElement | null>(null);
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
-  const [profileForm, setProfileForm] = useState({ name: "", city: "", country: "", civilStatus: "", profession: "", bio: "", marriageVision: [] as string[] });
+  const [profileForm, setProfileForm] = useState({ name: "", city: "", country: "", civilStatus: "", profession: "", bio: "" });
+  // Colonnes historiques du profil (vision du mariage, source de découverte) : anciennes réponses reprises par le questionnaire.
+  const [questionnaireLegacy, setQuestionnaireLegacy] = useState<LegacyColumns>({});
   const [questionnaireAnswers, setQuestionnaireAnswers] = useState<Record<string, any>>({});
   const [questionnaireReady, setQuestionnaireReady] = useState(false);
   const [editingQuestionnaire, setEditingQuestionnaire] = useState<string | null>(null);
@@ -663,17 +668,8 @@ export default function DashboardPage() {
   };
 
   const startEditProfile = () => {
-    setProfileForm({ name: user?.name || "", city: user?.city || "", country: user?.country || "", civilStatus: user?.civilStatus || "", profession: user?.profession || "", bio: user?.bio || "", marriageVision: user?.marriageVision || [] });
+    setProfileForm({ name: user?.name || "", city: user?.city || "", country: user?.country || "", civilStatus: user?.civilStatus || "", profession: user?.profession || "", bio: user?.bio || "" });
     setEditingProfile(true);
-  };
-
-  const toggleProfileValue = (id: string) => {
-    setProfileForm((prev) => {
-      const current = prev.marriageVision;
-      if (current.includes(id)) return { ...prev, marriageVision: current.filter((v) => v !== id) };
-      if (current.length >= 3) { toast({ title: t("dashboard.toastMax3Values") }); return prev; }
-      return { ...prev, marriageVision: [...current, id] };
-    });
   };
 
   const handleSaveProfile = async () => {
@@ -682,7 +678,8 @@ export default function DashboardPage() {
     const res = await updateProfile({
       name: profileForm.name.trim(), city: profileForm.city.trim(), country: profileForm.country.trim(),
       civilStatus: profileForm.civilStatus, profession: profileForm.profession.trim(),
-      bio: profileForm.bio.trim(), marriageVision: profileForm.marriageVision,
+      // La vision du mariage n'est plus écrite ici : elle se renseigne dans le questionnaire (une seule saisie).
+      bio: profileForm.bio.trim(),
     });
     setSavingProfile(false);
     if (!res.ok) { toast({ title: t("dashboard.toastFailed"), description: res.error, variant: "destructive" }); return; }
@@ -942,6 +939,8 @@ export default function DashboardPage() {
       .eq("id", userId)
       .maybeSingle();
     if (!data) return;
+    // La colonne vient d'être relue : l'affichage en lecture seule suit ce que le questionnaire a enregistré.
+    setQuestionnaireLegacy((prev) => ({ ...prev, marriage_vision: data.marriage_vision }));
     // Chaque élément et sa clé de libellé : la liste des manquants s'affiche dans « Découvrir » et l'accueil.
     const checks: [boolean, string][] = [
       [!!data.avatar_url, "missingPhoto"],
@@ -965,11 +964,12 @@ export default function DashboardPage() {
       else loadSocial();
     });
     loadConversations();
-    getMyOnboarding().then(({ answers, completed, unavailable }) => {
+    getMyOnboarding().then(({ answers, completed, unavailable, legacy }) => {
       // Lecture ratée : état inconnu. On ne renvoie surtout pas au questionnaire
       // un membre qui l'a peut-être déjà fini ; on réessaiera au prochain chargement.
       if (unavailable) return;
       setQuestionnaireAnswers(answers);
+      setQuestionnaireLegacy(legacy);
       setQuestionnaireReady(true);
       const skipped = typeof window !== "undefined" && localStorage.getItem("eden_onboarding_skipped") === "1";
       if (!completed && !skipped) { router.replace("/onboarding"); return; }
@@ -1116,11 +1116,12 @@ export default function DashboardPage() {
     setLocalQAnswers(prev => applyAnswer(prev, fieldId, value));
   };
 
-  const handleQMultiToggle = (fieldId: string, option: string, max?: number) => {
-    const current: string[] = localQAnswers[fieldId] || [];
-    if (current.includes(option)) { handleQFieldChange(fieldId, current.filter(x => x !== option)); return; }
-    if (max && current.length >= max) return;
-    handleQFieldChange(fieldId, [...current, option]);
+  // min / max de la question appliqués ici (et revérifiés par le serveur pour les questions synchronisées).
+  const handleQMultiToggle = (field: Field, option: string) => {
+    const current: string[] = localQAnswers[field.id] || [];
+    const next = toggleMultiValue(field, current, option);
+    if (next === current) return; // borne atteinte : rien à enregistrer
+    handleQFieldChange(field.id, next);
   };
 
   // « Terminé » : les réponses sont déjà enregistrées au fil de l'eau ; on vide
@@ -2864,17 +2865,22 @@ export default function DashboardPage() {
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2 flex items-center gap-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
                       <Heart className="w-3.5 h-3.5" /> {t("dashboard.marriageVisionLabel")}
                     </h4>
-                    <div className="flex flex-wrap gap-2">
-                      {MARRIAGE_VALUES.map((v) => (
-                        <button key={v.id} onClick={() => toggleProfileValue(v.id)}
-                          className="px-4 py-2 rounded-full text-xs font-medium transition-all"
-                          style={profileForm.marriageVision.includes(v.id)
-                            ? { background: "#486B46", color: "#FFFFFF" }
-                            : { background: "#F5F3F0", color: "#777777", border: "1px solid #E8E5E0" }}>
-                          {profileForm.marriageVision.includes(v.id) ? "✓ " : ""}{v.label}
-                        </button>
-                      ))}
-                    </div>
+                    {/* Lecture seule : la vision du mariage est une question du questionnaire (une seule saisie). */}
+                    {(() => {
+                      const values = displayedMarriageVision(questionnaireAnswers, questionnaireLegacy);
+                      return values.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {values.map((v) => (
+                            <span key={v} className="px-4 py-2 rounded-full text-xs font-medium" style={{ background: "#EEF5EC", color: "#486B46" }}>
+                              {marriageVisionLabel(v, locale)}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm" style={{ color: "#777777" }}>{t("questionnaire.visionNotAnswered")}</p>
+                      );
+                    })()}
+                    <p className="text-xs mt-2" style={{ color: "#777777" }}>{t("questionnaire.managedInQuestionnaire")}</p>
                   </div>
 
                   {/* Action buttons */}
@@ -2985,25 +2991,25 @@ export default function DashboardPage() {
                                       </>
                                     ) : field.type === "single" || field.type === "qcm" ? (
                                       <div className="space-y-1.5">
-                                        {field.options?.map((opt) => (
-                                          <button key={opt} onClick={() => handleQFieldChange(field.id, opt)}
+                                        {fieldChoices(field).map(({ value: opt, label }) => (
+                                          <button key={opt} aria-pressed={value === opt} onClick={() => handleQFieldChange(field.id, opt)}
                                             className="w-full text-left px-3 py-2 rounded-lg text-sm transition-all"
                                             style={value === opt ? { background: "#486B46", color: "#FFFFFF" } : { background: "#F5F3F0", color: "#2F2F2F" }}>
-                                            {opt}
+                                            {label}
                                           </button>
                                         ))}
                                       </div>
                                     ) : field.type === "multi" ? (
                                       <>
                                         <div className="flex flex-wrap gap-2">
-                                          {field.options?.map((opt) => {
+                                          {fieldChoices(field).map(({ value: opt, label }) => {
                                             const selected = Array.isArray(value) && value.includes(opt);
                                             const maxReached = !!field.max && !selected && (localQAnswers[field.id]?.length || 0) >= field.max;
                                             return (
-                                              <button key={opt} disabled={maxReached} onClick={() => handleQMultiToggle(field.id, opt, field.max)}
+                                              <button key={opt} disabled={maxReached} aria-pressed={selected} onClick={() => handleQMultiToggle(field, opt)}
                                                 className="px-3 py-1.5 rounded-full text-xs font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed"
                                                 style={selected ? { background: "#486B46", color: "#FFFFFF" } : { background: "#F5F3F0", color: "#777777", border: "1px solid #E8E5E0" }}>
-                                                {selected ? "✓ " : ""}{opt}
+                                                {selected ? "✓ " : ""}{label}
                                               </button>
                                             );
                                           })}
@@ -3011,11 +3017,12 @@ export default function DashboardPage() {
                                         {field.help && <p className="text-[11px] mt-1" style={{ color: "#999" }}>{field.help}</p>}
                                       </>
                                     ) : null}
+                                    <LegacyAnswersNotice values={pendingLegacyValues(field.id, value, questionnaireLegacy)} className="mt-2" />
                                   </div>
                                 );
                               }
                               // Display mode
-                              const displayVal = Array.isArray(value) ? value.join(", ") : String(value || "");
+                              const displayVal = Array.isArray(value) ? value.map((v) => answerLabel(field, v)).join(", ") : value ? answerLabel(field, value) : "";
                               return (
                                 <div key={field.id} className={cn("py-2", field.showIf && "ml-2 pl-3 border-l-2 border-[#C6D4C0]")} style={{ borderBottom: "1px solid #F5F3F0" }}>
                                   <p className="text-[11px] font-semibold uppercase tracking-wider mb-0.5" style={{ color: "#777777" }}>{field.label}</p>
@@ -3024,6 +3031,7 @@ export default function DashboardPage() {
                                   ) : (
                                     <p className="text-sm italic" style={{ color: "#BBBBBB" }}>{t("dashboard.notSpecified")}</p>
                                   )}
+                                  <LegacyAnswersNotice values={pendingLegacyValues(field.id, value, questionnaireLegacy)} className="mt-2" />
                                 </div>
                               );
                             })}

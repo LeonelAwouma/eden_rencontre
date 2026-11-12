@@ -19,7 +19,7 @@ npx jiti scripts/lesson-audio-script.ts 1-2            # affiche le texte
 npx jiti scripts/lesson-audio-script.ts 1-2 --write    # l'écrit dans docs/audio-scripts/lecon-1-2.txt
 ```
 
-Les textes de 1.2 et 1.3 sont déjà dans `docs/audio-scripts/`.
+Les textes de 1.2 et 1.3 sont déjà dans `docs/audio-scripts/` (1.1 et 1.4 ont leur audio lu et transcrit).
 
 ## Procédure pour une leçon
 

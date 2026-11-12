@@ -2,7 +2,7 @@
 // Voir le plan feature/referral-gold-rewards pour le détail de chaque règle.
 
 import type { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { checkQuestionnaireCompletion } from "@/lib/onboarding";
+import { effectiveQuestionnaireCompletion } from "@/lib/onboarding";
 
 type Db = ReturnType<typeof getSupabaseAdmin>;
 
@@ -118,7 +118,7 @@ export async function reevaluateReferral(db: Db, referredUserId: string): Promis
 
   const { data: profile } = await db
     .from("profiles")
-    .select("status, onboarding_completed, questionnaire")
+    .select("status, onboarding_completed, questionnaire, marriage_vision")
     .eq("id", referredUserId)
     .maybeSingle();
   if (!profile) return;
@@ -137,7 +137,7 @@ export async function reevaluateReferral(db: Db, referredUserId: string): Promis
   }
 
   const approved = profile.status === "approved";
-  const questionnaire = checkQuestionnaireCompletion((profile.questionnaire as Record<string, unknown>) || {}, { excludeOptional: true });
+  const questionnaire = effectiveQuestionnaireCompletion((profile.questionnaire as Record<string, unknown>) || {}, profile, { excludeOptional: true });
   const questionnaireDone = questionnaire.total > 0 && questionnaire.percentage === 100 && !!profile.onboarding_completed;
 
   const cfg = await readReferralConfig(db);

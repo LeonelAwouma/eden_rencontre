@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import { cn, formatDate } from "@/lib/utils";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
-import { checkQuestionnaireCompletion } from "@/lib/onboarding";
+import { effectiveQuestionnaireCompletion } from "@/lib/onboarding";
 import { PageHeader } from "@/components/admin/page-header";
 import { DataHealthPanel } from "@/components/admin/data-health-panel";
 import { EMAIL_NOT_SENT } from "@/lib/admin-email-warning";
@@ -37,7 +37,7 @@ function canGrantBadge(user: { status?: string; onboarding_completed?: boolean; 
     && !!user.onboarding_completed
     && user.verification_status !== "verified"
     && isProfileFullyComplete(user)
-    && checkQuestionnaireCompletion(user.questionnaire || {}, { excludeOptional: true }).percentage === 100;
+    && effectiveQuestionnaireCompletion(user.questionnaire || {}, user, { excludeOptional: true }).percentage === 100;
 }
 
 interface CharterAcceptance {

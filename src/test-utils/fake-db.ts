@@ -85,11 +85,30 @@ export function createFakeDb(world: FakeWorld) {
         if (err) return { data: null, error: err, count: null };
 
         const all = world.tables[table] ?? (world.tables[table] = []);
+        // `.or("col.op.val,col2.op2.val2")` : une seule clause (ANDée avec les autres filtres), vraie si AU MOINS
+        // une des conditions séparées par virgule est vraie. Seuls `ilike` (sous-chaîne, insensible à la casse,
+        // bornes `*` optionnelles) et `eq` sont simulés — suffisant pour les filtres de recherche testés ici.
+        const matchesOrClause = (r: Row, expr: string) => expr.split(",").some((part) => {
+          const d1 = part.indexOf(".");
+          const d2 = part.indexOf(".", d1 + 1);
+          if (d1 < 0 || d2 < 0) return false;
+          const column = part.slice(0, d1);
+          const op = part.slice(d1 + 1, d2);
+          const raw = part.slice(d2 + 1);
+          const cell = r[column];
+          if (op === "ilike") {
+            const pattern = raw.replace(/^\*/, "").replace(/\*$/, "");
+            return typeof cell === "string" && cell.toLowerCase().includes(pattern.toLowerCase());
+          }
+          if (op === "eq") return String(cell) === raw;
+          return false;
+        });
         const matches = (r: Row) => filters.every(([kind, col, val]) => {
           if (kind === "eq") return r[col] === val;
           if (kind === "neq") return r[col] !== val;
           if (kind === "in") return Array.isArray(val) && val.includes(r[col]);
           if (kind === "is") return (r[col] ?? null) === val;
+          if (kind === "or") return matchesOrClause(r, col);
           return true;
         });
 
@@ -151,6 +170,7 @@ export function createFakeDb(world: FakeWorld) {
         delete: () => { op = "delete"; return q; },
         eq: (c: string, v: unknown) => { filters.push(["eq", c, v]); return q; },
         neq: (c: string, v: unknown) => { filters.push(["neq", c, v]); return q; },
+        or: (expr: string) => { filters.push(["or", expr, null]); return q; },
         in: (c: string, v: unknown[]) => { filters.push(["in", c, v]); return q; },
         is: (c: string, v: unknown) => { filters.push(["is", c, v]); return q; },
         order: (c: string, o?: { ascending?: boolean }) => { orders.push({ col: c, asc: o?.ascending !== false }); return q; },

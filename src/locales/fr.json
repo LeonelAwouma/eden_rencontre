@@ -310,7 +310,14 @@
   },
   "questionnaire": {
     "honestyNote": "Veuillez compléter ce questionnaire avec honnêteté et authenticité. Vos réponses permettront de garantir une correspondance significative et efficace en reflétant fidèlement vos intérêts, compétences, attentes et besoins.",
-    "dataNote": "Les informations collectées nous permettent de garantir un matching sûr, pertinent et efficace."
+    "dataNote": "Les informations collectées nous permettent de garantir un matching sûr, pertinent et efficace.",
+    "legacyTitle": "Vos anciennes réponses",
+    "legacyDesc": "Ces réponses ne correspondent plus aux choix proposés. Elles sont conservées telles quelles ; votre prochain choix les remplacera.",
+    "previousAnswers": "Réponses précédentes :",
+    "editInQuestionnaire": "Modifier dans le questionnaire",
+    "answerInQuestionnaire": "Répondre dans le questionnaire",
+    "managedInQuestionnaire": "Ces informations se renseignent dans votre questionnaire, pour ne les saisir qu'une seule fois.",
+    "visionNotAnswered": "Vous n'avez pas encore indiqué votre vision du mariage."
   },
   "onboarding": {
     "preparing": "Préparation de votre parcours…",
@@ -2164,6 +2171,10 @@
     "forMember": "Pour {pseudo}",
     "seeMember": "Voir le membre",
     "saved": "Compte rendu enregistré.",
+    "memberLabel": "Membre accompagné",
+    "noMembersTitle": "Aucun membre n'a encore accepté votre suivi",
+    "noMembersDesc": "Un compte rendu se rédige pour un membre qui vous accompagne. Proposez d'abord un accompagnement depuis « Mes membres ».",
+    "goToMembers": "Aller à Mes membres",
     "errors": {
       "generic": "Impossible d'enregistrer le compte rendu. Réessayez.",
       "empty": "Un titre et un résumé sont nécessaires pour publier.",
@@ -2272,6 +2283,7 @@
     "members": "Mes membres",
     "formation": "Formation",
     "academie": "Académie du Mariage",
+    "mediatheque": "Médiathèque",
     "profile": "Mon profil",
     "logout": "Se déconnecter",
     "menu": "Menu",
@@ -2411,7 +2423,46 @@
     "lastLoginUnknown": "Non disponible",
     "languageTitle": "Langue",
     "languageHint": "Choisissez la langue de l’interface.",
-    "privacyNote": "Vous ne voyez que les membres qui ont accepté votre accompagnement, et seulement les informations nécessaires à ce suivi."
+    "privacyNote": "Vous ne voyez que les membres qui ont accepté votre accompagnement, et seulement les informations nécessaires à ce suivi.",
+    "photoAdd": "Ajouter une photo",
+    "photoChange": "Changer la photo",
+    "photoConfirm": "Enregistrer cette photo",
+    "photoCancel": "Annuler",
+    "photoSaving": "Envoi en cours…",
+    "photoSaved": "Votre photo a été mise à jour.",
+    "photoHint": "JPEG, PNG ou WebP, 3 Mo maximum. Cette photo s’affiche dans votre espace Coach et dans l’administration.",
+    "photoPreviewHint": "Aperçu : la photo n’est pas encore enregistrée.",
+    "photoPreviewAlt": "Aperçu de la nouvelle photo",
+    "photoErrors": {
+      "tooLarge": "Image trop lourde : 3 Mo maximum.",
+      "invalidType": "Format refusé : choisissez une image JPEG, PNG ou WebP.",
+      "missing": "Aucune image reçue. Choisissez un fichier.",
+      "uploadFailed": "L’envoi de la photo a échoué. Votre photo actuelle est conservée.",
+      "saveFailed": "L’enregistrement a échoué. Votre photo actuelle est conservée.",
+      "rateLimited": "Trop de modifications en peu de temps. Réessayez plus tard.",
+      "network": "Connexion interrompue. Vérifiez votre réseau, puis réessayez.",
+      "denied": "Votre accès ne permet pas cette modification pour le moment.",
+      "generic": "La photo n’a pas pu être mise à jour. Réessayez."
+    }
+  },
+  "coachMediatheque": {
+    "title": "Médiathèque",
+    "subtitle": "Ressources publiées de la médiathèque générale, en consultation.",
+    "searchLabel": "Rechercher une ressource",
+    "searchPlaceholder": "Rechercher…",
+    "filterType": "Type de ressource",
+    "filterLevel": "Niveau",
+    "filterCategory": "Catégorie",
+    "allTypes": "Tous les types",
+    "allLevels": "Tous les niveaux",
+    "allCategories": "Toutes les catégories",
+    "empty": "Aucune ressource",
+    "emptyDesc": "Aucune ressource publiée ne correspond à ces filtres.",
+    "back": "Retour à la médiathèque",
+    "notFound": "Ressource introuvable.",
+    "openLink": "Ouvrir le lien",
+    "pages": "{n} pages",
+    "related": "Ressources liées"
   },
   "coachMember": {
     "sectionLabel": "Accompagnement",

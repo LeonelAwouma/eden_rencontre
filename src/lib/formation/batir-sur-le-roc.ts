@@ -374,6 +374,7 @@ const lecon14: Lesson = {
   title: "Alignement théologique et spirituel",
   image: { ...img("1-4"), alt: "Deux alliances dorées posées sur une Bible ouverte.", position: "center 30%" },
   pdf: `${BASE}/pdf/lecon-1-4-alignement-theologique-et-spirituel.pdf`,
+  audio: { src: `${BASE}/audio/lecon-1-4-alignement-theologique-et-spirituel.mp3`, transcript: `${BASE}/audio/lecon-1-4-alignement-theologique-et-spirituel.json` },
   readingMinutes: 9,
   intro: {
     heading: "Le poids des mots",

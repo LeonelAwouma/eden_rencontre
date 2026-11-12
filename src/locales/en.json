@@ -310,7 +310,14 @@
   },
   "questionnaire": {
     "honestyNote": "Please complete this questionnaire with honesty and authenticity. Your responses will help ensure a meaningful and effective match by accurately reflecting your interests, skills, expectations, and needs.",
-    "dataNote": "The information collected allows us to guarantee a safe, relevant, and effective matching experience."
+    "dataNote": "The information collected allows us to guarantee a safe, relevant, and effective matching experience.",
+    "legacyTitle": "Your previous answers",
+    "legacyDesc": "These answers no longer match the available choices. They are kept as they are; your next choice will replace them.",
+    "previousAnswers": "Previous answers:",
+    "editInQuestionnaire": "Edit in the questionnaire",
+    "answerInQuestionnaire": "Answer in the questionnaire",
+    "managedInQuestionnaire": "This information is filled in from your questionnaire, so you only enter it once.",
+    "visionNotAnswered": "You have not shared your vision of marriage yet."
   },
   "onboarding": {
     "preparing": "Preparing your journey…",
@@ -2164,6 +2171,10 @@
     "forMember": "For {pseudo}",
     "seeMember": "View member",
     "saved": "Report saved.",
+    "memberLabel": "Member being coached",
+    "noMembersTitle": "No member has accepted your coaching yet",
+    "noMembersDesc": "A report is written for a member you coach. First offer your coaching from \"My members\".",
+    "goToMembers": "Go to My members",
     "errors": {
       "generic": "Unable to save the report. Please try again.",
       "empty": "A title and a summary are required to publish.",
@@ -2272,6 +2283,7 @@
     "members": "My members",
     "formation": "Training",
     "academie": "Marriage Academy",
+    "mediatheque": "Resource Library",
     "profile": "My profile",
     "logout": "Log out",
     "menu": "Menu",
@@ -2411,7 +2423,46 @@
     "lastLoginUnknown": "Not available",
     "languageTitle": "Language",
     "languageHint": "Choose the interface language.",
-    "privacyNote": "You only see the members who accepted your coaching, and only the information needed for that coaching."
+    "privacyNote": "You only see the members who accepted your coaching, and only the information needed for that coaching.",
+    "photoAdd": "Add a photo",
+    "photoChange": "Change photo",
+    "photoConfirm": "Save this photo",
+    "photoCancel": "Cancel",
+    "photoSaving": "Uploading…",
+    "photoSaved": "Your photo has been updated.",
+    "photoHint": "JPEG, PNG or WebP, 3 MB maximum. This photo is shown in your Coach space and in the administration.",
+    "photoPreviewHint": "Preview: the photo is not saved yet.",
+    "photoPreviewAlt": "Preview of the new photo",
+    "photoErrors": {
+      "tooLarge": "Image too large: 3 MB maximum.",
+      "invalidType": "Format not accepted: choose a JPEG, PNG or WebP image.",
+      "missing": "No image received. Choose a file.",
+      "uploadFailed": "The photo could not be uploaded. Your current photo is kept.",
+      "saveFailed": "The photo could not be saved. Your current photo is kept.",
+      "rateLimited": "Too many changes in a short time. Try again later.",
+      "network": "Connection lost. Check your network, then try again.",
+      "denied": "Your access does not allow this change right now.",
+      "generic": "The photo could not be updated. Try again."
+    }
+  },
+  "coachMediatheque": {
+    "title": "Resource Library",
+    "subtitle": "Published resources from the general library, for browsing.",
+    "searchLabel": "Search a resource",
+    "searchPlaceholder": "Search…",
+    "filterType": "Resource type",
+    "filterLevel": "Level",
+    "filterCategory": "Category",
+    "allTypes": "All types",
+    "allLevels": "All levels",
+    "allCategories": "All categories",
+    "empty": "No resources",
+    "emptyDesc": "No published resource matches these filters.",
+    "back": "Back to the resource library",
+    "notFound": "Resource not found.",
+    "openLink": "Open link",
+    "pages": "{n} pages",
+    "related": "Related resources"
   },
   "coachMember": {
     "sectionLabel": "Coaching",

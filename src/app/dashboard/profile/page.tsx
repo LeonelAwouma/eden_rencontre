@@ -1,11 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useMemo, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { getSession, updateProfile, EdenUser } from "@/lib/auth";
-import { completeOnboarding, getQuestionnaires, applyAnswer, isFieldVisible, checkQuestionnaireCompletion, describeMissingQuestions, Questionnaire, Section, Field, type SupportedLocale } from "@/lib/onboarding";
+import { completeOnboarding, getQuestionnaires, applyAnswer, isFieldVisible, effectiveQuestionnaireCompletion, describeMissingQuestions, fieldChoices, answerLabel, toggleMultiValue, Questionnaire, Section, Field, type SupportedLocale } from "@/lib/onboarding";
+import { archivedLegacyValues, classifyDiscoverySource, classifyMarriageVision, mergeLegacyAnswers, pendingLegacyValues, type LegacyColumns } from "@/lib/onboarding-legacy";
+import { discoverySourceLabel, marriageVisionLabel } from "@/lib/questionnaire-choices";
+import { LegacyAnswersNotice } from "@/components/questionnaire/legacy-answers-notice";
 import { ReactivationEmailPreference } from "@/components/reactivation-email-preference";
 import { useLogoutGuard, useMemberHeader } from "@/components/dashboard/member-chrome";
 import {
@@ -19,7 +22,6 @@ import { normalizeGender } from "@/lib/verses";
 import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
 import { AutoSaveIndicator } from "@/components/autosave-indicator";
 import { ProfilePhotoEditor } from "@/components/profile-photo-editor";
-import { DISCOVERY_SOURCE_OPTIONS } from "@/lib/discovery-sources";
 import { ProfilePhotoGallery } from "@/components/profile-photo-gallery";
 import { CountryCityPicker } from "@/components/geo/country-city-popover";
 
@@ -45,7 +47,7 @@ interface ProfileData {
   onboarding_completed: boolean;
   verification_status: string;
   updated_at: string;
-  /** Facultatif, renseignable ici — n'est plus demandé à l'inscription. */
+  /** Facultatif — se renseigne dans le questionnaire (comme la vision du mariage), affiché ici en lecture seule. */
   discovery_source: string | null;
   /** 1 à 3 photos privées (matching) ; les 2 au-delà de la première s'ajoutent ici. */
   profile_photos: string[] | null;
@@ -107,10 +109,14 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
     { value: "homme", label: t("profilePage.genderMale") },
     { value: "femme", label: t("profilePage.genderFemale") },
   ];
-  const MARRIAGE_VISION_OPTIONS = [
-    t("profilePage.visionBiblicalMarriage"), t("profilePage.visionPrayerBased"), t("profilePage.visionMinistryCouple"),
-    t("profilePage.visionChristianEducation"), t("profilePage.visionAbsoluteFidelity"), t("profilePage.visionOpenCommunication"),
-  ];
+  // Vision du mariage et source de découverte : ce sont des questions du questionnaire (une seule saisie).
+  // Ici, lecture seule : valeurs reconnues traduites, anciennes valeurs non reconnues affichées telles quelles.
+  const vision = classifyMarriageVision(profile.marriage_vision);
+  const visionChips = [...vision.recognized.map((id) => marriageVisionLabel(id, locale)), ...vision.unrecognized];
+  const source = classifyDiscoverySource(profile.discovery_source);
+  const sourceLabel = source.recognized ? discoverySourceLabel(source.recognized, locale) : source.unrecognized;
+  const archived = archivedLegacyValues(profile.questionnaire);
+  const previousAnswers = [...archived.marriageVision, ...archived.discoverySource];
 
   const [editing, setEditing] = useState(false);
   // Édition en cours : pas de déconnexion depuis le tiroir tant que ce n'est pas enregistré.
@@ -127,8 +133,6 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
     civil_status: profile.civil_status || "",
     gender: normalizeGender(profile.gender) as string,
     birth_date: profile.birth_date || "",
-    marriage_vision: (profile.marriage_vision || []) as string[],
-    discovery_source: profile.discovery_source || "",
   });
 
   useEffect(() => {
@@ -136,8 +140,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
       name: profile.name || "", pseudo: profile.pseudo || "", city: profile.city || "", country: profile.country || "",
       region: profile.region || "", profession: profile.profession || "", bio: profile.bio || "",
       civil_status: profile.civil_status || "", gender: normalizeGender(profile.gender),
-      birth_date: profile.birth_date || "", marriage_vision: profile.marriage_vision || [],
-      discovery_source: profile.discovery_source || "",
+      birth_date: profile.birth_date || "",
     });
   }, [profile]);
 
@@ -151,11 +154,11 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
         name: form.name.trim(), pseudo: form.pseudo.trim(), city: form.city.trim(), country: form.country.trim(),
         region: form.region.trim(), profession: form.profession.trim(), bio: form.bio.trim(),
         civil_status: form.civil_status, gender: form.gender, birth_date: form.birth_date || null,
-        marriage_vision: form.marriage_vision, discovery_source: form.discovery_source || null,
+        // marriage_vision et discovery_source ne sont plus écrits ici : le questionnaire en est la seule saisie.
         updated_at: new Date().toISOString(),
       }).eq("id", profile.id);
       if (error) throw error;
-      await updateProfile({ name: form.name.trim(), pseudo: form.pseudo.trim(), city: form.city, country: form.country, profession: form.profession, bio: form.bio, marriageVision: form.marriage_vision, discoverySource: form.discovery_source });
+      await updateProfile({ name: form.name.trim(), pseudo: form.pseudo.trim(), city: form.city, country: form.country, profession: form.profession, bio: form.bio });
       setEditing(false);
       onRefresh();
     } catch (e: any) {
@@ -163,12 +166,36 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
     } finally { setSaving(false); }
   };
 
-  const toggleVision = (v: string) => {
-    setForm(f => ({
-      ...f,
-      marriage_vision: f.marriage_vision.includes(v) ? f.marriage_vision.filter(x => x !== v) : [...f.marriage_vision, v]
-    }));
-  };
+  /** Vision du mariage + source de découverte : lecture seule, avec le renvoi vers le questionnaire. */
+  const questionnaireOwnedInfo = (
+    <div>
+      <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
+        <Heart size={14} /> {t("profilePage.marriageVision")}
+      </h4>
+      {visionChips.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {visionChips.map(v => (
+            <span key={v} className="px-3 py-1.5 bg-[#EEF5EC] text-[#486B46] rounded-full text-xs font-medium">{v}</span>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-[#777777]">{t("questionnaire.visionNotAnswered")}</p>
+      )}
+      {sourceLabel && (
+        <div className="mt-3">
+          <InfoRow label={t("profilePage.discoverySourceLabel")} value={sourceLabel} />
+        </div>
+      )}
+      {previousAnswers.length > 0 && (
+        <p className="mt-3 text-xs text-[#777777]">
+          <span className="font-semibold">{t("questionnaire.previousAnswers")}</span> {previousAnswers.join(", ")}
+        </p>
+      )}
+      <button type="button" onClick={onSwitchToFaith} className="mt-3 text-xs text-[#486B46] font-semibold hover:underline">
+        {visionChips.length > 0 ? t("questionnaire.editInQuestionnaire") : t("questionnaire.answerInQuestionnaire")}
+      </button>
+    </div>
+  );
 
   return (
     <div className="eden-card p-6">
@@ -252,26 +279,8 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
             </div>
           )}
 
-          {/* Marriage Vision */}
-          {profile.marriage_vision && profile.marriage_vision.length > 0 && (
-            <div>
-              <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-3 flex items-center gap-2">
-                <Heart size={14} /> {t("profilePage.marriageVision")}
-              </h4>
-              <div className="flex flex-wrap gap-2">
-                {profile.marriage_vision.map(v => (
-                  <span key={v} className="px-3 py-1.5 bg-[#EEF5EC] text-[#486B46] rounded-full text-xs font-medium">{v}</span>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Discovery source — facultatif, n'est plus demandé à l'inscription */}
-          {profile.discovery_source && (
-            <div>
-              <InfoRow label={t("profilePage.discoverySourceLabel")} value={profile.discovery_source} />
-            </div>
-          )}
+          {/* Vision du mariage + source de découverte : saisies dans le questionnaire, affichées ici */}
+          {questionnaireOwnedInfo}
 
           {/* Onboarding Summary */}
           {profile.questionnaire && Object.keys(profile.questionnaire).length > 0 && (
@@ -290,7 +299,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
                   .slice(0, 15)
                   .map(f => {
                     const v = profile.questionnaire[f.id];
-                    const display = Array.isArray(v) ? v.join(", ") : String(v);
+                    const display = Array.isArray(v) ? v.map(x => answerLabel(f, x)).join(", ") : answerLabel(f, v);
                     return <InfoRow key={f.id} label={f.label} value={display} />;
                   })}
               </div>
@@ -348,31 +357,10 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
               className="w-full border border-[#E0DDD8] rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-[#486B46] focus:ring-2 focus:ring-[#486B46]/20 resize-none" />
           </div>
 
-          {/* Section: Marriage Vision */}
-          <div>
-            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 flex items-center gap-2 pb-2 border-b border-[#F0EDE8]">
-              <Heart size={14} /> {t("profilePage.marriageVision")}
-            </h4>
-            <div className="flex flex-wrap gap-2">
-              {MARRIAGE_VISION_OPTIONS.map(v => (
-                <button key={v} onClick={() => toggleVision(v)}
-                  className={`px-4 py-2 rounded-full text-xs font-medium transition-all ${form.marriage_vision.includes(v) ? "bg-[#486B46] text-white shadow-sm" : "bg-[#F5F3F0] text-[#777777] hover:bg-[#EEF5EC] hover:text-[#486B46] border border-[#E0DDD8]"}`}>
-                  {form.marriage_vision.includes(v) ? "✓ " : ""}{v}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Discovery source — facultatif, plus demandé à l'inscription */}
-          <div>
-            <h4 className="text-xs font-bold text-[#486B46] uppercase tracking-wider mb-4 pb-2 border-b border-[#F0EDE8]">{t("profilePage.discoverySourceLabel")}</h4>
-            <EditField
-              label={t("profilePage.discoverySourceLabel")}
-              value={form.discovery_source}
-              onChange={v => setForm(f => ({ ...f, discovery_source: v }))}
-              type="select"
-              options={[...DISCOVERY_SOURCE_OPTIONS]}
-            />
+          {/* Vision du mariage + source de découverte : une seule saisie, dans le questionnaire */}
+          <div className="rounded-xl border border-[#F0EDE8] bg-[#FAFAF7] p-4">
+            {questionnaireOwnedInfo}
+            <p className="mt-2 text-xs text-[#777777]">{t("questionnaire.managedInQuestionnaire")}</p>
           </div>
 
           {/* Save / Cancel buttons at bottom */}
@@ -436,11 +424,11 @@ function EditField({ label, value, onChange, type = "text", options, optionLabel
 
 /* ────────────────── Faith Journey Section ─────────────────────── */
 
-function FaithJourneyCard({ profileId, answers, completed, onRefresh }: { profileId: string; answers: Record<string, any>; completed: boolean; onRefresh: () => void }) {
+function FaithJourneyCard({ profileId, answers, legacy, completed, onRefresh }: { profileId: string; answers: Record<string, any>; legacy: LegacyColumns; completed: boolean; onRefresh: () => void }) {
   const { t, locale } = useI18n();
   // Ouvert d'emblée sur le premier questionnaire où des questions obligatoires (badge) restent sans réponse.
   const [expanded, setExpanded] = useState<string | null>(() =>
-    describeMissingQuestions(checkQuestionnaireCompletion(answers || {}, { excludeOptional: true }).unansweredIds, locale as SupportedLocale)[0]?.questionnaireKey || null);
+    describeMissingQuestions(effectiveQuestionnaireCompletion(answers || {}, legacy, { excludeOptional: true }).unansweredIds, locale as SupportedLocale)[0]?.questionnaireKey || null);
   const [editingQ, setEditingQ] = useState<string | null>(null);
   const [localAnswers, setLocalAnswers] = useState<Record<string, any>>(answers || {});
   const [saving, setSaving] = useState(false);
@@ -466,9 +454,12 @@ function FaithJourneyCard({ profileId, answers, completed, onRefresh }: { profil
     setEditingQ(null);
   };
 
-  const handleMultiToggle = (fieldId: string, option: string) => {
-    const current: string[] = localAnswers[fieldId] || [];
-    handleFieldChange(fieldId, current.includes(option) ? current.filter(x => x !== option) : [...current, option]);
+  // min / max de la question appliqués ici (et revérifiés par le serveur pour les questions synchronisées).
+  const handleMultiToggle = (field: Field, option: string) => {
+    const current = localAnswers[field.id];
+    const next = toggleMultiValue(field, current, option);
+    if (next === current) return; // borne atteinte : rien à enregistrer
+    handleFieldChange(field.id, next);
   };
 
   // « Terminé » : vide la sauvegarde en attente puis marque le questionnaire complété.
@@ -559,7 +550,7 @@ function FaithJourneyCard({ profileId, answers, completed, onRefresh }: { profil
                     )}
                   </div>
                   {q.sections.map(section => (
-                    <SectionBlock key={section.key} section={section} answers={localAnswers} isEditing={isEditing}
+                    <SectionBlock key={section.key} section={section} answers={localAnswers} legacy={legacy} isEditing={isEditing}
                       onFieldChange={handleFieldChange} onMultiToggle={handleMultiToggle} />
                   ))}
                   {isEditing && (
@@ -577,9 +568,9 @@ function FaithJourneyCard({ profileId, answers, completed, onRefresh }: { profil
   );
 }
 
-function SectionBlock({ section, answers, isEditing, onFieldChange, onMultiToggle }: {
-  section: Section; answers: Record<string, any>; isEditing: boolean;
-  onFieldChange: (id: string, val: any) => void; onMultiToggle: (id: string, opt: string) => void;
+function SectionBlock({ section, answers, legacy, isEditing, onFieldChange, onMultiToggle }: {
+  section: Section; answers: Record<string, any>; legacy: LegacyColumns; isEditing: boolean;
+  onFieldChange: (id: string, val: any) => void; onMultiToggle: (field: Field, opt: string) => void;
 }) {
   return (
     <div className="mb-5">
@@ -592,7 +583,8 @@ function SectionBlock({ section, answers, isEditing, onFieldChange, onMultiToggl
         {section.fields.filter(field => isFieldVisible(field, answers)).map(field => (
           <div key={field.id} className={field.showIf ? "ml-2 pl-3 border-l-2 border-[#C6D4C0]" : undefined}>
             <FieldDisplay field={field} value={answers[field.id]} isEditing={isEditing}
-              onChange={v => onFieldChange(field.id, v)} onMultiToggle={opt => onMultiToggle(field.id, opt)} />
+              onChange={v => onFieldChange(field.id, v)} onMultiToggle={opt => onMultiToggle(field, opt)} />
+            <LegacyAnswersNotice values={pendingLegacyValues(field.id, answers[field.id], legacy)} className="mt-2" />
           </div>
         ))}
       </div>
@@ -610,11 +602,11 @@ function FieldDisplay({ field, value, isEditing, onChange, onMultiToggle }: {
     if (Array.isArray(value)) {
       return (
         <div className="flex flex-wrap gap-1.5">
-          {value.map((v: string) => <span key={v} className="px-2.5 py-0.5 bg-[#EEF5EC] text-[#486B46] rounded-full text-xs">{v}</span>)}
+          {value.map((v: string) => <span key={v} className="px-2.5 py-0.5 bg-[#EEF5EC] text-[#486B46] rounded-full text-xs">{answerLabel(field, v)}</span>)}
         </div>
       );
     }
-    return <span className="text-sm text-[#2F2F2F] whitespace-pre-wrap">{String(value)}</span>;
+    return <span className="text-sm text-[#2F2F2F] whitespace-pre-wrap">{answerLabel(field, value)}</span>;
   };
 
   if (isEditing) {
@@ -642,10 +634,10 @@ function FieldDisplay({ field, value, isEditing, onChange, onMultiToggle }: {
           <div>
             <label className="text-xs text-[#777777] font-medium mb-1.5 block">{field.label}</label>
             <div className="space-y-1.5">
-              {field.options?.map(opt => (
-                <button key={opt} onClick={() => onChange(opt)}
+              {fieldChoices(field).map(({ value: opt, label }) => (
+                <button key={opt} aria-pressed={value === opt} onClick={() => onChange(opt)}
                   className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-all ${value === opt ? "bg-[#486B46] text-white" : "bg-[#F5F3F0] text-[#2F2F2F] hover:bg-[#EEF5EC]"}`}>
-                  {opt}
+                  {label}
                 </button>
               ))}
             </div>
@@ -656,12 +648,12 @@ function FieldDisplay({ field, value, isEditing, onChange, onMultiToggle }: {
           <div>
             <label className="text-xs text-[#777777] font-medium mb-1.5 block">{field.label}</label>
             <div className="flex flex-wrap gap-2">
-              {field.options?.map(opt => {
+              {fieldChoices(field).map(({ value: opt, label }) => {
                 const selected = Array.isArray(value) && value.includes(opt);
                 return (
-                  <button key={opt} onClick={() => onMultiToggle(opt)}
+                  <button key={opt} aria-pressed={selected} onClick={() => onMultiToggle(opt)}
                     className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all ${selected ? "bg-[#486B46] text-white" : "bg-[#F5F3F0] text-[#777777] hover:bg-[#EEF5EC]"}`}>
-                    {opt}
+                    {label}
                   </button>
                 );
               })}
@@ -773,6 +765,9 @@ export default function ProfilePage() {
 
   useEffect(() => { loadProfile(); }, [loadProfile]);
 
+  // Stable tant que le profil ne change pas : l'éditeur ne doit pas être réinitialisé à chaque rendu.
+  const faithAnswers = useMemo(() => mergeLegacyAnswers(profile?.questionnaire || {}, profile), [profile]);
+
   const handleRefresh = async () => {
     setToast({ message: t("profilePage.profileUpdatedSuccess"), type: "success" });
     // Profil et questionnaire complets ⇒ badge « Profil vérifié » attribué automatiquement.
@@ -858,7 +853,8 @@ export default function ProfilePage() {
             <ReactivationEmailPreference />
           </>
         ) : (
-          <FaithJourneyCard profileId={profile.id} answers={profile.questionnaire || {}} completed={!!profile.onboarding_completed} onRefresh={handleRefresh} />
+          // Anciennes réponses du profil reprises dans l'éditeur tant que la question n'a pas de réponse enregistrée.
+          <FaithJourneyCard profileId={profile.id} answers={faithAnswers} legacy={profile} completed={!!profile.onboarding_completed} onRefresh={handleRefresh} />
         )}
       </div>
 

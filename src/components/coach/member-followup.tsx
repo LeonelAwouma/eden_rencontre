@@ -9,12 +9,12 @@ import { Field, NewSessionForm, SessionRows, errorText, inputClass, primaryButto
 import { coachApi } from "@/lib/coach/client";
 import type { CoachActionDto, CoachReportDto } from "@/lib/coach/content-dto";
 import type { CoachNoteDto } from "@/lib/coach/notes-dto";
-import { ACTION_STATUSES, NOTE_FIELDS } from "@/lib/coach/notes-model";
+import { ACTION_STATUSES, NOTE_FIELDS, REPORT_SUMMARY_MAX, REPORT_TITLE_MAX } from "@/lib/coach/notes-model";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 
 /** Sélecteur facultatif « Rattacher à une séance » : séances DU membre uniquement, réalisées d'abord, puis à venir. */
-function SessionPicker({ sessions, value, onChange, labelKey, helpKey, noneKey }: {
+export function SessionPicker({ sessions, value, onChange, labelKey, helpKey, noneKey }: {
   sessions: SessionListItem[]; value: string; onChange: (v: string) => void; labelKey: string; helpKey: string; noneKey: string;
 }) {
   const { t } = useI18n();
@@ -149,19 +149,31 @@ function ReportsSection({ memberId, sessions }: { memberId: string; sessions: Se
   const { t } = useI18n();
   const { state, reload } = useCoachData<{ reports: CoachReportDto[] }>(`/api/coach/members/${memberId}/reports`);
   const [open, setOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [summary, setSummary] = useState("");
   const [sessionId, setSessionId] = useState("");
-  const { send, busy, error } = useSend("coachReports", () => { reload(); setOpen(false); setSessionId(""); });
+  const closeForm = () => { setOpen(false); setTitle(""); setSummary(""); setSessionId(""); };
+  const { send, busy, error } = useSend("coachReports", () => { reload(); closeForm(); });
   return (
-    <Card as="section" className="p-5">
+    <Card as="section" id="reports" className="p-5">
       <SectionTitle title={t("coachReports.sectionTitle")} actions={!open && <button type="button" className={secondaryButton} onClick={() => setOpen(true)}>{t("coachReports.create")}</button>} />
       <p className="mb-4 rounded-xl border border-[#D9E4DC] bg-[#F6FAF5] px-3 py-2 text-xs text-[#28543C]" role="note">{t("coachReports.sharedBanner")}</p>
       {open && (
-        <form className="mb-5 space-y-3" onSubmit={(e) => { e.preventDefault(); void send(`/api/coach/members/${memberId}/reports`, "POST", sessionId ? { session_id: sessionId } : {}); }}>
+        <form className="mb-5 space-y-3" onSubmit={(e) => {
+          e.preventDefault();
+          void send(`/api/coach/members/${memberId}/reports`, "POST", { title, summary, ...(sessionId ? { session_id: sessionId } : {}) });
+        }}>
+          <Field label={t("coachReports.titleLabel")} help={t("coachReports.titleHelp")}>
+            <input maxLength={REPORT_TITLE_MAX} className={inputClass} value={title} onChange={(e) => setTitle(e.target.value)} />
+          </Field>
+          <Field label={t("coachReports.summaryLabel")} help={t("coachReports.summaryHelp")}>
+            <textarea rows={4} maxLength={REPORT_SUMMARY_MAX} className={inputClass} value={summary} onChange={(e) => setSummary(e.target.value)} />
+          </Field>
           <SessionPicker sessions={sessions} value={sessionId} onChange={setSessionId} labelKey="coachReports.linkSession" helpKey="coachReports.linkHelp" noneKey="coachReports.noSession" />
           {error && <p role="alert" className="text-sm text-[#8A3B2E]">{error}</p>}
           <div className="flex gap-2">
-            <button type="submit" className={primaryButton} disabled={busy}>{t("coachReports.create")}</button>
-            <button type="button" className={secondaryButton} onClick={() => setOpen(false)}>{t("coachNotes.cancel")}</button>
+            <button type="submit" className={primaryButton} disabled={busy}>{busy ? t("coachReports.saving") : t("coachReports.create")}</button>
+            <button type="button" className={secondaryButton} onClick={closeForm}>{t("coachNotes.cancel")}</button>
           </div>
         </form>
       )}
