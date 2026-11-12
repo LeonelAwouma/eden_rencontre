@@ -14,7 +14,9 @@ import { useToast } from "@/hooks/use-toast";
 import { getSession } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { MemberGate } from "@/components/member-gate";
-import { getOnboardingSteps, getMyOnboarding, saveQuestionnaireAnswers, completeOnboarding, applyAnswer, isFieldVisible, checkQuestionnaireCompletion, describeMissingQuestions, type Field, type SupportedLocale } from "@/lib/onboarding";
+import { getOnboardingSteps, getMyOnboarding, saveQuestionnaireAnswers, completeOnboarding, applyAnswer, isFieldVisible, effectiveQuestionnaireCompletion, describeMissingQuestions, fieldChoices, toggleMultiValue, type Field, type SupportedLocale } from "@/lib/onboarding";
+import { pendingLegacyValues, type LegacyColumns } from "@/lib/onboarding-legacy";
+import { LegacyAnswersNotice } from "@/components/questionnaire/legacy-answers-notice";
 import { LoadingScreen } from "@/components/loading-screen";
 
 const SKIP_KEY = "eden_onboarding_skipped";
@@ -48,6 +50,8 @@ function OnboardingPageContent() {
   const [loadAttempt, setLoadAttempt] = useState(0);
   const [userId, setUserId] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, any>>({});
+  // Colonnes historiques du profil (vision du mariage, source de découverte) : anciennes réponses à reprendre.
+  const [legacy, setLegacy] = useState<LegacyColumns>({});
   const [stepIndex, setStepIndex] = useState(0);
   const [saving, setSaving] = useState(false);
   const [autoSave, setAutoSave] = useState<AutoSaveState>("idle");
@@ -70,7 +74,7 @@ function OnboardingPageContent() {
     (async () => {
       const session = await getSession();
       if (!session) { router.replace("/login"); return; }
-      const { answers: saved, completed, unavailable } = await getMyOnboarding();
+      const { answers: saved, completed, unavailable, legacy: legacyColumns } = await getMyOnboarding();
       if (!active) return;
       // État inconnu : afficher un questionnaire vide ferait croire au membre
       // qu'il doit tout recommencer, et sa première réponse écraserait les autres.
@@ -89,6 +93,7 @@ function OnboardingPageContent() {
       }
       answersRef.current = initial;
       setAnswers(initial);
+      setLegacy(legacyColumns);
       setUserId(uid);
       setStepIndex(Math.min(resume, allSteps.length - 1));
       setLoading(false);
@@ -295,6 +300,7 @@ function OnboardingPageContent() {
           {step.fields.filter((f) => isFieldVisible(f, answers)).map((f) => (
             <div key={f.id} className={cn(f.showIf && "-mt-3 ml-2 pl-4 border-l-2 border-primary/25 animate-in fade-in slide-in-from-top-1 duration-300")}>
               <FieldRenderer field={f} value={answers[f.id]} onChange={(v) => setField(f.id, v)} />
+              <LegacyAnswersNotice values={pendingLegacyValues(f.id, answers[f.id], legacy)} className="mt-3" />
             </div>
           ))}
         </div>
@@ -302,7 +308,7 @@ function OnboardingPageContent() {
         {/* Dernière étape : questions obligatoires restées sans réponse (on peut terminer quand même,
             mais le badge « Profil vérifié » les attend). */}
         {stepIndex === total - 1 && (() => {
-          const groups = describeMissingQuestions(checkQuestionnaireCompletion(answers, { excludeOptional: true }).unansweredIds, locale as SupportedLocale)
+          const groups = describeMissingQuestions(effectiveQuestionnaireCompletion(answers, legacy, { excludeOptional: true }).unansweredIds, locale as SupportedLocale)
             .filter((g) => g.stepIndex !== stepIndex);
           if (!groups.length) return null;
           const count = groups.reduce((n, g) => n + g.questions.length, 0);
@@ -393,17 +399,18 @@ function FieldRenderer({ field, value, onChange }: { field: Field; value: any; o
       <div>
         {labelEl}
         <div className="flex flex-wrap gap-2">
-          {field.options?.map((opt) => (
+          {fieldChoices(field).map(({ value: opt, label }) => (
             <button
               key={opt}
               type="button"
+              aria-pressed={value === opt}
               onClick={() => onChange(opt)}
               className={cn(
-                "px-4 h-11 rounded-xl text-sm font-bold border transition-colors",
+                "px-4 min-h-11 py-2 rounded-xl text-sm font-bold border transition-colors",
                 value === opt ? "bg-primary/10 border-primary text-primary" : "bg-card text-foreground/60 border-primary/15 hover:border-primary/40"
               )}
             >
-              {opt}
+              {label}
             </button>
           ))}
         </div>
@@ -413,27 +420,29 @@ function FieldRenderer({ field, value, onChange }: { field: Field; value: any; o
 
   if (field.type === "multi") {
     const arr: string[] = Array.isArray(value) ? value : [];
+    // min / max appliqués ici ET revérifiés par le serveur pour les questions synchronisées.
     const toggle = (opt: string) => {
-      if (arr.includes(opt)) onChange(arr.filter((v) => v !== opt));
-      else if (!field.max || arr.length < field.max) onChange([...arr, opt]);
+      const next = toggleMultiValue(field, arr, opt);
+      if (next !== arr) onChange(next);
     };
     return (
       <div>
         {labelEl}
         <div className="flex flex-wrap gap-2">
-          {field.options?.map((opt) => {
+          {fieldChoices(field).map(({ value: opt, label }) => {
             const sel = arr.includes(opt);
             return (
               <button
                 key={opt}
                 type="button"
+                aria-pressed={sel}
                 onClick={() => toggle(opt)}
                 className={cn(
-                  "px-4 h-11 rounded-xl text-sm font-bold border transition-colors flex items-center gap-2",
+                  "px-4 min-h-11 py-2 rounded-xl text-sm font-bold border transition-colors flex items-center gap-2",
                   sel ? "bg-primary/10 border-primary text-primary" : "bg-card text-foreground/60 border-primary/15 hover:border-primary/40"
                 )}
               >
-                {sel && <Check className="w-4 h-4" />} {opt}
+                {sel && <Check className="w-4 h-4" />} {label}
               </button>
             );
           })}

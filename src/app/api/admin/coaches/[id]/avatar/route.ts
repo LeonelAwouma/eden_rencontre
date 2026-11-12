@@ -2,11 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { logAdminAction, requireAdmin, type AdminSession } from "@/lib/admin-auth";
 import { clientIp } from "@/lib/api-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { avatarStoragePath, checkAvatarFile, removeAvatarFile, uploadCoachAvatar } from "@/lib/coach/avatar";
+import { avatarStoragePath, checkAvatarFile, removeAvatarFile, replaceCoachAvatar } from "@/lib/coach/avatar";
 
 /**
- * Remplacement / retrait de la photo d'un coach. RÉSERVÉ À L'ADMINISTRATEUR (cookie de session admin) :
- * aucun coach ni membre ne peut modifier une photo. La cible doit être un coach.
+ * Remplacement / retrait de la photo d'un coach PAR L'ADMINISTRATEUR (cookie de session admin) : cette route, qui
+ * désigne sa cible par l'URL, n'est ouverte à aucun coach ni membre. Un coach change SA propre photo par
+ * PUT /api/coach/profile/avatar (cible = sa session). La cible doit être un coach.
  * L'ancien fichier n'est supprimé qu'après l'enregistrement réussi de la nouvelle URL.
  */
 const NO_STORE = { "Cache-Control": "private, no-store" };
@@ -45,18 +46,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   const coach = await targetCoach(db, id);
   if (!coach) return json({ error: "Coach introuvable" }, 404);
 
-  const up = await uploadCoachAvatar(db, id, check);
-  if (!up) return json({ error: "Envoi de la photo impossible.", code: "avatar_upload_failed" }, 500);
-
-  const { error } = await db.from("profiles").update({ avatar_url: up.url }).eq("id", id);
-  if (error) {
-    await removeAvatarFile(db, up.path); // pas de fichier orphelin
-    return json({ error: "Enregistrement de la photo impossible.", code: "avatar_save_failed" }, 500);
-  }
-  // Seulement maintenant : l'ancien fichier (uniquement s'il vient bien du dossier des photos de coach).
-  await removeAvatarFile(db, avatarStoragePath(coach.avatarUrl));
+  // Séquence partagée avec la route du coach : dépôt, enregistrement, puis seulement suppression de l'ancien fichier.
+  const replaced = await replaceCoachAvatar(db, id, check, coach.avatarUrl);
+  if (!replaced.ok) return json({ error: replaced.message, code: replaced.code }, 500);
   await audit(admin, req, "coach_avatar_updated", id);
-  return json({ id, avatar_url: up.url });
+  return json({ id, avatar_url: replaced.url });
 }
 
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

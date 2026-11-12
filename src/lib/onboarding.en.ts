@@ -2,6 +2,7 @@
 // Mirrors the structure of the French QUESTIONNAIRES in onboarding.ts.
 
 import type { Questionnaire } from "./onboarding";
+import { DISCOVERY_SOURCE_CHOICES_EN, MARRIAGE_VISION_CHOICES_EN, MARRIAGE_VISION_MAX, MARRIAGE_VISION_MIN } from "./questionnaire-choices";
 
 // Structured options for the "non-negotiable" boundary questions — mirrors the French options in
 // onboarding.ts so the matching algorithm (src/lib/matching.ts) can compare answers reliably.
@@ -169,6 +170,7 @@ export const QUESTIONNAIRES_EN: Questionnaire[] = [
         title: "Your Expectations for the Relationship",
         fields: [
           { id: "attentes", label: "Your expectations for this relationship", type: "multi", options: ["Emotional security", "Spiritual growth", "Building a family", "True friendship", "A ministry partner", "Mutual support in projects"], help: "Select up to 3", max: 3 },
+          { id: "marriageVision", label: "Your vision of marriage: the values that matter most to you", type: "multi", choices: MARRIAGE_VISION_CHOICES_EN, help: "Choose 1 to 3 values", min: MARRIAGE_VISION_MIN, max: MARRIAGE_VISION_MAX },
           { id: "trancheAge", label: "Desired age range for your partner", type: "agerange" },
           { id: "qualites", label: "3 essential qualities you seek in a partner", type: "text" },
           { id: "defauts", label: "3 deal-breakers you cannot tolerate", type: "text" },
@@ -238,6 +240,7 @@ export const QUESTIONNAIRES_EN: Questionnaire[] = [
           { id: "mariageReussi", label: "Your definition of a successful marriage according to biblical standards", type: "textarea" },
           { id: "heritage", label: "What spiritual legacy do you hope to leave?", type: "textarea" },
           { id: "criteresMatching", label: "What are, in your opinion, the non-negotiable criteria for a successful match?", type: "textarea" },
+          { id: "discoverySource", label: "How did you hear about Garden of Alliance?", type: "single", choices: DISCOVERY_SOURCE_CHOICES_EN, help: "Optional" },
         ],
       },
     ],

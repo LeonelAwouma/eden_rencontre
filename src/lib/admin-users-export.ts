@@ -6,7 +6,7 @@
 
 import ExcelJS from "exceljs";
 import { getProfileCompletion } from "@/lib/profile-completion";
-import { checkQuestionnaireCompletion } from "@/lib/onboarding";
+import { effectiveQuestionnaireCompletion } from "@/lib/onboarding";
 import { normalizeGender } from "@/lib/verses";
 import { summarizeFormation } from "@/lib/formation/admin-summary";
 
@@ -72,7 +72,7 @@ export const MEMBER_COLUMNS: Column[] = [
 export function buildMemberRow(p: ProfileRow, now = new Date()): Record<string, string | number | Date | null> {
   const birth = toDate(p.birth_date);
   const answers = p.questionnaire && typeof p.questionnaire === "object" ? (p.questionnaire as Record<string, unknown>) : {};
-  const questionnaire = checkQuestionnaireCompletion(answers, { excludeOptional: true });
+  const questionnaire = effectiveQuestionnaireCompletion(answers, p, { excludeOptional: true });
   const formation = summarizeFormation(p.formation_completed);
   const gender = normalizeGender(text(p.gender));
   return {

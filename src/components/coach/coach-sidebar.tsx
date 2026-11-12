@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { X } from "lucide-react";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { CoachAvatar } from "./coach-avatar";
 import { Monogram } from "@/components/ornaments";
 import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
@@ -98,9 +98,8 @@ export function CoachSidebar({ variant = "fixed", onClose, footer }: Props) {
       <div className="shrink-0 border-t border-[#E6EAE5] p-3 space-y-2 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         {footer}
         <div className="flex items-center gap-3 px-2 py-1">
-          <Avatar className="w-10 h-10 ring-1 ring-[#E6EAE5]">
-            <AvatarFallback className="bg-[#EEF5EE] text-[#28543C] font-semibold">{initial}</AvatarFallback>
-          </Avatar>
+          {/* Même photo que l'en-tête : toutes deux lues dans le contexte (source unique). */}
+          <CoachAvatar url={coach.avatarUrl} name={coach.name || initial} className="ring-1 ring-[#E6EAE5] shrink-0" />
           <span className="flex-1 min-w-0">
             <span className="block text-[14px] font-semibold text-[#1C241F] truncate">{coach.name}</span>
             <span className="block text-[12px] text-[#5C665F] truncate">{t("coachNav.roleLabel")}</span>

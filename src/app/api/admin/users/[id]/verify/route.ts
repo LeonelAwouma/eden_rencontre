@@ -3,7 +3,7 @@ import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { sendVerificationApprovedEmail, sendVerificationRejectedEmail } from "@/lib/email";
 import { isProfileFullyComplete, getProfileCompletion } from "@/lib/profile-completion";
-import { checkQuestionnaireCompletion } from "@/lib/onboarding";
+import { effectiveQuestionnaireCompletion } from "@/lib/onboarding";
 
 export async function POST(
   request: NextRequest,
@@ -54,7 +54,7 @@ export async function POST(
         );
       }
       // Même règle que la fiche admin : toutes les questions requises des 3 questionnaires.
-      const questionnaire = checkQuestionnaireCompletion((user.questionnaire as Record<string, unknown>) || {}, { excludeOptional: true });
+      const questionnaire = effectiveQuestionnaireCompletion((user.questionnaire as Record<string, unknown>) || {}, user, { excludeOptional: true });
       if (questionnaire.percentage < 100) {
         return NextResponse.json(
           { error: `Le questionnaire n'est pas complet (${questionnaire.answered}/${questionnaire.total} questions).` },

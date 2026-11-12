@@ -74,3 +74,33 @@ export async function removeAvatarFile(db: Db, path: string | null) {
   if (!path) return;
   try { await db.storage.from(COACH_AVATAR_BUCKET).remove([path]); } catch { /* best effort */ }
 }
+
+export type ReplaceAvatarResult =
+  | { ok: true; url: string }
+  | { ok: false; code: "avatar_upload_failed" | "avatar_save_failed"; message: string };
+
+/**
+ * Remplace la photo d'un coach (routes administrateur ET coach : une seule séquence, un seul champ `profiles.avatar_url`).
+ *   1. dépôt du nouveau fichier ;
+ *   2. enregistrement de sa URL sur le profil — en cas d'échec, le nouveau fichier est retiré et l'ancienne photo
+ *      reste en place (base et stockage inchangés) ;
+ *   3. seulement ensuite, suppression de l'ancien fichier (uniquement s'il vient du dossier des photos de coach).
+ * `coachId` doit venir d'une identité vérifiée par l'appelant (session serveur), jamais du navigateur.
+ */
+export async function replaceCoachAvatar(
+  db: Db,
+  coachId: string,
+  check: Extract<AvatarCheck, { ok: true }>,
+  previousUrl: string | null | undefined
+): Promise<ReplaceAvatarResult> {
+  const up = await uploadCoachAvatar(db, coachId, check);
+  if (!up) return { ok: false, code: "avatar_upload_failed", message: "Envoi de la photo impossible." };
+
+  const { error } = await db.from("profiles").update({ avatar_url: up.url }).eq("id", coachId);
+  if (error) {
+    await removeAvatarFile(db, up.path); // pas de fichier orphelin
+    return { ok: false, code: "avatar_save_failed", message: "Enregistrement de la photo impossible." };
+  }
+  await removeAvatarFile(db, avatarStoragePath(previousUrl));
+  return { ok: true, url: up.url };
+}

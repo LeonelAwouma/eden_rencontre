@@ -4,7 +4,7 @@ import { LogOut } from "lucide-react";
 import { Card, DetailItem, SectionTitle } from "@/components/admin/admin-ui";
 import { DataState, PageTitle } from "@/components/coach/coach-ui";
 import { useCoachChrome } from "@/components/coach/coach-chrome";
-import { CoachAvatar } from "@/components/coach/coach-avatar";
+import { CoachAvatarEditor } from "@/components/coach/coach-avatar-editor";
 import { useCoachData } from "@/components/coach/use-coach-data";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/lib/i18n";
@@ -14,7 +14,7 @@ interface CoachProfile { name: string; email: string; lastLoginAt: string | null
 /** Profil du coach connecté : uniquement ses propres informations. */
 export default function CoachProfilePage() {
   const { t, locale } = useI18n();
-  const { logout, coach } = useCoachChrome();
+  const { logout } = useCoachChrome();
   const { state, reload } = useCoachData<CoachProfile>("/api/coach/profile");
 
   return (
@@ -25,7 +25,7 @@ export default function CoachProfilePage() {
           <div className="space-y-6 max-w-2xl">
             <Card as="section" className="p-5">
               <SectionTitle title={t("coachProfile.accountTitle")} />
-              <div className="mb-4"><CoachAvatar url={coach.avatarUrl} name={p.name} size={96} /></div>
+              <div className="mb-5"><CoachAvatarEditor /></div>
               <dl className="grid sm:grid-cols-2 gap-4">
                 <DetailItem label={t("coachProfile.name")}>{p.name}</DetailItem>
                 <DetailItem label={t("coachProfile.email")}><span className="break-all">{p.email}</span></DetailItem>

@@ -10,7 +10,7 @@
 
 import type { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getProfileCompletion } from "@/lib/profile-completion";
-import { checkQuestionnaireCompletion } from "@/lib/onboarding";
+import { effectiveQuestionnaireCompletion } from "@/lib/onboarding";
 import { sendVerificationApprovedEmail } from "@/lib/email";
 
 type Db = ReturnType<typeof getSupabaseAdmin>;
@@ -50,7 +50,9 @@ export async function evaluateVerificationBadge(db: Db, userId: string): Promise
   }
 
   const profile = getProfileCompletion(p);
-  const questionnaire = checkQuestionnaireCompletion(filledAnswers, { excludeOptional: true });
+  // Règle partagée avec le tableau de bord : une vision du mariage déjà présente sur le profil (inscription,
+  // ancien formulaire) répond à la question. Calcul en mémoire — le questionnaire n'est pas réécrit pour cela.
+  const questionnaire = effectiveQuestionnaireCompletion(filledAnswers, p, { excludeOptional: true });
 
   const status: string = p.verification_status || "none";
   const complete = profile.percentage === 100 && questionnaire.total > 0 && questionnaire.percentage === 100;

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { checkQuestionnaireCompletion } from "@/lib/onboarding";
+import { effectiveQuestionnaireCompletion } from "@/lib/onboarding";
+import { parseAnswersBody, persistQuestionnaire, saveFailureMessage } from "@/lib/onboarding-save";
 import { evaluateVerificationBadge } from "@/lib/verification-badge";
 import { reevaluateReferral } from "@/lib/referrals";
 import { refuseCoachSession } from "@/lib/coach/guard";
@@ -28,10 +29,9 @@ export async function POST(req: NextRequest) {
     const coachRefusal = await refuseCoachSession(supabase, userId);
     if (coachRefusal) return coachRefusal;
 
-    const body = await req.json().catch(() => ({}));
-    const answers = body && typeof body.answers === "object" && body.answers !== null && !Array.isArray(body.answers)
-      ? (body.answers as Record<string, unknown>)
-      : {};
+    // Corps illisible ou sans réponses : refus. Enregistrer un questionnaire vide effacerait les réponses du membre.
+    const answers = parseAnswersBody(await req.json().catch(() => null));
+    if (!answers) return NextResponse.json({ error: "Réponses invalides.", code: "bad_answers" }, { status: 400 });
 
     const { data: profile, error: profileError } = await supabase
       .from("profiles")
@@ -42,17 +42,17 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Utilisateur introuvable." }, { status: 404 });
     }
 
-    const completion = checkQuestionnaireCompletion(answers, { excludeOptional: true });
-
-    const { error: updateError } = await supabase.from("profiles").update({
-      questionnaire: answers,
-      onboarding_completed: true,
-      updated_at: new Date().toISOString(),
-    }).eq("id", userId);
-    if (updateError) {
-      console.error("[Onboarding Complete] Error saving onboarding:", updateError.message);
-      return NextResponse.json({ error: "Enregistrement impossible. Réessayez." }, { status: 500 });
+    // Même chemin d'écriture que la sauvegarde automatique : validation, colonnes historiques, archives.
+    const saved = await persistQuestionnaire(supabase, userId, answers, { complete: true });
+    if (!saved.ok) {
+      if (saved.status === 500) console.error("[Onboarding Complete] Error saving onboarding:", saved.code);
+      return NextResponse.json(
+        { error: saveFailureMessage(saved), code: saved.code, ...("field" in saved && saved.field ? { field: saved.field } : {}) },
+        { status: saved.status }
+      );
     }
+
+    const completion = effectiveQuestionnaireCompletion(saved.questionnaire, saved.legacy, { excludeOptional: true });
 
     // Profil + questionnaire complets ⇒ badge « Profil vérifié » attribué automatiquement.
     const badge = await evaluateVerificationBadge(supabase, userId);

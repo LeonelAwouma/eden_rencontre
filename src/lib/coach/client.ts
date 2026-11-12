@@ -22,6 +22,28 @@ export interface CoachMe { id: string; email: string; name: string; avatarUrl?: 
 /** `code` / `candidates` : code d'erreur stable de l'API (jamais un message technique) ; heures proposées si l'heure locale est ambiguë. */
 export type CoachApiResult<T> = { ok: true; data: T } | { ok: false; status: number; code?: string; candidates?: [string, string] };
 
+/**
+ * Envoi d'un fichier (multipart) à une route `/api/coach/*` avec le jeton de session. Le navigateur pose lui-même
+ * l'en-tête `Content-Type` (avec sa frontière) : on ne le fixe pas. `status` 0 = erreur réseau.
+ */
+export async function coachUpload<T>(path: string, form: FormData, method: "PUT" | "POST" = "PUT"): Promise<CoachApiResult<T>> {
+  try {
+    const { authHeaders } = await import("@/lib/auth");
+    const res = await fetch(path, { method, headers: await authHeaders(), body: form, cache: "no-store" });
+    if (!res.ok) {
+      let code: string | undefined;
+      try {
+        const j = (await res.json()) as { code?: unknown };
+        if (typeof j.code === "string") code = j.code;
+      } catch { /* corps absent ou illisible */ }
+      return { ok: false, status: res.status, code };
+    }
+    return { ok: true, data: (await res.json()) as T };
+  } catch {
+    return { ok: false, status: 0 };
+  }
+}
+
 /** Appel d'une route `/api/coach/*` avec le jeton de session. `status` 0 = erreur réseau. */
 export async function coachApi<T>(path: string, init?: { method?: string; body?: unknown }): Promise<CoachApiResult<T>> {
   try {

@@ -74,9 +74,13 @@ describe("recherche", () => {
 });
 
 describe("séparation Académie / médiathèque", () => {
-  test("le menu Coach n'a aucune entrée « médiathèque » mais l'Académie", () => {
+  test("le menu Coach a les DEUX, comme deux espaces distincts : l'Académie (catalogue protégé) et la médiathèque (lecture seule)", () => {
     const routes = COACH_GROUPS.flatMap((g) => g.dests).map((d) => (d.kind === "route" ? d.href : ""));
     expect(routes).toContain("/coach/academie");
-    expect(routes.join(" ")).not.toMatch(/mediatheque|m[ée]diath/i);
+    expect(routes).toContain("/coach/mediatheque");
+  });
+  test("les internes de l'Académie (slugs, chemins de stockage) restent isolés de la médiathèque générale", () => {
+    expect(isAcademieSlug("mediatheque")).toBe(false);
+    expect(storagePathOf("/mediatheque/x.mp3")).toBeNull();
   });
 });
