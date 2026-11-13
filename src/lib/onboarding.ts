@@ -411,6 +411,22 @@ export function checkQuestionnaireCompletion(
   };
 }
 
+/** Taux minimum de questionnaire rempli (en %) pour les fonctionnalités qui en dépendent. */
+export const QUESTIONNAIRE_MIN_COMPLETION = 90;
+
+/**
+ * Seuil atteint ? Comparé sur le ratio exact (jamais sur le pourcentage arrondi) : 89,99 % ne passe pas.
+ * Un questionnaire sans aucune question attendue n'est jamais suffisant.
+ */
+export function isQuestionnaireSufficient(c: { answered: number; total: number }): boolean {
+  return c.total > 0 && (c.answered * 100) / c.total >= QUESTIONNAIRE_MIN_COMPLETION;
+}
+
+/** Pourcentage affiché : tronqué, pour ne jamais montrer « 90 % » alors que le seuil n'est pas atteint. */
+export function questionnaireDisplayPercent(c: { answered: number; total: number }): number {
+  return c.total > 0 ? Math.floor((c.answered * 100) / c.total) : 0;
+}
+
 /**
  * Complétion « effective » : même règle pour le badge, le tableau de bord, le profil, le parrainage et
  * l'administration. Une vision du mariage déjà renseignée dans `profiles.marriage_vision` (inscription ou

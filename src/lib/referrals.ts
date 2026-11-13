@@ -2,7 +2,7 @@
 // Voir le plan feature/referral-gold-rewards pour le détail de chaque règle.
 
 import type { getSupabaseAdmin } from "@/lib/supabase-admin";
-import { effectiveQuestionnaireCompletion } from "@/lib/onboarding";
+import { effectiveQuestionnaireCompletion, isQuestionnaireSufficient } from "@/lib/onboarding";
 
 type Db = ReturnType<typeof getSupabaseAdmin>;
 
@@ -138,7 +138,7 @@ export async function reevaluateReferral(db: Db, referredUserId: string): Promis
 
   const approved = profile.status === "approved";
   const questionnaire = effectiveQuestionnaireCompletion((profile.questionnaire as Record<string, unknown>) || {}, profile, { excludeOptional: true });
-  const questionnaireDone = questionnaire.total > 0 && questionnaire.percentage === 100 && !!profile.onboarding_completed;
+  const questionnaireDone = isQuestionnaireSufficient(questionnaire) && !!profile.onboarding_completed;
 
   const cfg = await readReferralConfig(db);
   const reviewDelayElapsed = Date.now() - new Date(referral.created_at).getTime() >= cfg.reviewDelayDays * 24 * 60 * 60 * 1000;

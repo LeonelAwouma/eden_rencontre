@@ -10,7 +10,7 @@
 
 import type { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getProfileCompletion } from "@/lib/profile-completion";
-import { effectiveQuestionnaireCompletion } from "@/lib/onboarding";
+import { effectiveQuestionnaireCompletion, isQuestionnaireSufficient } from "@/lib/onboarding";
 import { sendVerificationApprovedEmail } from "@/lib/email";
 
 type Db = ReturnType<typeof getSupabaseAdmin>;
@@ -55,7 +55,7 @@ export async function evaluateVerificationBadge(db: Db, userId: string): Promise
   const questionnaire = effectiveQuestionnaireCompletion(filledAnswers, p, { excludeOptional: true });
 
   const status: string = p.verification_status || "none";
-  const complete = profile.percentage === 100 && questionnaire.total > 0 && questionnaire.percentage === 100;
+  const complete = profile.percentage === 100 && isQuestionnaireSufficient(questionnaire);
   const eligible = complete && (status === "none" || status === "under_review");
 
   let granted = false;
