@@ -28,6 +28,22 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { JITSI_SPACE_PREFIX } from "@/lib/jitsi-shared";
+import { validateExternalMeetUrl, EXTERNAL_URL_ERRORS } from "@/lib/meet-external";
+
+const isExternalMeet = (m: { meet_type?: string | null; external_url?: string | null }) =>
+  m.meet_type === "external" && !!m.external_url;
+const hostOfUrl = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
+
+function MeetTypeBadge({ meet }: { meet: { meet_type?: string | null; external_url?: string | null } }) {
+  const ext = isExternalMeet(meet);
+  return (
+    <span className={cn("inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border",
+      ext ? "text-[#1D4ED8] bg-[#EFF6FF] border-[#BFDBFE]" : "text-[#486B46] bg-[#EEF5EC] border-[#D4E8CF]")}>
+      {ext ? <ExternalLink className="w-3 h-3" /> : <Video className="w-3 h-3" />}
+      {ext ? "Plateforme externe" : "Jitsi Eden"}
+    </span>
+  );
+}
 
 /* ───────────────────────── Types ──────────────────────────── */
 
@@ -46,6 +62,8 @@ interface MeetSpace {
   meeting_uri: string | null;
   meeting_code: string | null;
   space_name: string | null;
+  meet_type?: string | null;
+  external_url?: string | null;
   start_time: string;
   duration: number;
   created_by: string | null;
@@ -231,7 +249,7 @@ export default function AdminMeetsPage() {
               <h3 className="text-[15px] font-bold text-[#7A5410] mb-1">Visioconférence non configurée</h3>
               <p className="text-[13px] text-[#7A5410] leading-relaxed">
                 Ajoutez les variables <strong>JAAS_APP_ID</strong>, <strong>JAAS_API_KEY_ID</strong> et <strong>JAAS_PRIVATE_KEY</strong>
-                {" "}(console Jitsi JaaS 8x8) dans l&apos;environnement, puis redéployez. Sans elles, aucune salle ne peut être créée.
+                {" "}(console Jitsi JaaS 8x8) dans l&apos;environnement, puis redéployez. Sans elles, aucune salle Jitsi ne peut être créée ; les réunions sur lien externe (Google Meet, Zoom…) restent possibles.
               </p>
             </div>
           </div>
@@ -244,7 +262,7 @@ export default function AdminMeetsPage() {
           <h1 className="text-[24px] font-bold text-[#1a1a1a] tracking-tight" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>
             Visioconférences
           </h1>
-          <p className="text-[13px] text-[#9CA3AF] mt-0.5 font-medium">Créez des réunions vidéo Jitsi et envoyez les invitations par e-mail</p>
+          <p className="text-[13px] text-[#9CA3AF] mt-0.5 font-medium">Créez des réunions vidéo (salle Jitsi ou lien externe) et envoyez les invitations par e-mail</p>
         </div>
         <button onClick={() => setShowCreateModal(true)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold shadow-[0_4px_16px_rgba(72,107,70,0.3)] hover:shadow-[0_6px_24px_rgba(72,107,70,0.4)] hover:-translate-y-0.5 transition-all">
           <Plus className="w-4 h-4" /> Créer une visioconférence
@@ -327,12 +345,16 @@ export default function AdminMeetsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="text-[15px] font-bold text-[#1a1a1a] truncate">{meet.title}</h3>
+                      <MeetTypeBadge meet={meet} />
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-bold" style={{ color: statusCfg.color, backgroundColor: `color-mix(in srgb, ${statusCfg.color} 10%, transparent)` }}>
                         {statusCfg.label}
                       </span>
                     </div>
 
                     {meet.description && <p className="text-[12px] text-[#9CA3AF] mb-2 line-clamp-1">{meet.description}</p>}
+                    {isExternalMeet(meet) && (
+                      <p className="text-[12px] text-[#1D4ED8] mb-2 truncate">{hostOfUrl(meet.external_url!)} · <span className="text-[#9CA3AF]">{meet.external_url}</span></p>
+                    )}
 
                     <div className="flex flex-wrap items-center gap-3 text-[12px] text-[#6B7280]">
                       <span className="flex items-center gap-1"><Clock className="w-3.5 h-3.5" /> {time} · {meet.duration} min</span>
@@ -352,7 +374,11 @@ export default function AdminMeetsPage() {
                   {/* Actions */}
                   <div className="flex items-center gap-2 flex-shrink-0">
                     {meet.status === "active" && (
-                      meet.space_name?.startsWith(JITSI_SPACE_PREFIX) ? (
+                      isExternalMeet(meet) ? (
+                        <a href={meet.external_url!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#486B46] text-white text-[12px] font-semibold transition-all">
+                          <ExternalLink className="w-3.5 h-3.5" /> Ouvrir la réunion
+                        </a>
+                      ) : meet.space_name?.startsWith(JITSI_SPACE_PREFIX) ? (
                         <Link href={`/admin/meets/${meet.id}/salle`} className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#486B46] text-white text-[12px] font-semibold hover:bg-[#486B46] transition-all">
                           <Video className="w-3.5 h-3.5" /> Rejoindre
                         </Link>
@@ -386,6 +412,14 @@ export default function AdminMeetsPage() {
                             exit={{ opacity: 0, scale: 0.95, y: -4 }}
                             className="absolute right-0 top-full mt-1 w-52 bg-white rounded-xl border border-[#E5E7EB] shadow-[0_8px_32px_rgba(0,0,0,0.08)] py-1.5 z-20"
                           >
+                            {isExternalMeet(meet) && (
+                              <button
+                                onClick={() => { navigator.clipboard.writeText(meet.external_url!); setSuccessBanner("Lien copié !"); setActionMenuId(null); }}
+                                className="w-full flex items-center gap-2.5 px-3.5 py-2 text-[13px] font-medium text-[#374151] hover:bg-[#F9FAFB] transition-all"
+                              >
+                                <Copy className="w-3.5 h-3.5 text-[#9CA3AF]" /> Copier le lien
+                              </button>
+                            )}
                             {meet.meeting_uri && (
                               <button
                                 onClick={() => { navigator.clipboard.writeText(meet.meeting_uri!); setSuccessBanner("Lien copié !"); setActionMenuId(null); }}
@@ -485,6 +519,9 @@ function CreateMeetModal({ onClose, onCreated }: {
     time: "18:00",
     duration: 60,
   });
+  const [meetType, setMeetType] = useState<"jitsi" | "external">("jitsi");
+  const [externalUrl, setExternalUrl] = useState("");
+  const urlCheck = meetType === "external" ? validateExternalMeetUrl(externalUrl) : null;
   const [loading, setLoading] = useState(false);
   const [fetchingUsers, setFetchingUsers] = useState(true);
   const [step, setStep] = useState<"details" | "users">("details");
@@ -533,11 +570,12 @@ function CreateMeetModal({ onClose, onCreated }: {
   };
 
   const canProceed = step === "details"
-    ? form.title.trim() && form.date && form.time
+    ? form.title.trim() && form.date && form.time && (meetType === "jitsi" || urlCheck?.ok)
     : selectedUserIds.length > 0;
 
   const handleSubmit = async () => {
     if (!form.title.trim() || !form.date || !form.time || selectedUserIds.length === 0) return;
+    if (meetType === "external" && !urlCheck?.ok) return;
 
     setLoading(true);
     try {
@@ -552,6 +590,8 @@ function CreateMeetModal({ onClose, onCreated }: {
           start_time,
           duration: form.duration,
           user_ids: selectedUserIds,
+          meet_type: meetType,
+          ...(meetType === "external" ? { external_url: externalUrl.trim() } : {}),
         }),
       });
 
@@ -595,6 +635,44 @@ function CreateMeetModal({ onClose, onCreated }: {
         <div className="flex-1 overflow-y-auto px-6 py-5">
           {step === "details" ? (
             <div className="space-y-4">
+              <div>
+                <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Type de réunion</label>
+                <div className="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Type de réunion">
+                  {([
+                    ["jitsi", "Salle Jitsi Eden", "Créée et sécurisée automatiquement"],
+                    ["external", "Lien externe", "Google Meet, Zoom, Teams…"],
+                  ] as const).map(([key, label, hint]) => (
+                    <button key={key} type="button" role="radio" aria-checked={meetType === key} onClick={() => setMeetType(key)}
+                      className={cn("text-left rounded-xl border px-3.5 py-2.5 transition-all",
+                        meetType === key ? "border-[#486B46] bg-[#EEF5EC]" : "border-[#E5E7EB] hover:bg-[#F9FAFB]")}>
+                      <p className="text-[13px] font-semibold text-[#1a1a1a]">{label}</p>
+                      <p className="text-[11px] text-[#6B7280]">{hint}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {meetType === "external" && (
+                <div>
+                  <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Lien de la visioconférence *</label>
+                  <input type="url" inputMode="url" value={externalUrl} onChange={(e) => setExternalUrl(e.target.value)}
+                    placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                    className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46]" />
+                  {externalUrl.trim() && urlCheck && (urlCheck.ok ? (
+                    <div className="mt-2 rounded-xl border border-[#D4E8CF] bg-[#EEF5EC] px-3.5 py-2.5">
+                      <p className="text-[11px] font-semibold text-[#486B46] uppercase tracking-wider">Aperçu</p>
+                      <a href={urlCheck.url} target="_blank" rel="noopener noreferrer" className="text-[13px] font-semibold text-[#1a1a1a] hover:underline">{urlCheck.host}</a>
+                      <p className="text-[11px] text-[#6B7280] break-all">{urlCheck.url}</p>
+                    </div>
+                  ) : (
+                    <p className="mt-1.5 text-[12px] text-[#EF4444]">{EXTERNAL_URL_ERRORS[urlCheck.reason]}</p>
+                  ))}
+                  <p className="text-[11px] text-[#6B7280] mt-1.5">
+                    Les invités reçoivent un lien Eden : le lien externe ne leur est révélé qu&apos;après vérification de leur invitation et du créneau.
+                  </p>
+                </div>
+              )}
+
               <div>
                 <label className="block text-[12px] font-semibold text-[#4B5563] uppercase tracking-wider mb-1.5">Titre de la réunion *</label>
                 <input type="text" value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} placeholder="Ex: Réunion mensuelle communauté" className="w-full px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#374151] placeholder:text-[#D1D5DB] focus:outline-none focus:ring-2 focus:ring-[#486B46]/20 focus:border-[#486B46]" />
@@ -845,11 +923,12 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
         <div className="bg-white rounded-[20px] border border-[#E5E7EB] p-6 mb-4">
           <div className="flex items-start justify-between mb-4">
             <div>
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex flex-wrap items-center gap-2 mb-2">
                 <h1 className="text-[22px] font-bold text-[#1a1a1a]" style={{ fontFamily: "'Plus Jakarta Sans', 'Inter', sans-serif" }}>{meet.title}</h1>
                 <span className="inline-flex items-center px-3 py-1 rounded-full text-[12px] font-bold" style={{ color: statusCfg.color, backgroundColor: `color-mix(in srgb, ${statusCfg.color} 10%, transparent)` }}>
                   {statusCfg.label}
                 </span>
+                <MeetTypeBadge meet={meet} />
               </div>
               {meet.description && <p className="text-[13px] text-[#6B7280] max-w-lg">{meet.description}</p>}
             </div>
@@ -869,6 +948,12 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
                 <p className="text-[13px] text-[#9CA3AF]">Non disponible</p>
               )}
               {meet.meeting_code && <p className="text-[12px] text-[#6B7280] mt-1">Code: <strong>{meet.meeting_code}</strong></p>}
+              {isExternalMeet(meet) && (
+                <div className="mt-2 pt-2 border-t border-[#E5E7EB]">
+                  <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-1">Lien externe ({hostOfUrl(meet.external_url!)})</p>
+                  <a href={meet.external_url!} target="_blank" rel="noopener noreferrer" className="text-[13px] font-medium text-[#1D4ED8] hover:underline break-all">{meet.external_url}</a>
+                </div>
+              )}
             </div>
             <div className="bg-[#F9FAFB] rounded-xl p-4">
               <p className="text-[11px] font-semibold text-[#9CA3AF] uppercase tracking-wider mb-1">Invitations</p>
@@ -883,7 +968,16 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
 
           {meet.meeting_uri && (
             <div className="flex flex-wrap gap-2">
-              {meet.space_name?.startsWith(JITSI_SPACE_PREFIX) ? (
+              {isExternalMeet(meet) ? (
+                <>
+                  <a href={meet.external_url!} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold transition-all">
+                    <ExternalLink className="w-4 h-4" /> Ouvrir la réunion
+                  </a>
+                  <button onClick={() => { navigator.clipboard.writeText(meet.external_url!); onResendSuccess("Lien externe copié !"); }} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#6B7280] hover:bg-[#F9FAFB] transition-all">
+                    <Copy className="w-4 h-4" /> Copier le lien externe
+                  </button>
+                </>
+              ) : meet.space_name?.startsWith(JITSI_SPACE_PREFIX) ? (
                 <Link href={`/admin/meets/${meet.id}/salle`} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#486B46] text-white text-[13px] font-semibold hover:bg-[#486B46] transition-all">
                   <ShieldCheck className="w-4 h-4" /> Rejoindre comme modérateur
                 </Link>
@@ -893,7 +987,7 @@ function MeetDetailView({ meetId, onBack, onResendSuccess }: {
                 </a>
               )}
               <button onClick={copyLink} className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-[#E5E7EB] text-[13px] font-medium text-[#6B7280] hover:bg-[#F9FAFB] transition-all">
-                <Copy className="w-4 h-4" /> Copier le lien
+                <Copy className="w-4 h-4" /> Copier le lien d&apos;invitation
               </button>
             </div>
           )}

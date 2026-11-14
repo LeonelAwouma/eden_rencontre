@@ -25,7 +25,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const db = getSupabaseAdmin();
   const { data: meet } = await db
     .from("meets")
-    .select("id, title, description, start_time, duration, status, space_name")
+    // select("*") : tolère une base où meet_type/external_url n'existent pas encore.
+    .select("*")
     .eq("id", id)
     .single();
 
@@ -54,6 +55,12 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     return NextResponse.json({ error: "Cette réunion est terminée.", code: "closed", meet: info }, { status: 410 });
   }
 
+  // Réunion sur plateforme externe : tous les contrôles ci-dessus (session, invitation,
+  // statut, créneau) sont passés ; seul maintenant le lien est révélé au navigateur.
+  if (meet.meet_type === "external" && meet.external_url) {
+    return NextResponse.json({ kind: "external", meet: info, externalUrl: meet.external_url });
+  }
+
   const room = roomOf(meet);
   if (!room) return NextResponse.json({ error: "Cette réunion utilise un ancien lien externe.", code: "legacy", meet: info }, { status: 409 });
   if (!isJitsiConfigured()) return NextResponse.json({ error: "La visioconférence n'est pas disponible pour le moment.", code: "not_configured", meet: info }, { status: 503 });
@@ -68,5 +75,5 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
     avatar: absoluteAvatarUrl(profile?.avatar_url),
   }, false, ((meet.duration || 60) + CLOSES_AFTER_MIN + OPENS_BEFORE_MIN) * 60);
 
-  return NextResponse.json({ meet: info, ...join });
+  return NextResponse.json({ kind: "jitsi", meet: info, ...join });
 }

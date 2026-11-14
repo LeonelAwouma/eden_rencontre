@@ -21,11 +21,18 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ id:
   const { id } = await params;
   const { data: meet } = await getSupabaseAdmin()
     .from("meets")
-    .select("id, title, start_time, duration, status, space_name")
+    .select("*")
     .eq("id", id)
     .single();
 
   if (!meet) return NextResponse.json({ error: "Réunion introuvable." }, { status: 404 });
+  if (meet.meet_type === "external" && meet.external_url) {
+    return NextResponse.json({
+      kind: "external",
+      externalUrl: meet.external_url,
+      meet: { id: meet.id, title: meet.title, start_time: meet.start_time, duration: meet.duration, status: meet.status },
+    });
+  }
   const room = roomOf(meet);
   if (!room) return NextResponse.json({ error: "Cette réunion utilise l'ancien lien Google Meet." }, { status: 409 });
   if (!isJitsiConfigured()) return NextResponse.json({ error: "La visioconférence n'est pas configurée." }, { status: 503 });

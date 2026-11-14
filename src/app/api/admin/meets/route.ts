@@ -3,6 +3,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { isJitsiConfigured, newRoomName, memberJoinUrl, JITSI_SPACE_PREFIX } from "@/lib/jitsi";
 import { requireAdmin } from "@/lib/admin-auth";
 import { sendMeetInvitationEmail } from "@/lib/email";
+import { validateExternalMeetUrl, EXTERNAL_URL_ERRORS } from "@/lib/meet-external";
 
 // ── GET — List all meets with invitations summary ─────────────
 export async function GET(req: NextRequest) {
@@ -141,7 +142,10 @@ export async function POST(req: NextRequest) {
       start_time,
       duration = 60,
       user_ids,
+      meet_type,
+      external_url,
     } = body;
+    const isExternal = meet_type === "external";
 
     // Validate required fields
     if (!title || !start_time) {
@@ -158,13 +162,31 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const durationMin = Number(duration);
+    if (!Number.isFinite(durationMin) || durationMin < 5 || durationMin > 1440) {
+      return NextResponse.json({ error: "Durée invalide (5 à 1440 minutes)." }, { status: 400 });
+    }
+    if (Number.isNaN(new Date(start_time).getTime())) {
+      return NextResponse.json({ error: "Date de début invalide." }, { status: 400 });
+    }
+
+    // Lien externe : validé ici (source de vérité), jamais seulement côté navigateur.
+    let externalUrl: string | null = null;
+    if (isExternal) {
+      const check = validateExternalMeetUrl(external_url);
+      if (!check.ok) {
+        return NextResponse.json({ error: EXTERNAL_URL_ERRORS[check.reason] }, { status: 400 });
+      }
+      externalUrl = check.url;
+    }
+
     // Sanitize title and description
     const cleanTitle = title.trim().substring(0, 255);
     const cleanDescription = description ? description.trim().substring(0, 2000) : null;
 
     // La salle Jitsi ne peut s'ouvrir que si JaaS est configuré : sans lui,
     // on refuse plutôt que d'envoyer des invitations sans salle.
-    if (!isJitsiConfigured()) {
+    if (!isExternal && !isJitsiConfigured()) {
       return NextResponse.json(
         { error: "La visioconférence n'est pas encore configurée (variables JAAS_APP_ID, JAAS_API_KEY_ID et JAAS_PRIVATE_KEY manquantes)." },
         { status: 503 }
@@ -175,7 +197,7 @@ export async function POST(req: NextRequest) {
     // Le lien d'invitation pointe vers notre page /reunion/<id>, qui vérifie
     // que le membre est connecté et invité avant de lui ouvrir la salle.
     const meetId = crypto.randomUUID();
-    const room = newRoomName(cleanTitle);
+    const room = isExternal ? null : newRoomName(cleanTitle);
     const joinUrl = memberJoinUrl(meetId);
 
     const { data: meet, error: insertError } = await supabase
@@ -186,9 +208,11 @@ export async function POST(req: NextRequest) {
         description: cleanDescription,
         meeting_uri: joinUrl,
         meeting_code: null,
-        space_name: `${JITSI_SPACE_PREFIX}${room}`,
+        space_name: room ? `${JITSI_SPACE_PREFIX}${room}` : null,
+        // Colonnes ajoutées seulement pour l'externe : une réunion Jitsi s'insère comme avant.
+        ...(isExternal ? { meet_type: "external", external_url: externalUrl } : {}),
         start_time: new Date(start_time).toISOString(),
-        duration,
+        duration: durationMin,
         created_by: admin.adminId === "env-admin" ? null : admin.adminId,
         status: "active",
       })
@@ -256,7 +280,7 @@ export async function POST(req: NextRequest) {
           meetingTitle: cleanTitle,
           meetingDescription: cleanDescription,
           meetingDate: meetDate,
-          duration,
+          duration: durationMin,
           meetLink,
           meetingCode: null,
           adminMessage: cleanDescription,
