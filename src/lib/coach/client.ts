@@ -17,7 +17,7 @@ export async function fetchActiveCoach(): Promise<boolean | null> {
 }
 
 /** Identité du coach, fournie par la garde serveur du layout `/coach` (jamais déduite côté navigateur). */
-export interface CoachMe { id: string; email: string; name: string; avatarUrl?: string | null }
+export interface CoachMe { id: string; email: string | null; name: string; avatarUrl?: string | null }
 
 /** `code` / `candidates` : code d'erreur stable de l'API (jamais un message technique) ; heures proposées si l'heure locale est ambiguë. */
 export type CoachApiResult<T> = { ok: true; data: T } | { ok: false; status: number; code?: string; candidates?: [string, string] };

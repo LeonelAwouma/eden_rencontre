@@ -14,12 +14,12 @@ export interface MemberRow {
 export interface AssignmentRow {
   id: string; coach_id: string; member_id: string; status: string; assigned_at: string; end_reason: string | null;
 }
-export interface CoachRow { user_id: string; display_name: string; email: string; active: boolean; avatar_url: string | null }
+export interface CoachRow { user_id: string; display_name: string; email: string | null; active: boolean; avatar_url: string | null }
 
 export interface OverviewItem {
   id: string; name: string; pseudo: string | null; email: string | null; status: string | null; avatar_url: string | null;
   situation: Situation;
-  coach: { id: string; name: string; email: string; active: boolean; avatar_url: string | null } | null;
+  coach: { id: string; name: string; email: string | null; active: boolean; avatar_url: string | null } | null;
   assignment: { id: string; status: string; assigned_at: string } | null;
 }
 

@@ -8,7 +8,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
  * active, profil existant avec account_type = 'coach' et status = 'approved'.
  * Toute incohérence entre les tables refuse l'accès (jamais d'accès « par défaut »).
  */
-export type ActiveCoach = { id: string; email: string; name: string };
+export type ActiveCoach = { id: string; email: string | null; name: string };
 
 /** Garde des routes réservées aux coachs : même règle que getActiveCoach (une seule définition). */
 export async function requireActiveCoach(req: NextRequest): Promise<ActiveCoach | null> {
@@ -32,7 +32,7 @@ export async function getActiveCoachByUserId(userId: string): Promise<ActiveCoac
   const p = profile.data;
   if (!coach || coach.active !== true) return null;
   if (!p || p.account_type !== "coach" || p.status !== "approved") return null;
-  return { id: userId, email: coach.email as string, name: coach.display_name as string };
+  return { id: userId, email: (coach.email as string | null) ?? null, name: coach.display_name as string };
 }
 
 export async function getActiveCoach(req: NextRequest): Promise<ActiveCoach | null> {

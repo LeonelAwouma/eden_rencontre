@@ -63,11 +63,13 @@ export function effectiveStatus(row: Pick<ResetRequestRow, "status" | "expires_a
 export async function createResetRequestForPhone(db: SupabaseClient, phone: string): Promise<boolean> {
   const { data: profile } = await db
     .from("profiles")
-    .select("id, email, name, phone")
+    .select("id, email, name, phone, account_type")
     .eq("phone", phone)
     .maybeSingle();
-  // Un compte avec e-mail réinitialise son mot de passe par le parcours e-mail.
-  if (!profile || profile.email) return false;
+  // Un membre avec e-mail réinitialise son mot de passe par le parcours e-mail. Un COACH, lui, est identifié par
+  // son numéro : son e-mail n'est qu'une coordonnée de contact (éventuellement partagée), donc la demande par
+  // téléphone reste ouverte. Le compte visé est toujours désigné par son user_id.
+  if (!profile || (profile.email && profile.account_type !== "coach")) return false;
 
   const { error } = await db.from("password_reset_requests").insert({ user_id: profile.id, phone, status: "pending" });
   if (error) {

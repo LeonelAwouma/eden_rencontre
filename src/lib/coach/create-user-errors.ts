@@ -15,7 +15,7 @@ export interface CreateUserFailure { code: CreateUserErrorCode; status: number; 
 export interface AuthErrorInfo { code?: unknown; name?: unknown; status?: unknown }
 
 const MESSAGES: Record<CreateUserErrorCode, { status: number; message: string }> = {
-  email_exists: { status: 409, message: "Cette adresse est déjà utilisée par un compte existant (membre ou autre). Utilisez une autre adresse." },
+  email_exists: { status: 409, message: "Ce numéro de téléphone est déjà associé à un compte existant. Utilisez un autre numéro." },
   weak_password: { status: 422, message: "Mot de passe refusé par la politique de sécurité : choisissez-en un plus long et aléatoire." },
   invalid_email: { status: 400, message: "Adresse e-mail refusée par le service d'authentification." },
   auth_validation_failed: { status: 400, message: "Le service d'authentification a refusé la demande (validation) : vérifiez les champs saisis." },

@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Eye, EyeOff, ArrowRight, Heart, ShieldCheck, AlertCircle, CheckCircle2 } from "lucide-react";
 import { signInWithGoogle, getSession } from "@/lib/auth";
-import { isSyntheticEmail, loginIdentifierToEmail } from "@/lib/phone-identity";
+import { isSyntheticEmail, loginIdentifierToEmail, sessionEmailFor } from "@/lib/phone-identity";
 import { Monogram } from "@/components/ornaments";
 import { ImposingFloralCorners } from "@/components/garden";
 import { useI18n } from "@/lib/i18n";
@@ -119,19 +119,24 @@ export default function LoginPage() {
           setIsLoading(false);
           return;
         }
-        setError(data.error || data.message || t("login.errorConnection"));
+        const base = data.error || data.message || t("login.errorConnection");
+        setError(data.hint === "shared_email_use_phone" ? `${base} ${t("login.errorSharedEmail")}` : base);
         setIsLoading(false);
         return;
       }
 
       // Also sign in on client-side Supabase for session continuity
-      // The server already validated, so we can use the client-side signIn
+      // The server already validated, so we can use the client-side signIn.
+      // Adresse Auth fournie par le serveur : un ancien coach connecté par numéro garde son adresse réelle.
       const { supabase } = await import("@/lib/supabase");
       if (supabase) {
-        await supabase.auth.signInWithPassword({
-          email: loginEmail,
+        const { error: syncError } = await supabase.auth.signInWithPassword({
+          email: sessionEmailFor(data.sessionEmail, loginEmail),
           password,
         });
+        // Non bloquant : la connexion est déjà validée par le serveur (cookies posés) ; la reconnexion
+        // automatique de la page rétablira la session navigateur au besoin.
+        if (syncError) console.warn("[login] synchronisation de la session navigateur impossible");
       }
 
       router.push(postLoginDestination(data.user?.role === "coach" ? "coach" : "member", new URLSearchParams(window.location.search).get("next")));

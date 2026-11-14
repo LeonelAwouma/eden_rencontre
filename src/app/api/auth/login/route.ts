@@ -3,7 +3,8 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getSupabaseAuthClient } from "@/lib/supabase-auth-server";
 import { checkRateLimit, recordRateLimit } from "@/lib/otp";
 import { clientIp } from "@/lib/api-auth";
-import { isSyntheticEmail, loginIdentifierToEmail, realEmailOrNull } from "@/lib/phone-identity";
+import { isSyntheticEmail, loginIdentifierToEmail, normalizePhone, realEmailOrNull } from "@/lib/phone-identity";
+import { resolveAuthEmailForPhone } from "@/lib/coach/auth-email";
 
 // Échecs tolérés sur 15 minutes avant blocage temporaire : par compte visé
 // (essais de mots de passe sur une adresse) et par adresse IP (essais en masse).
@@ -71,8 +72,20 @@ export async function POST(request: NextRequest) {
     // Les lectures/écritures administratives utilisent un AUTRE client service_role, jamais contaminé.
     const authClient = getSupabaseAuthClient();
     const db = getSupabaseAdmin();
+
+    // Connexion par numéro : le compte est résolu en base AVANT l'authentification (anciens coachs = adresse Auth
+    // réelle ; nouveaux coachs et membres « téléphone seul » = adresse technique). Échec de lecture : refus 503.
+    let authEmail = cleanEmail;
+    let expectedCoachId: string | null = null;
+    if (phoneLogin) {
+      const resolved = await resolveAuthEmailForPhone(db, normalizePhone(email) ?? "");
+      if (!resolved.ok) return accountLookupUnavailable(db, undefined, "du numéro de téléphone", null);
+      authEmail = resolved.authEmail;
+      expectedCoachId = resolved.coachUserId;
+    }
+
     const { data: authData, error: authError } = await authClient.auth.signInWithPassword({
-      email: cleanEmail,
+      email: authEmail,
       password,
     });
 
@@ -80,7 +93,11 @@ export async function POST(request: NextRequest) {
       if (/Invalid login credentials/i.test(authError.message)) {
         await Promise.all([recordRateLimit(emailKey, "login_failure"), recordRateLimit(ipKey, "login_failure")]);
         return NextResponse.json(
-          { error: phoneLogin ? "Numéro ou mot de passe incorrect." : "Email ou mot de passe incorrect." },
+          {
+            error: phoneLogin ? "Numéro ou mot de passe incorrect." : "Email ou mot de passe incorrect.",
+            // Indice générique (identique pour toute adresse : ne révèle l'existence d'aucun compte).
+            ...(phoneLogin ? {} : { hint: "shared_email_use_phone" }),
+          },
           { status: 401 }
         );
       }
@@ -99,6 +116,15 @@ export async function POST(request: NextRequest) {
     }
 
     const accessToken = authData.session?.access_token;
+
+    // Le compte authentifié doit être exactement celui que le numéro désigne (aucun accès croisé entre coachs).
+    if (expectedCoachId && userId !== expectedCoachId) {
+      console.error("[login] identité Auth différente du coach résolu par téléphone");
+      if (accessToken) {
+        try { await db.auth.admin.signOut(accessToken); } catch { /* best effort */ }
+      }
+      return NextResponse.json({ error: "Numéro ou mot de passe incorrect." }, { status: 401 });
+    }
 
     // Lecture du profil via service_role : le client Auth public porte désormais le JWT du coach.
     let { data: profile, error: profileError } = await db
@@ -209,6 +235,9 @@ export async function POST(request: NextRequest) {
         status,
         role: isCoachAccount ? "coach" : "member",
       },
+      // Réservé à la synchronisation de la session Supabase du navigateur (adresse Auth de CE compte,
+      // jamais une coordonnée de contact).
+      sessionEmail: authEmail,
     });
 
     if (authData.session) {

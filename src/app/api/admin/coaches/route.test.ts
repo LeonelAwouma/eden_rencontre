@@ -132,7 +132,7 @@ const seedCoach = (over: Row = {}, profile: Row | null = { id: ID, status: "appr
   if (profile) w.tables.profiles.set(ID, profile);
 };
 const actions = () => w.spies.audit.map((a) => a[2]);
-const VALID = { name: "Awa", email: "Awa@X.fr", password: "motdepasse123" };
+const VALID = { name: "Awa", email: "Awa@X.fr", phone: "+237 690 12 34 56", password: "motdepasse123" };
 
 beforeEach(() => {
   w.admin = true; w.rateOk = true; w.fail = {};
@@ -592,6 +592,78 @@ describe("suppression", () => {
     const { DELETE } = await import("./route");
     expect((await DELETE(call("DELETE", { id: ID }))).status).toBe(500);
     expect(actions()).toEqual([]);
+  });
+});
+
+describe("identification par téléphone", () => {
+  const body = (over: Record<string, unknown>) => call("POST", { ...VALID, ...over });
+
+  test("le numéro est normalisé en E.164, devient l'identifiant Auth technique et est enregistré dans profiles.phone", async () => {
+    const { POST } = await import("./route");
+    const res = await POST(call("POST", VALID));
+    expect(res.status).toBe(201);
+    expect(w.spies.create[0]).toMatchObject({ email: "237690123456@phone.eden.invalid" });
+    expect(w.tables.profiles.get(ID)).toMatchObject({ phone: "+237690123456", email: "awa@x.fr" });
+    expect(w.tables.coach_accounts.get(ID)).toMatchObject({ email: "awa@x.fr" });
+    const json = await res.json();
+    expect(json.phone).toBe("+237690123456");
+    expect(json.email).toBe("awa@x.fr");
+    expect(JSON.stringify(json)).not.toContain("phone.eden.invalid");
+  });
+
+  test("numéro obligatoire et au format international : 400 sans aucune création", async () => {
+    const { POST } = await import("./route");
+    for (const phone of [undefined, "", "690123456", "+23", "abc"]) {
+      const res = await POST(body({ phone }));
+      expect(res.status).toBe(400);
+      expect((await res.json()).code).toBe("phone_invalid");
+    }
+    expect(w.spies.create).toHaveLength(0);
+  });
+
+  test("numéro déjà attribué (membre ou coach) : 409 phone_exists avant toute création", async () => {
+    w.tables.profiles.set("autre", { id: "autre", phone: "+237690123456", account_type: "member" });
+    const { POST } = await import("./route");
+    const res = await POST(call("POST", VALID));
+    expect(res.status).toBe(409);
+    expect((await res.json()).code).toBe("phone_exists");
+    expect(w.spies.create).toHaveLength(0);
+  });
+
+  test("lecture impossible du propriétaire du numéro : 503 (fermé par défaut), aucune création", async () => {
+    w.fail["profiles:select"] = true;
+    const { POST } = await import("./route");
+    expect((await POST(call("POST", VALID))).status).toBe(503);
+    expect(w.spies.create).toHaveLength(0);
+  });
+
+  test("e-mail de contact facultatif : création sans e-mail acceptée", async () => {
+    const { POST } = await import("./route");
+    const res = await POST(body({ email: "" }));
+    expect(res.status).toBe(201);
+    expect((await res.json()).email).toBeNull();
+    expect(w.tables.coach_accounts.get(ID)?.email).toBeNull();
+  });
+
+  test("e-mail de contact invalide : 400", async () => {
+    const { POST } = await import("./route");
+    expect((await POST(body({ email: "pas-un-email" }))).status).toBe(400);
+  });
+
+  test("le journal d'audit ne contient ni le numéro en clair ni l'e-mail", async () => {
+    const { POST } = await import("./route");
+    await POST(call("POST", VALID));
+    const details = JSON.stringify(w.spies.audit[0]?.[5]);
+    expect(details).not.toContain("690123456");
+    expect(details).not.toContain("awa@x.fr");
+  });
+
+  test("la liste renvoie le téléphone et le vrai contact, jamais l'adresse technique", async () => {
+    seedCoach({ email: "237690123456@phone.eden.invalid" }, { id: ID, status: "approved", account_type: "coach", phone: "+237690123456" });
+    const { GET } = await import("./route");
+    const [coach] = (await (await GET()).json()).coaches;
+    expect(coach.phone).toBe("+237690123456");
+    expect(coach.email).toBeNull();
   });
 });
 
