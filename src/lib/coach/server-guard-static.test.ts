@@ -130,6 +130,23 @@ describe("déconnexion et reconnexion : cookies de session", () => {
     expect(redirectAt).toBeGreaterThan(syncAt); // redirection seulement après confirmation du serveur
   });
 
+  it("la connexion propose l'e-mail par défaut et le téléphone seulement sur choix explicite, sans changer la requête", () => {
+    const login = stripComments(read("src/app/login/page.tsx"));
+    expect(login).toContain('useState<"email" | "phone">("email")');
+    expect(login).toContain('type={idMode === "phone" ? "tel" : "email"}');
+    expect(login).toContain('name="email"'); // le numéro part toujours dans le champ « email » de /api/auth/login
+    expect(login).toContain("JSON.stringify({ email, password })");
+    // le mode ne change que sur clic du lien, jamais après une erreur de connexion
+    expect(login.match(/setIdMode\(/g)?.length).toBe(2); // un clic + préremplissage depuis ?registered=1
+    for (const loc of ["fr", "en"]) {
+      const login_ = JSON.parse(read(`src/locales/${loc}.json`)).login;
+      for (const k of ["emailIdLabel", "emailIdPlaceholder", "phoneLabel", "phonePlaceholder", "usePhoneInstead", "useEmailInstead"]) {
+        expect(login_[k], `${loc}.login.${k}`).toBeTruthy();
+      }
+      expect(login_.phonePlaceholder).toBe("+237 6XX XX XX XX");
+    }
+  });
+
   it("le paramètre « blocked » n'entraîne aucune redirection automatique de la page de connexion", () => {
     const login = stripComments(read("src/app/login/page.tsx"));
     const effect = login.slice(login.indexOf('const blocked = params.get("blocked")'));

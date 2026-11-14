@@ -11,6 +11,8 @@ export interface ChatConversation {
   name: string;
   avatar?: string | null;
   last: string;
+  /** Identifiant du sticker si le dernier message en est un (l'aperçu texte est alors vide). */
+  lastSticker?: string | null;
   when: string;
   unread: number;
 }
@@ -21,6 +23,8 @@ export interface ChatMessage {
   text: string;
   time: string;
   imageUrl?: string | null;
+  /** Identifiant du catalogue commun des stickers (forum-shared) ; text est alors vide. */
+  sticker?: string | null;
 }
 
 export interface DirectoryUser {
@@ -334,11 +338,10 @@ export async function listConversations(myId: string): Promise<ChatConversation[
   }
 
   // Messages de toutes les conversations
-  const { data: msgs } = await supabase
-    .from("messages")
-    .select("conversation_id, sender_id, content, image_url, created_at")
-    .in("conversation_id", convIds)
-    .order("created_at", { ascending: true });
+  const msgs = await selectMessages(
+    (cols) => supabase!.from("messages").select(cols).in("conversation_id", convIds).order("created_at", { ascending: true }),
+    "conversation_id, sender_id, content, image_url, created_at"
+  );
 
   const convs: ChatConversation[] = convIds.map((cid: string) => {
     const rows = (msgs || []).filter((m: any) => m.conversation_id === cid);
@@ -347,6 +350,7 @@ export async function listConversations(myId: string): Promise<ChatConversation[
     const unread = rows.filter((m: any) => m.sender_id !== myId && (!lr || m.created_at > lr)).length;
     const otherId = otherByConv[cid] || "";
     const prof = profById[otherId];
+    const lastSticker: string | null = lastRow?.sticker || null;
     const preview = lastRow ? (lastRow.content || (lastRow.image_url ? "📷 Photo" : "")) : "New conversation";
     return {
       id: cid,
@@ -354,6 +358,7 @@ export async function listConversations(myId: string): Promise<ChatConversation[
       name: prof?.pseudo || prof?.name || prof?.email || "Member",
       avatar: prof?.avatar_url || null,
       last: preview,
+      lastSticker,
       when: lastRow ? fmt(lastRow.created_at) : "",
       unread,
     };
@@ -366,18 +371,29 @@ export async function listConversations(myId: string): Promise<ChatConversation[
 
 export async function getMessages(convId: string, myId: string): Promise<ChatMessage[]> {
   if (!supabase) return [];
-  const { data } = await supabase
-    .from("messages")
-    .select("id, sender_id, content, image_url, created_at")
-    .eq("conversation_id", convId)
-    .order("created_at", { ascending: true });
+  const data = await selectMessages(
+    (cols) => supabase!.from("messages").select(cols).eq("conversation_id", convId).order("created_at", { ascending: true }),
+    "id, sender_id, content, image_url, created_at"
+  );
   return (data || []).map((m: any) => ({
     id: m.id,
     from: m.sender_id === myId ? "me" : "them",
     text: m.content,
     time: fmt(m.created_at),
     imageUrl: m.image_url,
+    sticker: m.sticker || null,
   }));
+}
+
+/**
+ * Lit des messages avec la colonne `sticker`. Si la migration 20261114_messages_sticker.sql
+ * n'est pas encore appliquée, on relit sans cette colonne : les conversations restent lisibles.
+ */
+async function selectMessages(run: (cols: string) => PromiseLike<{ data: any; error: any }>, cols: string): Promise<any[]> {
+  const first = await run(`${cols}, sticker`);
+  if (!first.error) return first.data || [];
+  const retry = await run(cols);
+  return retry.data || [];
 }
 
 /** Erreur renvoyée par sendChatMessage quand l'admin a restreint ou bloqué la conversation. */
@@ -396,6 +412,17 @@ export async function sendChatMessage(
   _senderId?: string,
   _receiverId?: string
 ): Promise<{ message?: ChatMessage; error?: string; moderationError?: string }> {
+  return postChatMessage({ conversationId: convId, content: content.trim(), imageUrl: imageUrl ?? null });
+}
+
+/** Envoi d'un sticker du catalogue commun : seul son identifiant voyage et est stocké. */
+export function sendChatSticker(convId: string, stickerId: string) {
+  return postChatMessage({ conversationId: convId, content: "", imageUrl: null, sticker: stickerId });
+}
+
+async function postChatMessage(
+  payload: { conversationId: string; content: string; imageUrl: string | null; sticker?: string }
+): Promise<{ message?: ChatMessage; error?: string; moderationError?: string }> {
   if (!supabase) return { error: "Supabase non configuré." };
   const token = (await supabase.auth.getSession()).data.session?.access_token;
   if (!token) return { error: "Session expirée. Veuillez vous reconnecter." };
@@ -404,7 +431,7 @@ export async function sendChatMessage(
     const res = await fetch("/api/chat/send", {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      body: JSON.stringify({ conversationId: convId, content: content.trim(), imageUrl: imageUrl ?? null }),
+      body: JSON.stringify(payload),
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.message) {
@@ -413,7 +440,7 @@ export async function sendChatMessage(
     }
     const m = data.message;
     return {
-      message: { id: m.id, from: "me", text: m.content, time: fmt(m.created_at), imageUrl: m.image_url },
+      message: { id: m.id, from: "me", text: m.content, time: fmt(m.created_at), imageUrl: m.image_url, sticker: m.sticker || null },
     };
   } catch (err) {
     console.error("[Eden] envoi message échoué:", err);

@@ -5,42 +5,67 @@
 
 /* ─────────────────────────────── Stickers ─────────────────────────────── */
 
-const FLUENT_BASE = "https://cdn.jsdelivr.net/gh/microsoft/fluentui-emoji@main/assets";
+const TWEMOJI_BASE = "https://cdn.jsdelivr.net/gh/jdecked/twemoji@15.1.0/assets/svg";
 
-function fluentStickerUrl(name: string, tone = false) {
-  const snake = name.toLowerCase().replace(/\s+/g, "_");
-  const folder = encodeURIComponent(name);
-  return tone
-    ? `${FLUENT_BASE}/${folder}/Default/3D/${snake}_3d_default.png`
-    : `${FLUENT_BASE}/${folder}/3D/${snake}_3d.png`;
+/** Illustration Twemoji d'un emoji : fichier nommé par ses points de code (fe0f omis hors séquences ZWJ). */
+export function twemojiUrl(char: string): string {
+  const cps = Array.from(char).map((c) => c.codePointAt(0)!);
+  const kept = cps.includes(0x200d) ? cps : cps.filter((cp) => cp !== 0xfe0f);
+  return `${TWEMOJI_BASE}/${kept.map((cp) => cp.toString(16)).join("-")}.svg`;
 }
 
+export type StickerCategory = "foi" | "amour" | "joie" | "encouragement" | "quotidien";
+export const STICKER_CATEGORIES: StickerCategory[] = ["foi", "amour", "joie", "encouragement", "quotidien"];
+
 /**
- * Stickers du groupe : un grand emoji 3D (Fluent, comme dans la messagerie)
- * et une légende traduite (forum.stickers.<id>). Seul l'identifiant est
- * stocké : chacun lit la légende dans sa langue.
+ * Catalogue COMMUN des stickers (forum, messagerie privée, admin du forum) :
+ * un grand emoji Twemoji et une légende traduite (forum.stickers.<id>).
+ * Seul l'identifiant est stocké : chacun lit la légende dans sa langue.
+ * Les 16 premiers identifiants sont historiques : ne jamais les renommer ni les
+ * retirer, des messages existants les référencent.
  * Ajouter un sticker = une ligne ici + la légende en FR et en EN.
  */
-export const FORUM_STICKERS: { id: string; char: string; url: string }[] = (
+export const FORUM_STICKERS: { id: string; char: string; url: string; category: StickerCategory }[] = (
   [
-    ["bonjour", "☀️", "Sun"],
-    ["bienvenue", "💐", "Bouquet"],
-    ["amen", "🙏", "Folded hands", true],
-    ["alleluia", "🙌", "Raising hands", true],
-    ["gloire", "✨", "Sparkles"],
-    ["je-prie", "🕯️", "Candle"],
-    ["parole", "📖", "Open book"],
-    ["merci", "🌹", "Rose"],
-    ["avec-amour", "💚", "Green heart"],
-    ["bravo", "👏", "Clapping hands", true],
-    ["courage", "💪", "Flexed biceps", true],
-    ["fete", "🎉", "Party popper"],
-    ["alliance", "💍", "Ring"],
-    ["rire", "😂", "Face with tears of joy"],
-    ["touche", "🥺", "Pleading face"],
-    ["bonne-nuit", "🌙", "Crescent moon"],
-  ] as [string, string, string, boolean?][]
-).map(([id, char, name, tone]) => ({ id, char, url: fluentStickerUrl(name, tone) }));
+    // — historiques —
+    ["bonjour", "☀️", "quotidien"],
+    ["bienvenue", "💐", "quotidien"],
+    ["amen", "🙏", "foi"],
+    ["alleluia", "🙌", "foi"],
+    ["gloire", "✨", "foi"],
+    ["je-prie", "🕯️", "foi"],
+    ["parole", "📖", "foi"],
+    ["merci", "🌹", "amour"],
+    ["avec-amour", "💚", "amour"],
+    ["bravo", "👏", "encouragement"],
+    ["courage", "💪", "encouragement"],
+    ["fete", "🎉", "joie"],
+    ["alliance", "💍", "amour"],
+    ["rire", "😂", "joie"],
+    ["touche", "🥺", "quotidien"],
+    ["bonne-nuit", "🌙", "quotidien"],
+    // — ajouts —
+    ["croix", "✝️", "foi"],
+    ["colombe", "🕊️", "foi"],
+    ["eglise", "⛪", "foi"],
+    ["benediction", "🤲", "foi"],
+    ["espoir", "🌈", "encouragement"],
+    ["force", "🦁", "encouragement"],
+    ["felicitations", "🏆", "encouragement"],
+    ["oui", "👍", "encouragement"],
+    ["etoile", "⭐", "encouragement"],
+    ["coeur", "❤️", "amour"],
+    ["paix", "🤍", "amour"],
+    ["calin", "🤗", "amour"],
+    ["ami", "🤝", "amour"],
+    ["sourire", "😊", "joie"],
+    ["joie", "😄", "joie"],
+    ["tournesol", "🌻", "joie"],
+    ["cafe", "☕", "quotidien"],
+    ["pensee", "💭", "quotidien"],
+    ["bon-appetit", "🍽️", "quotidien"],
+  ] as [string, string, StickerCategory][]
+).map(([id, char, category]) => ({ id, char, url: twemojiUrl(char), category }));
 
 export const findSticker = (id: string | null | undefined) => FORUM_STICKERS.find((s) => s.id === id) ?? null;
 

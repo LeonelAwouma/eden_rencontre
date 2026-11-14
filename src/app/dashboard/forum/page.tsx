@@ -495,7 +495,7 @@ function ForumGroup() {
                 )}
 
                 {panel !== "none" && (
-                  <div className="mb-2 rounded-2xl border border-border bg-card max-h-[min(240px,calc(var(--app-vh,100dvh)-14rem))] overflow-y-auto custom-scrollbar">
+                  <div className="mb-2 rounded-2xl border border-border bg-card max-h-[min(340px,calc(var(--app-vh,100dvh)-14rem))] overflow-y-auto custom-scrollbar shadow-[0_8px_30px_rgba(38,70,52,0.10)]">
                     {panel === "sticker" ? (
                       <StickerPicker labelFor={stickerLabel} onPick={(id) => send(id)} />
                     ) : (

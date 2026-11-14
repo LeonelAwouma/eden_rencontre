@@ -423,7 +423,7 @@ export default function AdminForumPage() {
               </div>
             )}
             {panel !== "none" && (
-              <div className="mb-2 rounded-xl border border-border max-h-[220px] overflow-y-auto">
+              <div className="mb-2 rounded-2xl border border-border bg-white max-h-[340px] overflow-y-auto shadow-[0_8px_30px_rgba(38,70,52,0.10)]">
                 {panel === "sticker" ? <StickerPicker labelFor={stickerLabelFr} onPick={(id) => send(id)} /> : (
                   <div className="p-2 space-y-2">
                     {EMOJI_CATEGORIES.map((g) => (

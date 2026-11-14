@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { requireAdmin } from "@/lib/admin-auth";
 import { sendMeetInvitationEmail } from "@/lib/email";
+import { memberJoinUrl, roomOf } from "@/lib/jitsi";
 
 // ── POST — Resend a failed invitation ─────────────────────────
 export async function POST(
@@ -63,6 +64,22 @@ export async function POST(
       );
     }
 
+    // Pas de rappel pour une réunion annulée ou terminée.
+    if (meet.status !== "active") {
+      return NextResponse.json(
+        { error: "Cette réunion est annulée ou terminée : l'invitation ne peut pas être renvoyée." },
+        { status: 409 }
+      );
+    }
+
+    // Le lien envoyé est toujours celui d'Eden (/reunion/<id>), qui vérifie l'invité
+    // avant de révéler la salle ou le lien externe. On ne se fie pas à meeting_uri
+    // stocké (anciennes lignes : lien Google Meet direct).
+    // Seules les très anciennes réunions Google Meet (ni salle Jitsi, ni lien externe)
+    // gardent leur lien d'origine, la page Eden ne pouvant pas les ouvrir.
+    const isLegacy = meet.meet_type !== "external" && !roomOf(meet);
+    const eden_link = isLegacy && meet.meeting_uri ? meet.meeting_uri : memberJoinUrl(meet.id);
+
     // Send the email
     const meetDate = new Date(meet.start_time);
     const emailSent = await sendMeetInvitationEmail({
@@ -72,7 +89,7 @@ export async function POST(
       meetingDescription: meet.description,
       meetingDate: meetDate,
       duration: meet.duration,
-      meetLink: meet.meeting_uri,
+      meetLink: eden_link,
       meetingCode: meet.meeting_code,
       adminMessage: meet.description,
     });
@@ -105,7 +122,7 @@ export async function POST(
           notification_type: "meet_invitation",
           link: `/reunion/${meet.id}`,
           title: "Invitation à une visioconférence (rappel)",
-          message: `Rappel : vous êtes invité(e) à la visioconférence « ${meet.title} » le ${formattedDate}.${meet.meeting_uri ? " Lien : " + meet.meeting_uri : ""}`,
+          message: `Rappel : vous êtes invité(e) à la visioconférence « ${meet.title} » le ${formattedDate}. Lien : ${eden_link}`,
         };
         const { error: notifError } = await supabase.from("meeting_notifications").insert({ ...notifRow, link });
         if (notifError) {

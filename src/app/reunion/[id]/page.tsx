@@ -3,7 +3,7 @@
 import { use, useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CalendarClock, Loader2, Lock, RefreshCw, Video } from "lucide-react";
+import { ArrowLeft, CalendarClock, ExternalLink, Loader2, Lock, RefreshCw, Video } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { Monogram } from "@/components/ornaments";
 import { MemberGate } from "@/components/member-gate";
@@ -15,9 +15,12 @@ interface MeetInfo { id: string; title: string; description: string | null; star
 type RoomState =
   | { kind: "loading" }
   | { kind: "ready"; meet: MeetInfo; join: JitsiJoin }
+  | { kind: "external"; meet: MeetInfo; url: string }
   | { kind: "blocked"; code: string; message: string; meet?: MeetInfo };
 
-const formatWhen = (iso: string) =>
+const hostOf = (url: string) => { try { return new URL(url).hostname.replace(/^www\./, ""); } catch { return "externe"; } };
+
+const formatWhen =(iso: string) =>
   new Date(iso).toLocaleString("fr-FR", { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
 
 /**
@@ -43,6 +46,7 @@ function ReunionPageContent({ params }: { params: Promise<{ id: string }> }) {
       const data = await res.json();
       if (res.status === 401) { router.replace(`/login?next=${encodeURIComponent(`/reunion/${id}`)}`); return; }
       if (!res.ok) setState({ kind: "blocked", code: data.code || "error", message: data.error || "Impossible d'ouvrir la salle.", meet: data.meet });
+      else if (data.kind === "external" && data.externalUrl) setState({ kind: "external", meet: data.meet, url: data.externalUrl });
       else setState({ kind: "ready", meet: data.meet, join: data });
     } catch {
       setState({ kind: "blocked", code: "error", message: "Connexion impossible. Vérifiez votre réseau puis réessayez." });
@@ -51,7 +55,7 @@ function ReunionPageContent({ params }: { params: Promise<{ id: string }> }) {
 
   useEffect(() => { load(); }, [load]);
 
-  const meet = state.kind === "ready" || state.kind === "blocked" ? state.meet : undefined;
+  const meet = state.kind === "ready" || state.kind === "external" || state.kind === "blocked" ? state.meet : undefined;
 
   return (
     <div className="eden-public min-h-dvh flex flex-col bg-background text-foreground">
@@ -75,6 +79,17 @@ function ReunionPageContent({ params }: { params: Promise<{ id: string }> }) {
           <div className="flex-1 min-h-[calc(100dvh-3.5rem)]">
             <JitsiRoom join={state.join} subject={state.meet.title} onLeave={() => setLeft(true)} />
           </div>
+        )}
+
+        {state.kind === "external" && (
+          <Notice icon={<Video className="w-6 h-6" />} title={state.meet.title}
+            text={`${formatWhen(state.meet.start_time)} · ${state.meet.duration} min. Cette réunion se tient sur une plateforme externe (${hostOf(state.url)}).`}>
+            {state.meet.description && <p className="basis-full text-[14px] text-[#56615A] whitespace-pre-line">{state.meet.description}</p>}
+            <a href={state.url} target="_blank" rel="noopener noreferrer" className={cn("h-11 px-6 inline-flex items-center gap-2 text-[14px]", EDEN_SOLID_BUTTON)}>
+              <ExternalLink className="w-4 h-4" /> Ouvrir la visioconférence
+            </a>
+            <Link href="/dashboard" className="h-10 px-5 inline-flex items-center rounded-full text-[14px] font-semibold text-primary hover:bg-primary/10">Retour à mon espace</Link>
+          </Notice>
         )}
 
         {state.kind === "ready" && left && (
