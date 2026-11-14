@@ -19,7 +19,8 @@ import {
   Trash2, UserPlus, ChurchIcon, Sparkles, GraduationCap, Flag, MessagesSquare,
 } from "lucide-react";
 import Image from "next/image";
-import { FORMATION_COVER_SRC } from "@/lib/formation/paths";
+import { FORMATION_COVER_SRC, FORMATION_BASE_PATH } from "@/lib/formation/paths";
+import { FirstAllianceCard } from "@/components/first-alliance-card";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -329,6 +330,10 @@ export default function DashboardPage() {
   // pilier 1 de « Bâtir sur le roc » ; les profils des autres membres exigent en plus un profil à 100 %.
   const formationDone = isPillarOneCompleteLight(formationProgress.completed);
   const canBrowseProfiles = !coachAccess && profileCompletionPct === 100 && formationDone;
+  // Accompagnement « première alliance » : rafraîchi quand une alliance change (temps réel).
+  const [allianceVersion, setAllianceVersion] = useState(0);
+  // Alliances déjà acceptées connues : une acceptation nouvelle ne déclenche qu'un seul toast.
+  const acceptedSeenRef = useRef<Set<string>>(new Set());
   const [viewingPhoto, setViewingPhoto] = useState<{ url: string; name: string } | null>(null);
   const closePhoto = useCallback(() => setViewingPhoto(null), []);
   const viewPhotoOf = (m: { avatar_url?: string | null; name: string }) => () => { if (m.avatar_url) setViewingPhoto({ url: m.avatar_url, name: m.name }); };
@@ -556,6 +561,17 @@ export default function DashboardPage() {
     await openConversation(convId);
   };
 
+  // « Envoyer mon premier message » : ouvre la conversation avec un ami déjà accepté (jamais de message
+  // automatique). La création passe par get_or_create_direct_conversation, qui exige are_friends.
+  const openFirstConversation = async (friendId: string, existingConvId: string | null): Promise<boolean> => {
+    const convId = existingConvId ?? (await startConversation(friendId));
+    if (!convId) return false;
+    await loadConversations();
+    setActiveTab("Messages");
+    await openConversation(convId);
+    return true;
+  };
+
   // Admin is always pinned at the top of Messages so a brand-new user (with no
   // matches yet) always has someone to write to. No real conversation/message
   // is created until they actually send something — see sendMessage() below.
@@ -749,6 +765,8 @@ export default function DashboardPage() {
     discoverBaseRef.current = filtered;
     setDiscoverMembers(user ? filterAndRankByReciprocalMatch({ ...user, questionnaire: questionnaireAnswers }, filtered) : filtered);
     setRelations(buildRelationMap(meId, friendships));
+    friendships.forEach((f) => { if (f.status === "accepted") acceptedSeenRef.current.add(f.id); });
+    setAllianceVersion((v) => v + 1);
     setIncomingRequests(incoming);
     setFavoriteMembers(favs);
     setFavoriteIds(new Set(favs.map((m) => m.id)));
@@ -1102,7 +1120,15 @@ export default function DashboardPage() {
         if (payload.eventType === "INSERT") toast({ title: t("dashboard.toastNewAllianceRequest") });
         loadSocial();
       })
-      .on("postgres_changes", { event: "*", schema: "public", table: "friendships", filter: `requester_id=eq.${meId}` }, () => loadSocial())
+      .on("postgres_changes", { event: "*", schema: "public", table: "friendships", filter: `requester_id=eq.${meId}` }, (payload) => {
+        // Alliance acceptée par l'autre membre : un seul toast, même si la ligne est modifiée plusieurs fois.
+        const row = payload.new as { id?: string; status?: string } | undefined;
+        if (payload.eventType === "UPDATE" && row?.status === "accepted" && row.id && !acceptedSeenRef.current.has(row.id)) {
+          acceptedSeenRef.current.add(row.id);
+          toast({ title: t("dashboard.firstAlliance.toastAcceptedTitle"), description: t("dashboard.firstAlliance.toastAcceptedDesc") });
+        }
+        loadSocial();
+      })
       .subscribe();
     return () => { supabase?.removeChannel(channel); };
   }, [meId]);
@@ -1730,6 +1756,20 @@ export default function DashboardPage() {
                     )}
                   </div>
                 )}
+
+                {/* Accompagnement : faire le premier pas vers une alliance (membres au profil vérifié uniquement) */}
+                <FirstAllianceCard
+                  userId={user?.id}
+                  verified={verificationStatus === "verified"}
+                  profileComplete={profileCompletionPct === 100}
+                  isCoach={coachAccess}
+                  pillarOneDone={formationDone || !formationSynced}
+                  refreshKey={allianceVersion}
+                  onDiscover={() => setActiveTab("Discover")}
+                  onRequests={() => setActiveTab("Requests")}
+                  onLocked={() => router.push(FORMATION_BASE_PATH)}
+                  onOpenConversation={openFirstConversation}
+                />
 
                 {/* Card 3: Upcoming Events — sous xl, affichée en tête du fil (bloc mobile first) */}
                 <div className="hidden xl:block rounded-2xl p-5"

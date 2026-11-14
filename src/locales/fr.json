@@ -1325,7 +1325,107 @@
     "generatedLabel": "Avatar généré",
     "regenerate": "Régénérer"
   },
+  "adminMatching": {
+    "title": "Matching",
+    "intro": "Une alliance acceptée permet aux deux membres d'échanger. Un match confirmé correspond à une demande d'engagement acceptée par l'autre membre. Chaque duo est suivi une seule fois, de l'invitation à la confirmation.",
+    "overviewTitle": "Vue d'ensemble",
+    "sumOk": "chaque duo est compté une seule fois",
+    "journeyTitle": "Parcours des alliances",
+    "journeyAria": "Progression du duo",
+    "stageAria": "Étape du parcours",
+    "stageSelect": "Étape du parcours",
+    "cumulative": "Toutes les alliances acceptées",
+    "cumulativeBadge": "Vue cumulative",
+    "cumulativeHint": "Vue cumulative : elle inclut les relations, les engagements en cours et les matchs confirmés. Elle n'est pas additionnée avec les catégories principales.",
+    "cards": {
+      "pending": { "label": "Demandes en attente", "hint": "Demande d'alliance sans réponse" },
+      "relation": { "label": "En relation", "hint": "Alliance acceptée, sans engagement" },
+      "engagementPending": { "label": "Engagements à valider", "hint": "« S'engager » envoyé, l'autre membre n'a pas répondu" },
+      "match": { "label": "Matchs confirmés", "hint": "Engagement accepté par les deux membres · {week} cette semaine" },
+      "declined": { "label": "Refusés", "hint": "{alliance} alliance(s) refusée(s) · {engagement} engagement(s) refusé(s)" },
+      "total": { "label": "Total des duos", "hint": "Duos uniques, sans double comptage" }
+    },
+    "tabs": {
+      "pending": "En attente", "relation": "En relation", "engagementPending": "Engagements",
+      "match": "Matchs", "declined": "Refusés", "all": "Tous les duos"
+    },
+    "searchPlaceholder": "Pseudo, nom ou email…",
+    "searchAria": "Rechercher un membre",
+    "searchClear": "Effacer la recherche",
+    "engagementsUnavailable": "Le suivi des demandes d'engagement est indisponible : les matchs confirmés peuvent être sous-estimés.",
+    "errorLoad": "Impossible de charger les duos.",
+    "loading": "Chargement des duos",
+    "empty": {
+      "search": { "title": "Aucun duo ne correspond", "body": "Essayez un autre pseudo, nom ou email." },
+      "match": { "title": "Pas encore de match", "body": "Dès qu'un membre valide la demande d'engagement de l'autre, leur match apparaît ici." },
+      "accepted": { "title": "Aucune alliance acceptée", "body": "Les alliances acceptées apparaissent ici, y compris celles ayant évolué vers un engagement ou un match." },
+      "default": { "title": "Rien dans cette étape pour l'instant", "body": "Les duos apparaîtront ici au fil de leur parcours." }
+    },
+    "duoCountOne": "{count} duo",
+    "duoCountMany": "{count} duos",
+    "prev": "Page précédente",
+    "next": "Page suivante",
+    "stage": {
+      "allianceRequest": "Demande d'alliance", "relation": "En relation", "engagementPending": "Engagement à valider",
+      "match": "Match", "engagementDeclined": "Engagement refusé", "allianceDeclined": "Alliance refusée"
+    },
+    "steps": {
+      "request": "Demande d'alliance", "alliance": "Alliance acceptée", "engagement": "Engagement demandé", "match": "Engagement confirmé"
+    },
+    "stepStatus": {
+      "done": "Terminée", "current": "En cours", "waiting": "En attente", "declined": "Refusée", "notReached": "Non atteinte"
+    },
+    "facts": {
+      "compatibility": "Compatibilité", "incompleteQuestionnaire": "Questionnaire incomplet",
+      "matchOn": "Match le", "relationSince": "En relation depuis", "requestOn": "Demande d'alliance le",
+      "conversation": "Conversation", "notStarted": "Pas encore commencée",
+      "messageOne": "{count} message", "messageMany": "{count} messages",
+      "engagement": "Engagement", "validated": "Validé · demandé par {name}",
+      "requestedBy": "Demandé par {name} le {date}", "declinedShort": "Refusé", "lastActivity": "Dernière activité"
+    },
+    "aMember": "un membre",
+    "years": "{n} ans",
+    "profile": "Profil",
+    "viewConversation": "Voir leur conversation",
+    "agoMin": "il y a {n} min",
+    "agoHour": "il y a {n} h",
+    "agoDay": "il y a {n} j"
+  },
   "dashboard": {
+    "firstAlliance": {
+      "badge": "Profil vérifié",
+      "none": {
+        "title": "Votre profil est vérifié ! Votre prochaine étape commence ici.",
+        "body": "Félicitations ! Votre profil répond désormais aux critères de vérification de Garden of Alliance. Vous pouvez maintenant faire le premier pas vers une belle rencontre en envoyant une demande d'alliance à un membre qui partage vos valeurs et votre vision du mariage.",
+        "body2": "Une fois votre demande acceptée, vous pourrez commencer à échanger directement avec cette personne grâce à notre messagerie sécurisée.",
+        "cta": "Découvrir les profils"
+      },
+      "pending": {
+        "title": "Votre demande est en route",
+        "body": "Votre demande d'alliance a bien été envoyée. Vous pourrez commencer à échanger dès que le membre l'aura acceptée.",
+        "cta": "Voir mes demandes en cours"
+      },
+      "received": {
+        "title": "Des invitations vous attendent",
+        "body": "Vous avez des demandes d'alliance à découvrir. Prenez le temps de consulter les profils et de répondre aux invitations qui vous intéressent.",
+        "cta": "Voir mes demandes"
+      },
+      "accepted": {
+        "title": "Votre alliance a été acceptée !",
+        "body": "Votre alliance a été acceptée ! Vous pouvez maintenant commencer votre conversation.",
+        "cta": "Envoyer mon premier message"
+      },
+      "locked": {
+        "title": "Votre profil est vérifié : une dernière étape avant de rencontrer",
+        "body": "Pour découvrir les profils et envoyer des demandes d'alliance, terminez d'abord le premier pilier de la formation « Bâtir sur le roc ». Il vous prépare à des échanges sereins et respectueux.",
+        "cta": "Commencer le pilier 1"
+      },
+      "opening": "Ouverture…",
+      "openError": "Impossible d'ouvrir la conversation pour le moment. Réessayez dans un instant.",
+      "toastAcceptedTitle": "Alliance acceptée 🎉",
+      "toastAcceptedDesc": "Une alliance vient d'être acceptée. Vous pouvez commencer à échanger.",
+      "toastOpen": "Ouvrir la conversation"
+    },
     "chooseAvatarTitle": "Choisissez votre photo publique",
     "chooseAvatarDesc": "Utilisez une de vos photos ou générez un avatar illustré.",
     "generateAvatarButton": "Générer un avatar",
