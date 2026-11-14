@@ -1,46 +1,71 @@
 "use client";
 
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { ShieldCheck } from "lucide-react";
+import { useI18n } from "@/lib/i18n";
 import { cn } from "@/lib/utils";
 import { avatarSrc } from "@/lib/avatar";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import { FORUM_STICKERS, findSticker, messagePreview, type ForumMessage } from "@/lib/forum-shared";
+import { FORUM_STICKERS, STICKER_CATEGORIES, findSticker, messagePreview, type ForumMessage, type StickerCategory } from "@/lib/forum-shared";
 
-/** Un sticker : grand emoji 3D détouré et sa légende (dans la langue du lecteur). */
-export function Sticker({ id, label, size = "md" }: { id: string; label: string; size?: "sm" | "md" }) {
+/**
+ * Un sticker : grande illustration Twemoji, sans légende visuelle (la légende reste
+ * lisible par les lecteurs d'écran et en infobulle). "sm" = planche du sélecteur,
+ * "md" = dans une conversation.
+ */
+export function Sticker({ id, label, size = "md", pop = false }: { id: string; label: string; size?: "sm" | "md"; pop?: boolean }) {
   const s = findSticker(id);
   const [err, setErr] = useState(false);
   if (!s) return null;
-  const dim = size === "sm" ? "w-14 h-14" : "w-[104px] h-[104px]";
+  const dim = size === "sm" ? "w-[68px] h-[68px]" : "w-[128px] h-[128px] sm:w-[144px] sm:h-[144px]";
   return (
-    <span className="inline-flex flex-col items-center select-none" role="img" aria-label={label}>
+    <motion.span
+      className="inline-flex select-none"
+      role="img"
+      aria-label={label}
+      title={label}
+      initial={pop ? { scale: 0.6, opacity: 0, rotate: -6 } : false}
+      animate={{ scale: 1, opacity: 1, rotate: 0 }}
+      transition={{ type: "spring", stiffness: 380, damping: 18 }}
+    >
       {err ? (
-        <span className={cn(dim, "flex items-center justify-center", size === "sm" ? "text-4xl" : "text-[72px]")}>{s.char}</span>
+        <span className={cn(dim, "flex items-center justify-center", size === "sm" ? "text-5xl" : "text-[88px]")}>{s.char}</span>
       ) : (
-        // Contour blanc + ombre : l'effet « autocollant » de WhatsApp.
         // eslint-disable-next-line @next/next/no-img-element
         <img src={s.url} alt="" draggable={false} loading="lazy" onError={() => setErr(true)}
-          className={cn(dim, "object-contain [filter:drop-shadow(0_0_1.5px_#fff)_drop-shadow(0_0_1.5px_#fff)_drop-shadow(0_3px_6px_rgba(38,70,52,0.22))]")} />
+          className={cn(dim, "object-contain [filter:drop-shadow(0_4px_8px_rgba(38,70,52,0.18))]")} />
       )}
-      <span className={cn("-mt-1.5 px-2.5 py-0.5 rounded-full bg-white border border-border font-headline font-bold text-primary shadow-sm whitespace-nowrap",
-        size === "sm" ? "text-[10px]" : "text-[12.5px]")}>
-        {label}
-      </span>
-    </span>
+    </motion.span>
   );
 }
 
-/** Planche de stickers du compositeur. */
+/** Planche de stickers du compositeur : catégories défilantes + grille aérée. */
 export function StickerPicker({ onPick, labelFor }: { onPick: (id: string) => void; labelFor: (id: string) => string }) {
+  const { t } = useI18n();
+  const [cat, setCat] = useState<StickerCategory | "all">("all");
+  const list = cat === "all" ? FORUM_STICKERS : FORUM_STICKERS.filter((s) => s.category === cat);
+  const tabs: (StickerCategory | "all")[] = ["all", ...STICKER_CATEGORIES];
   return (
-    <div className="grid grid-cols-4 sm:grid-cols-6 gap-1.5 p-2">
-      {FORUM_STICKERS.map((s) => (
-        <button key={s.id} type="button" onClick={() => onPick(s.id)} title={labelFor(s.id)}
-          className="rounded-xl p-1.5 hover:bg-primary/10 focus-visible:bg-primary/10 outline-none transition-colors flex justify-center">
-          <Sticker id={s.id} label={labelFor(s.id)} size="sm" />
-        </button>
-      ))}
+    <div className="rounded-2xl">
+      <div className="flex gap-1.5 overflow-x-auto px-3 pt-3 pb-1 [scrollbar-width:none]" role="tablist">
+        {tabs.map((c) => (
+          <button key={c} type="button" role="tab" aria-selected={cat === c} onClick={() => setCat(c)}
+            className={cn("shrink-0 rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition-colors",
+              cat === c ? "bg-primary text-white shadow-sm" : "bg-primary/[0.07] text-primary hover:bg-primary/15")}>
+            {c === "all" ? t("forum.stickersAll") : t(`forum.stickerCategories.${c}`)}
+          </button>
+        ))}
+      </div>
+      <div className="grid grid-cols-3 min-[420px]:grid-cols-4 sm:grid-cols-5 gap-2 p-3">
+        {list.map((s) => (
+          <motion.button key={s.id} type="button" onClick={() => onPick(s.id)} title={labelFor(s.id)} aria-label={labelFor(s.id)}
+            whileHover={{ scale: 1.12, rotate: -3 }} whileTap={{ scale: 0.92 }}
+            className="rounded-2xl p-2 flex justify-center bg-primary/[0.03] hover:bg-primary/10 focus-visible:bg-primary/10 focus-visible:ring-2 focus-visible:ring-primary/40 outline-none transition-colors">
+            <Sticker id={s.id} label={labelFor(s.id)} size="sm" />
+          </motion.button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -128,7 +153,7 @@ export function ForumBubble({
           </button>
         )}
 
-        {sticker && <span className="block py-1"><Sticker id={sticker.id} label={stickerLabel(sticker.id)} /></span>}
+        {sticker && <span className="block py-1"><Sticker id={sticker.id} label={stickerLabel(sticker.id)} pop /></span>}
         {m.body.trim() && <p className="text-[14.5px] leading-relaxed whitespace-pre-wrap break-words">{m.body}</p>}
 
         <span className={cn("block text-right text-[10.5px] mt-0.5 tabular-nums",

@@ -1,5 +1,5 @@
 /**
- * POST /api/chat/send — { conversationId, content, imageUrl? }
+ * POST /api/chat/send — { conversationId, content, imageUrl?, sticker? }
  *
  * Seul chemin d'envoi d'un message de discussion. Avant, le navigateur appelait
  * la modération puis insérait lui-même le message : un membre malveillant
@@ -20,6 +20,7 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { getApprovedUser } from "@/lib/api-auth";
 import { validateMessage } from "@/lib/moderation";
 import { hasFeatureAccess } from "@/lib/subscription/effective";
+import { findSticker } from "@/lib/forum-shared";
 
 const MAX_LENGTH = 5000;
 /** Erreurs reconnues par le tableau de bord (notifySendError). */
@@ -51,9 +52,14 @@ export async function POST(req: NextRequest) {
   const conversationId = typeof body.conversationId === "string" ? body.conversationId : "";
   const content = typeof body.content === "string" ? body.content.trim() : "";
   const imageUrl = typeof body.imageUrl === "string" && body.imageUrl ? body.imageUrl : null;
+  const rawSticker = typeof body.sticker === "string" && body.sticker ? body.sticker : null;
 
   if (!UUID.test(conversationId)) return NextResponse.json({ error: "Conversation invalide." }, { status: 400 });
-  if (!content && !imageUrl) return NextResponse.json({ error: "Message vide." }, { status: 400 });
+  // Un sticker est un message à part entière : identifiant du catalogue commun, sans texte ni photo.
+  if (rawSticker && !findSticker(rawSticker)) return NextResponse.json({ error: "Sticker inconnu." }, { status: 400 });
+  if (rawSticker && (content || imageUrl)) return NextResponse.json({ error: "Un sticker s'envoie seul." }, { status: 400 });
+  const sticker = rawSticker;
+  if (!content && !imageUrl && !sticker) return NextResponse.json({ error: "Message vide." }, { status: 400 });
   if (content.length > MAX_LENGTH) return NextResponse.json({ error: `Message trop long (${MAX_LENGTH} caractères au plus).` }, { status: 400 });
   if (imageUrl && !isChatImageUrl(imageUrl)) return NextResponse.json({ error: "Photo invalide." }, { status: 400 });
 
@@ -116,8 +122,9 @@ export async function POST(req: NextRequest) {
 
   const { data: message, error } = await db
     .from("messages")
-    .insert({ conversation_id: conversationId, sender_id: user.id, content, image_url: imageUrl })
-    .select("id, sender_id, content, image_url, created_at")
+    // La colonne sticker n'est écrite que pour un sticker : texte et photos s'insèrent comme avant.
+    .insert({ conversation_id: conversationId, sender_id: user.id, content, image_url: imageUrl, ...(sticker ? { sticker } : {}) })
+    .select(sticker ? "id, sender_id, content, image_url, sticker, created_at" : "id, sender_id, content, image_url, created_at")
     .single();
   if (error || !message) {
     console.error("[chat/send] insertion impossible:", error?.message);

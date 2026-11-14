@@ -31,6 +31,8 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [justRegistered, setJustRegistered] = useState(false);
   const [checkingSession, setCheckingSession] = useState(true);
+  // L'e-mail est le mode par défaut ; le téléphone n'apparaît que sur choix explicite.
+  const [idMode, setIdMode] = useState<"email" | "phone">("email");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -49,7 +51,10 @@ export default function LoginPage() {
     if (params.get("registered") === "1") {
       setJustRegistered(true);
       const email = params.get("email");
-      if (email) setFormData((prev) => ({ ...prev, email }));
+      if (email) {
+        if (!email.includes("@")) setIdMode("phone");
+        setFormData((prev) => ({ ...prev, email }));
+      }
       setCheckingSession(false);
       return;
     }
@@ -280,19 +285,32 @@ export default function LoginPage() {
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
               <Label className="text-xs font-bold uppercase tracking-widest text-foreground/60">
-                {t("login.identifierLabel")}
+                {t(idMode === "phone" ? "login.phoneLabel" : "login.emailIdLabel")}
               </Label>
+              {/* Même champ « email » dans les deux modes : le serveur reconnaît seul un numéro. */}
               <Input
-                type="text"
-                inputMode="email"
+                key={idMode}
+                type={idMode === "phone" ? "tel" : "email"}
+                inputMode={idMode === "phone" ? "tel" : "email"}
                 name="email"
-                autoComplete="username"
+                autoComplete={idMode === "phone" ? "tel" : "username"}
                 required
-                placeholder={t("login.identifierPlaceholder")}
+                placeholder={t(idMode === "phone" ? "login.phonePlaceholder" : "login.emailIdPlaceholder")}
                 value={formData.email}
                 onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                 className="h-14 bg-card border-foreground/10 rounded-xl text-foreground placeholder:text-foreground/20 focus:border-primary focus-visible:ring-primary/30 text-base"
               />
+              <button
+                type="button"
+                onClick={() => {
+                  setIdMode(idMode === "phone" ? "email" : "phone");
+                  setFormData((prev) => ({ ...prev, email: "" }));
+                  setError(null);
+                }}
+                className="text-[13px] text-foreground/60 hover:text-primary underline-offset-4 hover:underline text-left"
+              >
+                {t(idMode === "phone" ? "login.useEmailInstead" : "login.usePhoneInstead")}
+              </button>
             </div>
 
             <div className="space-y-2">

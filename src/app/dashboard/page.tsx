@@ -16,7 +16,7 @@ import {
   Pencil, Filter, ShieldCheck, CheckCircle2, LogOut, Camera,
   HeartHandshake, Hash, Share2, Video, CalendarDays, Church,
   Bookmark, ThumbsUp, Send, ArrowLeft, Smile, ImagePlus, Loader2,
-  Trash2, UserPlus, ChurchIcon, Sparkles, GraduationCap, Flag, MessagesSquare,
+  Trash2, UserPlus, ChurchIcon, Sparkles, GraduationCap, Flag, MessagesSquare, Sticker as StickerIcon,
 } from "lucide-react";
 import Image from "next/image";
 import { FORMATION_COVER_SRC, FORMATION_BASE_PATH } from "@/lib/formation/paths";
@@ -42,7 +42,7 @@ import { getMyOnboarding, getQuestionnaires, completeOnboarding, applyAnswer, is
 import { supabase } from "@/lib/supabase";
 import {
   upsertMyProfile, searchUsers, listConversations, getMessages,
-  sendChatMessage, uploadChatImage, uploadAvatar, markConversationRead,
+  sendChatMessage, sendChatSticker, uploadChatImage, uploadAvatar, markConversationRead,
   startConversation, contactAdmin, CHAT_EMOJIS, CONVERSATION_CLOSED, type ChatConversation, type ChatMessage,
   type DirectoryUser, type MemberProfile,
 } from "@/lib/chat";
@@ -71,6 +71,8 @@ import { pickVerse, type Verse } from "@/lib/verses";
 import { useI18n } from "@/lib/i18n";
 import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
 import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
+import { Sticker as StickerArt, StickerPicker } from "@/components/forum/forum-ui";
+import { findSticker } from "@/lib/forum-shared";
 import { PushOptIn } from "@/components/push-opt-in";
 import { CoachProposalCard } from "@/components/dashboard/coach-proposal-card";
 import { MemberCoachNotificationsPanel, useMemberCoachNotifications } from "@/components/dashboard/member-coach-notifications";
@@ -265,6 +267,7 @@ export default function DashboardPage() {
   const [userResults, setUserResults] = useState<DirectoryUser[]>([]);
   const [searchError, setSearchError] = useState<string | null>(null);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [pickerTab, setPickerTab] = useState<"emoji" | "sticker">("emoji");
   const [uploading, setUploading] = useState(false);
   const [pendingImage, setPendingImage] = useState<File | null>(null);
   const [pendingPreview, setPendingPreview] = useState<string | null>(null);
@@ -608,7 +611,9 @@ export default function DashboardPage() {
   useEffect(() => {
     if (!showEmoji) return;
     function handleClickOutside(e: MouseEvent) {
-      if (emojiPickerRef.current && !emojiPickerRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if ((target as HTMLElement).closest?.("[data-chat-picker-toggle]")) return;
+      if (emojiPickerRef.current && !emojiPickerRef.current.contains(target)) {
         setShowEmoji(false);
       }
     }
@@ -622,29 +627,49 @@ export default function DashboardPage() {
     setPendingPreview(null);
   };
 
+  // Conversation réelle vers laquelle envoyer. Premier message à l'admin : l'entrée épinglée n'a pas
+  // encore de conversation — on la crée maintenant (et seulement maintenant) via contactAdmin().
+  const resolveSendTarget = async (): Promise<{ convId: string; receiverId: string | undefined } | null> => {
+    if (!activeConvId) return null;
+    if (activeConvId !== ADMIN_VIRTUAL_ID) return { convId: activeConvId, receiverId: activeConv?.otherId };
+    if (!adminUser) return null;
+    const realId = await contactAdmin();
+    if (!realId) {
+      toast({ title: t("dashboard.toastFailed"), variant: "destructive" });
+      return null;
+    }
+    setActiveConvId(realId);
+    loadConversations();
+    return { convId: realId, receiverId: adminUser.id };
+  };
+
+  // Un sticker part immédiatement, seul ; le brouillon de texte et la photo en attente sont conservés.
+  const sendSticker = async (stickerId: string) => {
+    if (!activeConvId || uploading) return;
+    setShowEmoji(false);
+    const target = await resolveSendTarget();
+    if (!target) return;
+    const sent = await sendChatSticker(target.convId, stickerId);
+    if (sent.error) { notifySendError(sent.error); return; }
+    if (sent.message) appendMessage(sent.message);
+    loadConversations();
+  };
+
+  // Aperçu d'un dernier message sticker : « 🙏 Amen » dans la langue du lecteur.
+  const lastPreview = (c: { last: string; lastSticker?: string | null }) => {
+    const s = c.lastSticker ? findSticker(c.lastSticker) : null;
+    return s ? `${s.char} ${t(`forum.stickers.${s.id}`)}` : c.last;
+  };
+
   const sendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     const text = chatInput.trim();
     if ((!text && !pendingImage) || !activeConvId || uploading) return;
     setShowEmoji(false);
 
-    let convId = activeConvId;
-    let receiverId = activeConv?.otherId;
-
-    // First message to Admin: the pinned entry has no real conversation yet —
-    // create it now (and only now) via contactAdmin(), then send into it.
-    if (convId === ADMIN_VIRTUAL_ID) {
-      if (!adminUser) return;
-      const realId = await contactAdmin();
-      if (!realId) {
-        toast({ title: t("dashboard.toastFailed"), variant: "destructive" });
-        return;
-      }
-      convId = realId;
-      receiverId = adminUser.id;
-      setActiveConvId(realId);
-      loadConversations();
-    }
+    const target = await resolveSendTarget();
+    if (!target) return;
+    const { convId, receiverId } = target;
 
     if (pendingImage) {
       setUploading(true);
@@ -674,6 +699,10 @@ export default function DashboardPage() {
   const notifySendError = (error: string) => {
     if (error === CONVERSATION_CLOSED) {
       toast({ title: t("dashboard.toastConversationClosedTitle"), description: t("dashboard.toastConversationClosedDesc"), variant: "destructive" });
+      return;
+    }
+    if (error === "message_quota_reached") {
+      toast({ title: t("dashboard.toastMessageNotSent"), description: t("dashboard.toastQuotaReached"), variant: "destructive" });
       return;
     }
     if (/row-level|policy|not_friends|permission/i.test(error)) {
@@ -1075,7 +1104,7 @@ export default function DashboardPage() {
       .channel(`conv-${convId}`, { config: { broadcast: { self: false } } })
       .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${convId}` }, (payload) => {
         const m: any = payload.new;
-        const msg: ChatMessage = { id: m.id, from: m.sender_id === meId ? "me" : "them", text: m.content, time: formatTime(m.created_at), imageUrl: m.image_url };
+        const msg: ChatMessage = { id: m.id, from: m.sender_id === meId ? "me" : "them", text: m.content, time: formatTime(m.created_at), imageUrl: m.image_url, sticker: m.sticker || null };
         setMessages((prev) => (prev.some((x) => x.id === msg.id) ? prev : [...prev, msg]));
         if (m.sender_id !== meId) markConversationRead(convId, meId);
       })
@@ -1103,7 +1132,7 @@ export default function DashboardPage() {
         loadConversations();
         if (activeConvId !== m.conversation_id) {
           const conv = conversations.find((c) => c.id === m.conversation_id);
-          toast({ title: conv ? t("dashboard.toastNewMessageFrom", { name: conv.name }) : t("dashboard.toastNewMessage"), description: m.image_url ? t("dashboard.toastNewMessagePhoto") : m.content });
+          toast({ title: conv ? t("dashboard.toastNewMessageFrom", { name: conv.name }) : t("dashboard.toastNewMessage"), description: m.sticker && findSticker(m.sticker) ? `${findSticker(m.sticker)!.char} ${t(`forum.stickers.${m.sticker}`)}` : m.image_url ? t("dashboard.toastNewMessagePhoto") : m.content });
         }
       });
     }
@@ -2317,7 +2346,7 @@ export default function DashboardPage() {
                               {adminConv?.when && <span className="text-[10px] shrink-0" style={{ color: "#777777" }}>{adminConv.when}</span>}
                             </div>
                             <p className="text-xs truncate mt-0.5" style={{ color: (sel ? 0 : adminConv?.unread || 0) > 0 ? "#2F2F2F" : "#777777" }}>
-                              {adminConv?.last || t("dashboard.contactAdminHint")}
+                              {(adminConv && lastPreview(adminConv)) || t("dashboard.contactAdminHint")}
                             </p>
                           </div>
                           {adminConv && adminConv.unread > 0 && !sel && (
@@ -2347,7 +2376,7 @@ export default function DashboardPage() {
                               <h4 className="font-bold text-sm truncate" style={{ color: sel ? "#486B46" : "#2F2F2F" }}>{c.name}</h4>
                               <span className="text-[10px] shrink-0" style={{ color: "#777777" }}>{c.when}</span>
                             </div>
-                            <p className="text-xs truncate mt-0.5" style={{ color: (sel ? 0 : c.unread) > 0 ? "#2F2F2F" : "#777777" }}>{c.last}</p>
+                            <p className="text-xs truncate mt-0.5" style={{ color: (sel ? 0 : c.unread) > 0 ? "#2F2F2F" : "#777777" }}>{lastPreview(c)}</p>
                           </div>
                           {c.unread > 0 && !sel && (
                             <span className="shrink-0 w-5 h-5 text-[10px] font-black rounded-full flex items-center justify-center"
@@ -2454,7 +2483,14 @@ export default function DashboardPage() {
                       )}
                       {messages.length === 0 && !isAdminThread && !guideDismissed && <ChatGuide onDismiss={() => setGuideDismissed(true)} />}
                       {messages.length === 0 && !isAdminThread && guideDismissed && <p className="text-center text-xs py-8" style={{ color: "#777777" }}>{t("dashboard.sayHelloKindly")}</p>}
-                      {messages.map((m) => (
+                      {messages.map((m) => m.sticker && findSticker(m.sticker) ? (
+                        <div key={m.id} className={cn("flex", m.from === "me" ? "justify-end" : "justify-start")}>
+                          <div className={cn("flex flex-col", m.from === "me" ? "items-end" : "items-start")}>
+                            <StickerArt id={m.sticker} label={t(`forum.stickers.${m.sticker}`)} pop />
+                            <span className="text-[9px] mt-0.5 px-1" style={{ color: "#777777" }}>{m.time}</span>
+                          </div>
+                        </div>
+                      ) : (
                         <div key={m.id} className={cn("flex", m.from === "me" ? "justify-end" : "justify-start")}>
                           <div className={cn("max-w-[80%] rounded-2xl text-sm leading-relaxed overflow-hidden", m.imageUrl ? "p-1.5" : "px-4 py-2.5")}
                             style={m.from === "me"
@@ -2489,10 +2525,22 @@ export default function DashboardPage() {
                           animate={{ opacity: 1, y: 0, scale: 1 }}
                           exit={{ opacity: 0, y: 8, scale: 0.97 }}
                           transition={{ duration: 0.15 }}
-                          className="absolute bottom-full left-3 mb-2 w-[300px] sm:w-[340px] max-w-[calc(100%-1.5rem)] max-h-[min(320px,calc(var(--app-vh,100dvh)-9rem))] overflow-y-auto custom-scrollbar rounded-2xl z-20"
+                          className="absolute bottom-full left-3 mb-2 w-[320px] sm:w-[380px] max-w-[calc(100%-1.5rem)] max-h-[min(380px,calc(var(--app-vh,100dvh)-9rem))] overflow-y-auto custom-scrollbar rounded-2xl z-20"
                           style={{ background: "#FFFFFF", border: "1px solid #E8E5E0", boxShadow: "0 8px 32px rgba(72,107,70,0.12)" }}
                         >
-                          {EMOJI_CATEGORIES.map((group) => (
+                          <div className="sticky top-0 z-10 flex gap-1 p-2" style={{ background: "#FFFFFF", borderBottom: "1px solid #F0EEEA" }} role="tablist">
+                            {(["emoji", "sticker"] as const).map((tab) => (
+                              <button key={tab} type="button" role="tab" aria-selected={pickerTab === tab} onClick={() => setPickerTab(tab)}
+                                className="flex-1 rounded-full py-1.5 text-[12.5px] font-semibold transition-colors"
+                                style={pickerTab === tab ? { background: "#486B46", color: "#FFFFFF" } : { background: "#EEF5EC", color: "#486B46" }}>
+                                {t(tab === "emoji" ? "dashboard.pickerEmojis" : "dashboard.pickerStickers")}
+                              </button>
+                            ))}
+                          </div>
+                          {pickerTab === "sticker" && (
+                            <StickerPicker labelFor={(id) => t(`forum.stickers.${id}`)} onPick={(id) => sendSticker(id)} />
+                          )}
+                          {pickerTab === "emoji" && EMOJI_CATEGORIES.map((group) => (
                             <div key={group.category} className="px-3 pt-3">
                               <p className="text-[10px] font-bold uppercase tracking-wider mb-1.5" style={{ color: "#9CA3AF" }}>
                                 {group.category}
@@ -2529,10 +2577,17 @@ export default function DashboardPage() {
                         style={{ color: "#777777" }}>
                         {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <ImagePlus className="w-4 h-4" />}
                       </button>
-                      <button type="button" onClick={() => setShowEmoji((v) => !v)}
+                      <button type="button" data-chat-picker-toggle aria-label={t("dashboard.pickerEmojis")}
+                        onClick={() => { if (showEmoji && pickerTab === "emoji") setShowEmoji(false); else { setPickerTab("emoji"); setShowEmoji(true); } }}
                         className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors"
-                        style={showEmoji ? { color: "#486B46", background: "#EEF5EC" } : { color: "#777777" }}>
+                        style={showEmoji && pickerTab === "emoji" ? { color: "#486B46", background: "#EEF5EC" } : { color: "#777777" }}>
                         <Smile className="w-4 h-4" />
+                      </button>
+                      <button type="button" data-chat-picker-toggle aria-label={t("dashboard.pickerStickers")}
+                        onClick={() => { if (showEmoji && pickerTab === "sticker") setShowEmoji(false); else { setPickerTab("sticker"); setShowEmoji(true); } }}
+                        className="w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors"
+                        style={showEmoji && pickerTab === "sticker" ? { color: "#486B46", background: "#EEF5EC" } : { color: "#777777" }}>
+                        <StickerIcon className="w-4 h-4" />
                       </button>
                       <Input value={chatInput} onChange={(e) => handleChatInput(e.target.value)}
                         placeholder={pendingImage ? t("dashboard.captionPlaceholder") : t("dashboard.typeMessagePlaceholder")}
@@ -2715,7 +2770,7 @@ export default function DashboardPage() {
                       </Avatar>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm" style={{ color: "#2F2F2F" }}><span className="font-bold">{c.name}</span> {c.unread > 1 ? t("dashboard.sentYouMessages", { count: c.unread }) : t("dashboard.sentYouAMessage")}</p>
-                        <p className="text-xs truncate mt-0.5" style={{ color: "#777777" }}>{c.last}</p>
+                        <p className="text-xs truncate mt-0.5" style={{ color: "#777777" }}>{lastPreview(c)}</p>
                       </div>
                       <span className="text-[11px] shrink-0" style={{ color: "#777777" }}>{c.when}</span>
                     </button>
