@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { logAdminAction, requireAdmin, type AdminSession } from "@/lib/admin-auth";
 import { clientIp } from "@/lib/api-auth";
 import { generateTemporaryPassword } from "@/lib/coach-password";
+import { normalizePhone, phoneToSyntheticEmail, realEmailOrNull } from "@/lib/phone-identity";
 import { checkRateLimit, recordRateLimit } from "@/lib/otp";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { mapAssignmentError } from "@/lib/coach/assignment-errors";
@@ -41,10 +42,13 @@ async function underLimit(admin: AdminSession, kind: string): Promise<boolean> {
 }
 const countAction = (admin: AdminSession, kind: string) => recordRateLimit(`admin-coach:${admin.adminId || admin.email}`, kind);
 
+/** « +237690123456 » → « +2376****56 » : numéro jamais écrit en clair dans le journal d'audit. */
+const maskPhone = (p: string) => `${p.slice(0, 5)}****${p.slice(-2)}`;
+
 const isUuid = (v: unknown): v is string => typeof v === "string" && /^[0-9a-f-]{36}$/i.test(v);
 
 interface CoachState {
-  account: { user_id: string; email: string; display_name: string; active: boolean };
+  account: { user_id: string; email: string | null; display_name: string; active: boolean };
   profile: { status: string | null; account_type: string | null } | null;
 }
 
@@ -77,11 +81,23 @@ export async function GET() {
   const rows = (res.data || []) as Array<{ user_id: string }>;
   // Photos : lues dans profiles (source de vérité de l'avatar). Une lecture en échec n'empêche pas la liste.
   const avatars = new Map<string, string | null>();
+  const phones = new Map<string, string | null>();
   if (rows.length > 0) {
-    const { data: profs } = await db.from("profiles").select("id,avatar_url").in("id", rows.map(r => r.user_id));
-    for (const p of (profs || []) as Array<{ id: string; avatar_url: string | null }>) avatars.set(p.id, p.avatar_url);
+    const { data: profs } = await db.from("profiles").select("id,avatar_url,phone").in("id", rows.map(r => r.user_id));
+    for (const p of (profs || []) as Array<{ id: string; avatar_url: string | null; phone?: string | null }>) {
+      avatars.set(p.id, p.avatar_url);
+      phones.set(p.id, p.phone ?? null);
+    }
   }
-  return json({ coaches: rows.map(r => ({ ...r, avatar_url: avatars.get(r.user_id) ?? null })) });
+  // L'adresse de contact est renvoyée telle quelle ou null : jamais l'adresse technique.
+  return json({
+    coaches: rows.map(r => ({
+      ...r,
+      email: realEmailOrNull((r as { email?: string | null }).email),
+      phone: phones.get(r.user_id) ?? null,
+      avatar_url: avatars.get(r.user_id) ?? null,
+    })),
+  });
 }
 
 export async function POST(req: NextRequest) {
@@ -95,7 +111,7 @@ export async function POST(req: NextRequest) {
     const form = await req.formData().catch(() => null);
     if (form) {
       body = {
-        email: form.get("email"), password: form.get("password"), name: form.get("name"),
+        email: form.get("email"), phone: form.get("phone"), password: form.get("password"), name: form.get("name"),
       };
       const file = form.get("photo");
       if (file && typeof file === "object") photo = file;
@@ -106,7 +122,11 @@ export async function POST(req: NextRequest) {
 
   if (body?.action === "reset_password") return resetPassword(admin, req, body.id);
 
-  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  // Identifiant de connexion = numéro E.164 (obligatoire, unique). L'e-mail n'est qu'une coordonnée de contact,
+  // facultative et partageable entre plusieurs coachs.
+  const phone = normalizePhone(body?.phone);
+  const rawEmail = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  const email = rawEmail ? realEmailOrNull(rawEmail) : null;
   const password = typeof body?.password === "string" ? body.password : "";
   const name = typeof body?.name === "string" && body.name.trim() ? body.name.trim() : "Coach";
   // La photo est contrôlée AVANT toute création : une image refusée ne laisse aucun compte à moitié créé.
@@ -116,9 +136,14 @@ export async function POST(req: NextRequest) {
     if (!check.ok) return json({ error: check.message, code: check.code }, check.code === "avatar_too_large" ? 413 : 400);
     avatar = check;
   }
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || name.length > 100
-    || password.length < 12 || password.length > 128 || !/\d/.test(password) || !/[A-Za-z]/.test(password)) {
-    return json({ error: "Adresse e-mail et mot de passe de 12 caractères minimum (lettres et chiffres) requis." }, 400);
+  if (!phone) {
+    return json({ error: "Numéro de téléphone invalide : format international requis (ex. +237690123456).", code: "phone_invalid" }, 400);
+  }
+  if (rawEmail && (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
+    return json({ error: "Adresse e-mail de contact invalide.", code: "email_invalid" }, 400);
+  }
+  if (name.length > 100 || password.length < 12 || password.length > 128 || !/\d/.test(password) || !/[A-Za-z]/.test(password)) {
+    return json({ error: "Mot de passe de 12 caractères minimum (lettres et chiffres) requis." }, 400);
   }
   if (!(await underLimit(admin, "coach_create"))) return json({ error: "Trop de créations. Réessayez plus tard." }, 429);
   await countAction(admin, "coach_create");
@@ -130,11 +155,18 @@ export async function POST(req: NextRequest) {
     const f = failure("server_misconfigured");
     return json({ error: f.message, code: f.code }, f.status);
   }
+  // Numéro déjà attribué (membre ou coach) : refus AVANT toute création. Erreur de lecture : refus (fermé par défaut).
+  const { data: phoneOwner, error: phoneLookupError } = await db.from("profiles").select("id").eq("phone", phone).maybeSingle();
+  if (phoneLookupError) return json({ error: "Vérification du numéro impossible. Réessayez.", code: "phone_check_failed" }, 503);
+  if (phoneOwner) return json({ error: "Ce numéro de téléphone est déjà attribué à un autre compte.", code: "phone_exists" }, 409);
+
   let created: Awaited<ReturnType<Db["auth"]["admin"]["createUser"]>>["data"] | null = null;
   let createError: AuthErrorInfo | null = null;
   try {
+    // Adresse Auth TECHNIQUE dérivée du numéro (jamais présentée comme contact ni utilisée pour écrire) :
+    // elle laisse plusieurs coachs partager une même adresse de contact.
     const res = await db.auth.admin.createUser({
-      email, password, email_confirm: true, user_metadata: { name, account_type: "coach" },
+      email: phoneToSyntheticEmail(phone)!, password, email_confirm: true, user_metadata: { name, account_type: "coach" },
     });
     created = res.data;
     createError = (res.error as AuthErrorInfo | null) ?? null;
@@ -163,8 +195,15 @@ export async function POST(req: NextRequest) {
 
   // Upsert : le déclencheur d'inscription a peut-être déjà créé un profil, ou pas encore.
   const { error: profileError } = await db.from("profiles")
-    .upsert({ id, email, name, status: "approved", account_type: "coach" }, { onConflict: "id" });
-  if (profileError) { await rollback(); return json({ error: "Impossible d'isoler le compte Coach." }, 500); }
+    .upsert({ id, email, phone, name, status: "approved", account_type: "coach" }, { onConflict: "id" });
+  if (profileError) {
+    await rollback();
+    // Course sur l'index d'unicité du numéro : même réponse que le pré-contrôle.
+    if ((profileError as { code?: string }).code === "23505") {
+      return json({ error: "Ce numéro de téléphone est déjà attribué à un autre compte.", code: "phone_exists" }, 409);
+    }
+    return json({ error: "Impossible d'isoler le compte Coach." }, 500);
+  }
 
   // Photo : envoi puis enregistrement de l'URL. Un échec annule tout (compte + fichier), jamais de compte partiel.
   let avatarUrl: string | null = null;
@@ -184,8 +223,8 @@ export async function POST(req: NextRequest) {
     return json({ error: "Création incohérente, opération annulée." }, 500);
   }
 
-  await audit(admin, req, "coach_created", id, { email, name, with_photo: !!avatarUrl });
-  return json({ id, email, name, active: true, avatar_url: avatarUrl }, 201);
+  await audit(admin, req, "coach_created", id, { phone: maskPhone(phone), name, with_photo: !!avatarUrl });
+  return json({ id, email, phone, name, active: true, avatar_url: avatarUrl }, 201);
 }
 
 async function resetPassword(admin: AdminSession, req: NextRequest, id: unknown) {
@@ -200,7 +239,7 @@ async function resetPassword(admin: AdminSession, req: NextRequest, id: unknown)
   const { error } = await db.auth.admin.updateUserById(id, { password });
   if (error) return json({ error: "Réinitialisation impossible." }, 500); // jamais de mot de passe dans une réponse d'échec
 
-  await audit(admin, req, "coach_password_reset", id, { email: coach.account.email }); // ni mot de passe ni jeton
+  await audit(admin, req, "coach_password_reset", id, { name: coach.account.display_name }); // ni mot de passe ni jeton
   return json({ id, password });
 }
 
@@ -257,7 +296,7 @@ export async function PATCH(req: NextRequest) {
   else sessionsRevoked = await revokeCoachSessions(db, id, admin.email || admin.adminId || "admin");
 
   await audit(admin, req, active ? "coach_reactivated" : "coach_suspended", id, {
-    email: coach.account.email,
+    name: coach.account.display_name,
     assignments_ended: (result as { assignments_ended?: number } | null)?.assignments_ended ?? 0,
   });
   return json({
@@ -296,6 +335,6 @@ export async function DELETE(req: NextRequest) {
   const { data: remaining } = await db.from("coach_accounts").select("user_id").eq("user_id", id).maybeSingle();
   if (remaining) return json({ error: "Compte supprimé mais nettoyage incomplet, intervention nécessaire." }, 500);
 
-  await audit(admin, req, "coach_deleted", id, { email: coach.account.email, name: coach.account.display_name });
+  await audit(admin, req, "coach_deleted", id, { name: coach.account.display_name });
   return json({ deleted: true });
 }

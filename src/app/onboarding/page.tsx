@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getSession } from "@/lib/auth";
 import { useI18n } from "@/lib/i18n";
 import { MemberGate } from "@/components/member-gate";
-import { getOnboardingSteps, getMyOnboarding, saveQuestionnaireAnswers, completeOnboarding, applyAnswer, isFieldVisible, effectiveQuestionnaireCompletion, describeMissingQuestions, fieldChoices, toggleMultiValue, type Field, type SupportedLocale } from "@/lib/onboarding";
+import { getOnboardingSteps, getMyOnboarding, saveQuestionnaireAnswers, completeOnboarding, applyAnswer, isFieldVisible, effectiveQuestionnaireCompletion, isQuestionnaireSufficient, questionnaireDisplayPercent, QUESTIONNAIRE_MIN_COMPLETION, describeMissingQuestions, fieldChoices, toggleMultiValue, type Field, type SupportedLocale } from "@/lib/onboarding";
 import { pendingLegacyValues, type LegacyColumns } from "@/lib/onboarding-legacy";
 import { LegacyAnswersNotice } from "@/components/questionnaire/legacy-answers-notice";
 import { LoadingScreen } from "@/components/loading-screen";
@@ -308,14 +308,23 @@ function OnboardingPageContent() {
         {/* Dernière étape : questions obligatoires restées sans réponse (on peut terminer quand même,
             mais le badge « Profil vérifié » les attend). */}
         {stepIndex === total - 1 && (() => {
-          const groups = describeMissingQuestions(effectiveQuestionnaireCompletion(answers, legacy, { excludeOptional: true }).unansweredIds, locale as SupportedLocale)
+          const completion = effectiveQuestionnaireCompletion(answers, legacy, { excludeOptional: true });
+          const groups = describeMissingQuestions(completion.unansweredIds, locale as SupportedLocale)
             .filter((g) => g.stepIndex !== stepIndex);
           if (!groups.length) return null;
           const count = groups.reduce((n, g) => n + g.questions.length, 0);
+          const sufficient = isQuestionnaireSufficient(completion);
           return (
             <div className="mt-10 rounded-2xl border border-[#E2C9A6] bg-[#FBF3E8] px-5 py-4">
               <p className="text-sm font-bold text-[#6E4A00]">{t("onboarding.missingTitle", { count })}</p>
-              <p className="text-xs mt-1 leading-relaxed text-[#3F3A2E]">{t("onboarding.missingDesc")}</p>
+              <p className="text-xs mt-1 font-semibold text-[#3F3A2E]">
+                {t(sufficient ? "onboarding.thresholdReached" : "onboarding.thresholdProgress", { pct: questionnaireDisplayPercent(completion), min: QUESTIONNAIRE_MIN_COMPLETION })}
+              </p>
+              <div className="relative mt-2 h-1.5 rounded-full bg-white/80" role="progressbar" aria-valuemin={0} aria-valuemax={100} aria-valuenow={questionnaireDisplayPercent(completion)}>
+                <div className="h-full rounded-full bg-[#486B46]" style={{ width: `${questionnaireDisplayPercent(completion)}%` }} />
+                <span className="absolute top-[-2px] h-2.5 w-0.5 bg-[#6E4A00]" style={{ left: `${QUESTIONNAIRE_MIN_COMPLETION}%` }} />
+              </div>
+              <p className="text-xs mt-2 leading-relaxed text-[#3F3A2E]">{t("onboarding.missingDesc", { min: QUESTIONNAIRE_MIN_COMPLETION })}</p>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {groups.map((g) => (
                   <li key={g.stepIndex}>

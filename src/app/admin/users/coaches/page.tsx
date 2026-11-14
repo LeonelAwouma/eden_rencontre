@@ -5,7 +5,7 @@ import { ArrowLeft, Check, Copy, KeyRound, Pencil, RefreshCw, ShieldCheck, Trash
 import { CoachAssignments } from "@/components/admin/coach-assignments";
 import { CoachAvatar } from "@/components/coach/coach-avatar";
 
-type Coach = { user_id: string; email: string; display_name: string; active: boolean; created_at: string; last_login_at?: string | null; avatar_url?: string | null };
+type Coach = { user_id: string; email: string | null; phone?: string | null; display_name: string; active: boolean; created_at: string; last_login_at?: string | null; avatar_url?: string | null };
 
 const PHOTO_TYPES = ["image/jpeg", "image/png", "image/webp"];
 const PHOTO_MAX = 3 * 1024 * 1024;
@@ -51,11 +51,12 @@ export default function AdminCoaches() {
   const [notice, setNotice] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [editing, setEditing] = useState<{ id: string; name: string } | null>(null);
   const [pending, setPending] = useState<Pending>(null);
   // Mot de passe temporaire : affiché une seule fois, jamais conservé après fermeture.
-  const [temp, setTemp] = useState<{ email: string; password: string } | null>(null);
+  const [temp, setTemp] = useState<{ label: string; password: string } | null>(null);
   const [copied, setCopied] = useState(false);
   const [showMembers, setShowMembers] = useState<string | null>(null);
   const [photo, setPhoto] = useState<File | null>(null);
@@ -115,15 +116,15 @@ export default function AdminCoaches() {
     try {
       if (photo) {
         const form = new FormData();
-        form.append("name", name); form.append("email", email); form.append("password", password); form.append("photo", photo);
+        form.append("name", name); form.append("email", email); form.append("phone", phone); form.append("password", password); form.append("photo", photo);
         const res = await fetch("/api/admin/coaches", { method: "POST", body: form, cache: "no-store" });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new ApiError(data.error || "Opération refusée", typeof data.code === "string" ? data.code : undefined);
       } else {
-        await call("POST", { name, email, password });
+        await call("POST", { name, email, phone, password });
       }
-      setName(""); setEmail(""); setPassword(""); pickPhoto(null);
-      setNotice("Compte Coach créé. Il peut se connecter avec son adresse e-mail et son mot de passe.");
+      setName(""); setEmail(""); setPhone(""); setPassword(""); pickPhoto(null);
+      setNotice("Compte Coach créé. Il se connecte avec son numéro de téléphone et son mot de passe.");
       await load();
     } catch (err) { fail(err, "Erreur de création"); }
     finally { setSaving(false); }
@@ -154,7 +155,7 @@ export default function AdminCoaches() {
         setNotice("Compte Coach supprimé définitivement.");
       } else {
         const data = await call("POST", { action: "reset_password", id: coach.user_id });
-        setTemp({ email: coach.email, password: data.password });
+        setTemp({ label: coach.display_name, password: data.password });
         setCopied(false);
       }
     });
@@ -175,7 +176,7 @@ export default function AdminCoaches() {
 
       {temp && (
         <div role="status" className="rounded-2xl border border-[#C6D4C0] bg-[#EEF5EC] p-4 space-y-2">
-          <p className="text-sm font-semibold">Mot de passe temporaire pour {temp.email}</p>
+          <p className="text-sm font-semibold">Mot de passe temporaire pour {temp.label}</p>
           <div className="flex flex-wrap items-center gap-2">
             <code className="rounded-lg bg-white border px-3 py-2 text-base tracking-wide break-all select-all">{temp.password}</code>
             <button type="button" onClick={() => void copy()} className="inline-flex items-center gap-1.5 rounded-lg border bg-white px-3 py-2 text-sm">
@@ -191,12 +192,13 @@ export default function AdminCoaches() {
         <form onSubmit={create} className="bg-white border rounded-2xl p-5 space-y-4 self-start">
           <h2 className="font-semibold flex gap-2 items-center"><UserPlus className="h-5 w-5 text-primary" />Ajouter un coach</h2>
           <label className="block text-sm font-medium">Nom du coach (facultatif)<input value={name} onChange={e => setName(e.target.value)} maxLength={100} className="mt-1 block w-full border rounded-lg px-3 py-2" /></label>
-          <label className="block text-sm font-medium">Adresse e-mail<input required type="email" autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" /></label>
+          <label className="block text-sm font-medium">Numéro de téléphone<input required type="tel" inputMode="tel" autoComplete="off" placeholder="+237690123456" value={phone} onChange={e => setPhone(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" /><span className="text-xs font-normal text-[#56615A]">Identifiant de connexion personnel et unique, au format international (+indicatif).</span></label>
+          <label className="block text-sm font-medium">Adresse e-mail de contact (facultative)<input type="email" autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" /><span className="text-xs font-normal text-[#56615A]">Coordonnée de contact : peut être partagée par plusieurs coachs.</span></label>
           <label className="block text-sm font-medium">Mot de passe initial<input required type="password" autoComplete="new-password" minLength={12} value={password} onChange={e => setPassword(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" /><span className="text-xs text-[#56615A]">12 caractères minimum, lettres et chiffres. Transmettez-le par un canal sécurisé.</span></label>
           <div className="text-sm font-medium">
             <span>Photo de profil du coach (facultative)</span>
             <div className="mt-1 flex items-center gap-3">
-              <CoachAvatar url={preview} name={name || email} size={64} />
+              <CoachAvatar url={preview} name={name || phone} size={64} />
               <div className="flex flex-wrap gap-2">
                 <label className="cursor-pointer border rounded-lg px-3 py-1.5 text-sm font-normal">
                   {photo ? "Remplacer" : "Choisir une image"}
@@ -233,7 +235,7 @@ export default function AdminCoaches() {
                             <button type="button" onClick={() => setEditing(null)} aria-label="Annuler" className="border rounded-lg p-2"><X className="w-4 h-4" /></button>
                           </form>
                         ) : <p className="font-semibold">{c.display_name}</p>}
-                        <p className="text-xs text-[#56615A] break-all">{c.email}</p>
+                        <p className="text-xs text-[#56615A] break-all">{c.phone || "Numéro non renseigné"}{c.email ? ` · ${c.email}` : ""}</p>
                       </div>
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${c.active ? "bg-[#EEF5EC] text-[#486B46]" : "bg-[#F4ECEA] text-[#8A3B2E]"}`}>{c.active ? "Actif" : "Suspendu"}</span>
                     </div>
@@ -264,8 +266,8 @@ export default function AdminCoaches() {
             <h2 id="coach-confirm-title" className="text-lg font-semibold">{pending.kind === "delete" ? "Supprimer définitivement ce coach ?" : "Réinitialiser son mot de passe ?"}</h2>
             <p className="text-sm text-[#56615A]">
               {pending.kind === "delete"
-                ? `Le compte de ${pending.coach.display_name} (${pending.coach.email}) sera supprimé définitivement. Cette action est irréversible.`
-                : `Un nouveau mot de passe temporaire sera généré pour ${pending.coach.email}. L'ancien cessera de fonctionner.`}
+                ? `Le compte de ${pending.coach.display_name}${pending.coach.phone ? ` (${pending.coach.phone})` : ""} sera supprimé définitivement. Cette action est irréversible.`
+                : `Un nouveau mot de passe temporaire sera généré pour ${pending.coach.display_name}. L'ancien cessera de fonctionner.`}
             </p>
             <div className="flex justify-end gap-2">
               <button onClick={() => setPending(null)} className="border rounded-lg px-4 py-2 text-sm">Annuler</button>

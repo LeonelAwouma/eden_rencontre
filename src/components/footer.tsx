@@ -57,6 +57,7 @@ export function Footer() {
             <h4 className="font-headline text-foreground font-bold mb-6 text-base">{t("footer.platform")}</h4>
             <ul className="space-y-3.5 text-sm text-muted-foreground font-body">
               <li><Link href="/concept" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.theConcept")}</Link></li>
+              <li><Link href="/qui-sommes-nous" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.aboutUs")}</Link></li>
               <li><Link href="/parcours" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.faithJourney")}</Link></li>
               <li><Link href="/tarifs" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.pricing")}</Link></li>
               <li><Link href="/temoignages" className="growing-underline hover:text-deep-eden transition-colors">{t("footer.testimonials")}</Link></li>

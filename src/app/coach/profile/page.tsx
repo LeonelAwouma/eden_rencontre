@@ -9,7 +9,7 @@ import { useCoachData } from "@/components/coach/use-coach-data";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { useI18n } from "@/lib/i18n";
 
-interface CoachProfile { name: string; email: string; lastLoginAt: string | null }
+interface CoachProfile { name: string; email: string | null; lastLoginAt: string | null }
 
 /** Profil du coach connecté : uniquement ses propres informations. */
 export default function CoachProfilePage() {
@@ -28,7 +28,7 @@ export default function CoachProfilePage() {
               <div className="mb-5"><CoachAvatarEditor /></div>
               <dl className="grid sm:grid-cols-2 gap-4">
                 <DetailItem label={t("coachProfile.name")}>{p.name}</DetailItem>
-                <DetailItem label={t("coachProfile.email")}><span className="break-all">{p.email}</span></DetailItem>
+                <DetailItem label={t("coachProfile.email")}><span className="break-all">{p.email || "—"}</span></DetailItem>
                 <DetailItem label={t("coachProfile.lastLogin")}>
                   {p.lastLoginAt
                     ? new Date(p.lastLoginAt).toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" })

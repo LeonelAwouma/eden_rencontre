@@ -17,6 +17,7 @@ export function Navigation() {
   const navLinks = [
     { name: t("nav.home"), href: "/" },
     { name: t("nav.concept"), href: "/concept" },
+    { name: t("nav.aboutUs"), href: "/qui-sommes-nous" },
     { name: t("nav.parcours"), href: "/parcours" },
     { name: t("nav.blog"), href: "/blog" },
     { name: t("nav.testimonials"), href: "/temoignages" },
@@ -40,12 +41,12 @@ export function Navigation() {
           </div>
 
           {/* Center: Nav — centered between logo and actions */}
-          <div className="flex items-center gap-4 xl:gap-6">
+          <div className="flex items-center gap-3 xl:gap-6">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-[11px] xl:text-xs font-black tracking-[0.14em] xl:tracking-[0.16em] uppercase text-foreground/60 hover:text-primary transition-all duration-300 relative group/link whitespace-nowrap"
+                className="text-[11px] xl:text-xs font-black tracking-[0.08em] xl:tracking-[0.16em] uppercase text-foreground/60 hover:text-primary transition-all duration-300 relative group/link whitespace-nowrap"
               >
                 {link.name}
                 <span className="absolute -bottom-2 left-0 w-0 h-0.5 bg-primary transition-all duration-300 group-hover/link:w-full" />

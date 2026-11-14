@@ -4,14 +4,14 @@ import Link from "next/link";
 import { ArrowLeft, Search, UserMinus, UserPlus, Users } from "lucide-react";
 import { CoachAvatar } from "@/components/coach/coach-avatar";
 
-type CoachInfo = { id: string; name: string; email: string; active: boolean; avatar_url: string | null };
+type CoachInfo = { id: string; name: string; email: string | null; active: boolean; avatar_url: string | null };
 type Item = {
   id: string; name: string; pseudo: string | null; email: string | null; status: string | null; avatar_url: string | null;
   situation: "none" | "pending" | "active" | "to_reassign";
   coach: CoachInfo | null;
   assignment: { id: string; status: string; assigned_at: string } | null;
 };
-type CoachOption = { user_id: string; display_name: string; email: string; active: boolean; avatar_url: string | null; active_count: number; pending_count: number };
+type CoachOption = { user_id: string; display_name: string; email: string | null; active: boolean; avatar_url: string | null; active_count: number; pending_count: number };
 type Pending = { kind: "assign" | "reassign" | "remove"; item: Item; coachId?: string } | null;
 
 const SITUATION: Record<Item["situation"], { label: string; cls: string }> = {

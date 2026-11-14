@@ -24,7 +24,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { effectiveQuestionnaireCompletion } from "@/lib/onboarding";
+import { effectiveQuestionnaireCompletion, isQuestionnaireSufficient, questionnaireDisplayPercent, QUESTIONNAIRE_MIN_COMPLETION } from "@/lib/onboarding";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { cn } from "@/lib/utils";
 import { EMAIL_NOT_SENT } from "@/lib/admin-email-warning";
@@ -109,7 +109,7 @@ export default function AdminUserDetailPage() {
   }, [user]);
 
   // Can admin grant verification badge? User must have completed onboarding + all required questions answered + profile 100%
-  const canGrantBadge = user?.onboarding_completed && questionnaireCompletion.percentage === 100 && isProfileFullyComplete(user || {}) && user?.verification_status !== "verified";
+  const canGrantBadge = user?.onboarding_completed && isQuestionnaireSufficient(questionnaireCompletion) && isProfileFullyComplete(user || {}) && user?.verification_status !== "verified";
 
   useEffect(() => {
     fetch(`/api/admin/users/${userId}`)
@@ -517,13 +517,13 @@ export default function AdminUserDetailPage() {
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-gray-400">Questionnaire</p>
                 <p className="text-sm text-gray-700 mt-0.5">
-                  {questionnaireCompletion.percentage === 100 ? (
+                  {isQuestionnaireSufficient(questionnaireCompletion) ? (
                     <span className="text-emerald-600 font-medium">
-                      ✅ Complet ({questionnaireCompletion.answered}/{questionnaireCompletion.total} réponses)
+                      ✅ {questionnaireCompletion.answered === questionnaireCompletion.total ? "Complet" : `Suffisant (≥ ${QUESTIONNAIRE_MIN_COMPLETION} %)`} ({questionnaireCompletion.answered}/{questionnaireCompletion.total} réponses)
                     </span>
                   ) : (
                     <span className="text-amber-600">
-                      ⏳ {questionnaireCompletion.answered}/{questionnaireCompletion.total} réponses ({questionnaireCompletion.percentage}%)
+                      ⏳ {questionnaireCompletion.answered}/{questionnaireCompletion.total} réponses ({questionnaireDisplayPercent(questionnaireCompletion)}% — seuil {QUESTIONNAIRE_MIN_COMPLETION} %)
                     </span>
                   )}
                 </p>

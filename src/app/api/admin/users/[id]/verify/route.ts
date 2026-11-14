@@ -3,7 +3,7 @@ import { requireAdmin, logAdminAction } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { sendVerificationApprovedEmail, sendVerificationRejectedEmail } from "@/lib/email";
 import { isProfileFullyComplete, getProfileCompletion } from "@/lib/profile-completion";
-import { effectiveQuestionnaireCompletion } from "@/lib/onboarding";
+import { effectiveQuestionnaireCompletion, isQuestionnaireSufficient, QUESTIONNAIRE_MIN_COMPLETION } from "@/lib/onboarding";
 
 export async function POST(
   request: NextRequest,
@@ -55,9 +55,9 @@ export async function POST(
       }
       // Même règle que la fiche admin : toutes les questions requises des 3 questionnaires.
       const questionnaire = effectiveQuestionnaireCompletion((user.questionnaire as Record<string, unknown>) || {}, user, { excludeOptional: true });
-      if (questionnaire.percentage < 100) {
+      if (!isQuestionnaireSufficient(questionnaire)) {
         return NextResponse.json(
-          { error: `Le questionnaire n'est pas complet (${questionnaire.answered}/${questionnaire.total} questions).` },
+          { error: `Le questionnaire est rempli à moins de ${QUESTIONNAIRE_MIN_COMPLETION} % (${questionnaire.answered}/${questionnaire.total} questions).` },
           { status: 400 }
         );
       }

@@ -47,6 +47,14 @@ export function loginIdentifierToEmail(input: unknown): string | null {
   return phoneToSyntheticEmail(value);
 }
 
+/**
+ * Adresse Auth à utiliser pour la session Supabase du navigateur : celle que le serveur a réellement employée
+ * (ancien coach connecté par numéro = adresse réelle), sinon celle calculée côté client.
+ */
+export function sessionEmailFor(serverEmail: unknown, fallback: string): string {
+  return typeof serverEmail === "string" && serverEmail.includes("@") ? serverEmail : fallback;
+}
+
 /** Adresse à afficher/utiliser pour écrire : null pour une adresse technique ou vide. */
 export function realEmailOrNull(email: unknown): string | null {
   if (typeof email !== "string") return null;

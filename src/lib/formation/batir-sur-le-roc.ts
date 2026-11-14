@@ -487,6 +487,7 @@ const lecon15: Lesson = {
   title: "Le renoncement et le service mutuel",
   image: { ...img("1-5"), alt: "Un homme et une femme préparent un repas ensemble dans leur cuisine, chacun à sa tâche.", position: "center 35%" },
   pdf: `${BASE}/pdf/lecon-1-5-le-renoncement-et-le-service-mutuel.pdf`,
+  audio: { src: `${BASE}/audio/lecon-1-5-le-renoncement-et-le-service-mutuel.mp3`, transcript: `${BASE}/audio/lecon-1-5-le-renoncement-et-le-service-mutuel.json` },
   readingMinutes: 10,
   intro: {
     heading: "La révolution contre-culturelle de l'amour",
@@ -605,6 +606,7 @@ const lecon16: Lesson = {
   title: "L'autel familial et la présence de Dieu",
   image: { ...img("1-6"), alt: "Silhouette d'une famille — un couple et deux enfants main dans la main — face au soleil couchant.", position: "center 60%" },
   pdf: `${BASE}/pdf/lecon-1-6-l-autel-familial-et-la-presence-de-dieu.pdf`,
+  audio: { src: `${BASE}/audio/lecon-1-6-l-autel-familial-et-la-presence-de-dieu.mp3`, transcript: `${BASE}/audio/lecon-1-6-l-autel-familial-et-la-presence-de-dieu.json` },
   readingMinutes: 9,
   intro: {
     heading: "Le foyer, micro-église ou simple cohabitation ?",

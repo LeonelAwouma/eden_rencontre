@@ -101,6 +101,25 @@ describe("createResetRequestForPhone", () => {
     expect(withEmail.calls.some((c) => c.table === "password_reset_requests")).toBe(false);
   });
 
+  test("coach avec e-mail de contact (éventuellement partagé) : demande par téléphone autorisée, compte désigné par user_id", async () => {
+    const { db, calls } = fakeDb({
+      profiles: () => ({ data: { id: "coach-1", email: "contact@partage.fr", name: "Coach", phone: "+237690000001", account_type: "coach" } }),
+      password_reset_requests: () => ({ error: null }),
+      admin_notifications: () => ({ error: null }),
+    });
+    expect(await createResetRequestForPhone(db, "+237690000001")).toBe(true);
+    const insert = calls.find((c) => c.table === "password_reset_requests");
+    expect(insert?.payload).toMatchObject({ user_id: "coach-1", phone: "+237690000001", status: "pending" });
+  });
+
+  test("membre avec e-mail de contact : toujours refusé (parcours e-mail)", async () => {
+    const { db, calls } = fakeDb({
+      profiles: () => ({ data: { id: "m1", email: "a@b.com", name: "M", phone: "+237690000002", account_type: "member" } }),
+    });
+    expect(await createResetRequestForPhone(db, "+237690000002")).toBe(false);
+    expect(calls.some((c) => c.table === "password_reset_requests")).toBe(false);
+  });
+
   test("demande déjà en attente (index unique) : pas de doublon ni de notification", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
     const { db, calls } = fakeDb({
