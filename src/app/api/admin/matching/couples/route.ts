@@ -21,16 +21,10 @@ import { requireAdmin } from "@/lib/admin-auth";
 import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { ADMIN_SYSTEM_EMAIL } from "@/lib/admin-system-shared";
 
-type Stage = "alliance_pending" | "relation" | "engagement_pending" | "match" | "engagement_declined" | "declined";
-
-interface FriendshipRow {
-  id: string; requester_id: string; addressee_id: string; status: string; created_at: string; updated_at: string;
-}
-interface EngagementRow {
-  requester_id: string; recipient_id: string; status: string; created_at: string; responded_at: string | null;
-}
-
-const pairKey = (a: string, b: string) => (a < b ? `${a}:${b}` : `${b}:${a}`);
+import {
+  type EngagementRow, type FriendshipRow,
+  buildCouples, computeStats, filterByStage, indexEngagements, pairKey,
+} from "@/lib/admin-matching-stats";
 
 const PROFILE_COLS =
   "id, name, pseudo, email, gender, birth_date, city, country, region, civil_status, profession, avatar_url, verification_status, status, questionnaire";
@@ -70,7 +64,7 @@ export async function GET(req: NextRequest) {
 
   // Une demande d'engagement est distincte de l'alliance. Un engagement validé
   // transforme le duo en match, mais il reste dans « Alliances acceptées ».
-  const engagementByPair = new Map<string, EngagementRow>();
+  const engagementRows: EngagementRow[] = [];
   let engagementsAvailable = true;
   for (let start = 0; start < 100000; start += PAGE_SIZE) {
     const { data, error } = await db.from("engagement_requests")
@@ -84,67 +78,19 @@ export async function GET(req: NextRequest) {
       if (error.code === "42P01" || error.code === "PGRST205") { engagementsAvailable = false; break; }
       return NextResponse.json({ error: "Impossible de charger les engagements." }, { status: 500 });
     }
-    for (const e of (data || []) as EngagementRow[]) {
-      const key = pairKey(e.requester_id, e.recipient_id);
-      const prev = engagementByPair.get(key);
-      // L'acceptation prime sur les demandes ultérieures, sinon la plus récente compte.
-      if (!prev || (e.status === "accepted" && prev.status !== "accepted")) engagementByPair.set(key, e);
-    }
+    engagementRows.push(...((data || []) as EngagementRow[]));
     if (!data || data.length < PAGE_SIZE) { complete = true; break; }
     if (start + PAGE_SIZE >= 100000) return NextResponse.json({ error: "Volume d'engagements supérieur à la limite d'analyse." }, { status: 503 });
   }
 
-  const stageOf = (f: FriendshipRow): Stage => {
-    if (f.status === "declined") return "declined";
-    if (f.status !== "accepted") return "alliance_pending";
-    const e = engagementByPair.get(pairKey(f.requester_id, f.addressee_id));
-    if (e?.status === "accepted") return "match";
-    if (e?.status === "pending") return "engagement_pending";
-    if (e?.status === "declined") return "engagement_declined";
-    return "relation";
-  };
-
-  // Plusieurs demandes inversées peuvent exister pour un même duo.
-  // On n'affiche le duo qu'une fois : une alliance acceptée prime, puis une
-  // invitation en attente, et enfin une invitation refusée.
-  const uniquePairs = new Map<string, FriendshipRow>();
-  const priority = (status: string) => status === "accepted" ? 3 : status === "pending" ? 2 : 1;
-  for (const row of friendships) {
-    if (row.requester_id === adminId || row.addressee_id === adminId) continue;
-    if (!["accepted", "pending", "declined"].includes(row.status)) continue;
-    const key = pairKey(row.requester_id, row.addressee_id);
-    const previous = uniquePairs.get(key);
-    if (!previous || priority(row.status) > priority(previous.status)
-      || (priority(row.status) === priority(previous.status) && row.updated_at > previous.updated_at)) {
-      uniquePairs.set(key, row);
-    }
-  }
-  const couples = [...uniquePairs.values()].map((f) => ({ ...f, stage: stageOf(f) }));
-
-  // Statistiques (sur tous les couples).
-  const weekAgo = Date.now() - 7 * 24 * 3600 * 1000;
+  const engagementByPair = indexEngagements(engagementRows);
+  // Plusieurs demandes inversées peuvent exister pour un même duo : il n'apparaît qu'une fois.
+  const couples = buildCouples(friendships, engagementByPair, adminId);
   const matchedAt = (c: FriendshipRow) => engagementByPair.get(pairKey(c.requester_id, c.addressee_id))?.responded_at ?? null;
-  const count = (s: Stage) => couples.filter((c) => c.stage === s).length;
-  const stats = {
-    match: count("match"),
-    matchThisWeek: couples.filter((c) => c.stage === "match" && new Date(matchedAt(c) || 0).getTime() >= weekAgo).length,
-    engagement_pending: count("engagement_pending"),
-    // Ensemble inclusif : les duos en engagement et les matchs y restent.
-    accepted: couples.filter((c) => c.status === "accepted").length,
-    relation: count("relation"),
-    engagement_declined: count("engagement_declined"),
-    alliance_pending: count("alliance_pending"),
-    declined: count("declined") + count("engagement_declined"),
-    all: couples.length,
-  };
+  const stats = computeStats(couples, engagementByPair);
 
   // Filtre par étape (« Refusés » regroupe alliance et engagement refusés).
-  let filtered = couples.filter((c) =>
-    stageFilter === "all" ? true
-      : stageFilter === "accepted" ? c.status === "accepted"
-      : stageFilter === "declined" ? c.stage === "declined" || c.stage === "engagement_declined"
-      : c.stage === stageFilter
-  );
+  let filtered = filterByStage(couples, stageFilter);
   // Parcours récents en premier, et validation la plus récente parmi les matchs.
   filtered.sort((a, b) => {
     const dateOf = (c: FriendshipRow) =>

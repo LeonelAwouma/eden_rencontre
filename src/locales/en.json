@@ -1325,7 +1325,107 @@
     "generatedLabel": "Generated avatar",
     "regenerate": "Regenerate"
   },
+  "adminMatching": {
+    "title": "Matching",
+    "intro": "An accepted alliance lets both members chat. A confirmed match is an engagement request accepted by the other member. Each duo is tracked once, from invitation to confirmation.",
+    "overviewTitle": "Overview",
+    "sumOk": "each duo is counted once",
+    "journeyTitle": "Alliance journey",
+    "journeyAria": "Duo progress",
+    "stageAria": "Journey stage",
+    "stageSelect": "Journey stage",
+    "cumulative": "All accepted alliances",
+    "cumulativeBadge": "Cumulative view",
+    "cumulativeHint": "Cumulative view: it includes relations, pending engagements and confirmed matches. It is not added to the main categories.",
+    "cards": {
+      "pending": { "label": "Pending requests", "hint": "Alliance request with no answer yet" },
+      "relation": { "label": "In relation", "hint": "Alliance accepted, no engagement" },
+      "engagementPending": { "label": "Engagements to validate", "hint": "\"Commit\" sent, the other member has not answered" },
+      "match": { "label": "Confirmed matches", "hint": "Engagement accepted by both members · {week} this week" },
+      "declined": { "label": "Declined", "hint": "{alliance} alliance(s) declined · {engagement} engagement(s) declined" },
+      "total": { "label": "Total duos", "hint": "Unique duos, no double counting" }
+    },
+    "tabs": {
+      "pending": "Pending", "relation": "In relation", "engagementPending": "Engagements",
+      "match": "Matches", "declined": "Declined", "all": "All duos"
+    },
+    "searchPlaceholder": "Nickname, name or email…",
+    "searchAria": "Search for a member",
+    "searchClear": "Clear search",
+    "engagementsUnavailable": "Engagement tracking is unavailable: confirmed matches may be underestimated.",
+    "errorLoad": "Unable to load duos.",
+    "loading": "Loading duos",
+    "empty": {
+      "search": { "title": "No duo matches", "body": "Try another nickname, name or email." },
+      "match": { "title": "No match yet", "body": "As soon as a member accepts the other's engagement request, their match appears here." },
+      "accepted": { "title": "No accepted alliance", "body": "Accepted alliances appear here, including those that moved on to an engagement or a match." },
+      "default": { "title": "Nothing in this stage yet", "body": "Duos will appear here as they progress." }
+    },
+    "duoCountOne": "{count} duo",
+    "duoCountMany": "{count} duos",
+    "prev": "Previous page",
+    "next": "Next page",
+    "stage": {
+      "allianceRequest": "Alliance request", "relation": "In relation", "engagementPending": "Engagement to validate",
+      "match": "Match", "engagementDeclined": "Engagement declined", "allianceDeclined": "Alliance declined"
+    },
+    "steps": {
+      "request": "Alliance request", "alliance": "Alliance accepted", "engagement": "Engagement requested", "match": "Engagement confirmed"
+    },
+    "stepStatus": {
+      "done": "Completed", "current": "In progress", "waiting": "Pending", "declined": "Declined", "notReached": "Not reached"
+    },
+    "facts": {
+      "compatibility": "Compatibility", "incompleteQuestionnaire": "Incomplete questionnaire",
+      "matchOn": "Match on", "relationSince": "In relation since", "requestOn": "Alliance request on",
+      "conversation": "Conversation", "notStarted": "Not started yet",
+      "messageOne": "{count} message", "messageMany": "{count} messages",
+      "engagement": "Engagement", "validated": "Confirmed · requested by {name}",
+      "requestedBy": "Requested by {name} on {date}", "declinedShort": "Declined", "lastActivity": "Last activity"
+    },
+    "aMember": "a member",
+    "years": "{n} y/o",
+    "profile": "Profile",
+    "viewConversation": "View their conversation",
+    "agoMin": "{n} min ago",
+    "agoHour": "{n} h ago",
+    "agoDay": "{n} d ago"
+  },
   "dashboard": {
+    "firstAlliance": {
+      "badge": "Verified profile",
+      "none": {
+        "title": "Your profile is verified! Your next step starts here.",
+        "body": "Congratulations! Your profile now meets Garden of Alliance's verification criteria. You can take the first step towards a meaningful meeting by sending an alliance request to a member who shares your values and your vision of marriage.",
+        "body2": "Once your request is accepted, you will be able to chat directly with this person through our secure messaging.",
+        "cta": "Discover profiles"
+      },
+      "pending": {
+        "title": "Your request is on its way",
+        "body": "Your alliance request has been sent. You will be able to start chatting as soon as the member accepts it.",
+        "cta": "View my pending requests"
+      },
+      "received": {
+        "title": "Invitations are waiting for you",
+        "body": "You have alliance requests to discover. Take the time to view the profiles and reply to the invitations that interest you.",
+        "cta": "View my requests"
+      },
+      "accepted": {
+        "title": "Your alliance has been accepted!",
+        "body": "Your alliance has been accepted! You can now start your conversation.",
+        "cta": "Send my first message"
+      },
+      "locked": {
+        "title": "Your profile is verified: one last step before meeting",
+        "body": "To discover profiles and send alliance requests, first complete the first pillar of the \"Building on the Rock\" training. It prepares you for calm and respectful conversations.",
+        "cta": "Start pillar 1"
+      },
+      "opening": "Opening…",
+      "openError": "Unable to open the conversation right now. Please try again in a moment.",
+      "toastAcceptedTitle": "Alliance accepted 🎉",
+      "toastAcceptedDesc": "An alliance has just been accepted. You can start chatting.",
+      "toastOpen": "Open the conversation"
+    },
     "chooseAvatarTitle": "Choose your public photo",
     "chooseAvatarDesc": "Use one of your photos or generate an illustrated avatar.",
     "generateAvatarButton": "Generate an avatar",
