@@ -4,6 +4,7 @@
 import { supabase } from "./supabase";
 import { ADMIN_SYSTEM_EMAIL } from "./admin-system-shared";
 import type { MemberProfile } from "./chat";
+import { chunk } from "./geo/discovery";
 
 export type RelationStatus = "none" | "pending_out" | "pending_in" | "friends" | "declined";
 
@@ -121,6 +122,34 @@ export async function listMembers(myId: string): Promise<MemberProfile[]> {
     return [];
   }
   return (data || []).map(mapRow);
+}
+
+/**
+ * Membres précis, par identifiant — mêmes colonnes, mêmes exclusions et même contrôle d'accès (RLS) que
+ * `listMembers`. Sert au filtre géographique : les identifiants viennent de /api/discover/geo, ce qui évite
+ * de dépendre de la fenêtre des 200 membres les plus récents (aucun profil compatible n'est écarté pour
+ * cette raison). Lots de 100 identifiants.
+ */
+export async function listMembersByIds(myId: string, ids: readonly string[]): Promise<MemberProfile[]> {
+  if (!supabase || !myId || ids.length === 0) return [];
+  const sb = supabase;
+  const unique = [...new Set(ids)].filter((id) => id !== myId);
+  const batches = chunk(unique, 100);
+  const results = await Promise.all(
+    batches.map(async (batch) => {
+      const { data, error } = await sb
+        .from("profiles")
+        .select(FULL_PROFILE_COLS)
+        .in("id", batch)
+        .neq("email", ADMIN_SYSTEM_EMAIL);
+      if (error) {
+        console.error("[Eden] chargement des membres par identifiant échoué:", error.message);
+        return [];
+      }
+      return data || [];
+    }),
+  );
+  return results.flat().map(mapRow);
 }
 
 // Toutes mes relations (envoyées ou reçues) pour calculer l'état de chaque profil.

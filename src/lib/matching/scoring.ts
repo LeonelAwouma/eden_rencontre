@@ -18,6 +18,7 @@ import type {
   EdenUserProfile,
 } from "./types";
 import type { MatchingConfig } from "./types";
+import { isSameRealCity } from "../geo/public-label";
 import { applyHardFilters, calculateAge } from "./hard-filters";
 import {
   scoreToMatchLevel,
@@ -584,7 +585,8 @@ function scoreLifestyle(
 // PREFERENCES COMPATIBILITY (5%)
 // ═══════════════════════════════════════════════════════════════════════════════
 
-function scorePreferences(
+/** Exportée pour les tests de non-régression du signal « ville » (scoring-city-signal.test.ts). */
+export function scorePreferences(
   a: PreferencesProfile,
   b: PreferencesProfile,
   seeker: EdenUserProfile,
@@ -614,7 +616,8 @@ function scorePreferences(
   maxPoints += 100 * 0.20;
 
   // Distance (simplified — would use geolocation in production)
-  const sameCity = seeker.city?.toLowerCase() === candidate.city?.toLowerCase();
+  // Une étiquette générique (« Non précisée ») n'est jamais une ville : jamais « même ville ».
+  const sameCity = isSameRealCity(seeker.city, candidate.city);
   const sameCountry = seeker.country?.toLowerCase() === candidate.country?.toLowerCase();
   let distPoints = sameCity ? 100 : sameCountry ? 70 : 40;
   

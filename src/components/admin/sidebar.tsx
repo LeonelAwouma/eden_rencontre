@@ -13,7 +13,7 @@ import {
   MessageCircle, PanelLeftClose, PanelLeftOpen, Video, Library,
   BookOpen, Send, MessagesSquare, Accessibility, FileUp, Gift, Megaphone,
   UserCog, CalendarClock, GraduationCap, KeyRound, ChevronDown, Compass,
-  HeartHandshake, Wallet, UserCheck, type LucideIcon,
+  HeartHandshake, Wallet, UserCheck, MapPinned, type LucideIcon,
 } from "lucide-react";
 import {
   ADMIN_NAV_GROUPS, ADMIN_NAV_ITEMS, ADMIN_SETTINGS_ITEM, activeAdminGroupId, activeAdminNavHref,
@@ -51,6 +51,7 @@ const NAV_ICONS: Record<string, LucideIcon> = {
   photos: FileUp,
   "password-resets": KeyRound,
   accessibility: Accessibility,
+  geography: MapPinned,
   coaches: UserCog,
   "coach-assignments": UserCheck,
   matching: Heart,

@@ -32,7 +32,7 @@ export function RegistrationProfileStep({
   onBack,
 }: {
   mode: RegistrationMode;
-  formData: Pick<RegistrationFormData, "firstName" | "lastName" | "gender" | "birthDate" | "civilStatus" | "country" | "city" | "phoneIso" | "phoneLocal">;
+  formData: Pick<RegistrationFormData, "firstName" | "lastName" | "gender" | "birthDate" | "civilStatus" | "country" | "city" | "location" | "phoneIso" | "phoneLocal">;
   setFormData: (patch: Partial<RegistrationFormData>) => void;
   onContinue: () => void;
   onBack: () => void;
@@ -165,6 +165,8 @@ export function RegistrationProfileStep({
           autoFocusCountry={mode === "google"}
           onChangeCountry={onChangeCountry}
           onChangeCity={(city) => setFormData({ city })}
+          location={formData.location}
+          onChangeLocation={(location) => setFormData({ location })}
         />
       </div>
 

@@ -12,7 +12,7 @@ const PREVIOUS_HREFS = [
   "/admin/meets", "/admin/mediatheque", "/admin/forum", "/admin/blog",
   "/admin/accessibilite", "/admin/reports", "/admin/referrals", "/admin/payments",
   "/admin/analytics", "/admin/announcements", "/admin/settings",
-  "/admin/users/coaches", "/admin/users/coach-assignments", "/admin/meetings", "/admin/analytics/lessons", "/admin/password-resets",
+  "/admin/users/coaches", "/admin/users/coach-assignments", "/admin/meetings", "/admin/analytics/lessons", "/admin/password-resets", "/admin/geographie",
 ];
 
 /** Identifiants d'entrées d'avant le refactoring : ils restent stables. */
@@ -20,12 +20,12 @@ const PREVIOUS_IDS = [
   "dashboard", "users", "photos", "password-resets", "accessibility", "coaches", "matching",
   "chat-monitoring", "messages", "forum", "reports", "testimonials", "events", "meets",
   "coach-assignments", "meetings", "mediatheque", "blog", "announcements", "payments", "referrals",
-  "analytics", "analytics-lessons", "settings",
+  "analytics", "analytics-lessons", "settings", "geography",
 ];
 
 const EXPECTED_GROUPS: Record<AdminNavGroupId, string[]> = {
   pilotage: ["/admin/dashboard", "/admin/analytics", "/admin/analytics/lessons"],
-  members: ["/admin/users", "/admin/users/coaches", "/admin/users/coach-assignments", "/admin/photos", "/admin/password-resets", "/admin/accessibilite"],
+  members: ["/admin/users", "/admin/users/coaches", "/admin/users/coach-assignments", "/admin/photos", "/admin/password-resets", "/admin/accessibilite", "/admin/geographie"],
   encounters: ["/admin/matching", "/admin/events", "/admin/meets", "/admin/meetings"],
   community: ["/admin/chat-monitoring", "/admin/messages", "/admin/forum", "/admin/reports"],
   content: ["/admin/mediatheque", "/admin/blog", "/admin/announcements", "/admin/testimonials"],

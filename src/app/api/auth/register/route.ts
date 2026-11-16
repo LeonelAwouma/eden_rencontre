@@ -17,6 +17,8 @@ import { reportRegistrationFailure } from "@/lib/registration-incident";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { readRegistrationSelfie, discardLivenessFrames, resolveRegistrationAvatar } from "@/lib/registration-media";
 import { captureReferral, REFERRAL_COOKIE } from "@/lib/referrals";
+import { isDisplayLevel, publicCityLabel } from "@/lib/geo/public-label";
+import { saveMemberLocation } from "@/lib/geo/member-location-server";
 
 export const maxDuration = 60;
 
@@ -49,6 +51,14 @@ export async function POST(request: NextRequest) {
       phone,
       avatarUrl,
     } = body;
+
+    // Localisation : la ville détaillée va UNIQUEMENT dans member_locations (table privée, via
+    // saveMemberLocation). profiles.city et user_metadata.city ne reçoivent que l'étiquette publique
+    // conforme au consentement d'affichage (« none » par défaut) — jamais la ville privée.
+    const regLocation: Record<string, unknown> =
+      body.location && typeof body.location === "object" ? (body.location as Record<string, unknown>) : {};
+    const regDisplayLevel = isDisplayLevel(regLocation.displayLevel) ? regLocation.displayLevel : "none";
+    const publicCity = city ? publicCityLabel(typeof city === "string" ? city : null, regDisplayLevel) : "";
 
     // Numéro de téléphone au format international (+237…), obligatoire.
     if (!isValidE164(phone)) {
@@ -131,7 +141,7 @@ export async function POST(request: NextRequest) {
       civilStatus,
       region,
       country,
-      city,
+      city: publicCity,
       marriageVision: cleanMarriageVision,
     }).filter(([, v]) => v !== undefined && v !== null && v !== ""));
     const { data: authData, error: authError } = await db.auth.admin.createUser({
@@ -199,7 +209,7 @@ export async function POST(request: NextRequest) {
       civil_status: civilStatus || null,
       region: region || null,
       country: country || null,
-      city: city || null,
+      city: publicCity || null,
       marriage_vision: cleanMarriageVision,
       status: "pending",
       onboarding_completed: false,
@@ -246,6 +256,17 @@ export async function POST(request: NextRequest) {
     // Comptée seulement pour une inscription réellement aboutie.
     await recordRateLimit(ipKey, "register");
 
+    // Localisation structurée (privée). Jamais bloquante : refuser de la partager, ou un référentiel
+    // pas encore installé, n'empêche pas l'inscription.
+    if (country) {
+      try {
+        const loc = await saveMemberLocation(db, userId, { ...regLocation, country, city: typeof city === "string" ? city : null, displayLevel: regDisplayLevel });
+        if (!loc.ok) console.error("[inscription] localisation non enregistrée:", loc.error);
+      } catch (locErr) {
+        console.error("[inscription] localisation non enregistrée:", locErr);
+      }
+    }
+
     // Capture du parrainage (jeton d'intention à usage unique posé par
     // /r/[code]) — appel RPC atomique, jamais bloquant pour l'inscription.
     {
@@ -269,7 +290,7 @@ export async function POST(request: NextRequest) {
         title: "Nouvelle inscription",
         message: `${name} (${contactLabel}) s'est inscrit${phoneOnly ? " par téléphone" : ""} et attend votre validation.`,
         link: `/admin/users/${userId}`,
-        metadata: { user_id: userId, name, email: cleanEmail, phone: cleanPhone, signup_method: phoneOnly ? "phone" : "email", city, country },
+        metadata: { user_id: userId, name, email: cleanEmail, phone: cleanPhone, signup_method: phoneOnly ? "phone" : "email", city: publicCity, country },
       });
     } catch (notifErr) {
       console.error("Failed to create registration notification:", notifErr);

@@ -167,6 +167,9 @@ export async function updateProfile(updates: EditableProfile): Promise<AuthResul
   // On ne garde que les clés définies (évite d'écraser avec undefined)
   const clean: Record<string, any> = {};
   (Object.keys(updates) as (keyof EditableProfile)[]).forEach((k) => {
+    // Localisation : jamais depuis le client. Elle passe par /api/member/location, qui n'écrit dans
+    // profiles / user_metadata que l'étiquette publique conforme au consentement d'affichage.
+    if (k === "city" || k === "country") return;
     if (updates[k] !== undefined) clean[k] = updates[k];
   });
 
@@ -183,7 +186,7 @@ export async function updateProfile(updates: EditableProfile): Promise<AuthResul
     // Les métadonnées ne servent qu'à la session : l'admin et les autres membres
     // lisent la table profiles. On y reporte donc les mêmes champs.
     const COLUMNS: Record<string, string> = {
-      name: "name", pseudo: "pseudo", city: "city", country: "country", civilStatus: "civil_status",
+      name: "name", pseudo: "pseudo", civilStatus: "civil_status",
       profession: "profession", bio: "bio", marriageVision: "marriage_vision", avatar_url: "avatar_url",
       discoverySource: "discovery_source",
     };

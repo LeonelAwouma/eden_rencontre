@@ -1,0 +1,16 @@
+{
+  "adm": {
+    "source": "geoBoundaries (limites ADM1-ADM3 du Cameroun, fichiers public/geo/cameroun-*.geojson)",
+    "url": "https://www.geoboundaries.org/",
+    "version": "non renseignée (fichiers datés du 2025-09-23 dans le dépôt)",
+    "license": "CC BY 4.0 (confirmée par le propriétaire du projet ; https://creativecommons.org/licenses/by/4.0/)",
+    "retrievedAt": "2026-09-23"
+  },
+  "places": {
+    "source": "GeoNames",
+    "url": "https://download.geonames.org/export/dump/CM.zip",
+    "version": "export du 2026-11-14 (public/geo/CM.txt)",
+    "license": "CC BY 4.0 (readme.txt de GeoNames : https://creativecommons.org/licenses/by/4.0/)",
+    "retrievedAt": "2026-11-14"
+  }
+}
