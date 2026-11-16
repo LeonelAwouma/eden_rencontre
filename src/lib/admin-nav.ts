@@ -44,6 +44,7 @@ export const ADMIN_NAV_ITEMS: ReadonlyArray<AdminNavItem> = [
   { id: "photos", label: "Import de fichiers", href: "/admin/photos", group: "members" },
   { id: "password-resets", label: "Demandes de réinitialisation", href: "/admin/password-resets", group: "members" },
   { id: "accessibility", label: "Accessibilité", href: "/admin/accessibilite", group: "members" },
+  { id: "geography", label: "Géographie", href: "/admin/geographie", group: "members" },
 
   { id: "matching", label: "Matching", href: "/admin/matching", group: "encounters" },
   { id: "events", label: "Événements", href: "/admin/events", group: "encounters" },

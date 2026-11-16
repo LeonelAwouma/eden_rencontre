@@ -1,3 +1,5 @@
+import type { LocationChoice } from "@/components/geo/cameroon-city-picker";
+
 /** Partagé entre le parcours classique (register/page.tsx) et Google (onboarding/complete-registration/page.tsx). */
 export type RegistrationMode = "classic" | "google";
 
@@ -21,6 +23,8 @@ export interface RegistrationFormData {
   region: string;
   country: string;
   city: string;
+  /** Localisation structurée (Cameroun) + niveau d'affichage choisi ; null = aucun choix. */
+  location: LocationChoice | null;
   phoneIso: string;
   phoneLocal: string;
   charterAuthorizeVerification: boolean;
@@ -41,6 +45,7 @@ export const INITIAL_REGISTRATION_FORM_DATA: RegistrationFormData = {
   region: "",
   country: "",
   city: "",
+  location: null,
   phoneIso: "CM",
   phoneLocal: "",
   charterAuthorizeVerification: false,

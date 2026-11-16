@@ -8,6 +8,8 @@ import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { readRegistrationSelfie, discardLivenessFrames, resolveRegistrationAvatar } from "@/lib/registration-media";
 import { captureReferral, REFERRAL_COOKIE } from "@/lib/referrals";
 import { refuseCoachSession } from "@/lib/coach/guard";
+import { isDisplayLevel, publicCityLabel } from "@/lib/geo/public-label";
+import { saveMemberLocation } from "@/lib/geo/member-location-server";
 
 export const maxDuration = 60;
 
@@ -57,6 +59,13 @@ export async function POST(request: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Ville détaillée → member_locations seulement. profiles.city et user_metadata.city ne reçoivent que
+    // l'étiquette publique conforme au consentement d'affichage (« none » par défaut).
+    const regLocation: Record<string, unknown> =
+      body.location && typeof body.location === "object" ? (body.location as Record<string, unknown>) : {};
+    const regDisplayLevel = isDisplayLevel(regLocation.displayLevel) ? regLocation.displayLevel : "none";
+    const publicCity = publicCityLabel(typeof city === "string" ? city : null, regDisplayLevel);
 
     // Validate age (minimum 18) — et une date bien formée (AAAA-MM-JJ)
     if (!isAdultBirthDate(birthDate)) {
@@ -199,7 +208,7 @@ export async function POST(request: NextRequest) {
       civil_status: civilStatus,
       region: region,
       country: country,
-      city: city,
+      city: publicCity,
       marriage_vision: cleanMarriageVision,
       status,
       selfie_verified: false,
@@ -246,6 +255,19 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Localisation structurée (privée) : jamais bloquante pour l'inscription.
+    try {
+      const loc = await saveMemberLocation(db, userId, {
+        ...regLocation,
+        country,
+        city: typeof city === "string" ? city : null,
+        displayLevel: regDisplayLevel,
+      });
+      if (!loc.ok) console.error("[Google Onboarding] localisation non enregistrée:", loc.error);
+    } catch (locErr) {
+      console.error("[Google Onboarding] localisation non enregistrée:", locErr);
+    }
+
     // Téléphone : colonne profiles.phone (20261002_profiles_phone.sql). Sans elle, l'inscription continue.
     {
       const { error: phoneError } = await db.from("profiles").update({ phone }).eq("id", userId);
@@ -276,7 +298,7 @@ export async function POST(request: NextRequest) {
         civilStatus,
         region,
         country,
-        city,
+        city: publicCity,
         marriageVision: cleanMarriageVision,
         ...(chosenAvatarUrl ? { avatar_url: chosenAvatarUrl } : {}),
       },

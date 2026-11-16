@@ -22,7 +22,7 @@ import { useQuestionnaireAutosave } from "@/hooks/use-questionnaire-autosave";
 import { AutoSaveIndicator } from "@/components/autosave-indicator";
 import { ProfilePhotoEditor } from "@/components/profile-photo-editor";
 import { ProfilePhotoGallery } from "@/components/profile-photo-gallery";
-import { CountryCityPicker } from "@/components/geo/country-city-popover";
+import { MemberLocationEditor } from "@/components/geo/member-location-editor";
 
 
 /* ─────────────────────────── Types ─────────────────────────── */
@@ -149,15 +149,16 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
     setSaving(true);
     try {
       if (!supabase) return;
+      // Localisation (pays/ville/région) : JAMAIS écrite ici. Elle passe par /api/member/location
+      // (MemberLocationEditor), qui applique le consentement d'affichage.
       const { error } = await supabase.from("profiles").update({
-        name: form.name.trim(), pseudo: form.pseudo.trim(), city: form.city.trim(), country: form.country.trim(),
-        region: form.region.trim(), profession: form.profession.trim(), bio: form.bio.trim(),
+        name: form.name.trim(), pseudo: form.pseudo.trim(), profession: form.profession.trim(), bio: form.bio.trim(),
         civil_status: form.civil_status, gender: form.gender, birth_date: form.birth_date || null,
         // marriage_vision et discovery_source ne sont plus écrits ici : le questionnaire en est la seule saisie.
         updated_at: new Date().toISOString(),
       }).eq("id", profile.id);
       if (error) throw error;
-      await updateProfile({ name: form.name.trim(), pseudo: form.pseudo.trim(), city: form.city, country: form.country, profession: form.profession, bio: form.bio });
+      await updateProfile({ name: form.name.trim(), pseudo: form.pseudo.trim(), profession: form.profession, bio: form.bio });
       setEditing(false);
       onRefresh();
     } catch (e: any) {
@@ -338,13 +339,7 @@ function BasicInfoCard({ profile, onRefresh, onSwitchToFaith }: { profile: Profi
               <MapPin size={14} /> {t("profilePage.location")}
             </h4>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <CountryCityPicker
-                country={form.country}
-                city={form.city}
-                onChangeCountry={(country) => setForm(f => ({ ...f, country }))}
-                onChangeCity={(city) => setForm(f => ({ ...f, city }))}
-              />
-              <EditField label={t("profilePage.region")} value={form.region} onChange={v => setForm(f => ({ ...f, region: v }))} />
+              <MemberLocationEditor country={form.country} city={form.city} onSaved={onRefresh} />
             </div>
           </div>
 

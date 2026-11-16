@@ -138,6 +138,23 @@ export const ANNOUNCEMENTS: readonly Announcement[] = [
     },
   },
   {
+    id: "geo-map",
+    surface: "member",
+    active: false, // → true quand les migrations géo (20261115 à 20261117) sont appliquées, les données importées et l'app déployée
+    activatesAt: "2026-11-17T00:00:00Z", // PROVISOIRE : à remplacer par la date de mise en ligne réelle
+    availability: "always",
+    href: "/dashboard?tab=Discover",
+    priority: 10,
+    fr: {
+      title: "Découvrez les profils près de chez vous",
+      description: "Filtrez par ville, région ou rayon, et explorez la carte du Cameroun. Vous gardez la main sur ce qui est partagé.",
+    },
+    en: {
+      title: "Find profiles near you",
+      description: "Filter by city, region or radius, and explore the map of Cameroon. You stay in control of what is shared.",
+    },
+  },
+  {
     id: "admin-whats-new-stats",
     surface: "admin",
     active: false, // → true quand l'écran Annonces est déployé

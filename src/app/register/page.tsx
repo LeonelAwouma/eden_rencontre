@@ -79,6 +79,7 @@ export default function RegisterPage() {
         region: formData.region,
         country: formData.country,
         city: formData.city,
+        location: formData.location,
         charterAuthorizeVerification: formData.charterAuthorizeVerification,
         charterCommitRespectful: formData.charterCommitRespectful,
         charterAcceptFull: formData.charterAcceptFull,

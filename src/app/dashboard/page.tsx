@@ -1,10 +1,16 @@
 "use client";
 
-import { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useLayoutEffect, useRef, useCallback, Fragment } from "react";
 import { createPortal } from "react-dom";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
+import { MemberLocationEditor } from "@/components/geo/member-location-editor";
+import { useGeoDiscover } from "@/components/geo/use-geo-discover";
+import { GeoDiscoverControls, useGeoText } from "@/components/geo/geo-discover-controls";
+import { GeoMapSection } from "@/components/geo/geo-map-panel";
+import { isGenericCityLabel } from "@/lib/geo/public-label";
+import type { PublicCandidate } from "@/lib/geo/discovery";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
@@ -191,14 +197,19 @@ function MemberAvatar({ m, size = 56, onViewPhoto }: { m: MemberProfile; size?: 
   );
 }
 
-function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match, onViewPhoto }: {
+function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match, onViewPhoto, geo }: {
   m: MemberProfile; isFavorite: boolean; onToggleFav: () => void; onOpen: () => void;
   action?: React.ReactNode; match?: number | null; onViewPhoto?: () => void;
+  /** Infos géographiques AUTORISÉES par le membre (filtre géographique actif) : zone et distance approximative. */
+  geo?: PublicCandidate;
 }) {
   const { t } = useI18n();
+  const gt = useGeoText();
   const age = ageFromBirthDate(m.birthDate);
+  // Une étiquette générique (ville masquée) n'est jamais affichée comme une ville.
+  const shownCity = isGenericCityLabel(m.city) ? null : m.city;
   // Une seule information secondaire : âge · ville, sinon la profession.
-  const secondary = [age ? t("profileDetail.yearsOld", { age }) : null, m.city].filter(Boolean).join(" · ") || m.profession || "";
+  const secondary = [age ? t("profileDetail.yearsOld", { age }) : null, geo?.locationLabel ?? shownCity].filter(Boolean).join(" · ") || m.profession || "";
 
   return (
     <div className="rounded-2xl p-3 flex flex-col gap-3 transition-colors hover:border-[#C6D4C0]"
@@ -211,6 +222,11 @@ function MemberCard({ m, isFavorite, onToggleFav, onOpen, action, match, onViewP
             {m.verification_status === "verified" && isProfileFullyComplete(m) && <VerifiedBadge size={14} />}
           </span>
           {secondary && <span className="block text-xs truncate mt-0.5" style={{ color: "#6B746E" }}>{secondary}</span>}
+          {geo?.proximityBand && (
+            <span className="block text-[11px] truncate mt-0.5" style={{ color: "#486B46" }} title={gt.note}>
+              ≈ {gt.bands[geo.proximityBand]}
+            </span>
+          )}
         </button>
         <div className="flex items-center gap-1 shrink-0">
           {typeof match === "number" && (
@@ -342,6 +358,15 @@ export default function DashboardPage() {
   const viewPhotoOf = (m: { avatar_url?: string | null; name: string }) => () => { if (m.avatar_url) setViewingPhoto({ url: m.avatar_url, name: m.name }); };
 
   const meId = user?.id || "";
+  // Filtre géographique du Discover (inactif par défaut : « Aucune restriction »). Le classement de
+  // compatibilité utilisé est EXACTEMENT celui du Discover existant ; la géographie ne fait que filtrer/trier.
+  const rankForGeo = useCallback(
+    (members: MemberProfile[]) =>
+      user ? filterAndRankByReciprocalMatch({ ...user, questionnaire: questionnaireAnswers }, members) : members,
+    [user, questionnaireAnswers],
+  );
+  const geo = useGeoDiscover({ meId, gender: user?.gender, rank: rankForGeo });
+  const geoText = useGeoText();
   const totalUnread = conversations.reduce((s, c) => s + c.unread, 0);
   const visitsThisWeek = visitors.filter((v) => Date.now() - new Date(v.viewedAt).getTime() < 7 * 24 * 60 * 60 * 1000).length;
   const activeConv = conversations.find((c) => c.id === activeConvId) || null;
@@ -731,7 +756,7 @@ export default function DashboardPage() {
     if (!profileForm.name.trim()) { toast({ title: t("dashboard.toastNameRequired"), variant: "destructive" }); return; }
     setSavingProfile(true);
     const res = await updateProfile({
-      name: profileForm.name.trim(), city: profileForm.city.trim(), country: profileForm.country.trim(),
+      name: profileForm.name.trim(),
       civilStatus: profileForm.civilStatus, profession: profileForm.profession.trim(),
       // La vision du mariage n'est plus écrite ici : elle se renseigne dans le questionnaire (une seule saisie).
       bio: profileForm.bio.trim(),
@@ -1994,9 +2019,13 @@ export default function DashboardPage() {
         const q = discoverSearch.trim().toLowerCase();
         // Pourcentage de compatibilité, ou null tant qu'il ne peut pas être calculé (questionnaire non rempli).
         const scoreOf = (m: MemberProfile) => (user ? computeDisplayMatch({ ...user, questionnaire: questionnaireAnswers }, m).score : null);
-        const discoverResults = discoverMembers.filter((m) => {
+        // Sans portée géographique : la liste habituelle, strictement inchangée. Avec une portée : les profils
+        // autorisés par le serveur (localisés d'abord, puis « localisation non renseignée »), déjà classés par
+        // le classement de compatibilité existant — la géographie ne modifie jamais un score.
+        const geoActive = geo.active;
+        const baseList = geoActive ? [...geo.located, ...geo.unlocated] : discoverMembers;
+        const discoverResults = baseList.filter((m) => {
           if (q && !((m.name || "").toLowerCase().includes(q) || (m.city || "").toLowerCase().includes(q) || (m.country || "").toLowerCase().includes(q) || (m.profession || "").toLowerCase().includes(q))) return false;
-          if (discoverFilter === "nearMe" && !(user?.country && m.country && user.country.toLowerCase() === m.country.toLowerCase())) return false;
           if (discoverFilter === "highAffinity" && (scoreOf(m) ?? 0) < 75) return false;
           if (discoverFilter === "verified" && !m.avatar_url) return false;
           return true;
@@ -2004,7 +2033,6 @@ export default function DashboardPage() {
         const shown = discoverResults.slice(0, discoverCount);
         const discoverFilters = [
           { key: "all", label: t("dashboard.filterAll") },
-          { key: "nearMe", label: t("dashboard.filterNearMe") },
           { key: "new", label: t("dashboard.filterNew") },
           { key: "highAffinity", label: t("dashboard.filterHighAffinity") },
           { key: "verified", label: t("dashboard.filterVerified") },
@@ -2073,7 +2101,9 @@ export default function DashboardPage() {
                 </button>
               ))}
             </div>
-            {socialLoading && discoverMembers.length === 0 ? (
+            <GeoDiscoverControls geo={geo} onOpenProfile={() => setActiveTab("Profil")} resultCount={shown.length} />
+            <GeoMapSection geo={geo} />
+            {!geoActive && socialLoading && discoverMembers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-16 gap-3">
                 <Loader2 className="w-7 h-7 animate-spin" style={{ color: "#486B46" }} />
                 <p className="text-sm" style={{ color: "#777777" }}>{t("dashboard.loadingMembers")}</p>
@@ -2082,10 +2112,20 @@ export default function DashboardPage() {
               <EmptyState icon={Search} title={t("dashboard.noProfilesFound")} text={t("dashboard.inviteLovedOnes")} cta={t("dashboard.explore")} />
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3">
-                {shown.map((m) => {
+                {shown.map((m, i) => {
                   const status = relations[m.id]?.status ?? "none";
+                  const gMeta = geoActive ? geo.meta.get(m.id) : undefined;
+                  // Premier profil « non localisé » : en-tête de catégorie distincte (aucune distance attribuée).
+                  const firstUnlocated = geoActive && gMeta?.category === "unlocated" && (i === 0 || geo.meta.get(shown[i - 1].id)?.category !== "unlocated");
                   return (
-                    <MemberCard key={m.id} m={m} match={scoreOf(m)} isFavorite={favoriteIds.has(m.id)}
+                    <Fragment key={m.id}>
+                    {firstUnlocated && (
+                      <div className="col-span-full pt-2">
+                        <h4 className="text-xs font-bold uppercase tracking-wider" style={{ color: "#486B46" }}>{geoText.unlocatedTitle}</h4>
+                        <p className="text-xs mt-0.5" style={{ color: "#6B746E" }}>{geoText.unlocatedHint}</p>
+                      </div>
+                    )}
+                    <MemberCard m={m} geo={gMeta} match={scoreOf(m)} isFavorite={favoriteIds.has(m.id)}
                       onViewPhoto={viewPhotoOf(m)}
                       onToggleFav={() => handleToggleFavorite(m)}
                       onOpen={() => router.push(`/dashboard/profile/${m.id}`)}
@@ -2105,6 +2145,7 @@ export default function DashboardPage() {
                           </Button>
                         )
                       } />
+                    </Fragment>
                   );
                 })}
               </div>
@@ -2945,18 +2986,12 @@ export default function DashboardPage() {
                     <h4 className="text-xs font-bold uppercase tracking-wider mb-3 pb-2" style={{ color: "#486B46", borderBottom: "1px solid #F0EDE8" }}>
                       {t("dashboard.sectionLocation")}
                     </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>{t("dashboard.city")}</label>
-                        <Input value={profileForm.city} onChange={(e) => setProfileForm((f) => ({ ...f, city: e.target.value }))}
-                          placeholder={t("dashboard.cityPlaceholder")} className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
-                      </div>
-                      <div>
-                        <label className="text-xs font-semibold uppercase tracking-wider mb-1 block" style={{ color: "#777777" }}>{t("dashboard.country")}</label>
-                        <Input value={profileForm.country} onChange={(e) => setProfileForm((f) => ({ ...f, country: e.target.value }))}
-                          placeholder={t("dashboard.countryPlaceholder")} className="h-11 rounded-xl text-sm" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }} />
-                      </div>
-                    </div>
+                    {/* La localisation passe uniquement par /api/member/location (consentement d'affichage appliqué). */}
+                    <MemberLocationEditor
+                      country={user?.country || ""}
+                      city={user?.city || ""}
+                      onSaved={() => toast({ title: t("dashboard.toastProfileUpdated") })}
+                    />
                   </div>
 
                   {/* Bio section */}
