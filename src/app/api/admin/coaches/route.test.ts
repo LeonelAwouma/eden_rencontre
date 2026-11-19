@@ -611,12 +611,22 @@ describe("identification par téléphone", () => {
     expect(JSON.stringify(json)).not.toContain("phone.eden.invalid");
   });
 
-  test("numéro obligatoire et au format international : 400 sans aucune création", async () => {
+  test("numéro saisi : format international obligatoire, 400 sans aucune création", async () => {
     const { POST } = await import("./route");
-    for (const phone of [undefined, "", "690123456", "+23", "abc"]) {
+    for (const phone of ["690123456", "+23", "abc"]) {
       const res = await POST(body({ phone }));
       expect(res.status).toBe(400);
       expect((await res.json()).code).toBe("phone_invalid");
+    }
+    expect(w.spies.create).toHaveLength(0);
+  });
+
+  test("ni numéro ni e-mail : 400 identifier_required sans aucune création", async () => {
+    const { POST } = await import("./route");
+    for (const over of [{ phone: undefined, email: undefined }, { phone: "", email: "" }, { phone: "  ", email: " " }]) {
+      const res = await POST(body(over));
+      expect(res.status).toBe(400);
+      expect((await res.json()).code).toBe("identifier_required");
     }
     expect(w.spies.create).toHaveLength(0);
   });
@@ -656,6 +666,44 @@ describe("identification par téléphone", () => {
     const details = JSON.stringify(w.spies.audit[0]?.[5]);
     expect(details).not.toContain("690123456");
     expect(details).not.toContain("awa@x.fr");
+  });
+
+  test("e-mail seul : l'adresse réelle devient l'identifiant Auth, aucun numéro enregistré", async () => {
+    const { POST } = await import("./route");
+    const res = await POST(body({ phone: "" }));
+    expect(res.status).toBe(201);
+    expect(w.spies.create[0]).toMatchObject({ email: "awa@x.fr" });
+    expect(w.tables.profiles.get(ID)).toMatchObject({ phone: null, email: "awa@x.fr", account_type: "coach", status: "approved" });
+    expect(w.tables.coach_accounts.get(ID)).toMatchObject({ email: "awa@x.fr", active: true });
+    const json = await res.json();
+    expect(json).toMatchObject({ phone: null, email: "awa@x.fr", login: "email" });
+  });
+
+  test("e-mail seul déjà utilisé : 409 email_exists avec un message sur l'adresse, rien n'est écrit", async () => {
+    w.authCreateError = { code: "email_exists", name: "AuthApiError", status: 422 };
+    const { POST } = await import("./route");
+    const res = await POST(body({ phone: "" }));
+    expect(res.status).toBe(409);
+    const json = await res.json();
+    expect(json.code).toBe("email_exists");
+    expect(json.error).toContain("adresse e-mail");
+    expect(w.tables.coach_accounts.size).toBe(0);
+  });
+
+  test("e-mail seul invalide ou adresse technique : 400 sans création", async () => {
+    const { POST } = await import("./route");
+    for (const email of ["pas-un-email", "237690123456@phone.eden.invalid"]) {
+      expect((await POST(body({ phone: "", email }))).status).toBe(400);
+    }
+    expect(w.spies.create).toHaveLength(0);
+  });
+
+  test("e-mail seul : le journal d'audit ne contient pas l'adresse", async () => {
+    const { POST } = await import("./route");
+    await POST(body({ phone: "" }));
+    const details = JSON.stringify(w.spies.audit[0]?.[5]);
+    expect(details).not.toContain("awa@x.fr");
+    expect(details).toContain("email");
   });
 
   test("la liste renvoie le téléphone et le vrai contact, jamais l'adresse technique", async () => {
