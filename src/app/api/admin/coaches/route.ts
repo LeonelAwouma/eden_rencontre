@@ -122,11 +122,13 @@ export async function POST(req: NextRequest) {
 
   if (body?.action === "reset_password") return resetPassword(admin, req, body.id);
 
-  // Identifiant de connexion = numéro E.164 (obligatoire, unique). L'e-mail n'est qu'une coordonnée de contact,
-  // facultative et partageable entre plusieurs coachs.
-  const phone = normalizePhone(body?.phone);
+  // Identifiant de connexion : le numéro E.164 s'il est fourni (l'e-mail n'est alors qu'un contact, partageable) ;
+  // sinon l'adresse e-mail, qui devient l'adresse Auth du coach (unique). Au moins l'un des deux est obligatoire.
+  const rawPhone = typeof body?.phone === "string" ? body.phone.trim() : "";
+  const phone = rawPhone ? normalizePhone(rawPhone) : null;
   const rawEmail = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
   const email = rawEmail ? realEmailOrNull(rawEmail) : null;
+  const loginMode: "phone" | "email" = rawPhone ? "phone" : "email";
   const password = typeof body?.password === "string" ? body.password : "";
   const name = typeof body?.name === "string" && body.name.trim() ? body.name.trim() : "Coach";
   // La photo est contrôlée AVANT toute création : une image refusée ne laisse aucun compte à moitié créé.
@@ -136,12 +138,18 @@ export async function POST(req: NextRequest) {
     if (!check.ok) return json({ error: check.message, code: check.code }, check.code === "avatar_too_large" ? 413 : 400);
     avatar = check;
   }
-  if (!phone) {
+  if (!rawPhone && !rawEmail) {
+    return json({ error: "Indiquez un numéro de téléphone ou une adresse e-mail.", code: "identifier_required" }, 400);
+  }
+  if (rawPhone && !phone) {
     return json({ error: "Numéro de téléphone invalide : format international requis (ex. +237690123456).", code: "phone_invalid" }, 400);
   }
   if (rawEmail && (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email))) {
-    return json({ error: "Adresse e-mail de contact invalide.", code: "email_invalid" }, 400);
+    return json({ error: loginMode === "email" ? "Adresse e-mail invalide." : "Adresse e-mail de contact invalide.", code: "email_invalid" }, 400);
   }
+  // Adresse Auth : technique (dérivée du numéro) en mode téléphone, réelle en mode e-mail seul.
+  const authEmail = phone ? phoneToSyntheticEmail(phone) : email;
+  if (!authEmail) return json({ error: "Indiquez un numéro de téléphone ou une adresse e-mail.", code: "identifier_required" }, 400);
   if (name.length > 100 || password.length < 12 || password.length > 128 || !/\d/.test(password) || !/[A-Za-z]/.test(password)) {
     return json({ error: "Mot de passe de 12 caractères minimum (lettres et chiffres) requis." }, 400);
   }
@@ -156,17 +164,19 @@ export async function POST(req: NextRequest) {
     return json({ error: f.message, code: f.code }, f.status);
   }
   // Numéro déjà attribué (membre ou coach) : refus AVANT toute création. Erreur de lecture : refus (fermé par défaut).
-  const { data: phoneOwner, error: phoneLookupError } = await db.from("profiles").select("id").eq("phone", phone).maybeSingle();
-  if (phoneLookupError) return json({ error: "Vérification du numéro impossible. Réessayez.", code: "phone_check_failed" }, 503);
-  if (phoneOwner) return json({ error: "Ce numéro de téléphone est déjà attribué à un autre compte.", code: "phone_exists" }, 409);
+  if (phone) {
+    const { data: phoneOwner, error: phoneLookupError } = await db.from("profiles").select("id").eq("phone", phone).maybeSingle();
+    if (phoneLookupError) return json({ error: "Vérification du numéro impossible. Réessayez.", code: "phone_check_failed" }, 503);
+    if (phoneOwner) return json({ error: "Ce numéro de téléphone est déjà attribué à un autre compte.", code: "phone_exists" }, 409);
+  }
 
   let created: Awaited<ReturnType<Db["auth"]["admin"]["createUser"]>>["data"] | null = null;
   let createError: AuthErrorInfo | null = null;
   try {
-    // Adresse Auth TECHNIQUE dérivée du numéro (jamais présentée comme contact ni utilisée pour écrire) :
-    // elle laisse plusieurs coachs partager une même adresse de contact.
+    // Mode téléphone : adresse Auth TECHNIQUE dérivée du numéro (jamais présentée comme contact ni utilisée pour
+    // écrire), qui laisse plusieurs coachs partager une même adresse de contact. Mode e-mail seul : l'adresse réelle.
     const res = await db.auth.admin.createUser({
-      email: phoneToSyntheticEmail(phone)!, password, email_confirm: true, user_metadata: { name, account_type: "coach" },
+      email: authEmail, password, email_confirm: true, user_metadata: { name, account_type: "coach" },
     });
     created = res.data;
     createError = (res.error as AuthErrorInfo | null) ?? null;
@@ -176,7 +186,7 @@ export async function POST(req: NextRequest) {
   if (createError || !created?.user) {
     // Cause réelle rendue visible à l'administrateur par un CODE stable et un message sûr ; le message brut de
     // Supabase n'est ni renvoyé ni journalisé (il peut contenir des données personnelles). Journal : code, nom, statut.
-    const f = classifyCreateUserError(createError);
+    const f = classifyCreateUserError(createError, loginMode);
     console.error("[admin/coaches] createUser refusé :", sanitizedDiagnostic(createError, f.code));
     return json({ error: f.message, code: f.code }, f.status);
   }
@@ -223,8 +233,9 @@ export async function POST(req: NextRequest) {
     return json({ error: "Création incohérente, opération annulée." }, 500);
   }
 
-  await audit(admin, req, "coach_created", id, { phone: maskPhone(phone), name, with_photo: !!avatarUrl });
-  return json({ id, email, phone, name, active: true, avatar_url: avatarUrl }, 201);
+  // Jamais l'adresse e-mail en clair dans le journal ; le numéro est masqué.
+  await audit(admin, req, "coach_created", id, { login: loginMode, phone: phone ? maskPhone(phone) : null, name, with_photo: !!avatarUrl });
+  return json({ id, email, phone, name, active: true, avatar_url: avatarUrl, login: loginMode }, 201);
 }
 
 async function resetPassword(admin: AdminSession, req: NextRequest, id: unknown) {

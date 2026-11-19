@@ -45,11 +45,21 @@ const BY_NAME: Record<string, CreateUserErrorCode> = {
   AuthRetryableFetchError: "auth_internal_error",
 };
 
-export function classifyCreateUserError(e: AuthErrorInfo | null | undefined): CreateUserFailure {
+/** Coach créé avec son seul e-mail : l'adresse saisie est l'identifiant Auth, le conflit porte donc sur elle. */
+const EMAIL_EXISTS_FOR_EMAIL_LOGIN =
+  "Cette adresse e-mail est déjà utilisée par un autre compte. Ajoutez un numéro de téléphone ou utilisez une autre adresse.";
+
+export function classifyCreateUserError(
+  e: AuthErrorInfo | null | undefined,
+  loginMode: "phone" | "email" = "phone",
+): CreateUserFailure {
   const code = typeof e?.code === "string" ? e.code : undefined;
   const name = typeof e?.name === "string" ? e.name : undefined;
   const status = typeof e?.status === "number" ? e.status : undefined;
-  if (code && BY_CODE[code]) return failure(BY_CODE[code]);
+  if (code && BY_CODE[code]) {
+    const f = failure(BY_CODE[code]);
+    return f.code === "email_exists" && loginMode === "email" ? { ...f, message: EMAIL_EXISTS_FOR_EMAIL_LOGIN } : f;
+  }
   if (name && BY_NAME[name]) return failure(BY_NAME[name]);
   // Statut HTTP : complément uniquement, jamais prioritaire sur un code connu.
   if (status === 401 || status === 403) return failure("supabase_admin_auth_rejected");

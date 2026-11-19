@@ -112,7 +112,10 @@ export default function AdminCoaches() {
   };
 
   const create = async (e: React.FormEvent) => {
-    e.preventDefault(); setSaving(true); setError(""); setNotice("");
+    e.preventDefault(); setError(""); setNotice("");
+    if (!phone.trim() && !email.trim()) { setError("Indiquez un numéro de téléphone ou une adresse e-mail."); return; }
+    const byPhone = !!phone.trim();
+    setSaving(true);
     try {
       if (photo) {
         const form = new FormData();
@@ -124,7 +127,9 @@ export default function AdminCoaches() {
         await call("POST", { name, email, phone, password });
       }
       setName(""); setEmail(""); setPhone(""); setPassword(""); pickPhoto(null);
-      setNotice("Compte Coach créé. Il se connecte avec son numéro de téléphone et son mot de passe.");
+      setNotice(byPhone
+        ? "Compte Coach créé. Il se connecte avec son numéro de téléphone et son mot de passe."
+        : "Compte Coach créé. Il se connecte avec son adresse e-mail et son mot de passe.");
       await load();
     } catch (err) { fail(err, "Erreur de création"); }
     finally { setSaving(false); }
@@ -191,12 +196,13 @@ export default function AdminCoaches() {
       <div className="grid lg:grid-cols-[minmax(0,360px)_1fr] gap-5">
         <form onSubmit={create} className="bg-white border rounded-2xl p-5 space-y-4 self-start">
           <h2 className="font-semibold flex gap-2 items-center"><UserPlus className="h-5 w-5 text-primary" />Ajouter un coach</h2>
-          <label className="block text-sm font-medium">Nom du coach (facultatif)<input value={name} onChange={e => setName(e.target.value)} maxLength={100} className="mt-1 block w-full border rounded-lg px-3 py-2" /></label>
-          <label className="block text-sm font-medium">Numéro de téléphone<input required type="tel" inputMode="tel" autoComplete="off" placeholder="+237690123456" value={phone} onChange={e => setPhone(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" /><span className="text-xs font-normal text-[#56615A]">Identifiant de connexion personnel et unique, au format international (+indicatif).</span></label>
-          <label className="block text-sm font-medium">Adresse e-mail de contact (facultative)<input type="email" autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" /><span className="text-xs font-normal text-[#56615A]">Coordonnée de contact : peut être partagée par plusieurs coachs.</span></label>
+          <label className="block text-sm font-medium">Nom du coach<input value={name} onChange={e => setName(e.target.value)} maxLength={100} className="mt-1 block w-full border rounded-lg px-3 py-2" /></label>
+          <p className="text-xs text-[#56615A]">Renseignez au moins un numéro de téléphone ou une adresse e-mail.</p>
+          <label className="block text-sm font-medium">Numéro de téléphone<input type="tel" inputMode="tel" autoComplete="off" placeholder="+237690123456" value={phone} onChange={e => setPhone(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" /><span className="text-xs font-normal text-[#56615A]">S&apos;il est renseigné, c&apos;est l&apos;identifiant de connexion (personnel et unique, format international +indicatif).</span></label>
+          <label className="block text-sm font-medium">Adresse e-mail<input type="email" autoComplete="off" value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" /><span className="text-xs font-normal text-[#56615A]">Sans numéro, elle sert d&apos;identifiant de connexion (unique). Avec un numéro, simple contact, partageable par plusieurs coachs.</span></label>
           <label className="block text-sm font-medium">Mot de passe initial<input required type="password" autoComplete="new-password" minLength={12} value={password} onChange={e => setPassword(e.target.value)} className="mt-1 block w-full border rounded-lg px-3 py-2" /><span className="text-xs text-[#56615A]">12 caractères minimum, lettres et chiffres. Transmettez-le par un canal sécurisé.</span></label>
           <div className="text-sm font-medium">
-            <span>Photo de profil du coach (facultative)</span>
+            <span>Photo de profil du coach</span>
             <div className="mt-1 flex items-center gap-3">
               <CoachAvatar url={preview} name={name || phone} size={64} />
               <div className="flex flex-wrap gap-2">
@@ -235,7 +241,7 @@ export default function AdminCoaches() {
                             <button type="button" onClick={() => setEditing(null)} aria-label="Annuler" className="border rounded-lg p-2"><X className="w-4 h-4" /></button>
                           </form>
                         ) : <p className="font-semibold">{c.display_name}</p>}
-                        <p className="text-xs text-[#56615A] break-all">{c.phone || "Numéro non renseigné"}{c.email ? ` · ${c.email}` : ""}</p>
+                        <p className="text-xs text-[#56615A] break-all">{[c.phone, c.email].filter(Boolean).join(" · ") || "Aucune coordonnée"}</p>
                       </div>
                       <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${c.active ? "bg-[#EEF5EC] text-[#486B46]" : "bg-[#F4ECEA] text-[#8A3B2E]"}`}>{c.active ? "Actif" : "Suspendu"}</span>
                     </div>
@@ -266,7 +272,7 @@ export default function AdminCoaches() {
             <h2 id="coach-confirm-title" className="text-lg font-semibold">{pending.kind === "delete" ? "Supprimer définitivement ce coach ?" : "Réinitialiser son mot de passe ?"}</h2>
             <p className="text-sm text-[#56615A]">
               {pending.kind === "delete"
-                ? `Le compte de ${pending.coach.display_name}${pending.coach.phone ? ` (${pending.coach.phone})` : ""} sera supprimé définitivement. Cette action est irréversible.`
+                ? `Le compte de ${pending.coach.display_name}${(pending.coach.phone || pending.coach.email) ? ` (${pending.coach.phone || pending.coach.email})` : ""} sera supprimé définitivement. Cette action est irréversible.`
                 : `Un nouveau mot de passe temporaire sera généré pour ${pending.coach.display_name}. L'ancien cessera de fonctionner.`}
             </p>
             <div className="flex justify-end gap-2">
