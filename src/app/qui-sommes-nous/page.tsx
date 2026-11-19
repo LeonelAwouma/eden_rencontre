@@ -8,7 +8,7 @@ import { GardenSection, PageHeader, GardenIllustration } from "@/components/gard
 import { Monogram } from "@/components/ornaments";
 import { Button } from "@/components/ui/button";
 import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
-import { ShieldCheck, HeartHandshake, BookOpenCheck, Server, Megaphone, MessagesSquare, HandHeart, Gem, Sprout } from "lucide-react";
+import { ShieldCheck, HeartHandshake, BookOpenCheck, Server, Megaphone, MessagesSquare } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 const GOLD_RULE = "block h-px w-14 bg-[#B8975A]/70";
@@ -23,10 +23,47 @@ const ROLES = [
   { icon: Server, n: 1 },
   { icon: Megaphone, n: 2 },
   { icon: MessagesSquare, n: 3 },
-  { icon: HandHeart, n: 4 },
-  { icon: Gem, n: 5 },
-  { icon: Sprout, n: 6 },
 ] as const;
+
+type Person = {
+  key: string;
+  src: string;
+  width: number;
+  height: number;
+  name: string;
+  role: string;
+  sub: string;
+  alt: string;
+  bio: string[];
+};
+
+function PersonCard({ person: p, compact = false }: { person: Person; compact?: boolean }) {
+  return (
+    <article className="eden-leaf-card overflow-hidden flex flex-col">
+      <div className="relative bg-primary/5 flex justify-center pt-8 pb-2 px-6">
+        <Image
+          src={p.src}
+          alt={p.alt}
+          width={p.width}
+          height={p.height}
+          sizes={compact ? "(min-width: 640px) 224px, 192px" : "(min-width: 1024px) 280px, 240px"}
+          className={`${compact ? "w-48 sm:w-56" : "w-56 sm:w-64"} h-auto aspect-[3/4] object-cover object-top rounded-2xl shadow-md border border-white`}
+        />
+      </div>
+      <div className="p-6 sm:p-8 space-y-4">
+        <header className="text-center space-y-1">
+          <h3 className="font-headline text-2xl sm:text-3xl font-bold text-deep-eden">{p.name}</h3>
+          <p className="text-primary font-semibold font-body">{p.role}</p>
+          <p className="text-sm italic text-muted-foreground font-body">{p.sub}</p>
+          <span className={`${GOLD_RULE} mx-auto mt-3`} aria-hidden="true" />
+        </header>
+        <div className="space-y-3 text-foreground/80 font-body leading-relaxed text-[0.97rem]">
+          {p.bio.map((para, i) => <p key={i}>{para}</p>)}
+        </div>
+      </div>
+    </article>
+  );
+}
 
 export default function QuiSommesNousPage() {
   const { t } = useI18n();
@@ -55,6 +92,19 @@ export default function QuiSommesNousPage() {
       bio: [t("about.anneBio1"), t("about.anneBio2"), t("about.anneBio3"), t("about.anneBio4")],
     },
   ];
+
+  // Coordonnées volontairement absentes (téléphone, e-mail, réseaux) : seule la biographie est publique.
+  const coaches: Person[] = (["clement", "colette", "emilie"] as const).map((k) => ({
+    key: k,
+    src: `/images/team/${k === "emilie" ? "emilie-djimo" : `${k}-emadouan`}.webp`,
+    width: 384,
+    height: 512,
+    name: t(`about.${k}Name`),
+    role: t(`about.${k}Role`),
+    sub: t(`about.${k}RoleSub`),
+    alt: t(`about.${k}Alt`),
+    bio: [t(`about.${k}Bio1`), t(`about.${k}Bio2`), t(`about.${k}Bio3`)],
+  }));
 
   return (
     <div className="eden-public flex flex-col min-h-screen bg-background">
@@ -115,31 +165,23 @@ export default function QuiSommesNousPage() {
           <div className="container mx-auto px-4 sm:px-6">
             <PageHeader eyebrow={t("about.foundersLabel")} title={t("about.foundersTitle")} className="mb-10 sm:mb-14" />
             <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-10">
-              {founders.map((f) => (
-                <article key={f.key} className="eden-leaf-card overflow-hidden flex flex-col">
-                  <div className="relative bg-primary/5 flex justify-center pt-8 pb-2 px-6">
-                    <Image
-                      src={f.src}
-                      alt={f.alt}
-                      width={f.width}
-                      height={f.height}
-                      sizes="(min-width: 1024px) 280px, 240px"
-                      className="w-56 sm:w-64 h-auto aspect-[3/4] object-cover object-top rounded-2xl shadow-md border border-white"
-                    />
-                  </div>
-                  <div className="p-6 sm:p-8 space-y-4">
-                    <header className="text-center space-y-1">
-                      <h3 className="font-headline text-2xl sm:text-3xl font-bold text-deep-eden">{f.name}</h3>
-                      <p className="text-primary font-semibold font-body">{f.role}</p>
-                      <p className="text-sm italic text-muted-foreground font-body">{f.sub}</p>
-                      <span className={`${GOLD_RULE} mx-auto mt-3`} aria-hidden="true" />
-                    </header>
-                    <div className="space-y-3 text-foreground/80 font-body leading-relaxed text-[0.97rem]">
-                      {f.bio.map((p, i) => <p key={i}>{p}</p>)}
-                    </div>
-                  </div>
-                </article>
-              ))}
+              {founders.map((f) => <PersonCard key={f.key} person={f} />)}
+            </div>
+          </div>
+        </GardenSection>
+
+        {/* B2 — Nos coachs */}
+        <GardenSection variant="garden" className="py-14 sm:py-20">
+          <div className="container mx-auto px-4 sm:px-6">
+            <PageHeader
+              eyebrow={t("about.coachesLabel")}
+              title={t("about.coachesTitle")}
+              highlight={t("about.coachesHighlight")}
+              subtitle={t("about.coachesIntro")}
+              className="mb-10 sm:mb-14"
+            />
+            <div className="max-w-6xl mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {coaches.map((c) => <PersonCard key={c.key} person={c} compact />)}
             </div>
           </div>
         </GardenSection>
