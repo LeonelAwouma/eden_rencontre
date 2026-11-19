@@ -1,11 +1,16 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { BellRing, BellOff, Loader2, X, Share, PlusSquare, Check } from "lucide-react";
+import { BellRing, BellOff, Loader2, X, Share, PlusSquare, Check, Smartphone, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useI18n } from "@/lib/i18n";
 import { useToast } from "@/hooks/use-toast";
-import { getPushState, enablePush, disablePush, refreshPushSubscription, type PushState } from "@/lib/push";
+import { Switch } from "@/components/ui/switch";
+import {
+  getPushState, enablePush, disablePush, refreshPushSubscription,
+  listPushDevices, removePushDevice, setPushPreview,
+  type PushState, type PushDevice,
+} from "@/lib/push";
 
 const DISMISS_KEY = "eden-push-banner-dismissed";
 
@@ -101,6 +106,12 @@ export function PushOptIn({ variant }: { variant: "banner" | "settings" }) {
               : t("push.bannerDesc")}
           </p>
           {state === "ios-install" && <IosSteps />}
+          {state === "denied" && (
+            <ul className="mt-2 space-y-1 text-[12.5px]" style={{ color: "#3F4A43" }}>
+              <li>{t("push.deniedAndroid")}</li>
+              <li>{t("push.deniedIos")}</li>
+            </ul>
+          )}
           {(state === "off" || state === "on") && (
             <div className="mt-3">
               {state === "on" ? (
@@ -118,9 +129,99 @@ export function PushOptIn({ variant }: { variant: "banner" | "settings" }) {
               )}
             </div>
           )}
+          {state === "on" && <p className="mt-2 text-[12px]" style={{ color: "#6B746E" }}>{t("push.checkHint")}</p>}
         </div>
       </div>
+      {state === "on" && <DeviceSettings onCurrentRemoved={() => setState("off")} />}
     </section>
+  );
+}
+
+/** Aperçu sur l'écran verrouillé (cet appareil) + liste des appareils abonnés, avec retrait. */
+function DeviceSettings({ onCurrentRemoved }: { onCurrentRemoved: () => void }) {
+  const { t, locale } = useI18n();
+  const { toast } = useToast();
+  const [devices, setDevices] = useState<PushDevice[] | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [removing, setRemoving] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    listPushDevices().then((d) => { if (active) setDevices(d); }).catch(() => { if (active) setDevices([]); });
+    return () => { active = false; };
+  }, []);
+
+  const current = devices?.find((d) => d.current) ?? null;
+
+  const togglePreview = async (value: boolean) => {
+    if (!current) return;
+    setSaving(true);
+    setDevices((list) => list?.map((d) => (d.current ? { ...d, showPreview: value } : d)) ?? list);
+    const res = await setPushPreview(value).catch(() => ({ ok: false, error: undefined as string | undefined }));
+    setSaving(false);
+    if (!res.ok) {
+      setDevices((list) => list?.map((d) => (d.current ? { ...d, showPreview: !value } : d)) ?? list);
+      toast({ title: res.error || t("push.previewError"), variant: "destructive" });
+    }
+  };
+
+  const remove = async (device: PushDevice) => {
+    setRemoving(device.id);
+    try {
+      if (device.current) {
+        await disablePush();
+        onCurrentRemoved();
+      } else if (!(await removePushDevice(device.id))) {
+        throw new Error("remove");
+      }
+      setDevices((list) => list?.filter((d) => d.id !== device.id) ?? list);
+      toast({ title: t("push.removedTitle"), description: t("push.removedDesc") });
+    } catch {
+      toast({ title: t("push.errorTitle"), variant: "destructive" });
+    } finally {
+      setRemoving(null);
+    }
+  };
+
+  if (!devices) return null;
+  const dateFmt = new Intl.DateTimeFormat(locale === "en" ? "en-GB" : "fr-FR", { day: "numeric", month: "short", year: "numeric" });
+
+  return (
+    <div className="mt-4 pt-4 border-t border-[#EFEDE8] space-y-4">
+      {current && (
+        <label className="flex items-start justify-between gap-3 cursor-pointer">
+          <span className="min-w-0">
+            <span className="block text-[13.5px] font-semibold" style={{ color: "#2F2F2F" }}>{t("push.previewLabel")}</span>
+            <span className="block text-[12px] mt-0.5" style={{ color: "#6B746E" }}>{t("push.previewHint")}</span>
+          </span>
+          <Switch checked={current.showPreview} disabled={saving} onCheckedChange={togglePreview} className="mt-0.5 shrink-0" />
+        </label>
+      )}
+      {devices.length > 0 && (
+        <div>
+          <p className="text-[12px] font-bold uppercase tracking-wide" style={{ color: "#6B746E" }}>{t("push.devicesTitle")}</p>
+          <ul className="mt-2 divide-y divide-[#EFEDE8] rounded-xl border border-[#EFEDE8]">
+            {devices.map((d) => (
+              <li key={d.id} className="flex items-center gap-3 px-3 py-2.5">
+                <Smartphone className="w-4 h-4 text-primary shrink-0" />
+                <div className="min-w-0 flex-1">
+                  <p className="text-[13px] font-semibold truncate" style={{ color: "#2F2F2F" }}>
+                    {d.label}
+                    {d.current && <span className="ml-2 inline-flex items-center rounded-full bg-primary/10 px-2 py-0.5 text-[11px] font-bold text-primary">{t("push.thisDevice")}</span>}
+                  </p>
+                  <p className="text-[11.5px]" style={{ color: "#6B746E" }}>{t("push.addedOn", { date: dateFmt.format(new Date(d.createdAt)) })}</p>
+                </div>
+                <button onClick={() => remove(d)} disabled={removing === d.id} aria-label={t("push.removeAria", { name: d.label })}
+                  className="inline-flex items-center gap-1 h-8 px-2.5 rounded-full text-[12px] font-semibold text-[#56615A] hover:bg-muted disabled:opacity-60">
+                  {removing === d.id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
+                  <span className="hidden sm:inline">{t("push.remove")}</span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -135,6 +236,7 @@ function IosSteps() {
         <span>{t("push.iosStep2")} <PlusSquare className="inline w-4 h-4 -mt-0.5 text-primary" /></span></li>
       <li className="flex items-center gap-2"><span className="w-5 h-5 rounded-full bg-primary/10 text-primary text-[11px] font-bold flex items-center justify-center shrink-0">3</span>
         <span>{t("push.iosStep3")}</span></li>
+      <li className="pt-1 text-[12px]" style={{ color: "#6B746E" }}>{t("push.iosVersion")}</li>
     </ol>
   );
 }

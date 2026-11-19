@@ -2192,7 +2192,21 @@
     "errorTitle": "Could not turn on notifications",
     "iosStep1": "In Safari, tap Share",
     "iosStep2": "Choose “Add to Home Screen”",
-    "iosStep3": "Open Garden of Alliance from your home screen, then turn on notifications here."
+    "iosStep3": "Open Garden of Alliance from your home screen, then turn on notifications here.",
+    "iosVersion": "On iPhone and iPad, notifications require iOS 16.4 or later and the site opened from your home screen (not from Safari).",
+    "previewLabel": "Show the sender and message on the lock screen",
+    "previewHint": "Off: only “You have received a new message” appears, with no name or content.",
+    "previewError": "The setting could not be saved.",
+    "devicesTitle": "Devices receiving your notifications",
+    "thisDevice": "This device",
+    "addedOn": "Added on {date}",
+    "remove": "Remove",
+    "removeAria": "Remove device {name}",
+    "removedTitle": "Device removed",
+    "removedDesc": "This device will no longer receive notifications.",
+    "checkHint": "Nothing received? In your phone settings, check that notifications are allowed for your browser (or for Garden of Alliance on iPhone) and that Focus or Do Not Disturb is off.",
+    "deniedAndroid": "Android: tap the padlock next to the address → Permissions → Notifications → Allow.",
+    "deniedIos": "iPhone: Settings → Notifications → Garden of Alliance → Allow Notifications."
   },
   "phone": {
     "label": "Phone number",

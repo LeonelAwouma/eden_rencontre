@@ -2192,7 +2192,21 @@
     "errorTitle": "Activation impossible",
     "iosStep1": "Dans Safari, touchez Partager",
     "iosStep2": "Choisissez « Sur l’écran d’accueil »",
-    "iosStep3": "Ouvrez Garden of Alliance depuis l’écran d’accueil, puis activez les notifications ici."
+    "iosStep3": "Ouvrez Garden of Alliance depuis l’écran d’accueil, puis activez les notifications ici.",
+    "iosVersion": "Sur iPhone et iPad, les notifications demandent iOS 16.4 ou plus récent et un site ouvert depuis l’écran d’accueil (pas depuis Safari).",
+    "previewLabel": "Afficher le nom et le message sur l’écran verrouillé",
+    "previewHint": "Désactivé : seule la mention « Vous avez reçu un nouveau message » apparaît, sans nom ni contenu.",
+    "previewError": "Le réglage n’a pas pu être enregistré.",
+    "devicesTitle": "Appareils qui reçoivent vos notifications",
+    "thisDevice": "Cet appareil",
+    "addedOn": "Ajouté le {date}",
+    "remove": "Retirer",
+    "removeAria": "Retirer l’appareil {name}",
+    "removedTitle": "Appareil retiré",
+    "removedDesc": "Cet appareil ne recevra plus de notifications.",
+    "checkHint": "Rien reçu ? Vérifiez dans les réglages du téléphone que les notifications sont autorisées pour le navigateur (ou pour Garden of Alliance sur iPhone) et que le mode Concentration ou Ne pas déranger est désactivé.",
+    "deniedAndroid": "Android : touchez le cadenas à côté de l’adresse → Autorisations → Notifications → Autoriser.",
+    "deniedIos": "iPhone : Réglages → Notifications → Garden of Alliance → Autoriser les notifications."
   },
   "phone": {
     "label": "Numéro de téléphone",
