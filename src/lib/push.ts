@@ -107,3 +107,90 @@ export async function refreshPushSubscription(locale: string): Promise<void> {
     });
   } catch { /* hors ligne : on réessaiera à la prochaine ouverture */ }
 }
+
+// ── Appareils et confidentialité ────────────────────────────
+
+export interface PushDevice {
+  id: string;
+  label: string;
+  createdAt: string;
+  lastUsedAt: string | null;
+  /** Nom et texte du message visibles sur l'écran verrouillé de cet appareil. */
+  showPreview: boolean;
+  /** L'appareil sur lequel la page est ouverte. */
+  current: boolean;
+}
+
+async function currentEndpoint(): Promise<string | null> {
+  try {
+    if (!("serviceWorker" in navigator)) return null;
+    const reg = await navigator.serviceWorker.getRegistration("/");
+    return (await reg?.pushManager.getSubscription())?.endpoint ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Appareils abonnés du membre connecté (l'adresse d'abonnement n'est jamais renvoyée par le serveur). */
+export async function listPushDevices(): Promise<PushDevice[]> {
+  const headers = await authHeaders();
+  const endpoint = await currentEndpoint();
+  if (endpoint) headers["x-push-endpoint"] = endpoint;
+  const res = await fetch("/api/push/subscribe", { headers, cache: "no-store" });
+  if (!res.ok) throw new Error("devices");
+  const data = await res.json().catch(() => ({}));
+  return Array.isArray(data.devices) ? data.devices : [];
+}
+
+/** Retire un appareil (y compris un autre téléphone du membre, perdu ou remplacé). */
+export async function removePushDevice(id: string): Promise<boolean> {
+  const res = await fetch("/api/push/subscribe", { method: "DELETE", headers: await authHeaders(), body: JSON.stringify({ id }) });
+  return res.ok;
+}
+
+/** Aperçu du message sur l'écran verrouillé de CET appareil. */
+export async function setPushPreview(showPreview: boolean): Promise<{ ok: boolean; error?: string }> {
+  const endpoint = await currentEndpoint();
+  if (!endpoint) return { ok: false };
+  const res = await fetch("/api/push/subscribe", { method: "PATCH", headers: await authHeaders(), body: JSON.stringify({ endpoint, showPreview }) });
+  if (res.ok) return { ok: true };
+  const data = await res.json().catch(() => ({}));
+  return { ok: false, error: data.error };
+}
+
+// ── Dialogue avec le service worker ─────────────────────────
+
+/**
+ * - « query-active-conv » : le service worker demande si cette fenêtre affiche une conversation
+ *   (pour ne pas alerter un membre qui lit déjà le message). Réponse sur le port fourni.
+ * - « open-url » : notification touchée alors que le tableau de bord est déjà ouvert.
+ * Retourne la fonction de nettoyage.
+ */
+export function listenToServiceWorker(handlers: {
+  activeConversation: () => string | null;
+  onOpenUrl: (url: string) => void;
+}): () => void {
+  if (typeof navigator === "undefined" || !("serviceWorker" in navigator)) return () => {};
+  const onMessage = (e: MessageEvent) => {
+    const msg = e.data as { type?: string; url?: string } | null;
+    if (!msg || typeof msg !== "object") return;
+    if (msg.type === "query-active-conv") {
+      e.ports?.[0]?.postMessage({
+        conversationId: handlers.activeConversation(),
+        visible: document.visibilityState === "visible" && document.hasFocus(),
+      });
+    } else if (msg.type === "open-url" && typeof msg.url === "string" && msg.url.startsWith("/") && !msg.url.startsWith("//")) {
+      handlers.onOpenUrl(msg.url);
+    }
+  };
+  navigator.serviceWorker.addEventListener("message", onMessage);
+  navigator.serviceWorker.startMessages?.();
+  return () => navigator.serviceWorker.removeEventListener("message", onMessage);
+}
+
+/** Efface la pastille de l'icône (PWA installée) quand le membre ouvre ses messages. */
+export function clearAppBadge(): void {
+  try {
+    (navigator as unknown as { clearAppBadge?: () => Promise<void> }).clearAppBadge?.().catch(() => {});
+  } catch { /* non pris en charge */ }
+}

@@ -15,6 +15,15 @@ export interface PushContent {
   url: string;
   /** Même tag = la nouvelle notification remplace la précédente (ex. une conversation). */
   tag?: string;
+  /** Type d'événement, lu par le service worker (ex. « message » : pas d'alerte si la conversation est déjà ouverte). */
+  kind?: string;
+  /** Conversation concernée (messages privés). */
+  conversationId?: string;
+  /**
+   * Version sans nom ni contenu, envoyée aux appareils dont le membre a désactivé l'aperçu
+   * (push_subscriptions.show_preview = false). Absente : le contenu normal est envoyé partout.
+   */
+  generic?: { title: string; body: string };
 }
 
 /**
@@ -46,10 +55,17 @@ export async function sendPushToUsers(
 ): Promise<PushResult> {
   if (!isPushConfigured() || userIds.length === 0) return { sent: 0, removed: 0, failed: 0, subscriptions: 0 };
 
-  const { data: subs, error: subsError } = await db
+  type SubRow = { id: string; endpoint: string; p256dh: string; auth: string; locale: string | null; show_preview?: boolean | null };
+  let res = await db
     .from("push_subscriptions")
-    .select("id, endpoint, p256dh, auth, locale")
+    .select("id, endpoint, p256dh, auth, locale, show_preview")
     .in("user_id", userIds);
+  if (res.error?.code === "42703") {
+    // Migration 20261119 pas encore appliquée : pas de colonne show_preview, aperçu affiché partout.
+    res = await db.from("push_subscriptions").select("id, endpoint, p256dh, auth, locale").in("user_id", userIds) as typeof res;
+  }
+  const subs = res.data as SubRow[] | null;
+  const subsError = res.error;
   // Lecture des abonnements impossible : échec temporaire (à reprendre), pas « aucun abonnement ».
   if (subsError) return { sent: 0, removed: 0, failed: 1, subscriptions: 0 };
 
@@ -61,11 +77,16 @@ export async function sendPushToUsers(
   await Promise.all((subs || []).map(async (s) => {
     const locale = s.locale === "en" ? "en" : "fr";
     const c = content(locale);
+    const hidden = s.show_preview === false && !!c.generic;
+    const title = hidden ? c.generic!.title : c.title;
+    const body = hidden ? c.generic!.body : c.body;
     const payload = JSON.stringify({
-      title: c.title,
-      body: c.body.length > 180 ? `${c.body.slice(0, 177)}…` : c.body,
+      title,
+      body: body.length > 180 ? `${body.slice(0, 177)}…` : body,
       url: c.url,
       tag: c.tag,
+      kind: c.kind,
+      conversationId: c.conversationId,
     });
     try {
       await webpush.sendNotification(
@@ -80,7 +101,8 @@ export async function sendPushToUsers(
       if (status === 404 || status === 410) stale.push(s.id);
       else {
         failed++;
-        console.warn("[push] envoi échoué:", status, (err as Error).message);
+        // Ni contenu ni adresse d'abonnement dans les journaux : seulement le code retourné.
+        console.warn("[push] envoi échoué, statut:", status ?? "réseau");
       }
     }
   }));

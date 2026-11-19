@@ -80,6 +80,7 @@ import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
 import { Sticker as StickerArt, StickerPicker } from "@/components/forum/forum-ui";
 import { findSticker } from "@/lib/forum-shared";
 import { PushOptIn } from "@/components/push-opt-in";
+import { listenToServiceWorker, clearAppBadge } from "@/lib/push";
 import { CoachProposalCard } from "@/components/dashboard/coach-proposal-card";
 import { MemberCoachNotificationsPanel, useMemberCoachNotifications } from "@/components/dashboard/member-coach-notifications";
 import { COACH_PROPOSAL_ANCHOR, proposalAnchorFromHash } from "@/lib/coach/member-notifications";
@@ -969,6 +970,23 @@ export default function DashboardPage() {
     loadConversations();
     setPendingConv(null);
   }, [pendingConv, meId]);
+
+  // Notifications push : le service worker demande si la conversation est déjà à l'écran (pas d'alerte
+  // inutile) et, au toucher d'une notification, demande d'ouvrir la page sans recharger le tableau de bord.
+  const openConvForPushRef = useRef<string | null>(null);
+  openConvForPushRef.current = activeTab === "Messages" ? activeConvId : null;
+  useEffect(() => listenToServiceWorker({
+    activeConversation: () => openConvForPushRef.current,
+    onOpenUrl: (url) => {
+      const target = new URL(url, window.location.origin);
+      if (target.pathname !== "/dashboard") { router.push(target.pathname + target.search); return; }
+      const conv = target.searchParams.get("conv");
+      const tab = target.searchParams.get("tab");
+      if (conv) setPendingConv(conv);
+      else if (tab && (TABS as string[]).includes(tab)) setActiveTab(tab as Tab);
+    },
+  }), []);
+  useEffect(() => { if (activeTab === "Messages") clearAppBadge(); }, [activeTab]);
 
 
 

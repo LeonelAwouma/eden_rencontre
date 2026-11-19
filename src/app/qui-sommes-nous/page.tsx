@@ -25,7 +25,7 @@ const ROLES = [
   { icon: MessagesSquare, n: 3 },
 ] as const;
 
-type PersonProfile = {
+type Person = {
   key: string;
   src: string;
   width: number;
@@ -37,36 +37,28 @@ type PersonProfile = {
   bio: string[];
 };
 
-function PersonCard({
-  person,
-  photoClassName,
-  imageSizes,
-}: {
-  person: PersonProfile;
-  photoClassName?: string;
-  imageSizes?: string;
-}) {
+function PersonCard({ person: p, compact = false }: { person: Person; compact?: boolean }) {
   return (
     <article className="eden-leaf-card overflow-hidden flex flex-col">
       <div className="relative bg-primary/5 flex justify-center pt-8 pb-2 px-6">
         <Image
-          src={person.src}
-          alt={person.alt}
-          width={person.width}
-          height={person.height}
-          sizes={imageSizes || "(min-width: 1024px) 256px, 224px"}
-          className={photoClassName || "w-56 sm:w-64 h-auto aspect-[3/4] object-cover object-top rounded-2xl shadow-md border border-white"}
+          src={p.src}
+          alt={p.alt}
+          width={p.width}
+          height={p.height}
+          sizes={compact ? "(min-width: 640px) 224px, 192px" : "(min-width: 1024px) 280px, 240px"}
+          className={`${compact ? "w-48 sm:w-56" : "w-56 sm:w-64"} h-auto aspect-[3/4] object-cover object-top rounded-2xl shadow-md border border-white`}
         />
       </div>
       <div className="p-6 sm:p-8 space-y-4">
         <header className="text-center space-y-1">
-          <h3 className="font-headline text-2xl sm:text-3xl font-bold text-deep-eden">{person.name}</h3>
-          <p className="text-primary font-semibold font-body">{person.role}</p>
-          <p className="text-sm italic text-muted-foreground font-body">{person.sub}</p>
+          <h3 className="font-headline text-2xl sm:text-3xl font-bold text-deep-eden">{p.name}</h3>
+          <p className="text-primary font-semibold font-body">{p.role}</p>
+          <p className="text-sm italic text-muted-foreground font-body">{p.sub}</p>
           <span className={`${GOLD_RULE} mx-auto mt-3`} aria-hidden="true" />
         </header>
         <div className="space-y-3 text-foreground/80 font-body leading-relaxed text-[0.97rem]">
-          {person.bio.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+          {p.bio.map((para, i) => <p key={i}>{para}</p>)}
         </div>
       </div>
     </article>
@@ -101,42 +93,18 @@ export default function QuiSommesNousPage() {
     },
   ];
 
-
-  const coaches: PersonProfile[] = [
-    {
-      key: "clement",
-      src: "/images/team/clement-emadouan.webp",
-      width: 384,
-      height: 512,
-      name: t("about.clementName"),
-      role: t("about.clementRole"),
-      sub: t("about.clementRoleSub"),
-      alt: t("about.clementAlt"),
-      bio: [t("about.clementBio1"), t("about.clementBio2"), t("about.clementBio3")],
-    },
-    {
-      key: "colette",
-      src: "/images/team/colette-emadouan.webp",
-      width: 384,
-      height: 512,
-      name: t("about.coletteName"),
-      role: t("about.coletteRole"),
-      sub: t("about.coletteRoleSub"),
-      alt: t("about.coletteAlt"),
-      bio: [t("about.coletteBio1"), t("about.coletteBio2"), t("about.coletteBio3")],
-    },
-    {
-      key: "emilie",
-      src: "/images/team/emilie-djimo.webp",
-      width: 384,
-      height: 512,
-      name: t("about.emilieName"),
-      role: t("about.emilieRole"),
-      sub: t("about.emilieRoleSub"),
-      alt: t("about.emilieAlt"),
-      bio: [t("about.emilieBio1"), t("about.emilieBio2"), t("about.emilieBio3")],
-    },
-  ];
+  // Coordonnées volontairement absentes (téléphone, e-mail, réseaux) : seule la biographie est publique.
+  const coaches: Person[] = (["clement", "colette", "emilie"] as const).map((k) => ({
+    key: k,
+    src: `/images/team/${k === "emilie" ? "emilie-djimo" : `${k}-emadouan`}.webp`,
+    width: 384,
+    height: 512,
+    name: t(`about.${k}Name`),
+    role: t(`about.${k}Role`),
+    sub: t(`about.${k}RoleSub`),
+    alt: t(`about.${k}Alt`),
+    bio: [t(`about.${k}Bio1`), t(`about.${k}Bio2`), t(`about.${k}Bio3`)],
+  }));
 
   return (
     <div className="eden-public flex flex-col min-h-screen bg-background">
@@ -197,16 +165,13 @@ export default function QuiSommesNousPage() {
           <div className="container mx-auto px-4 sm:px-6">
             <PageHeader eyebrow={t("about.foundersLabel")} title={t("about.foundersTitle")} className="mb-10 sm:mb-14" />
             <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-10">
-              {founders.map((person) => (
-                <PersonCard key={person.key} person={person} />
-              ))}
+              {founders.map((f) => <PersonCard key={f.key} person={f} />)}
             </div>
           </div>
         </GardenSection>
 
-
-        {/* C — Nos coachs */}
-        <GardenSection className="py-14 sm:py-20">
+        {/* B2 — Nos coachs */}
+        <GardenSection variant="garden" className="py-14 sm:py-20">
           <div className="container mx-auto px-4 sm:px-6">
             <PageHeader
               eyebrow={t("about.coachesLabel")}
@@ -215,20 +180,13 @@ export default function QuiSommesNousPage() {
               subtitle={t("about.coachesIntro")}
               className="mb-10 sm:mb-14"
             />
-            <div className="max-w-6xl mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-8 lg:gap-10">
-              {coaches.map((person) => (
-                <PersonCard
-                  key={person.key}
-                  person={person}
-                  imageSizes="(min-width: 1024px) 224px, 192px"
-                  photoClassName="w-48 sm:w-56 h-auto aspect-[3/4] object-cover object-top rounded-2xl shadow-md border border-white"
-                />
-              ))}
+            <div className="max-w-6xl mx-auto grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              {coaches.map((c) => <PersonCard key={c.key} person={c} compact />)}
             </div>
           </div>
         </GardenSection>
 
-        {/* D — Alliance d'expertises */}
+        {/* C — Alliance d'expertises */}
         <GardenSection variant="muted" className="py-14 sm:py-20">
           <div className="container mx-auto px-4 sm:px-6">
             <PageHeader
@@ -252,7 +210,7 @@ export default function QuiSommesNousPage() {
           </div>
         </GardenSection>
 
-        {/* E — Équipe opérationnelle (fonctions uniquement) */}
+        {/* D — Équipe opérationnelle (fonctions uniquement : pas d'identités non fournies) */}
         <GardenSection className="py-14 sm:py-20">
           <div className="container mx-auto px-4 sm:px-6">
             <PageHeader
@@ -276,7 +234,7 @@ export default function QuiSommesNousPage() {
           </div>
         </GardenSection>
 
-        {/* F — Conclusion */}
+        {/* E — Conclusion */}
         <GardenSection variant="garden" className="py-16 sm:py-24">
           <div className="container mx-auto px-4 sm:px-6 text-center max-w-3xl space-y-6">
             <Monogram className="w-12 h-12 text-primary mx-auto" />

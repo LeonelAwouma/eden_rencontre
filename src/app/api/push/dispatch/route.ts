@@ -13,6 +13,8 @@ import { getSupabaseAdmin } from "@/lib/supabase-admin";
 import { ADMIN_SYSTEM_EMAIL } from "@/lib/admin-system-shared";
 import { isPushConfigured, sendPushToUsers, type PushResult } from "@/lib/push-server";
 import { claimPushEvent, finishPushEvent, pushOutcome } from "@/lib/push-claim";
+import { checkDispatchSecret, DISPATCH_SECRET_HEADER } from "@/lib/push-dispatch-auth";
+import { messagePreview, genericMessageNotice } from "@/lib/push-message";
 
 const MAX_AGE_MS = 10 * 60 * 1000;
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -20,6 +22,10 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const recent = (iso: string | null | undefined) => !!iso && Date.now() - new Date(iso).getTime() < MAX_AGE_MS;
 
 export async function POST(req: NextRequest) {
+  // Seuls les triggers de la base (porteurs du secret partagé) peuvent déclencher un envoi.
+  if (checkDispatchSecret(req.headers.get(DISPATCH_SECRET_HEADER)) === "denied") {
+    return NextResponse.json({ error: "Non autorisé" }, { status: 401 });
+  }
   const { source, ref } = await req.json().catch(() => ({}));
   if (!["notification", "message", "friendship", "coach_notification"].includes(source) || typeof ref !== "string" || ref.length > 120) {
     return NextResponse.json({ error: "Requête invalide" }, { status: 400 });
@@ -44,7 +50,7 @@ export async function POST(req: NextRequest) {
     await finishPushEvent(db, source, ref, isPushResult(result) ? pushOutcome(result) : "sent", claim);
     return NextResponse.json(result);
   } catch (err) {
-    console.error("[push/dispatch]", source, ref, err);
+    console.error("[push/dispatch]", source, (err as Error)?.message ?? "erreur inconnue");
     await finishPushEvent(db, source, ref, "failed", claim);
     return NextResponse.json({ error: "Erreur d'envoi" }, { status: 500 });
   }
@@ -112,22 +118,32 @@ async function pushNotification(db: Db, id: string) {
 
 /** Nouveau message privé → les autres membres de la conversation. */
 async function pushMessage(db: Db, id: string) {
-  const { data: m } = await db.from("messages").select("id, conversation_id, sender_id, content, image_url, created_at").eq("id", id).maybeSingle();
+  const { data: m } = await db.from("messages").select("id, conversation_id, sender_id, content, image_url, sticker, created_at").eq("id", id).maybeSingle();
   if (!m || !recent(m.created_at)) return { skipped: "introuvable ou ancien" };
 
   const { data: members } = await db.from("conversation_members").select("user_id").eq("conversation_id", m.conversation_id);
-  const recipients = (members || []).map((r) => r.user_id).filter((u) => u !== m.sender_id);
-  if (!recipients.length) return { skipped: "aucun destinataire" };
+  // L'expéditeur n'est jamais notifié de son propre message.
+  const others = (members || []).map((r) => r.user_id as string).filter((u) => u && u !== m.sender_id);
+  if (!others.length) return { skipped: "aucun destinataire" };
+
+  // Seuls les comptes approuvés reçoivent l'alerte (un compte suspendu garde peut-être un abonnement).
+  const { data: allowed, error: allowedError } = await db.from("profiles").select("id").in("id", others).eq("status", "approved");
+  // Lecture impossible : échec temporaire (repris par push_log), pas « aucun destinataire ».
+  if (allowedError) return { sent: 0, removed: 0, failed: 1, subscriptions: 0 };
+  const recipients = (allowed || []).map((p) => p.id as string);
+  if (!recipients.length) return { skipped: "aucun destinataire approuvé" };
 
   const sender = await displayName(db, m.sender_id);
-  const text = (m.content || "").trim();
   return sendPushToUsers(db, recipients, (locale) => ({
     title: sender.isSystem
       ? (locale === "en" ? "Message from the Garden of Alliance team" : "Message de l'équipe Garden of Alliance")
       : sender.name,
-    body: text || (m.image_url ? (locale === "en" ? "📷 Photo" : "📷 Photo") : ""),
+    body: messagePreview(m, locale),
     url: `/dashboard?conv=${m.conversation_id}`,
     tag: `conv-${m.conversation_id}`,
+    kind: "message",
+    conversationId: m.conversation_id,
+    generic: genericMessageNotice(locale),
   }));
 }
 
