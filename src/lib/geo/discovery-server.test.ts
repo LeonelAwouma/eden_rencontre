@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vitest";
 import { runGeoDiscovery, PAGE_SIZE } from "./discovery-server";
 import type { RawCandidate } from "./discovery";
+import { MATCHING_REQUIRED_LESSONS } from "@/lib/formation/structure";
+
+const PILLAR_ONE = [...MATCHING_REQUIRED_LESSONS];
 
 interface FakeOpts {
   me?: Record<string, unknown> | null;
+  formation?: string[] | null;
   rows?: RawCandidate[];
   rateOk?: boolean;
   scopeOk?: boolean;
@@ -24,8 +28,15 @@ function fakeDb(o: FakeOpts = {}) {
       }
       return { data: null, error: { message: "inconnue" } };
     },
-    from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: o.me === undefined ? defaultMe : o.me, error: null }) }) }),
+    from: (table: string) => ({
+      select: () => ({
+        eq: () => ({
+          maybeSingle: async () =>
+            table === "profiles"
+              ? { data: { formation_completed: o.formation === undefined ? PILLAR_ONE : o.formation }, error: null }
+              : { data: o.me === undefined ? defaultMe : o.me, error: null },
+        }),
+      }),
     }),
   };
   return { db: db as never, calls };
@@ -80,6 +91,16 @@ describe("runGeoDiscovery", () => {
     const r = await runGeoDiscovery(off.db, VIEWER, base);
     expect(r).toMatchObject({ ok: true, reason: "viewer_not_enabled" });
     expect(r.ok && r.page.candidates).toEqual([]);
+  });
+
+  it("pilier 1 non terminé : résultat vide, aucun candidat calculé (même verrou que le Discover)", async () => {
+    for (const formation of [null, [], PILLAR_ONE.slice(0, -1)]) {
+      const { db, calls } = fakeDb({ formation, rows: [row(1)] });
+      const r = await runGeoDiscovery(db, VIEWER, base);
+      expect(r).toMatchObject({ ok: true, reason: "viewer_formation_locked" });
+      expect(r.ok && r.page.candidates).toEqual([]);
+      expect(calls.some((c) => c.fn === "geo_candidates_in_scope")).toBe(false);
+    }
   });
 
   it("rayon sans localité du demandeur : motif « zone manquante »", async () => {

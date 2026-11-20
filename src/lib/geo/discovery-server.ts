@@ -4,6 +4,7 @@
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { ADMIN_SYSTEM_EMAIL } from "@/lib/admin-system-shared";
+import { isPillarOneCompleteLight } from "@/lib/formation/structure";
 import {
   parseScope, toPublicCandidate, viewerNeeds,
   type CandidatePage, type RawCandidate,
@@ -16,7 +17,8 @@ export const MAX_DISTINCT_SCOPES_PER_DAY = 40;
 export type GeoReason =
   | "viewer_no_location"      // le demandeur n'a pas renseigné de localisation structurée
   | "viewer_not_enabled"      // il n'a pas activé « utiliser ma localisation pour chercher »
-  | "viewer_missing_zone";    // sa localisation ne permet pas cette portée (ex. pas de localité pour un rayon)
+  | "viewer_missing_zone"     // sa localisation ne permet pas cette portée (ex. pas de localité pour un rayon)
+  | "viewer_formation_locked"; // pilier 1 de « Bâtir sur le roc » non terminé : le matching n'est pas ouvert
 
 export type GeoResult =
   | { ok: true; page: CandidatePage; reason?: undefined }
@@ -48,7 +50,17 @@ export async function runGeoDiscovery(db: SupabaseClient, viewerId: string, para
   if (sc.error) return { ok: false, status: 503, error: "Recherche géographique indisponible." };
   if (sc.data === false) return { ok: false, status: 429, error: "Trop de zones explorées aujourd'hui. Réessayez demain." };
 
-  // 2. Le demandeur : sa propre localisation (lue côté serveur, jamais fournie par le navigateur).
+  // 2. Même verrou que le Discover : le matching ne s'ouvre qu'après le pilier 1 (profiles.formation_completed).
+  const { data: prof, error: profErr } = await db
+    .from("profiles")
+    .select("formation_completed")
+    .eq("id", viewerId)
+    .maybeSingle();
+  if (profErr) return { ok: false, status: 503, error: "Recherche géographique indisponible." };
+  const completed = Array.isArray(prof?.formation_completed) ? (prof.formation_completed as string[]) : [];
+  if (!isPillarOneCompleteLight(completed)) return { ok: true, page: EMPTY, reason: "viewer_formation_locked" };
+
+  // 3. Le demandeur : sa propre localisation (lue côté serveur, jamais fournie par le navigateur).
   const { data: me, error: meErr } = await db
     .from("member_locations")
     .select("nearby_search_enabled, country_code, region_id, department_id, arrondissement_id, place_id")
@@ -67,7 +79,7 @@ export async function runGeoDiscovery(db: SupabaseClient, viewerId: string, para
     : !!me.country_code;
   if (!has) return { ok: true, page: EMPTY, reason: "viewer_missing_zone" };
 
-  // 3. Candidats (une ligne de plus que la page, pour savoir s'il y en a d'autres).
+  // 4. Candidats (une ligne de plus que la page, pour savoir s'il y en a d'autres).
   const { data, error } = await db.rpc("geo_candidates_in_scope", {
     p_viewer: viewerId,
     p_scope: parsed.sqlScope,
