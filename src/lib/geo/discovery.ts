@@ -101,7 +101,11 @@ export function toPublicCandidate(raw: RawCandidate): PublicCandidate {
     case "city": out.locationLabel = raw.city_name; break;
     default: out.locationLabel = null; // « none » : rien du tout
   }
-  if (BAND_ALLOWED.has(level)) out.proximityBand = distanceBand(raw.distance_m, raw.same_place);
+  if (BAND_ALLOWED.has(level)) {
+    const band = distanceBand(raw.distance_m, raw.same_place);
+    // « Même ville » est plus précis qu'un département ou un arrondissement : réservé au niveau « ville ».
+    out.proximityBand = band === "same_city" && level !== "city" ? "lt25" : band;
+  }
   return out;
 }
 

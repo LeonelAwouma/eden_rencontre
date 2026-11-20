@@ -58,6 +58,13 @@ describe("toPublicCandidate — respect du niveau d'affichage", () => {
       expect(toPublicCandidate(raw({ display_level: level })).proximityBand).toBe("50_100");
     }
   });
+  it("« Même ville » n'est révélé qu'au niveau ville ; département / arrondissement : « < 25 km »", () => {
+    const same = { same_place: true, distance_m: 0 };
+    expect(toPublicCandidate(raw({ ...same, display_level: "city" })).proximityBand).toBe("same_city");
+    for (const level of ["department", "arrondissement"] as const) {
+      expect(toPublicCandidate(raw({ ...same, display_level: level })).proximityBand).toBe("lt25");
+    }
+  });
   it("non localisé : jamais de ville, de zone ni de distance, quoi que contienne la ligne brute", () => {
     const p = toPublicCandidate(raw({ category: "unlocated", display_level: "city" }));
     expect(p).toEqual({ userId: "u1", category: "unlocated", proximityBand: null, locationLabel: null });

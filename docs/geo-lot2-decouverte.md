@@ -26,6 +26,7 @@ profils que le moteur existant a déjà jugés compatibles (score ≥ 60).
 | Un membre n'apparaît que s'il a activé `location_discoverable` | SQL |
 | `display_level` = `none` : ni ville, ni zone, ni distance | `toPublicCandidate` |
 | Catégorie de distance seulement pour les niveaux département / arrondissement / ville | `toPublicCandidate` |
+| « Même ville » seulement au niveau ville (département / arrondissement : « < 25 km ») | `toPublicCandidate` |
 | Distances en catégories (même ville, < 25, 25–50, 50–100, 100–250, > 250 km) | `distanceBand` |
 | Rayon minimal 25 km (aucun rayon plus fin) | `parseScope` + SQL |
 | Ordre de sortie neutre (jamais trié par distance) | SQL |
@@ -42,8 +43,9 @@ niveau d'affichage. Le texte explique que la présence dans une zone peut être 
 distance sont masquées. Refuser de partager n'empêche rien d'autre.
 
 ## Limites connues
-- **Verrou de formation** et complétude du profil : toujours appliqués côté interface uniquement (existant) ;
-  la route ne renvoie que des identifiants, mais ne rejoue pas ce verrou. À durcir à part.
+- **Verrou de formation** : la route le rejoue (pilier 1 lu dans `profiles.formation_completed`, motif
+  `viewer_formation_locked`). Cette progression est déclarée par le membre : c'est le même niveau de garantie
+  que le Discover. La **complétude du profil** reste contrôlée côté interface seulement.
 - **Compte du demandeur sans localité** : les rayons et « même ville » exigent une localité du référentiel ;
   sinon un message l'invite à préciser sa ville (région/département/pays restent possibles s'ils sont connus).
 - **Ville masquée** : voir `docs/geo-matching-impact.md` (critère de pays à la place de « même ville »).
