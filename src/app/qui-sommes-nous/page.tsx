@@ -8,7 +8,7 @@ import { GardenSection, PageHeader, GardenIllustration } from "@/components/gard
 import { Monogram } from "@/components/ornaments";
 import { Button } from "@/components/ui/button";
 import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
-import { ShieldCheck, HeartHandshake, BookOpenCheck, Megaphone, MessagesSquare } from "lucide-react";
+import { ShieldCheck, HeartHandshake, BookOpenCheck, MessagesSquare } from "lucide-react";
 import { useI18n } from "@/lib/i18n";
 
 const GOLD_RULE = "block h-px w-14 bg-[#B8975A]/70";
@@ -19,9 +19,9 @@ const PILLARS = [
   { icon: BookOpenCheck, title: "about.pillar3Title", desc: "about.pillar3Desc" },
 ] as const;
 
-// Le rôle n°1 (Directeur Technique) est présenté par la fiche nominative de Léonel Awouma.
+// Les rôles n°1 (Directeur Technique) et n°2 (Directeur Marketing) sont présentés
+// par les fiches nominatives de Léonel Awouma et Frederick Tankeu.
 const ROLES = [
-  { icon: Megaphone, n: 2 },
   { icon: MessagesSquare, n: 3 },
 ] as const;
 
@@ -106,17 +106,30 @@ export default function QuiSommesNousPage() {
     bio: [t(`about.${k}Bio1`), t(`about.${k}Bio2`), t(`about.${k}Bio3`)],
   }));
 
-  const leonel: Person = {
-    key: "leonel",
-    src: "/images/team/leonel-awouma.webp",
-    width: 384,
-    height: 512,
-    name: t("about.leonelName"),
-    role: t("about.leonelRole"),
-    sub: t("about.leonelRoleSub"),
-    alt: t("about.leonelAlt"),
-    bio: [t("about.leonelBio1"), t("about.leonelBio2"), t("about.leonelBio3"), t("about.leonelBio4")],
-  };
+  const team: Person[] = [
+    {
+      key: "leonel",
+      src: "/images/team/leonel-awouma.webp",
+      width: 384,
+      height: 512,
+      name: t("about.leonelName"),
+      role: t("about.leonelRole"),
+      sub: t("about.leonelRoleSub"),
+      alt: t("about.leonelAlt"),
+      bio: [t("about.leonelBio1"), t("about.leonelBio2"), t("about.leonelBio3"), t("about.leonelBio4")],
+    },
+    {
+      key: "frederick",
+      src: "/images/team/frederick-tankeu.webp",
+      width: 384,
+      height: 512,
+      name: t("about.frederickName"),
+      role: t("about.frederickRole"),
+      sub: t("about.frederickRoleSub"),
+      alt: t("about.frederickAlt"),
+      bio: [t("about.frederickBio1"), t("about.frederickBio2"), t("about.frederickBio3")],
+    },
+  ];
 
   return (
     <div className="eden-public flex flex-col min-h-screen bg-background">
@@ -232,10 +245,10 @@ export default function QuiSommesNousPage() {
               subtitle={t("about.teamIntro")}
               className="mb-10 sm:mb-14"
             />
-            <div className="max-w-xl mx-auto mb-8">
-              <PersonCard person={leonel} />
+            <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-8 lg:gap-10 mb-8">
+              {team.map((p) => <PersonCard key={p.key} person={p} />)}
             </div>
-            <div className="max-w-4xl mx-auto grid sm:grid-cols-2 gap-5 sm:gap-6">
+            <div className="max-w-md mx-auto grid gap-5 sm:gap-6">
               {ROLES.map(({ icon: Icon, n }) => (
                 <div key={n} className="eden-leaf-card p-6 flex flex-col gap-3">
                   <span className="grid h-11 w-11 place-items-center rounded-full bg-primary/10 text-primary">
