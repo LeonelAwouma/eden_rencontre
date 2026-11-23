@@ -165,7 +165,6 @@ export function CountryCityInline({
           {city && onChangeLocation && (
             <DisplayLevelSelect
               value={location?.displayLevel ?? "none"}
-              levels={["none", "country", "city"]}
               onChange={(displayLevel) => onChangeLocation({ ...(location ?? {}), displayLevel })}
             />
           )}

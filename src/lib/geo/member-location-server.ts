@@ -6,14 +6,21 @@
  *  - member_locations = source de vérité (privée) ;
  *  - profiles.country (nom français du pays) mis à jour ; profiles.city reçoit UNIQUEMENT l'étiquette
  *    publique conforme au consentement (publicCityLabel) ; profiles.region n'est JAMAIS touché ;
- *  - aucun consentement n'est activé automatiquement : absent du corps = valeur existante (ou false) ;
+ *  - rapprochement automatique par ville (décision du 2026-11-23) : une localisation enregistrée sert toujours à
+ *    chercher ET à être trouvé par les membres de la même ville (nearby_search_enabled / location_discoverable = true) ;
+ *    l'affichage de la ville sur le profil reste un choix du membre (display_level : « none » par défaut, ou « city ») ;
  *  - on n'invente jamais un arrondissement : une localité non répertoriée reste « unverified ».
+ *
+ * Rattachement administratif indicatif : quand seule une ville est saisie, la localité est retrouvée par
+ * correspondance exacte (geo_resolve_city) et son arrondissement / département / région sont ceux du point de
+ * référence GeoNames de la ville. Aucune coordonnée du membre n'est collectée ; ce n'est pas son lieu de résidence vérifié.
  */
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { findCountry } from "@/lib/geo";
 import { validateSelection, type AdminUnit, type AdminLevel } from "./hierarchy";
-import { DISPLAY_LEVELS, GENERIC_CITY_LABEL, publicCityLabel, type DisplayLevel } from "./public-label";
+import { DISPLAY_LEVELS, GENERIC_CITY_LABEL, isGenericCityLabel, publicCityLabel, type DisplayLevel } from "./public-label";
+import { resolvePlaceFromCandidates, type CityCandidate } from "./resolve-place";
 
 const uuid = z.string().uuid();
 
@@ -27,8 +34,6 @@ export const locationInputSchema = z.object({
   /** Ville saisie à la main (localité non répertoriée) ou ville d'un pays hors référentiel. */
   city: z.string().trim().max(120).nullish(),
   displayLevel: z.enum(DISPLAY_LEVELS as unknown as [DisplayLevel, ...DisplayLevel[]]).optional(),
-  nearbySearchEnabled: z.boolean().optional(),
-  locationDiscoverable: z.boolean().optional(),
 });
 export type LocationInput = z.infer<typeof locationInputSchema>;
 
@@ -55,13 +60,29 @@ const toUnit = (r: UnitRow): AdminUnit => ({
   nameEn: r.name_en,
 });
 
-export const consentInputSchema = z
-  .object({
-    nearbySearchEnabled: z.boolean().optional(),
-    locationDiscoverable: z.boolean().optional(),
-    displayLevel: z.enum(DISPLAY_LEVELS as unknown as [DisplayLevel, ...DisplayLevel[]]).optional(),
-  })
-  .refine((v) => Object.keys(v).length > 0, "Aucun réglage fourni.");
+/**
+ * Niveaux d'affichage proposés au membre : « ne pas afficher » ou « afficher ma ville ». Toute autre valeur reçue
+ * (ancien client) est ramenée à « none », jamais à plus d'exposition. Les anciennes valeurs déjà en base restent lisibles.
+ */
+export const WRITABLE_DISPLAY_LEVELS = ["none", "city"] as const satisfies readonly DisplayLevel[];
+export const toWritableDisplayLevel = (l: DisplayLevel): DisplayLevel => (l === "city" ? "city" : "none");
+
+/** Seul réglage modifiable par le membre : le niveau d'affichage (le rapprochement par ville est automatique). */
+export const consentInputSchema = z.object({
+  displayLevel: z.enum(DISPLAY_LEVELS as unknown as [DisplayLevel, ...DisplayLevel[]]),
+});
+
+/** Ville saisie seule (Cameroun) → localité du référentiel, par correspondance exacte. Jamais bloquant. */
+async function resolveCityToPlace(db: Db, city: string, countryCode: string): Promise<string | null> {
+  try {
+    const { data, error } = await db.rpc("geo_resolve_city", { p_city: city, p_country: countryCode });
+    if (error) return null; // référentiel absent ou indisponible : texte libre
+    const r = resolvePlaceFromCandidates((data ?? []) as CityCandidate[]);
+    return r.kind === "resolved" ? r.placeId : null;
+  } catch {
+    return null;
+  }
+}
 
 export type SaveConsentResult =
   | { ok: true; publicCity: string | null }
@@ -81,23 +102,27 @@ export async function saveMemberConsent(db: Db, userId: string, raw: unknown): P
   if (error) return { ok: false, status: 500, error: "Réglages indisponibles." };
   if (!row) return { ok: false, status: 409, error: "Renseignez d'abord votre localisation." };
 
-  const patch: Record<string, unknown> = { location_consent_at: new Date().toISOString(), updated_at: new Date().toISOString() };
-  if (input.nearbySearchEnabled !== undefined) patch.nearby_search_enabled = input.nearbySearchEnabled;
-  if (input.locationDiscoverable !== undefined) patch.location_discoverable = input.locationDiscoverable;
-  if (input.displayLevel !== undefined) patch.display_level = input.displayLevel;
+  const displayLevel = toWritableDisplayLevel(input.displayLevel);
+  const patch: Record<string, unknown> = {
+    display_level: displayLevel,
+    nearby_search_enabled: true,
+    location_discoverable: true,
+    location_consent_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
 
   await db.from("member_location_history").insert({ user_id: userId, previous: row });
   const { error: upErr } = await db.from("member_locations").update(patch).eq("user_id", userId);
   if (upErr) return { ok: false, status: 500, error: "Enregistrement impossible." };
 
   let publicCity: string | null = null;
-  if (input.displayLevel !== undefined) {
+  {
     let cityName: string | null = row.free_text_city ?? null;
     if (row.place_id) {
       const { data: place } = await db.from("geo_places").select("name").eq("id", row.place_id).maybeSingle();
       cityName = place?.name ?? cityName;
     }
-    publicCity = publicCityLabel(cityName, input.displayLevel);
+    publicCity = publicCityLabel(cityName, displayLevel);
     const { error: pErr } = await db.from("profiles").update({ city: publicCity }).eq("id", userId);
     if (pErr) return { ok: false, status: 500, error: "Profil non mis à jour." };
     try {
@@ -122,6 +147,13 @@ export async function saveMemberLocation(db: Db, userId: string, raw: unknown): 
   let placeId = input.placeId ?? null;
   let cityName = input.city?.trim() || null;
   let verification: "verified" | "unverified" = "unverified";
+
+  // Ville seule (aucun identifiant) : résolution AVANT le calcul de « structured », pour que la localité retrouvée
+  // passe par le traitement hiérarchique ci-dessous (parents lus en base).
+  const noIds = !regionId && !departmentId && !arrondissementId && !placeId;
+  if (countryCode === "CM" && noIds && cityName && !isGenericCityLabel(cityName)) {
+    placeId = await resolveCityToPlace(db, cityName, countryCode);
+  }
 
   const structured = countryCode === "CM" && (regionId || departmentId || arrondissementId || placeId);
   if (!structured && (regionId || departmentId || arrondissementId || placeId)) {
@@ -185,9 +217,9 @@ export async function saveMemberLocation(db: Db, userId: string, raw: unknown): 
 
   // 3. Anciennes valeurs (historique + consentements conservés si non fournis).
   const { data: previous } = await db.from("member_locations").select("*").eq("user_id", userId).maybeSingle();
-  const displayLevel: DisplayLevel = input.displayLevel ?? ((previous?.display_level as DisplayLevel) || "none");
-  const consentTouched =
-    input.displayLevel !== undefined || input.nearbySearchEnabled !== undefined || input.locationDiscoverable !== undefined;
+  const displayLevel: DisplayLevel =
+    input.displayLevel !== undefined ? toWritableDisplayLevel(input.displayLevel) : ((previous?.display_level as DisplayLevel) || "none");
+  const consentTouched = input.displayLevel !== undefined;
 
   const row = {
     user_id: userId,
@@ -198,8 +230,9 @@ export async function saveMemberLocation(db: Db, userId: string, raw: unknown): 
     place_id: placeId,
     free_text_city: structured && placeId ? null : cityName,
     verification_status: verification,
-    nearby_search_enabled: input.nearbySearchEnabled ?? previous?.nearby_search_enabled ?? false,
-    location_discoverable: input.locationDiscoverable ?? previous?.location_discoverable ?? false,
+    // Rapprochement automatique par ville : toujours actif dès qu'une localisation est enregistrée.
+    nearby_search_enabled: true,
+    location_discoverable: true,
     display_level: displayLevel,
     location_consent_at: consentTouched ? new Date().toISOString() : (previous?.location_consent_at ?? null),
     updated_at: new Date().toISOString(),

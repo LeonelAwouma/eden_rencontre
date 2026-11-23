@@ -32,8 +32,8 @@ const T = {
       limited: "Trop de recherches pour le moment. Réessayez dans une minute.",
     },
     reasons: {
-      viewer_no_location: "Renseignez votre localisation dans votre profil pour chercher par zone.",
-      viewer_not_enabled: "Activez « Utiliser ma localisation pour chercher » dans votre profil pour chercher par zone.",
+      viewer_no_location: "Renseignez votre ville dans votre profil pour chercher par zone.",
+      viewer_not_enabled: "Renseignez votre ville dans votre profil pour chercher par zone.",
       viewer_missing_zone: "Votre localisation actuelle ne permet pas cette portée : précisez votre ville dans votre profil.",
       viewer_formation_locked: "Terminez le pilier 1 de « Bâtir sur le roc » pour chercher par zone.",
     } as Record<string, string>,
@@ -74,8 +74,8 @@ const T = {
       limited: "Too many searches right now. Try again in a minute.",
     },
     reasons: {
-      viewer_no_location: "Add your location in your profile to search by area.",
-      viewer_not_enabled: "Turn on “Use my location to search” in your profile to search by area.",
+      viewer_no_location: "Add your city in your profile to search by area.",
+      viewer_not_enabled: "Add your city in your profile to search by area.",
       viewer_missing_zone: "Your current location doesn't allow this scope: specify your city in your profile.",
       viewer_formation_locked: "Finish pillar 1 of “Building on the Rock” to search by area.",
     } as Record<string, string>,
