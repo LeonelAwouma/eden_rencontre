@@ -41,8 +41,12 @@ if (!dir) {
 }
 
 const COUNTRY = "CM";
+// Même convention que normalizePlaceName (src/lib/geo/normalize.ts) et public.geo_normalize_name (SQL).
 const norm = (s) =>
   String(s ?? "")
+    .replace(/[  ]/g, " ")
+    .replace(/œ/g, "oe").replace(/Œ/g, "OE")
+    .replace(/æ/g, "ae").replace(/Æ/g, "AE")
     .normalize("NFD")
     .replace(/[̀-ͯ]/g, "")
     .toLowerCase()

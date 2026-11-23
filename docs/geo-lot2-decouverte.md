@@ -22,8 +22,7 @@ profils que le moteur existant a déjà jugés compatibles (score ≥ 60).
 ## Règles de confidentialité appliquées côté serveur
 | Règle | Où |
 |---|---|
-| Le demandeur doit avoir activé « utiliser ma localisation pour chercher » (`nearby_search_enabled`) | SQL + route |
-| Un membre n'apparaît que s'il a activé `location_discoverable` | SQL |
+| Rapprochement par ville automatique : `nearby_search_enabled` et `location_discoverable` valent toujours `true` dès qu'une ville est enregistrée (décision du 2026-11-23) | `saveMemberLocation` + migration 20261123 |
 | `display_level` = `none` : ni ville, ni zone, ni distance | `toPublicCandidate` |
 | Catégorie de distance seulement pour les niveaux département / arrondissement / ville | `toPublicCandidate` |
 | « Même ville » seulement au niveau ville (département / arrondissement : « < 25 km ») | `toPublicCandidate` |
@@ -36,11 +35,37 @@ profils que le moteur existant a déjà jugés compatibles (score ≥ 60).
 | Réponses jamais mises en cache (`private, no-store`) → une révocation agit au prochain appel | route |
 | Fonctions : `search_path` vide, exécution `service_role` seulement | migration |
 
+## La ville suffit (2026-11-23)
+Le membre ne saisit que sa ville (« Yaoundé ») : une seule recherche, des suggestions qui ne montrent que le nom
+de la ville, ou une saisie libre. Il ne voit jamais d'arrondissement, de département ni de région.
+
+Côté serveur (`saveMemberLocation`) : si aucun identifiant n'est fourni, la ville est cherchée par
+**correspondance exacte** (nom officiel ou alias, normalisation commune) avec `geo_resolve_city`, puis
+`resolvePlaceFromCandidates` décide : une seule localité → retenue ; plusieurs dont une seule ville → retenue ;
+plusieurs villes, plusieurs villages sans ville ou plus de 50 résultats → ambigu ; rien → aucune. Ambigu, inconnu
+ou référentiel indisponible : la ville reste en texte libre, sans jamais bloquer l'inscription.
+
+> **Rattachement administratif indicatif.** L'arrondissement, le département et la région sont déduits
+> automatiquement à partir du point de référence géographique de la localité dans le référentiel GeoNames.
+> Ce traitement ne nécessite aucune autorisation de géolocalisation personnelle et ne collecte aucune coordonnée GPS
+> du membre. L'arrondissement obtenu représente uniquement le rattachement administratif du point de référence de la
+> ville. Il ne constitue pas une vérification du lieu de résidence réel du membre.
+
+Conséquence : à Yaoundé et Douala, tous les membres sont rattachés au même arrondissement (celui du centre-ville) ;
+« même arrondissement » s'y comporte comme « même ville ».
+
 ## Réglages du membre (Profil → Localisation)
-Trois réglages **indépendants**, désactivés par défaut, appliqués immédiatement (`PATCH /api/member/location`) :
-utiliser ma localisation pour chercher · autoriser mon profil à apparaître dans les recherches des autres ·
-niveau d'affichage. Le texte explique que la présence dans une zone peut être révélée même si la ville et la
-distance sont masquées. Refuser de partager n'empêche rien d'autre.
+- **Rapprochement par ville : automatique**, sans case à cocher ni réglage admin. Une ville renseignée sert à
+  chercher et à être rapproché des membres de la même ville. Le score de compatibilité n'est jamais modifié.
+- **Localisation affichée sur mon profil** : « Ne pas afficher » (par défaut) ou « Afficher ma ville ». Un ancien
+  niveau (région, département…) reçu par le serveur est ramené à « Ne pas afficher ».
+- « Supprimer ma localisation » reste disponible : le membre n'est alors plus rapproché par ville.
+
+## Rattrapage des membres inscrits avant l'outil
+`scripts/geo/backfill-members-preview.sql` (lecture seule) puis `scripts/geo/backfill-members-apply.sql`
+(rejouable, `on conflict do nothing`). Même règle de résolution ; `display_level = city` (leur ville était déjà
+publique). Rapport par ville : inséré / déjà structuré / déjà en texte libre / ambigu / non reconnu. Les lignes
+existantes en texte libre sont hors périmètre (réparation distincte, sans toucher à leur affichage ni à leur historique).
 
 ## Limites connues
 - **Verrou de formation** : la route le rejoue (pilier 1 lu dans `profiles.formation_completed`, motif
@@ -56,3 +81,5 @@ distance sont masquées. Refuser de partager n'empêche rien d'autre.
 ## Déploiement
 1. SQL Editor : `20261116_geo_discovery.sql` (après les deux migrations du Lot 1).
 2. Déployer l'application. 3. Plus tard : `20261115_geo_guard_profile_location.sql`.
+4. Ville seule (2026-11-23) : `20261123_geo_resolve_city.sql`, puis `scripts/geo/check-normalize.sql` (toutes les
+   lignes `ok = true`), puis l'aperçu et l'insertion du rattrapage. Déployer l'application avec ou après la migration.

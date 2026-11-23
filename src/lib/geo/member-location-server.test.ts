@@ -4,10 +4,20 @@ import { GENERIC_CITY_LABEL } from "./public-label";
 
 type Row = Record<string, unknown>;
 
-/** Mini base en mémoire : suffisante pour le chemin d'écriture de la localisation. */
-function fakeDb(seed: Record<string, Row[]>) {
+/**
+ * Mini base en mémoire : suffisante pour le chemin d'écriture de la localisation.
+ * `resolve` simule geo_resolve_city (nom saisi → candidats) ; "error" simule un référentiel indisponible.
+ */
+function fakeDb(seed: Record<string, Row[]>, resolve: Record<string, Row[] | "error"> = {}) {
   const t: Record<string, Row[]> = JSON.parse(JSON.stringify(seed));
   const profileUpdates: Row[] = [];
+  const rpcCalls: Array<{ fn: string; args: Row }> = [];
+  const rpc = (fn: string, args: Row) => {
+    rpcCalls.push({ fn, args });
+    const r = fn === "geo_resolve_city" ? resolve[String(args.p_city)] : undefined;
+    if (r === "error" || fn !== "geo_resolve_city") return Promise.resolve({ data: null, error: { message: "indisponible" } });
+    return Promise.resolve({ data: r ?? [], error: null });
+  };
   const from = (name: string) => {
     t[name] ??= [];
     let filters: Array<(r: Row) => boolean> = [];
@@ -39,7 +49,7 @@ function fakeDb(seed: Record<string, Row[]>) {
     };
     return q;
   };
-  return { db: { from } as never, t, profileUpdates };
+  return { db: { from, rpc } as never, t, profileUpdates, rpcCalls };
 }
 
 const U = "11111111-1111-4111-8111-111111111111";
@@ -72,6 +82,45 @@ describe("saveMemberLocation", () => {
     });
   });
 
+  it("ville seule : résolue côté serveur, toute la hiérarchie remplie sans rien demander", async () => {
+    const yaounde = [{ place_id: id(10), match_kind: "canonical", place_type: "city", total_count: 1 }];
+    const { db, t, rpcCalls } = fakeDb(seed(), { Yaoundé: yaounde });
+    const r = await saveMemberLocation(db, U, { country: "Cameroun", city: "Yaoundé" });
+    expect(r).toMatchObject({ ok: true, verification: "verified" });
+    expect(rpcCalls).toEqual([{ fn: "geo_resolve_city", args: { p_city: "Yaoundé", p_country: "CM" } }]);
+    expect(t.member_locations[0]).toMatchObject({
+      place_id: id(10), arrondissement_id: id(3), department_id: id(2), region_id: id(1), free_text_city: null,
+    });
+  });
+
+  it("ville seule ambiguë ou inconnue : texte libre, aucun arrondissement inventé", async () => {
+    const two = [
+      { place_id: id(10), match_kind: "canonical", place_type: "city", total_count: 2 },
+      { place_id: id(11), match_kind: "canonical", place_type: "city", total_count: 2 },
+    ];
+    for (const city of ["Doublonville", "Nulle Part"]) {
+      const { db, t } = fakeDb(seed(), { Doublonville: two });
+      const r = await saveMemberLocation(db, U, { country: "Cameroun", city });
+      expect(r).toMatchObject({ ok: true, verification: "unverified" });
+      expect(t.member_locations[0]).toMatchObject({ place_id: null, arrondissement_id: null, department_id: null, region_id: null, free_text_city: city });
+    }
+  });
+
+  it("référentiel indisponible : la ville est enregistrée en texte libre, sans échec", async () => {
+    const { db, t } = fakeDb(seed(), { Yaoundé: "error" });
+    const r = await saveMemberLocation(db, U, { country: "Cameroun", city: "Yaoundé" });
+    expect(r).toMatchObject({ ok: true });
+    expect(t.member_locations[0]).toMatchObject({ place_id: null, free_text_city: "Yaoundé" });
+  });
+
+  it("aucune recherche inutile : localité déjà choisie, pays étranger ou ville générique", async () => {
+    const { db, rpcCalls } = fakeDb(seed());
+    await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10), city: "Yaoundé" });
+    await saveMemberLocation(db, U, { country: "France", city: "Lyon" });
+    await saveMemberLocation(db, U, { country: "Cameroun", city: GENERIC_CITY_LABEL });
+    expect(rpcCalls).toEqual([]);
+  });
+
   it("n'écrit jamais la ville privée dans profiles quand l'affichage n'est pas « ville »", async () => {
     const { db, profileUpdates } = fakeDb(seed());
     await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10), displayLevel: "region" });
@@ -80,16 +129,28 @@ describe("saveMemberLocation", () => {
     for (const p of profileUpdates) expect(Object.keys(p)).not.toContain("region");
   });
 
-  it("par défaut : affichage « none » et aucun consentement de découverte", async () => {
+  it("par défaut : affichage « none », rapprochement par ville automatique", async () => {
     const { db, t, profileUpdates } = fakeDb(seed());
     await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10) });
     expect(t.member_locations[0]).toMatchObject({
       display_level: "none",
-      nearby_search_enabled: false,
-      location_discoverable: false,
+      nearby_search_enabled: true,
+      location_discoverable: true,
       location_consent_at: null,
     });
     expect(profileUpdates[0].city).toBe(GENERIC_CITY_LABEL);
+  });
+
+  it("le corps ne peut pas désactiver le rapprochement par ville", async () => {
+    const { db, t } = fakeDb(seed());
+    await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10), nearbySearchEnabled: false, locationDiscoverable: false });
+    expect(t.member_locations[0]).toMatchObject({ nearby_search_enabled: true, location_discoverable: true });
+  });
+
+  it("niveau d'affichage autre que « none » / « city » : ramené à « none », jamais plus exposé", async () => {
+    const { db, t } = fakeDb(seed());
+    await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10), displayLevel: "department" });
+    expect(t.member_locations[0]).toMatchObject({ display_level: "none" });
   });
 
   it("ville ambiguë/incohérente : département hors région refusé", async () => {
@@ -120,15 +181,9 @@ describe("saveMemberLocation", () => {
     expect(bad).toMatchObject({ ok: false });
   });
 
-  it("changement de ville : ancien état archivé, consentements conservés", async () => {
+  it("changement de ville : ancien état archivé, affichage conservé, rapprochement toujours actif", async () => {
     const { db, t } = fakeDb(seed());
-    await saveMemberLocation(db, U, {
-      country: "Cameroun",
-      placeId: id(10),
-      displayLevel: "city",
-      nearbySearchEnabled: true,
-      locationDiscoverable: true,
-    });
+    await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10), displayLevel: "city" });
     await saveMemberLocation(db, U, { country: "Cameroun", city: "Autre village" });
     expect(t.member_location_history).toHaveLength(1);
     expect(t.member_locations[0]).toMatchObject({
@@ -145,52 +200,33 @@ describe("saveMemberLocation", () => {
   });
 });
 
-describe("saveMemberConsent — réglages indépendants, désactivés par défaut", () => {
+describe("saveMemberConsent — seul l'affichage est réglable", () => {
   it("refuse sans localisation préalable (rien n'est créé implicitement)", async () => {
     const { db, t } = fakeDb(seed());
-    expect(await saveMemberConsent(db, U, { locationDiscoverable: true })).toMatchObject({ ok: false, status: 409 });
+    expect(await saveMemberConsent(db, U, { displayLevel: "city" })).toMatchObject({ ok: false, status: 409 });
     expect(t.member_locations).toHaveLength(0);
   });
 
-  it("les trois réglages sont indépendants : en changer un ne touche pas les autres", async () => {
+  it("changer l'affichage ne coupe jamais le rapprochement par ville", async () => {
     const { db, t } = fakeDb(seed());
     await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10) });
-    expect(t.member_locations[0]).toMatchObject({ nearby_search_enabled: false, location_discoverable: false, display_level: "none" });
-
-    await saveMemberConsent(db, U, { locationDiscoverable: true });
-    expect(t.member_locations[0]).toMatchObject({ nearby_search_enabled: false, location_discoverable: true, display_level: "none" });
-
-    await saveMemberConsent(db, U, { nearbySearchEnabled: true });
-    expect(t.member_locations[0]).toMatchObject({ nearby_search_enabled: true, location_discoverable: true, display_level: "none" });
-
-    await saveMemberConsent(db, U, { displayLevel: "region" });
-    expect(t.member_locations[0]).toMatchObject({ nearby_search_enabled: true, location_discoverable: true, display_level: "region" });
+    await saveMemberConsent(db, U, { displayLevel: "city", locationDiscoverable: false, nearbySearchEnabled: false });
+    expect(t.member_locations[0]).toMatchObject({ nearby_search_enabled: true, location_discoverable: true, display_level: "city" });
   });
 
-  it("autoriser la recherche sans autoriser l'affichage de la ville : profiles.city reste générique", async () => {
+  it("« Afficher ma ville » publie la ville ; « Ne pas afficher » la masque", async () => {
     const { db, profileUpdates } = fakeDb(seed());
     await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10) });
-    await saveMemberConsent(db, U, { locationDiscoverable: true, nearbySearchEnabled: true });
-    // aucun changement de niveau d'affichage → profiles.city n'est pas réécrite avec la ville
-    expect(profileUpdates.every((p) => p.city === GENERIC_CITY_LABEL)).toBe(true);
-  });
-
-  it("changer le niveau d'affichage met à jour l'étiquette publique, jamais plus précise que choisi", async () => {
-    const { db, profileUpdates } = fakeDb(seed());
-    await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10) });
-    const r = await saveMemberConsent(db, U, { displayLevel: "city" });
-    expect(r).toMatchObject({ ok: true, publicCity: "Yaoundé" });
-    const r2 = await saveMemberConsent(db, U, { displayLevel: "region" });
-    expect(r2).toMatchObject({ ok: true, publicCity: GENERIC_CITY_LABEL });
+    expect(await saveMemberConsent(db, U, { displayLevel: "city" })).toMatchObject({ ok: true, publicCity: "Yaoundé" });
+    expect(await saveMemberConsent(db, U, { displayLevel: "none" })).toMatchObject({ ok: true, publicCity: GENERIC_CITY_LABEL });
     expect(profileUpdates.at(-1)).toEqual({ city: GENERIC_CITY_LABEL });
   });
 
-  it("la révocation est enregistrée (désactivation immédiate) et archivée", async () => {
+  it("ancien niveau (région…) reçu : ramené à « none », ville masquée", async () => {
     const { db, t } = fakeDb(seed());
-    await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10), nearbySearchEnabled: true, locationDiscoverable: true });
-    await saveMemberConsent(db, U, { locationDiscoverable: false });
-    expect(t.member_locations[0]).toMatchObject({ location_discoverable: false });
-    expect(t.member_location_history.length).toBeGreaterThan(0);
+    await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10) });
+    expect(await saveMemberConsent(db, U, { displayLevel: "region" })).toMatchObject({ ok: true, publicCity: GENERIC_CITY_LABEL });
+    expect(t.member_locations[0]).toMatchObject({ display_level: "none" });
   });
 
   it("refuse un corps vide ou invalide", async () => {

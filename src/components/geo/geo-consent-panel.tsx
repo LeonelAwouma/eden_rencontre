@@ -3,49 +3,38 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useI18n } from "@/lib/i18n";
-import { DISPLAY_LEVELS, type DisplayLevel } from "@/lib/geo/public-label";
+import type { DisplayLevel } from "@/lib/geo/public-label";
+import { MEMBER_DISPLAY_LEVELS } from "./cameroon-city-picker";
 
 interface Settings {
-  nearby_search_enabled: boolean;
-  location_discoverable: boolean;
   display_level: DisplayLevel;
 }
 
 const T = {
   fr: {
     title: "Confidentialité de ma localisation",
-    none: "Renseignez d'abord votre localisation ci-dessus pour régler ces options.",
-    nearby: "Utiliser ma localisation pour découvrir des profils proches",
-    nearbyHint: "Vous permet de chercher par ville, région ou rayon. Désactivé par défaut.",
-    discoverable: "Autoriser mon profil à apparaître dans les recherches géographiques des autres",
-    discoverableWarn:
-      "Attention : autoriser votre profil à apparaître dans une recherche géographique peut révéler que vous êtes dans une zone, même si votre ville et votre distance restent masquées. Désactivé par défaut.",
+    none: "Renseignez d'abord votre ville ci-dessus.",
+    auto: "Votre ville sert automatiquement à vous proposer des profils compatibles de la même ville. Votre compatibilité n'est jamais modifiée par la distance.",
     display: "Localisation affichée sur mon profil",
-    displayHint: "Indépendant des deux options ci-dessus.",
-    levels: { none: "Ne pas afficher", country: "Le pays", region: "La région", department: "Le département", arrondissement: "L'arrondissement", city: "La ville" } as Record<DisplayLevel, string>,
+    displayHint: "Votre ville n'est affichée sur votre profil que si vous le choisissez.",
+    levels: { none: "Ne pas afficher", city: "Afficher ma ville" } as Partial<Record<DisplayLevel, string>>,
     saving: "Enregistrement…", saved: "Enregistré.", error: "Enregistrement impossible.",
-    footer: "Refuser de partager votre localisation n'empêche ni l'inscription, ni le matching, ni l'utilisation normale de l'application.",
     download: "Télécharger mes données de localisation",
     remove: "Supprimer ma localisation",
-    removeConfirm: "Supprimer votre localisation et son historique ? Vous n'apparaîtrez plus dans les recherches géographiques. Votre profil et vos compatibilités ne changent pas.",
+    removeConfirm: "Supprimer votre localisation et son historique ? Vous ne serez plus rapproché des membres de votre ville. Votre profil et vos compatibilités ne changent pas.",
     removed: "Localisation supprimée.",
   },
   en: {
     title: "My location privacy",
-    none: "Set your location above first to adjust these options.",
-    nearby: "Use my location to discover nearby profiles",
-    nearbyHint: "Lets you search by city, region or radius. Off by default.",
-    discoverable: "Allow my profile to appear in other members' geographic searches",
-    discoverableWarn:
-      "Note: allowing your profile to appear in a geographic search can reveal that you are in an area, even if your city and distance stay hidden. Off by default.",
+    none: "Set your city above first.",
+    auto: "Your city is automatically used to suggest compatible profiles from the same city. Distance never changes your compatibility.",
     display: "Location shown on my profile",
-    displayHint: "Independent of the two options above.",
-    levels: { none: "Don't show", country: "Country", region: "Region", department: "Department", arrondissement: "District", city: "City" } as Record<DisplayLevel, string>,
+    displayHint: "Your city only appears on your profile if you choose so.",
+    levels: { none: "Don't show", city: "Show my city" } as Partial<Record<DisplayLevel, string>>,
     saving: "Saving…", saved: "Saved.", error: "Could not save.",
-    footer: "Declining to share your location never blocks sign-up, matching or normal use of the app.",
     download: "Download my location data",
     remove: "Delete my location",
-    removeConfirm: "Delete your location and its history? You will no longer appear in geographic searches. Your profile and compatibility are unchanged.",
+    removeConfirm: "Delete your location and its history? You will no longer be matched with members from your city. Your profile and compatibility are unchanged.",
     removed: "Location deleted.",
   },
 } as const;
@@ -56,8 +45,8 @@ async function authHeader(): Promise<Record<string, string>> {
 }
 
 /**
- * Trois réglages INDÉPENDANTS, désactivés par défaut, appliqués immédiatement côté serveur
- * (PATCH /api/member/location). Rien n'est jamais activé automatiquement.
+ * Le rapprochement par ville est automatique dès qu'une ville est renseignée (aucune case à cocher). Le seul
+ * réglage est l'affichage de la ville sur le profil (PATCH /api/member/location), appliqué immédiatement.
  */
 export function GeoConsentPanel({ refreshKey = 0, onChanged }: { refreshKey?: number; onChanged?: () => void }) {
   const { locale } = useI18n();
@@ -79,21 +68,16 @@ export function GeoConsentPanel({ refreshKey = 0, onChanged }: { refreshKey?: nu
     return () => { alive = false; };
   }, [refreshKey]);
 
-  const patch = async (change: Partial<{ nearbySearchEnabled: boolean; locationDiscoverable: boolean; displayLevel: DisplayLevel }>) => {
+  const setDisplay = async (displayLevel: DisplayLevel) => {
     setMsg(tx.saving);
     try {
       const res = await fetch("/api/member/location", {
         method: "PATCH",
         headers: { "Content-Type": "application/json", ...(await authHeader()) },
-        body: JSON.stringify(change),
+        body: JSON.stringify({ displayLevel }),
       });
       if (!res.ok) throw new Error();
-      setS((cur) => cur && {
-        ...cur,
-        ...(change.nearbySearchEnabled !== undefined ? { nearby_search_enabled: change.nearbySearchEnabled } : {}),
-        ...(change.locationDiscoverable !== undefined ? { location_discoverable: change.locationDiscoverable } : {}),
-        ...(change.displayLevel !== undefined ? { display_level: change.displayLevel } : {}),
-      });
+      setS((cur) => cur && { ...cur, display_level: displayLevel });
       setMsg(tx.saved);
       onChanged?.();
     } catch { setMsg(tx.error); }
@@ -121,6 +105,8 @@ export function GeoConsentPanel({ refreshKey = 0, onChanged }: { refreshKey?: nu
   };
 
   if (state === "loading") return null;
+  // Un ancien niveau (région, département…) est appliqué comme « Ne pas afficher » côté serveur.
+  const current: DisplayLevel = s && MEMBER_DISPLAY_LEVELS.includes(s.display_level) ? s.display_level : "none";
   return (
     <div className="rounded-2xl p-4 space-y-4 sm:col-span-3" style={{ background: "#FAF9F6", border: "1px solid #E8E5E0" }}>
       <h5 className="text-xs font-bold uppercase tracking-wider" style={{ color: "#486B46" }}>{tx.title}</h5>
@@ -128,27 +114,12 @@ export function GeoConsentPanel({ refreshKey = 0, onChanged }: { refreshKey?: nu
         <p className="text-sm" style={{ color: "#6B746E" }}>{tx.none}</p>
       ) : (
         <>
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input type="checkbox" checked={s.nearby_search_enabled} onChange={(e) => patch({ nearbySearchEnabled: e.target.checked })}
-              className="mt-1 w-4 h-4 accent-[#486B46]" />
-            <span>
-              <span className="block text-sm font-semibold" style={{ color: "#2F2F2F" }}>{tx.nearby}</span>
-              <span className="block text-xs" style={{ color: "#6B746E" }}>{tx.nearbyHint}</span>
-            </span>
-          </label>
-          <label className="flex items-start gap-3 cursor-pointer">
-            <input type="checkbox" checked={s.location_discoverable} onChange={(e) => patch({ locationDiscoverable: e.target.checked })}
-              className="mt-1 w-4 h-4 accent-[#486B46]" />
-            <span>
-              <span className="block text-sm font-semibold" style={{ color: "#2F2F2F" }}>{tx.discoverable}</span>
-              <span className="block text-xs" style={{ color: "#8A5A00" }}>{tx.discoverableWarn}</span>
-            </span>
-          </label>
+          <p className="text-sm" style={{ color: "#56615A" }}>{tx.auto}</p>
           <label className="block space-y-1">
             <span className="block text-sm font-semibold" style={{ color: "#2F2F2F" }}>{tx.display}</span>
-            <select value={s.display_level} onChange={(e) => patch({ displayLevel: e.target.value as DisplayLevel })}
+            <select value={current} onChange={(e) => setDisplay(e.target.value as DisplayLevel)}
               className="h-11 w-full rounded-xl px-3 text-sm" style={{ background: "#FFFFFF", border: "1px solid #E8E5E0" }}>
-              {DISPLAY_LEVELS.map((l) => <option key={l} value={l}>{tx.levels[l]}</option>)}
+              {MEMBER_DISPLAY_LEVELS.map((l) => <option key={l} value={l}>{tx.levels[l]}</option>)}
             </select>
             <span className="block text-xs" style={{ color: "#6B746E" }}>{tx.displayHint}</span>
           </label>
@@ -159,7 +130,6 @@ export function GeoConsentPanel({ refreshKey = 0, onChanged }: { refreshKey?: nu
           {msg && <p className="text-xs" style={{ color: "#486B46" }} role="status">{msg}</p>}
         </>
       )}
-      <p className="text-xs" style={{ color: "#6B746E" }}>{tx.footer}</p>
     </div>
   );
 }

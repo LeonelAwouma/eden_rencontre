@@ -139,3 +139,34 @@ describe("carte (Lot 3)", () => {
     expect(map).not.toMatch(/representative_point|place_id|latitude|longitude|ST_X|ST_Y/i);
   });
 });
+
+const resolve = read("20261123_geo_resolve_city.sql");
+
+describe("résolution exacte d'une ville + rapprochement automatique (20261123)", () => {
+  test("normalisation STABLE (unaccent n'est pas IMMUTABLE), dictionnaire nommé", () => {
+    const fn = resolve.slice(resolve.indexOf("geo_normalize_name(p text)"), resolve.indexOf("geo_resolve_city("));
+    expect(fn).toMatch(/\bstable\b/);
+    expect(fn).not.toMatch(/\bimmutable\b/i);
+    expect(fn).toContain("'extensions.unaccent'::regdictionary");
+  });
+  test("résolution : correspondance exacte (aucun préfixe), total avant plafond, plafond 50", () => {
+    expect(resolve).not.toMatch(/\blike\b/i);
+    expect(resolve).toContain("count(*) over ()");
+    expect(resolve).toMatch(/limit 50/);
+    expect(resolve).toContain("verification_status <> 'rejected'");
+  });
+  test("fonctions : search_path vide, service_role seulement", () => {
+    expect((resolve.match(/set search_path = ''/g) ?? []).length).toBe(2);
+    expect(resolve).toMatch(/security definer\s+set search_path = ''/);
+    for (const f of ["geo_normalize_name(text)", "geo_resolve_city(text, text)"]) {
+      expect(resolve).toContain(`revoke all on function public.${f} from public, anon, authenticated`);
+      expect(resolve).toContain(`grant execute on function public.${f} to service_role`);
+    }
+  });
+  test("rapprochement par ville activé par défaut et pour les lignes existantes ; aucune coordonnée", () => {
+    expect(resolve).toContain("alter column nearby_search_enabled set default true");
+    expect(resolve).toContain("alter column location_discoverable set default true");
+    expect(resolve).toMatch(/update public\.member_locations\s+set nearby_search_enabled = true, location_discoverable = true/);
+    expect(resolve).not.toMatch(/\b(latitude|longitude|ST_X|ST_Y|representative_point)\b/i);
+  });
+});
