@@ -57,8 +57,12 @@ Conséquence : à Yaoundé et Douala, tous les membres sont rattachés au même 
 ## Réglages du membre (Profil → Localisation)
 - **Rapprochement par ville : automatique**, sans case à cocher ni réglage admin. Une ville renseignée sert à
   chercher et à être rapproché des membres de la même ville. Le score de compatibilité n'est jamais modifié.
-- **Localisation affichée sur mon profil** : « Ne pas afficher » (par défaut) ou « Afficher ma ville ». Un ancien
-  niveau (région, département…) reçu par le serveur est ramené à « Ne pas afficher ».
+- **Ville toujours affichée sur le profil** (2026-11-24) : plus de réglage « Localisation affichée sur mon profil ».
+  `display_level` vaut toujours `city` ; toute autre valeur reçue est remplacée. Migration
+  `20261124_geo_city_always_shown.sql` : passe les lignes existantes à `city` et remplace « Non précisée » par la vraie
+  ville dans `profiles.city`.
+- **Saisie** : la ville tapée suffit pour continuer (aucune suggestion à cliquer) ; une ligne « Il manque : … » sous
+  « Continuer » indique le champ manquant.
 - « Supprimer ma localisation » reste disponible : le membre n'est alors plus rapproché par ville.
 
 ## Rattrapage des membres inscrits avant l'outil

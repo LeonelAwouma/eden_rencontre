@@ -18,7 +18,7 @@ Aucune colonne géographique n'a été ajoutée à l'export Excel ni à `profile
 
 ## Confidentialité avancée côté membre (Profil → Localisation)
 - Depuis le 2026-11-23 : rapprochement par ville automatique (plus de cases « recherche par zone » / « apparaître
-  dans les recherches ») ; seul réglage : « Ne pas afficher » / « Afficher ma ville ». Voir `docs/geo-lot2-decouverte.md`.
+  dans les recherches ») ; ville toujours affichée sur le profil (aucun réglage depuis le 2026-11-24). Voir `docs/geo-lot2-decouverte.md`.
 - **Télécharger mes données de localisation** : `GET /api/member/location/export` (JSON : noms lisibles, réglages,
   historique de mes changements ; aucun identifiant interne ni coordonnée).
 - **Supprimer ma localisation** : `DELETE /api/member/location` supprime la ligne privée ET l'historique ; effet immédiat

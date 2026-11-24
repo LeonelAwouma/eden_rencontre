@@ -8,7 +8,7 @@
  *    publique conforme au consentement (publicCityLabel) ; profiles.region n'est JAMAIS touché ;
  *  - rapprochement automatique par ville (décision du 2026-11-23) : une localisation enregistrée sert toujours à
  *    chercher ET à être trouvé par les membres de la même ville (nearby_search_enabled / location_discoverable = true) ;
- *    l'affichage de la ville sur le profil reste un choix du membre (display_level : « none » par défaut, ou « city ») ;
+ *    la ville est TOUJOURS affichée sur le profil (display_level = « city », décision du 2026-11-24, aucun réglage) ;
  *  - on n'invente jamais un arrondissement : une localité non répertoriée reste « unverified ».
  *
  * Rattachement administratif indicatif : quand seule une ville est saisie, la localité est retrouvée par
@@ -61,11 +61,11 @@ const toUnit = (r: UnitRow): AdminUnit => ({
 });
 
 /**
- * Niveaux d'affichage proposés au membre : « ne pas afficher » ou « afficher ma ville ». Toute autre valeur reçue
- * (ancien client) est ramenée à « none », jamais à plus d'exposition. Les anciennes valeurs déjà en base restent lisibles.
+ * Affichage de la localisation : la ville est toujours affichée sur le profil (décision du 2026-11-24). Toute valeur
+ * reçue (ancien client) est ignorée et remplacée par « city ».
  */
-export const WRITABLE_DISPLAY_LEVELS = ["none", "city"] as const satisfies readonly DisplayLevel[];
-export const toWritableDisplayLevel = (l: DisplayLevel): DisplayLevel => (l === "city" ? "city" : "none");
+export const ALWAYS_DISPLAY_LEVEL: DisplayLevel = "city";
+export const toWritableDisplayLevel = (_l?: DisplayLevel): DisplayLevel => ALWAYS_DISPLAY_LEVEL;
 
 /** Seul réglage modifiable par le membre : le niveau d'affichage (le rapprochement par ville est automatique). */
 export const consentInputSchema = z.object({
@@ -217,8 +217,7 @@ export async function saveMemberLocation(db: Db, userId: string, raw: unknown): 
 
   // 3. Anciennes valeurs (historique + consentements conservés si non fournis).
   const { data: previous } = await db.from("member_locations").select("*").eq("user_id", userId).maybeSingle();
-  const displayLevel: DisplayLevel =
-    input.displayLevel !== undefined ? toWritableDisplayLevel(input.displayLevel) : ((previous?.display_level as DisplayLevel) || "none");
+  const displayLevel: DisplayLevel = toWritableDisplayLevel(input.displayLevel);
   const consentTouched = input.displayLevel !== undefined;
 
   const row = {

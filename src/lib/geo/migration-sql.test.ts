@@ -170,3 +170,20 @@ describe("résolution exacte d'une ville + rapprochement automatique (20261123)"
     expect(resolve).not.toMatch(/\b(latitude|longitude|ST_X|ST_Y|representative_point)\b/i);
   });
 });
+
+const always = read("20261124_geo_city_always_shown.sql");
+
+describe("ville toujours affichée (20261124)", () => {
+  test("affichage « city » par défaut et pour toutes les lignes existantes", () => {
+    expect(always).toContain("alter column display_level set default 'city'");
+    expect(always).toMatch(/update public\.member_locations\s+set display_level = 'city'/);
+  });
+  test("profiles.city : seule l'étiquette générique est remplacée, jamais le pays ni une vraie ville", () => {
+    expect(always).toContain("'non precisee', 'not specified', 'non renseignee', 'unspecified'");
+    expect(always).not.toMatch(/set\s+country/i);
+    expect(always).not.toMatch(/set\s+region/i);
+  });
+  test("aucune coordonnée", () => {
+    expect(always).not.toMatch(/\b(latitude|longitude|ST_X|ST_Y|representative_point)\b/i);
+  });
+});

@@ -17,7 +17,7 @@ import { reportRegistrationFailure } from "@/lib/registration-incident";
 import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { readRegistrationSelfie, discardLivenessFrames, resolveRegistrationAvatar } from "@/lib/registration-media";
 import { captureReferral, REFERRAL_COOKIE } from "@/lib/referrals";
-import { isDisplayLevel, publicCityLabel } from "@/lib/geo/public-label";
+import { publicCityLabel } from "@/lib/geo/public-label";
 import { saveMemberLocation } from "@/lib/geo/member-location-server";
 
 export const maxDuration = 60;
@@ -57,7 +57,8 @@ export async function POST(request: NextRequest) {
     // conforme au consentement d'affichage (« none » par défaut) — jamais la ville privée.
     const regLocation: Record<string, unknown> =
       body.location && typeof body.location === "object" ? (body.location as Record<string, unknown>) : {};
-    const regDisplayLevel = isDisplayLevel(regLocation.displayLevel) ? regLocation.displayLevel : "none";
+    // La ville est toujours affichée sur le profil (aucun réglage d'affichage).
+    const regDisplayLevel = "city" as const;
     const publicCity = city ? publicCityLabel(typeof city === "string" ? city : null, regDisplayLevel) : "";
 
     // Numéro de téléphone au format international (+237…), obligatoire.
