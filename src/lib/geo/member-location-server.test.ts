@@ -121,24 +121,23 @@ describe("saveMemberLocation", () => {
     expect(rpcCalls).toEqual([]);
   });
 
-  it("n'écrit jamais la ville privée dans profiles quand l'affichage n'est pas « ville »", async () => {
+  it("la ville est toujours publiée sur le profil ; profiles.region jamais synchronisé", async () => {
     const { db, profileUpdates } = fakeDb(seed());
     await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10), displayLevel: "region" });
-    expect(profileUpdates[0]).toEqual({ country: "Cameroun", city: GENERIC_CITY_LABEL });
-    // profiles.region n'est jamais synchronisé
+    expect(profileUpdates[0]).toEqual({ country: "Cameroun", city: "Yaoundé" });
     for (const p of profileUpdates) expect(Object.keys(p)).not.toContain("region");
   });
 
-  it("par défaut : affichage « none », rapprochement par ville automatique", async () => {
+  it("par défaut : ville affichée, rapprochement par ville automatique", async () => {
     const { db, t, profileUpdates } = fakeDb(seed());
     await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10) });
     expect(t.member_locations[0]).toMatchObject({
-      display_level: "none",
+      display_level: "city",
       nearby_search_enabled: true,
       location_discoverable: true,
       location_consent_at: null,
     });
-    expect(profileUpdates[0].city).toBe(GENERIC_CITY_LABEL);
+    expect(profileUpdates[0].city).toBe("Yaoundé");
   });
 
   it("le corps ne peut pas désactiver le rapprochement par ville", async () => {
@@ -147,10 +146,12 @@ describe("saveMemberLocation", () => {
     expect(t.member_locations[0]).toMatchObject({ nearby_search_enabled: true, location_discoverable: true });
   });
 
-  it("niveau d'affichage autre que « none » / « city » : ramené à « none », jamais plus exposé", async () => {
-    const { db, t } = fakeDb(seed());
-    await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10), displayLevel: "department" });
-    expect(t.member_locations[0]).toMatchObject({ display_level: "none" });
+  it("tout niveau d'affichage reçu (ancien client) est remplacé par « city »", async () => {
+    for (const displayLevel of ["none", "department"]) {
+      const { db, t } = fakeDb(seed());
+      await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10), displayLevel });
+      expect(t.member_locations[0]).toMatchObject({ display_level: "city" });
+    }
   });
 
   it("ville ambiguë/incohérente : département hors région refusé", async () => {
@@ -214,19 +215,14 @@ describe("saveMemberConsent — seul l'affichage est réglable", () => {
     expect(t.member_locations[0]).toMatchObject({ nearby_search_enabled: true, location_discoverable: true, display_level: "city" });
   });
 
-  it("« Afficher ma ville » publie la ville ; « Ne pas afficher » la masque", async () => {
-    const { db, profileUpdates } = fakeDb(seed());
-    await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10) });
-    expect(await saveMemberConsent(db, U, { displayLevel: "city" })).toMatchObject({ ok: true, publicCity: "Yaoundé" });
-    expect(await saveMemberConsent(db, U, { displayLevel: "none" })).toMatchObject({ ok: true, publicCity: GENERIC_CITY_LABEL });
-    expect(profileUpdates.at(-1)).toEqual({ city: GENERIC_CITY_LABEL });
-  });
-
-  it("ancien niveau (région…) reçu : ramené à « none », ville masquée", async () => {
-    const { db, t } = fakeDb(seed());
-    await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10) });
-    expect(await saveMemberConsent(db, U, { displayLevel: "region" })).toMatchObject({ ok: true, publicCity: GENERIC_CITY_LABEL });
-    expect(t.member_locations[0]).toMatchObject({ display_level: "none" });
+  it("la ville reste affichée quel que soit le niveau reçu (ancien client)", async () => {
+    for (const displayLevel of ["none", "region", "city"]) {
+      const { db, t, profileUpdates } = fakeDb(seed());
+      await saveMemberLocation(db, U, { country: "Cameroun", placeId: id(10) });
+      expect(await saveMemberConsent(db, U, { displayLevel })).toMatchObject({ ok: true, publicCity: "Yaoundé" });
+      expect(t.member_locations[0]).toMatchObject({ display_level: "city" });
+      expect(profileUpdates.at(-1)).toEqual({ city: "Yaoundé" });
+    }
   });
 
   it("refuse un corps vide ou invalide", async () => {

@@ -7,8 +7,7 @@ import { useI18n } from "@/lib/i18n";
 import { countryLabel, findCountry } from "@/lib/geo";
 import { Flag } from "@/components/flag";
 import { useCountryCityPicker } from "./use-country-city-picker";
-import { isCityFilled } from "@/lib/geo/city-suggestions";
-import { CameroonCityPicker, DisplayLevelSelect, type LocationChoice } from "./cameroon-city-picker";
+import { CameroonCityPicker, type LocationChoice } from "./cameroon-city-picker";
 import { CityTypeahead } from "./city-typeahead";
 
 /**
@@ -100,14 +99,8 @@ export function CountryCityInline({
             country={country}
             useReferential={false}
             placeholder={t("registrationV2.cityPlaceholder")}
-            onChange={(c) => onChangeCity(c)}
+            onChange={(c) => { onChangeCity(c); onChangeLocation?.({ displayLevel: "city" }); }}
           />
-          {isCityFilled(city) && onChangeLocation && (
-            <DisplayLevelSelect
-              value={location?.displayLevel ?? "none"}
-              onChange={(displayLevel) => onChangeLocation({ ...(location ?? {}), displayLevel })}
-            />
-          )}
         </>
       )}
     </div>

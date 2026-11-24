@@ -2,9 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabase";
+import { isGenericCityLabel } from "@/lib/geo/public-label";
 import { CountryCityInline } from "./country-city-inline";
 import type { LocationChoice } from "./cameroon-city-picker";
-import type { DisplayLevel } from "@/lib/geo/public-label";
 import { GeoConsentPanel } from "./geo-consent-panel";
 
 /**
@@ -29,26 +29,11 @@ export function MemberLocationEditor({
   const [ready, setReady] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
 
-  // Précharge le niveau d'affichage actuel ; la ville affichée vient de profiles (déjà publique).
+  // La ville vient de profiles (toujours affichée sur le profil). « Non précisée » = champ vide à remplir.
   useEffect(() => {
-    let alive = true;
-    (async () => {
-      let level: DisplayLevel | null = null;
-      try {
-        const { data } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
-        const token = data.session?.access_token;
-        const res = await fetch("/api/member/location", { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-        if (res.ok) level = (await res.json()).location?.display_level ?? null;
-      } catch { /* repli : valeurs de profiles */ }
-      if (!alive) return;
-      // Un membre qui n'a jamais fait de choix et dont la ville est déjà publique : on conserve cet affichage
-      // (aucune exposition supplémentaire) ; sinon « ne pas afficher ».
-      const hasRealCity = !!initialCity && initialCity.toLowerCase() !== "non précisée";
-      setLocation({ displayLevel: level ?? (hasRealCity ? "city" : "none") });
-      setCity(initialCity);
-      setReady(true);
-    })();
-    return () => { alive = false; };
+    setLocation({ displayLevel: "city" });
+    setCity(isGenericCityLabel(initialCity) ? "" : initialCity);
+    setReady(true);
   }, [initialCity]);
 
   const [touched, setTouched] = useState(false);
@@ -70,7 +55,7 @@ export function MemberLocationEditor({
           departmentId: location?.departmentId ?? null,
           arrondissementId: location?.arrondissementId ?? null,
           placeId: location?.placeId ?? null,
-          displayLevel: location?.displayLevel ?? "none",
+          displayLevel: "city",
         }),
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({})))?.error || "Erreur");
@@ -83,18 +68,6 @@ export function MemberLocationEditor({
     }
   };
 
-  // Le niveau d'affichage peut être changé depuis le panneau de confidentialité : on le relit pour ne jamais
-  // l'écraser avec une valeur périmée au prochain enregistrement de la ville.
-  const resyncDisplayLevel = async () => {
-    try {
-      const { data } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
-      const token = data.session?.access_token;
-      const res = await fetch("/api/member/location", { cache: "no-store", headers: token ? { Authorization: `Bearer ${token}` } : {} });
-      const level = res.ok ? (await res.json()).location?.display_level : null;
-      if (level) setLocation((l) => ({ ...(l ?? {}), displayLevel: level }));
-    } catch { /* le prochain enregistrement relira l'état */ }
-  };
-
   if (!ready) return null;
   return (
     <div className="space-y-3 sm:col-span-3">
@@ -104,7 +77,7 @@ export function MemberLocationEditor({
         onChangeCountry={(c) => { setCountry(c); setTouched(true); }}
         onChangeCity={(c) => { setCity(c); setTouched(true); }}
         location={location}
-        onChangeLocation={(l) => { setLocation(l ?? { displayLevel: location?.displayLevel ?? "none" }); setTouched(true); }}
+        onChangeLocation={(l) => { setLocation({ ...(l ?? {}), displayLevel: "city" }); setTouched(true); }}
       />
       <div className="flex items-center gap-3">
         <button
@@ -118,7 +91,7 @@ export function MemberLocationEditor({
         {status === "saved" && <span className="text-xs text-[#486B46]">Localisation enregistrée.</span>}
         {status === "error" && <span className="text-xs text-red-700">{message}</span>}
       </div>
-      <GeoConsentPanel refreshKey={savedCount} onChanged={resyncDisplayLevel} />
+      <GeoConsentPanel refreshKey={savedCount} />
     </div>
   );
 }

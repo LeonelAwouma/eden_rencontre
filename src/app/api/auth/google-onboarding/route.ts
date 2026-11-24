@@ -8,7 +8,7 @@ import { sendRegistrationReceivedEmail } from "@/lib/email";
 import { readRegistrationSelfie, discardLivenessFrames, resolveRegistrationAvatar } from "@/lib/registration-media";
 import { captureReferral, REFERRAL_COOKIE } from "@/lib/referrals";
 import { refuseCoachSession } from "@/lib/coach/guard";
-import { isDisplayLevel, publicCityLabel } from "@/lib/geo/public-label";
+import { publicCityLabel } from "@/lib/geo/public-label";
 import { saveMemberLocation } from "@/lib/geo/member-location-server";
 
 export const maxDuration = 60;
@@ -64,7 +64,8 @@ export async function POST(request: NextRequest) {
     // l'étiquette publique conforme au consentement d'affichage (« none » par défaut).
     const regLocation: Record<string, unknown> =
       body.location && typeof body.location === "object" ? (body.location as Record<string, unknown>) : {};
-    const regDisplayLevel = isDisplayLevel(regLocation.displayLevel) ? regLocation.displayLevel : "none";
+    // La ville est toujours affichée sur le profil (aucun réglage d'affichage).
+    const regDisplayLevel = "city" as const;
     const publicCity = publicCityLabel(typeof city === "string" ? city : null, regDisplayLevel);
 
     // Validate age (minimum 18) — et une date bien formée (AAAA-MM-JJ)
