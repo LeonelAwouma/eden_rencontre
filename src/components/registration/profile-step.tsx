@@ -12,6 +12,7 @@ import { phoneIsoFor, findCountry, toE164, dialOfIso } from "@/lib/geo";
 import { PhoneInput } from "@/components/phone-input";
 import { BirthDateInput } from "@/components/registration/birth-date-input";
 import { CountryCityInline } from "@/components/geo/country-city-inline";
+import { isCityFilled } from "@/lib/geo/city-suggestions";
 import { EDEN_SOLID_BUTTON } from "@/components/garden/button-styles";
 import type { RegistrationFormData, RegistrationMode } from "@/components/registration/types";
 
@@ -71,15 +72,17 @@ export function RegistrationProfileStep({
     return () => { cancelled = true; clearTimeout(timer); };
   }, [phoneE164, mode]);
 
-  const canContinue =
-    !phoneTaken &&
-    (mode === "google" || (formData.firstName.trim() && formData.lastName.trim())) &&
-    !!formData.gender &&
-    ageValid &&
-    !!formData.civilStatus &&
-    !!formData.country &&
-    !!formData.city &&
-    phoneValid;
+  // Ce qui manque encore, dans l'ordre de l'écran : affiché sous le bouton quand il est grisé.
+  const missing: string[] = [];
+  if (mode !== "google" && !(formData.firstName.trim() && formData.lastName.trim())) missing.push(t("register.missing.name"));
+  if (!formData.gender) missing.push(t("register.missing.gender"));
+  if (!ageValid) missing.push(t("register.missing.birthDate"));
+  if (!formData.civilStatus) missing.push(t("register.missing.civilStatus"));
+  if (!formData.country) missing.push(t("register.missing.country"));
+  // La ville tapée suffit (2 caractères utiles) : aucune suggestion à cliquer.
+  if (!isCityFilled(formData.city)) missing.push(t("register.missing.city"));
+  if (!phoneValid || phoneTaken) missing.push(t("register.missing.phone"));
+  const canContinue = missing.length === 0;
 
   return (
     <div className="space-y-7">
@@ -187,6 +190,11 @@ export function RegistrationProfileStep({
       >
         {t("register.continue")} <ArrowRight className="w-5 h-5 ml-2" />
       </Button>
+      {!canContinue && (
+        <p className="-mt-4 text-center text-xs text-foreground/50" aria-live="polite">
+          {t("register.missing.label", { fields: missing.join(", ") })}
+        </p>
+      )}
       <button type="button" onClick={onBack} className="w-full flex items-center justify-center gap-2 text-sm text-foreground/30 hover:text-primary transition-colors py-2">
         <ChevronLeft className="w-4 h-4" /> {t("register.back")}
       </button>

@@ -240,15 +240,20 @@ try {
 
   // Point intérieur + simplification EN MÈTRES (projection métrique adaptée), puis retour en 4326.
   // SRID personnalisé : Lambert azimutal équivalent centré sur le Cameroun (6°N, 12,5°E) ; repli UTM 33N.
+  // PostGIS est dans le schéma « extensions » : spatial_ref_sys s'y trouve. L'essai se fait dans un SAVEPOINT,
+  // sinon un échec (droits) invaliderait toute la transaction d'import malgré le catch.
   let metric = 32633;
+  await client.query("savepoint srid_custom");
   try {
     await client.query(
-      `insert into public.spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text)
+      `insert into extensions.spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text)
        select 990237,'CUSTOM',990237,'',
          '+proj=laea +lat_0=6 +lon_0=12.5 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs'
-       where not exists (select 1 from public.spatial_ref_sys where srid=990237)`);
+       where not exists (select 1 from extensions.spatial_ref_sys where srid=990237)`);
+    await client.query("release savepoint srid_custom");
     metric = 990237;
   } catch {
+    await client.query("rollback to savepoint srid_custom");
     console.warn("SRID personnalisé non créé (droits) : repli sur EPSG:32633.");
   }
   const tol = { 1: 1000, 2: 300, 3: 100 }; // mètres

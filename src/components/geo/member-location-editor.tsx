@@ -55,7 +55,7 @@ export function MemberLocationEditor({
   const dirty = touched;
 
   const save = async () => {
-    if (!country || !city) { setStatus("error"); setMessage("Choisissez un pays et une ville."); return; }
+    if (!country || city.trim().length < 2) { setStatus("error"); setMessage("Choisissez un pays et une ville."); return; }
     setStatus("saving"); setMessage("");
     try {
       const { data } = (await supabase?.auth.getSession()) ?? { data: { session: null } };
@@ -65,7 +65,7 @@ export function MemberLocationEditor({
         headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
         body: JSON.stringify({
           country,
-          city,
+          city: city.trim(),
           regionId: location?.regionId ?? null,
           departmentId: location?.departmentId ?? null,
           arrondissementId: location?.arrondissementId ?? null,
