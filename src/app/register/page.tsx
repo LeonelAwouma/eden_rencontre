@@ -78,7 +78,7 @@ export default function RegisterPage() {
         civilStatus: formData.civilStatus,
         region: formData.region,
         country: formData.country,
-        city: formData.city,
+        city: formData.city.trim(),
         location: formData.location,
         charterAuthorizeVerification: formData.charterAuthorizeVerification,
         charterCommitRespectful: formData.charterCommitRespectful,

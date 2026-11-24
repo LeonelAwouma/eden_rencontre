@@ -274,6 +274,16 @@
     "signupMethodPhone": "Exceptionally, no email address? Sign up with my phone number",
     "signupPhoneHint": "No email? Your phone number, asked on the next step, will be your login. The team will approve your account by hand: no SMS code is sent.",
     "phoneTaken": "An account already exists with this phone number.",
+    "missing": {
+      "label": "Still missing: {fields}",
+      "name": "first and last name",
+      "gender": "gender",
+      "birthDate": "date of birth",
+      "civilStatus": "marital status",
+      "country": "country",
+      "city": "city",
+      "phone": "phone number"
+    },
     "emailTakenLogin": "Sign in",
     "photosDeferLink": "I can't upload my photos",
     "photosDeferTitle": "Continue without your photos?",
