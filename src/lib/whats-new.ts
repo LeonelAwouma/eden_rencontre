@@ -188,6 +188,22 @@ export const ANNOUNCEMENTS: readonly Announcement[] = [
     },
   },
   {
+    id: "admin-geo-member-maps",
+    surface: "admin",
+    active: false, // → true quand 20261125_geo_admin_member_map.sql est appliquée et le code déployé
+    activatesAt: "2026-11-25T00:00:00Z", // PROVISOIRE : à remplacer par la date de mise en ligne réelle
+    availability: "always",
+    href: "/admin/geographie",
+    fr: {
+      title: "Voyez où vivent vos membres",
+      description: "Cartes du Cameroun (régions à arrondissements) et du monde, avec les effectifs exacts de membres.",
+    },
+    en: {
+      title: "See where your members live",
+      description: "Maps of Cameroon (regions down to districts) and the world, with exact member counts.",
+    },
+  },
+  {
     id: "admin-password-reset-requests",
     surface: "admin",
     active: false, // → true quand l'inscription par téléphone et la migration 20261111 sont en production
