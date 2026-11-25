@@ -215,7 +215,7 @@ export const QUESTIONNAIRES_EN: Questionnaire[] = [
         title: "Non-Negotiable Boundaries",
         fields: [
           { id: "limitesSpirituelles", label: "3 to 5 spiritual values that are absolutely non-negotiable", type: "multi", options: SPIRITUAL_VALUES_OPTIONS_EN, help: "Choose 3 to 5 values", max: 5 },
-          { id: "limitesComportementales", label: "Behaviors you could not accept", type: "multi", options: BEHAVIORAL_DEALBREAKERS_OPTIONS_EN, help: "Select everything that applies", max: 6 },
+          { id: "limitesComportementales", label: "Behaviors you could not accept", type: "multi", options: BEHAVIORAL_DEALBREAKERS_OPTIONS_EN, help: "Select everything that applies" },
           { id: "limitesRelationnelles", label: "Your physical boundaries before marriage", type: "single", options: PHYSICAL_BOUNDARIES_OPTIONS_EN },
         ],
       },

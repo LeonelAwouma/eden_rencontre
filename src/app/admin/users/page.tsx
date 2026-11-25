@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -28,6 +28,7 @@ import { cn, formatDate } from "@/lib/utils";
 import { isProfileFullyComplete } from "@/lib/profile-completion";
 import { effectiveQuestionnaireCompletion, isQuestionnaireSufficient } from "@/lib/onboarding";
 import { PageHeader } from "@/components/admin/page-header";
+import { useOnlineMembers } from "@/lib/presence";
 import { DataHealthPanel } from "@/components/admin/data-health-panel";
 import { EMAIL_NOT_SENT } from "@/lib/admin-email-warning";
 
@@ -115,6 +116,11 @@ export default function AdminUsersPage() {
   const [emailWarning, setEmailWarning] = useState<string | null>(null);
   const [viewingUser, setViewingUser] = useState<UserProfile | null>(null);
   const [exporting, setExporting] = useState(false);
+  // Filtre « En ligne » : membres présents en ce moment dans l'espace membre (temps réel).
+  const online = useOnlineMembers();
+  const onlineSet = useMemo(() => new Set(online.ids), [online.ids]);
+  const [onlineOnly, setOnlineOnly] = useState(searchParams.get("online") === "1");
+  const onlineKey = onlineOnly ? [...online.ids].sort().join(",") : "";
 
   const fetchUsers = useCallback(async () => {
     setLoading(true);
@@ -123,6 +129,7 @@ export default function AdminUsersPage() {
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (planFilter !== "all") params.set("plan", planFilter);
       if (searchQuery) params.set("search", searchQuery);
+      if (onlineOnly) params.set("ids", onlineKey);
       params.set("page", page.toString());
       params.set("limit", "20");
 
@@ -139,7 +146,7 @@ export default function AdminUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, planFilter, searchQuery, page]);
+  }, [statusFilter, planFilter, searchQuery, page, onlineOnly, onlineKey]);
 
   useEffect(() => {
     fetchUsers();
@@ -215,6 +222,7 @@ export default function AdminUsersPage() {
       if (statusFilter !== "all") params.set("status", statusFilter);
       if (planFilter !== "all") params.set("plan", planFilter);
       if (searchQuery) params.set("search", searchQuery);
+      if (onlineOnly) params.set("ids", onlineKey);
       const res = await fetch(`/api/admin/users/export?${params.toString()}`);
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
@@ -237,7 +245,7 @@ export default function AdminUsersPage() {
     }
   };
 
-  const filtered = statusFilter !== "all" || planFilter !== "all" || searchQuery.trim() !== "";
+  const filtered = statusFilter !== "all" || planFilter !== "all" || searchQuery.trim() !== "" || onlineOnly;
 
   return (
     <>
@@ -350,6 +358,20 @@ export default function AdminUsersPage() {
           ))}
         </div>
 
+        {/* En ligne maintenant */}
+        <button
+          type="button"
+          onClick={() => { setOnlineOnly((v) => !v); setPage(1); }}
+          aria-pressed={onlineOnly}
+          className={cn(
+            "inline-flex items-center gap-2 h-[42px] px-3.5 rounded-xl border text-[12px] font-semibold whitespace-nowrap transition-colors duration-150",
+            onlineOnly ? "bg-primary text-primary-foreground border-primary" : "bg-white text-foreground border-border hover:bg-muted"
+          )}
+        >
+          <span className={cn("w-2 h-2 rounded-full", onlineOnly ? "bg-white" : "bg-[#3F8F4E]")} aria-hidden="true" />
+          En ligne{online.ready ? ` (${online.ids.length})` : ""}
+        </button>
+
         {/* Search */}
         <form onSubmit={handleSearch} className="flex gap-2 flex-1 max-w-md">
           <div className="relative flex-1">
@@ -425,8 +447,11 @@ export default function AdminUsersPage() {
                     >
                       <td className="px-4 py-3.5">
                         <Link href={`/admin/users/${user.id}`} className="flex items-center gap-3 group/name">
-                          <div className="w-9 h-9 rounded-full bg-gradient-to-br from-success/20 to-success/30 flex items-center justify-center text-[13px] font-bold text-success shrink-0">
+                          <div className="relative w-9 h-9 rounded-full bg-gradient-to-br from-success/20 to-success/30 flex items-center justify-center text-[13px] font-bold text-success shrink-0">
                             {(user.pseudo || user.name || "U").charAt(0).toUpperCase()}
+                            {onlineSet.has(user.id) && (
+                              <span title="En ligne" className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-[#3F8F4E] ring-2 ring-white" />
+                            )}
                           </div>
                           <div>
                             <p className="text-[13px] font-semibold text-foreground group-hover/name:text-success transition-colors">

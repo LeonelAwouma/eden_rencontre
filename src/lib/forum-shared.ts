@@ -74,6 +74,11 @@ export const findSticker = (id: string | null | undefined) => FORUM_STICKERS.fin
 /** Limites, identiques aux contraintes SQL (20261001_forum.sql). */
 export const FORUM_LIMITS = { bodyMax: 2000, reportMax: 500 };
 
+/** Envoi refusé : groupe réservé aux admins, ou membre en sourdine. */
+export const FORUM_CANNOT_POST = "forum_cannot_post";
+/** Envoi refusé par la modération : le texte contient une coordonnée (téléphone, e-mail, lien…). */
+export const FORUM_CONTACT_BLOCKED = "forum_contact_blocked";
+
 /** Un message peut être modifié pendant 5 minutes après son envoi (20261002_forum_edit.sql). */
 export const FORUM_EDIT_WINDOW_MS = 5 * 60 * 1000;
 

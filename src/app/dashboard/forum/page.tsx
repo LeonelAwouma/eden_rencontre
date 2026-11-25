@@ -24,7 +24,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  FORUM_CANNOT_POST, FORUM_LIMITS, FORUM_UNAVAILABLE, DEFAULT_FORUM_SETTINGS,
+  FORUM_CANNOT_POST, FORUM_CONTACT_BLOCKED, FORUM_LIMITS, FORUM_UNAVAILABLE, DEFAULT_FORUM_SETTINGS,
   dayKey, dayLabel, timeLabel, messagePreview,
   getForumSettings, getMemberCount, getMessage, getMyId, getMyMute, listMessages, sendForumMessage,
   deleteForumMessage, reportForumMessage, subscribeForum, editForumMessage, isEditable, FORUM_EDIT_EXPIRED,
@@ -211,6 +211,7 @@ function ForumGroup() {
     const res = await editForumMessage(editing.id, draft);
     setSending(false);
     if (res.error || !res.data) {
+      if (res.error === FORUM_CONTACT_BLOCKED) { toast({ title: t("forum.contactBlockedTitle"), description: t("forum.contactBlockedDesc"), variant: "destructive" }); return; }
       toast({
         title: res.error === FORUM_EDIT_EXPIRED ? t("forum.editExpiredTitle") : t("forum.editError"),
         description: res.error === FORUM_EDIT_EXPIRED ? t("forum.editExpiredDesc") : undefined,
@@ -236,6 +237,9 @@ function ForumGroup() {
         toast({ title: t("forum.cannotPostTitle"), description: t("forum.cannotPostDesc"), variant: "destructive" });
         if (me) getMyMute(me).then(setMute);
         refreshSettings();
+      } else if (res.error === FORUM_CONTACT_BLOCKED) {
+        // Le brouillon est conservé : le membre retire la coordonnée et renvoie.
+        toast({ title: t("forum.contactBlockedTitle"), description: t("forum.contactBlockedDesc"), variant: "destructive" });
       } else {
         toast({ title: t("forum.sendError"), variant: "destructive" });
       }

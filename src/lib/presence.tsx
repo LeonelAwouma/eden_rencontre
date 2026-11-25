@@ -108,6 +108,28 @@ export function usePresence(): PresenceValue {
   return useContext(PresenceContext);
 }
 
+/**
+ * Administration : membres présents en ce moment dans l'espace membre. Écoute le canal
+ * members-online sans s'y déclarer (l'admin n'est pas compté). ready = premier état reçu.
+ */
+export function useOnlineMembers(): { ids: string[]; ready: boolean } {
+  const [state, setState] = useState<{ ids: string[]; ready: boolean }>({ ids: [], ready: false });
+  useEffect(() => {
+    const client = supabase;
+    if (!client) return;
+    // Clé propre à cet écouteur : il ne doit pas se confondre avec un membre.
+    const ch = client.channel(CHANNEL, { config: { presence: { key: `admin-observer-${Math.random().toString(36).slice(2)}` } } });
+    ch.on("presence", { event: "sync" }, () => {
+      const s = ch.presenceState();
+      setState({ ids: Object.keys(s).filter((k) => !k.startsWith("admin-observer-") && (s[k]?.length ?? 0) > 0), ready: true });
+    }).subscribe((status) => {
+      if (status === "SUBSCRIBED") setState((prev) => (prev.ready ? prev : { ...prev, ready: true }));
+    });
+    return () => { client.removeChannel(ch); };
+  }, []);
+  return state;
+}
+
 type Translate = (key: string, params?: Record<string, string | number>) => string;
 
 /** « Vu à l'instant », « Vu il y a 12 minutes », « Vu hier », « Vu le 3 nov. ». */

@@ -2158,6 +2158,8 @@
     "reportError": "The report could not be sent.",
     "sendError": "Your message could not be sent.",
     "cannotPostTitle": "Can't send",
+    "contactBlockedTitle": "Message not sent",
+    "contactBlockedDesc": "For everyone's safety, phone numbers, email addresses and links can't be shared in the group. Remove them and send your message again.",
     "cannotPostDesc": "You can't write in the group right now.",
     "adminsOnly": "Only the team can send messages in this group for now.",
     "muted": "An administrator has muted you in this group. You can still read the messages.",

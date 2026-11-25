@@ -7,7 +7,7 @@
 
 import { supabase } from "@/lib/supabase";
 import {
-  DEFAULT_FORUM_SETTINGS, FORUM_PAGE_SIZE, forumMessageColumns, isForumMissing, isMissingColumn,
+  DEFAULT_FORUM_SETTINGS, FORUM_CANNOT_POST, FORUM_PAGE_SIZE, forumMessageColumns, isForumMissing, isMissingColumn,
   type ForumMessage, type ForumSettings,
 } from "@/lib/forum-shared";
 
@@ -15,8 +15,7 @@ export * from "@/lib/forum-shared";
 
 /** Erreur renvoyée quand les tables du forum n'existent pas encore. */
 export const FORUM_UNAVAILABLE = "forum_unavailable";
-/** Envoi refusé : groupe réservé aux admins, ou membre en sourdine. */
-export const FORUM_CANNOT_POST = "forum_cannot_post";
+// FORUM_CANNOT_POST et FORUM_CONTACT_BLOCKED viennent de forum-shared (partagés avec les routes API).
 
 /** Envoi refusé : le délai de 5 minutes pour modifier un message est dépassé. */
 export const FORUM_EDIT_EXPIRED = "forum_edit_expired";
@@ -26,7 +25,8 @@ export const FORUM_EDIT_EXPIRED = "forum_edit_expired";
 let withEdited = true;
 const columns = () => forumMessageColumns(undefined, withEdited);
 
-type Result<T> = { data?: T; error?: string };
+/** reason : explication du refus de modération, à montrer au membre. */
+type Result<T> = { data?: T; error?: string; reason?: string };
 
 function fail(error: { code?: string; message?: string }): { error: string } {
   if (isForumMissing(error)) return { error: FORUM_UNAVAILABLE };
@@ -86,30 +86,38 @@ export async function getMessage(id: string): Promise<ForumMessage | null> {
   return (data as unknown as ForumMessage) ?? null;
 }
 
-export async function sendForumMessage(input: { body?: string; sticker?: string | null; replyTo?: string | null }): Promise<Result<ForumMessage>> {
+/**
+ * Envoi et modification passent par le serveur (/api/forum/messages), qui applique la
+ * modération : aucune coordonnée (téléphone, e-mail, lien…) n'est publiée dans le groupe.
+ */
+async function forumApi(path: string, method: "POST" | "PATCH", payload: unknown): Promise<Result<ForumMessage>> {
   if (!supabase) return { error: FORUM_UNAVAILABLE };
-  const { data, error } = await supabase
-    .from("forum_messages")
-    .insert({ body: (input.body || "").trim(), sticker: input.sticker || null, reply_to_id: input.replyTo || null })
-    .select(columns())
-    .single();
-  if (error) return fail(error);
-  return { data: data as unknown as ForumMessage };
+  const { data: auth } = await supabase.auth.getSession();
+  const token = auth.session?.access_token;
+  try {
+    const res = await fetch(path, {
+      method,
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      body: JSON.stringify(payload),
+    });
+    const json = await res.json().catch(() => ({}));
+    if (!res.ok || !json.message) return { error: typeof json.error === "string" ? json.error : "error", reason: json.reason };
+    return { data: json.message as ForumMessage };
+  } catch {
+    return { error: "network" };
+  }
 }
 
-/**
- * Modifier le texte de son message (5 minutes après l'envoi au plus, contrôlé
- * par la base). Sans ligne modifiée, le délai est dépassé (ou le droit retiré).
- */
+export async function sendForumMessage(input: { body?: string; sticker?: string | null; replyTo?: string | null }): Promise<Result<ForumMessage>> {
+  return forumApi("/api/forum/messages", "POST", {
+    body: (input.body || "").trim(), sticker: input.sticker || null, replyTo: input.replyTo || null,
+  });
+}
+
+/** Modifier le texte de son message (5 minutes après l'envoi au plus, contrôlé par le serveur). */
 export async function editForumMessage(id: string, body: string): Promise<Result<ForumMessage>> {
-  if (!supabase) return { error: FORUM_UNAVAILABLE };
   if (!withEdited) return { error: FORUM_UNAVAILABLE };
-  const { data, error } = await supabase
-    .from("forum_messages").update({ body: body.trim() }).eq("id", id).select(columns());
-  if (error) return isMissingColumn(error) ? { error: FORUM_UNAVAILABLE } : fail(error);
-  const row = (data || [])[0];
-  if (!row) return { error: FORUM_EDIT_EXPIRED };
-  return { data: row as unknown as ForumMessage };
+  return forumApi(`/api/forum/messages/${encodeURIComponent(id)}`, "PATCH", { body: body.trim() });
 }
 
 export async function deleteForumMessage(id: string): Promise<Result<true>> {

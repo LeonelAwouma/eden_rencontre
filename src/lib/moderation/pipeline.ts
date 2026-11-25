@@ -14,6 +14,7 @@ import type {
   EscalationResult,
   EscalationRule,
   ContextAnalysisResult,
+  ViolationType,
 } from "./types";
 import { DEFAULT_CONFIG, FRIENDLY_WARNINGS } from "./config";
 import { normalizeText } from "./normalizer";
@@ -30,7 +31,18 @@ export interface PipelineInput {
   receiverId: string;
   conversationId: string;
   content: string;
+  /**
+   * Bloque toute coordonnée (téléphone, e-mail, lien, pseudo de réseau) quel que soit le niveau
+   * de confiance : espaces collectifs comme le forum, lus par tous les membres.
+   */
+  alwaysBlockContacts?: boolean;
 }
+
+/**
+ * Coordonnées proprement dites : bloquées tant que le partage n'est pas débloqué.
+ * (Une simple demande — « on s'échange nos numéros ? » — reste un avertissement.)
+ */
+export const CONTACT_TYPES: readonly ViolationType[] = ["PHONE_NUMBER", "EMAIL_ADDRESS", "URL_DETECTED", "USERNAME_DETECTED"];
 
 export interface PipelineOutput {
   allowed: boolean;
@@ -569,6 +581,15 @@ export async function validateMessage(
 
   // ── Stage 7: Decision Engine ──
   let decision: Decision = makeDecision(riskScore, canShare);
+
+  // Une coordonnée détectée n'est jamais livrée sur simple avertissement : le score seul
+  // laissait passer un numéro nu (« 692313985 » → WARN → envoyé).
+  // « digit_extraction_phone » (tous les chiffres du message mis bout à bout) est trop flou pour bloquer seul.
+  const contactMatch = detection.matches.find((m) => CONTACT_TYPES.includes(m.type) && m.ruleId !== "digit_extraction_phone");
+  if (contactMatch && (input.alwaysBlockContacts || !canShare)) {
+    decision = "BLOCK";
+    if (!detection.primaryType || !CONTACT_TYPES.includes(detection.primaryType)) detection.primaryType = contactMatch.type;
+  }
 
   // ── Stage 8: Escalation Check (repeat offender) ──
   let escalation: EscalationResult | undefined;

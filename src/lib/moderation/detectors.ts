@@ -39,12 +39,23 @@ function getRegex(pattern: string, flags = "gi"): RegExp {
 // 1. PHONE NUMBER DETECTION
 // ═══════════════════════════════════════════════════════════════
 
+const LOCAL_PHONE_RE = /^(?:[26]\d{8}|0[1-9]\d{8})$/;
+const DATE_RE = /\b(?:(?:0?[1-9]|[12]\d|3[01])[/.\-](?:0?[1-9]|1[0-2])[/.\-](?:\d{4}|\d{2})|\d{4}-\d{2}-\d{2})\b/g;
+
 export function detectPhoneNumbers(norm: NormalizedText, config: ModerationConfig): DetectionMatch[] {
   const matches: DetectionMatch[] = [];
   const { normalized, digits, aggressivelyNormalized, reconstructedNumbers } = norm;
 
   // Skip if total digits too short
   if (digits.length < 8) return matches;
+
+  // Numéro sans indicatif mais au format local (mobile camerounais 6XXXXXXXX / fixe 2XXXXXXXX,
+  // ou 0X XX XX XX XX) : « 6 92 31 39 85 » doit être reconnu autant que « +237 6… ».
+  const looksLikePhone = (candidate: string) =>
+    config.phoneCountryPrefixes.some(p => candidate.startsWith(p)) || LOCAL_PHONE_RE.test(candidate);
+  // Les dates (« 12/12/2026 ») ne sont pas des numéros.
+  const dateDigits = Array.from(norm.original.matchAll(DATE_RE), d => d[0].replace(/\D/g, ""));
+  const isDate = (candidate: string) => dateDigits.some(d => candidate.includes(d) && candidate.length - d.length <= 4);
 
   // ── Method 1: Regex patterns from configurable PatternRule list ──
   const phonePatterns = config.patterns.filter(
@@ -81,8 +92,7 @@ export function detectPhoneNumbers(norm: NormalizedText, config: ModerationConfi
       return matchDigits === candidate || candidate.includes(matchDigits) || matchDigits.includes(candidate);
     });
     if (!alreadyFound) {
-      const hasPrefix = config.phoneCountryPrefixes.some(p => candidate.startsWith(p));
-      if (hasPrefix && !isWhitelisted(norm.original, 0, norm.original.length, config.whitelistedPatterns)) {
+      if (looksLikePhone(candidate) && !isDate(candidate) && !isWhitelisted(norm.original, 0, norm.original.length, config.whitelistedPatterns)) {
         matches.push({
           type: "PHONE_NUMBER",
           match: candidate,
@@ -105,8 +115,7 @@ export function detectPhoneNumbers(norm: NormalizedText, config: ModerationConfi
         return matchDigits === candidate || candidate.includes(matchDigits) || matchDigits.includes(candidate);
       });
       if (!alreadyFound) {
-        const hasPrefix = config.phoneCountryPrefixes.some(p => candidate.startsWith(p));
-        if (hasPrefix && !isWhitelisted(norm.original, 0, norm.original.length, config.whitelistedPatterns)) {
+        if (looksLikePhone(candidate) && !isDate(candidate) && !isWhitelisted(norm.original, 0, norm.original.length, config.whitelistedPatterns)) {
           matches.push({
             type: "PHONE_NUMBER",
             match: candidate,
