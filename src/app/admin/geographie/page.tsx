@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { AlertTriangle, CheckCircle2, Eye, Layers, MapPin, ShieldCheck, Users } from "lucide-react";
 import { PageHeader } from "@/components/admin/page-header";
+import { MemberDistribution } from "@/components/admin/geo/member-distribution";
 import {
   Badge, Card, EmptyBlock, ErrorState, FilterTabs, LoadingBlock, Pagination, SectionTitle, StatTile, Toast, btn, inputClass,
 } from "@/components/admin/admin-ui";
@@ -56,7 +57,9 @@ export default function AdminGeographyPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Géographie" subtitle="Référentiel du Cameroun, qualité des données et totaux de localisation. Aucune coordonnée ni localisation individuelle n'est visible ici." />
+      <PageHeader title="Géographie" subtitle="Répartition des membres au Cameroun et dans le monde, qualité du référentiel. Aucune coordonnée ni localisation individuelle n'est visible ici." />
+
+      <MemberDistribution />
 
       <section className="space-y-3">
         <SectionTitle title="Référentiel importé" />
@@ -137,7 +140,10 @@ export default function AdminGeographyPage() {
       </section>
 
       <section className="space-y-3">
-        <SectionTitle title="Membres localisés (totaux)" subtitle="Comptes seulement. Par région : membres qui acceptent d'apparaître dans les recherches ; sous 5, aucun nombre." />
+        <SectionTitle
+          title="Consentements de localisation (découverte entre membres)"
+          subtitle="Réglages choisis par les membres pour la recherche par zone. Ces chiffres ne représentent pas l'ensemble des membres : la répartition réelle figure dans les cartes ci-dessus."
+        />
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatTile icon={Users} label="Localisation renseignée" value={o.members.located} />
           <StatTile icon={ShieldCheck} label="Peuvent apparaître dans les recherches" value={o.members.discoverable} />
@@ -148,16 +154,6 @@ export default function AdminGeographyPage() {
           <p className="font-semibold text-[#1F2A23]">Niveau d'affichage choisi</p>
           <div className="flex flex-wrap gap-2">
             {Object.entries(DISPLAY_LABELS).map(([k, label]) => <Badge key={k} tone="neutral">{label} : {o.members.byDisplayLevel[k] ?? 0}</Badge>)}
-          </div>
-        </Card>
-        <Card className="p-4">
-          <p className="mb-2 text-[13px] font-semibold text-[#1F2A23]">Par région</p>
-          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 text-[13px]">
-            {o.regionCounts.map((r) => (
-              <div key={r.unitId} className="flex items-center justify-between rounded-lg bg-[#FAF8F5] px-3 py-2">
-                <span>{r.name}</span><span className="tabular-nums text-[#5F6B63]">{r.count === null ? "moins de 5" : r.count}</span>
-              </div>
-            ))}
           </div>
         </Card>
       </section>

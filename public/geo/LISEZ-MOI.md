@@ -64,3 +64,19 @@ le fichier n'est pas modifié.
 
 Relancez `npm run build` pour que le fichier soit inclus dans l'export statique
 servi par l'application de bureau.
+
+## Frontières mondiales (carte « International » de l'administration)
+
+`world-countries.geojson` : frontières nationales du monde, une entité par pays avec
+seulement `iso2` (ISO 3166-1 alpha-2), `name_fr` et `name_en`. Aucune donnée de membre.
+
+- Source : Natural Earth, Admin 0 – Countries, échelle 1:50m, version v5.1.2
+  (https://www.naturalearthdata.com/). Licence : domaine public, attribution appréciée.
+- Génération : `node scripts/geo/build-world-countries.mjs` (télécharge la version figée,
+  arrondit les coordonnées à 3 décimales). Pour mettre à jour, changez `NE_VERSION` dans
+  le script, relancez-le, puis `npx vitest run src/lib/geo/world-countries.test.ts`.
+- Non représentés (pas de code ISO dans la source) : Somaliland, Chypre du Nord, glacier
+  de Siachen. Un membre d'un pays sans géométrie reste compté et listé à part.
+- Fond de carte : OpenStreetMap via MapTiler (`NEXT_PUBLIC_MAPTILER_KEY`), jamais
+  `tile.openstreetmap.org`. Attribution « © MapTiler © OpenStreetMap contributors »
+  affichée sous la carte.
