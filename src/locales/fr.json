@@ -2158,6 +2158,8 @@
     "reportError": "Le signalement n'a pas pu être envoyé.",
     "sendError": "Le message n'a pas pu être envoyé.",
     "cannotPostTitle": "Envoi impossible",
+    "contactBlockedTitle": "Message non envoyé",
+    "contactBlockedDesc": "Pour la sécurité de tous, les numéros de téléphone, adresses e-mail et liens ne peuvent pas être partagés dans le groupe. Retirez-les puis renvoyez votre message.",
     "cannotPostDesc": "Vous ne pouvez pas écrire dans le groupe pour le moment.",
     "adminsOnly": "Seule l'équipe peut envoyer des messages dans ce groupe pour le moment.",
     "muted": "Un administrateur vous a retiré la parole dans ce groupe. Vous pouvez toujours lire les messages.",

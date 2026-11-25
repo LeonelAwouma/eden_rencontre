@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { CalendarPlus, CalendarCheck, ShieldCheck, ShieldOff, Users } from "lucide-react";
+import { CalendarPlus, CalendarCheck, Radio, ShieldCheck, ShieldOff, Users } from "lucide-react";
+import { useOnlineMembers } from "@/lib/presence";
 import { PageHeader } from "@/components/admin/page-header";
 import { StatTile, ErrorState, btn } from "@/components/admin/admin-ui";
 import { AttentionPanel } from "@/components/admin/attention-panel";
@@ -56,6 +57,7 @@ const HEADER = { title: "Tableau de bord", subtitle: "Vue d’ensemble de votre 
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<Stats | null>(null);
+  const online = useOnlineMembers();
   const [growth, setGrowth] = useState<Growth>({ totalUsers: null, approvedUsers: null, suspendedUsers: null });
   const [dailyRegistrations, setDailyRegistrations] = useState<{ date: string; count: number }[]>([]);
   const [recentUsers, setRecentUsers] = useState<RecentUser[]>([]);
@@ -145,7 +147,15 @@ export default function DashboardPage() {
       <AttentionPanel items={attention} className="mb-6" />
 
       {/* Indicateurs de supervision : chaque tuile mène à la liste détaillée. */}
-      <section aria-label="Indicateurs clés" className="grid grid-cols-2 xl:grid-cols-4 gap-3 mb-6 lg:mb-8">
+      <section aria-label="Indicateurs clés" className="grid grid-cols-2 xl:grid-cols-5 gap-3 mb-6 lg:mb-8">
+        {/* En direct : membres ayant une page de l'espace membre ouverte à l'écran. */}
+        <div className="col-span-2 xl:col-span-1" aria-live="polite">
+          <StatTile
+            icon={Radio} tone="green" label="En ligne maintenant" value={online.ready ? online.ids.length : "…"}
+            hint="Mis à jour en direct"
+            href="/admin/users?online=1"
+          />
+        </div>
         <StatTile
           icon={Users} tone="blue" label="Membres inscrits" value={stats.totalUsers}
           trend={trendFrom(growth.totalUsers)} hint={growth.totalUsers === null ? "Tous comptes confondus" : undefined}
