@@ -138,6 +138,23 @@ export const ANNOUNCEMENTS: readonly Announcement[] = [
     },
   },
   {
+    id: "chat-online-status",
+    surface: "member",
+    active: false, // → true quand la migration 20261125_member_presence.sql est appliquée et le code déployé
+    activatesAt: "2026-11-25T00:00:00Z", // PROVISOIRE : à remplacer par la date de mise en ligne réelle
+    availability: "always",
+    href: "/dashboard?tab=Messages",
+    priority: 12,
+    fr: {
+      title: "Voyez qui est en ligne",
+      description: "Dans vos messages, une pastille verte indique qui est en ligne, sinon depuis quand la personne n'est pas venue.",
+    },
+    en: {
+      title: "See who's online",
+      description: "In your messages, a green dot shows who's online; otherwise, when they were last seen.",
+    },
+  },
+  {
     id: "geo-map",
     surface: "member",
     active: false, // → true quand les migrations géo (20261115 à 20261117) sont appliquées, les données importées et l'app déployée

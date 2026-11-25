@@ -15,6 +15,32 @@ import {
 const DISMISS_KEY = "eden-push-banner-dismissed";
 
 /**
+ * Active les notifications (demande d'autorisation du téléphone + abonnement) et affiche
+ * le retour au membre. À appeler depuis un clic. Renvoie le nouvel état, ou null si erreur.
+ */
+export function usePushEnable() {
+  const { t, locale } = useI18n();
+  const { toast } = useToast();
+  const [busy, setBusy] = useState(false);
+  const enable = async (): Promise<PushState | null> => {
+    setBusy(true);
+    try {
+      const res = await enablePush(locale);
+      if (res.ok) toast({ title: t("push.enabledTitle"), description: t("push.enabledDesc") });
+      else if (res.state === "denied") toast({ title: t("push.deniedTitle"), description: t("push.deniedDesc"), variant: "destructive" });
+      else if (res.error) toast({ title: t("push.errorTitle"), description: res.error, variant: "destructive" });
+      return res.state;
+    } catch {
+      toast({ title: t("push.errorTitle"), variant: "destructive" });
+      return null;
+    } finally {
+      setBusy(false);
+    }
+  };
+  return { enable, busy };
+}
+
+/**
  * Notifications sur le téléphone.
  *  - variant="banner" : invitation sur l'accueil, masquable, cachée si déjà activé.
  *  - variant="settings" : réglage permanent (onglet Notifications).
@@ -23,7 +49,7 @@ export function PushOptIn({ variant }: { variant: "banner" | "settings" }) {
   const { t, locale } = useI18n();
   const { toast } = useToast();
   const [state, setState] = useState<PushState | null>(null);
-  const [busy, setBusy] = useState(false);
+  const [disabling, setBusy] = useState(false);
   const [dismissed, setDismissed] = useState(true);
 
   useEffect(() => {
@@ -34,19 +60,10 @@ export function PushOptIn({ variant }: { variant: "banner" | "settings" }) {
     return () => { active = false; };
   }, [locale]);
 
+  const { enable: enableWithFeedback, busy: enabling } = usePushEnable();
   const enable = async () => {
-    setBusy(true);
-    try {
-      const res = await enablePush(locale);
-      setState(res.state);
-      if (res.ok) toast({ title: t("push.enabledTitle"), description: t("push.enabledDesc") });
-      else if (res.state === "denied") toast({ title: t("push.deniedTitle"), description: t("push.deniedDesc"), variant: "destructive" });
-      else if (res.error) toast({ title: t("push.errorTitle"), description: res.error, variant: "destructive" });
-    } catch {
-      toast({ title: t("push.errorTitle"), variant: "destructive" });
-    } finally {
-      setBusy(false);
-    }
+    const next = await enableWithFeedback();
+    if (next) setState(next);
   };
 
   const disable = async () => {
@@ -55,6 +72,8 @@ export function PushOptIn({ variant }: { variant: "banner" | "settings" }) {
     setState("off");
     setBusy(false);
   };
+
+  const busy = enabling || disabling;
 
   const dismiss = () => {
     setDismissed(true);
@@ -226,7 +245,7 @@ function DeviceSettings({ onCurrentRemoved }: { onCurrentRemoved: () => void }) 
 }
 
 /** iPhone / iPad : les notifications web exigent d'abord l'ajout à l'écran d'accueil. */
-function IosSteps() {
+export function IosSteps() {
   const { t } = useI18n();
   return (
     <ol className="mt-3 space-y-1.5 text-[13px]" style={{ color: "#3F4A43" }}>

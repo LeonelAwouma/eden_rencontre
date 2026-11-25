@@ -1659,6 +1659,11 @@
     "accept": "Accepter",
     "decline": "Décliner",
     "typing": "en train d'écrire…",
+    "online": "En ligne",
+    "lastSeenJustNow": "Vu à l’instant",
+    "lastSeen": "Vu {when}",
+    "lastSeenYesterday": "Vu hier",
+    "lastSeenOn": "Vu le {date}",
     "nameOrEmail": "Nom ou email…",
     "enterAtLeast2Chars": "Entrez au moins 2 caractères.",
     "noMembersFound": "Aucun membre trouvé.",
@@ -2246,7 +2251,13 @@
     "removedDesc": "Cet appareil ne recevra plus de notifications.",
     "checkHint": "Rien reçu ? Vérifiez dans les réglages du téléphone que les notifications sont autorisées pour le navigateur (ou pour Garden of Alliance sur iPhone) et que le mode Concentration ou Ne pas déranger est désactivé.",
     "deniedAndroid": "Android : touchez le cadenas à côté de l’adresse → Autorisations → Notifications → Autoriser.",
-    "deniedIos": "iPhone : Réglages → Notifications → Garden of Alliance → Autoriser les notifications."
+    "deniedIos": "iPhone : Réglages → Notifications → Garden of Alliance → Autoriser les notifications.",
+    "messagePromptTitle": "Soyez averti(e) de la réponse",
+    "messagePromptDesc": "Pour être averti(e) dès que {name} vous répond, autorisez les notifications sur votre téléphone. Un seul geste suffit.",
+    "messagePromptDescGeneric": "Pour être averti(e) des nouveaux messages, autorisez les notifications sur votre téléphone. Un seul geste suffit.",
+    "messagePromptAllow": "Autoriser les notifications",
+    "messagePromptDenied": "Les notifications sont bloquées pour ce site : seul le réglage de votre téléphone peut les débloquer.",
+    "messagePromptOk": "J’ai compris"
   },
   "phone": {
     "label": "Numéro de téléphone",

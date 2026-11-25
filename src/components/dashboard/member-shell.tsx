@@ -8,6 +8,7 @@ import { MemberChromeProvider, useMemberChrome } from "./member-chrome";
 import { MemberDrawer } from "./member-drawer";
 import { MemberHeader } from "./member-header";
 import { MemberAnnouncementsProvider } from "@/components/whats-new/announcements-provider";
+import { PresenceProvider } from "@/lib/presence";
 
 function ShellFrame({ children }: { children: ReactNode }) {
   const { immersive } = useMemberChrome();
@@ -37,7 +38,10 @@ export function MemberShell({ children }: { children: ReactNode }) {
   return (
     <MemberChromeProvider>
       <MemberAnnouncementsProvider>
-        <ShellFrame>{children}</ShellFrame>
+        {/* Présence (« En ligne », « Vu il y a… ») : active sur tout l'espace membre, pas seulement Messages. */}
+        <PresenceProvider>
+          <ShellFrame>{children}</ShellFrame>
+        </PresenceProvider>
       </MemberAnnouncementsProvider>
     </MemberChromeProvider>
   );
