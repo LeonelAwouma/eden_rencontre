@@ -1659,6 +1659,11 @@
     "accept": "Accept",
     "decline": "Decline",
     "typing": "typing…",
+    "online": "Online",
+    "lastSeenJustNow": "Seen just now",
+    "lastSeen": "Seen {when}",
+    "lastSeenYesterday": "Seen yesterday",
+    "lastSeenOn": "Seen on {date}",
     "nameOrEmail": "Name or email…",
     "enterAtLeast2Chars": "Enter at least 2 characters.",
     "noMembersFound": "No members found.",
@@ -2246,7 +2251,13 @@
     "removedDesc": "This device will no longer receive notifications.",
     "checkHint": "Nothing received? In your phone settings, check that notifications are allowed for your browser (or for Garden of Alliance on iPhone) and that Focus or Do Not Disturb is off.",
     "deniedAndroid": "Android: tap the padlock next to the address → Permissions → Notifications → Allow.",
-    "deniedIos": "iPhone: Settings → Notifications → Garden of Alliance → Allow Notifications."
+    "deniedIos": "iPhone: Settings → Notifications → Garden of Alliance → Allow Notifications.",
+    "messagePromptTitle": "Get notified when they reply",
+    "messagePromptDesc": "To be notified as soon as {name} replies, allow notifications on your phone. It only takes one tap.",
+    "messagePromptDescGeneric": "To be notified of new messages, allow notifications on your phone. It only takes one tap.",
+    "messagePromptAllow": "Allow notifications",
+    "messagePromptDenied": "Notifications are blocked for this site: only your phone settings can unblock them.",
+    "messagePromptOk": "Got it"
   },
   "phone": {
     "label": "Phone number",

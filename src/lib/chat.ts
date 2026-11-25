@@ -15,6 +15,8 @@ export interface ChatConversation {
   lastSticker?: string | null;
   when: string;
   unread: number;
+  /** Dernière présence connue dans l'espace membre (ISO), pour « Vu il y a… ». */
+  lastSeenAt?: string | null;
 }
 
 export interface ChatMessage {
@@ -337,6 +339,16 @@ export async function listConversations(myId: string): Promise<ChatConversation[
     (profs || []).forEach((p: any) => (profById[p.id] = p));
   }
 
+  // Dernière présence (« Vu il y a… ») : table absente ou erreur → simplement rien d'affiché.
+  const lastSeenById: Record<string, string> = {};
+  if (otherIds.length) {
+    const { data: seen } = await supabase
+      .from("member_presence")
+      .select("user_id, last_seen_at")
+      .in("user_id", otherIds);
+    (seen || []).forEach((r: any) => (lastSeenById[r.user_id] = r.last_seen_at));
+  }
+
   // Messages de toutes les conversations
   const msgs = await selectMessages(
     (cols) => supabase!.from("messages").select(cols).in("conversation_id", convIds).order("created_at", { ascending: true }),
@@ -361,6 +373,7 @@ export async function listConversations(myId: string): Promise<ChatConversation[
       lastSticker,
       when: lastRow ? fmt(lastRow.created_at) : "",
       unread,
+      lastSeenAt: lastSeenById[otherId] || null,
     };
   });
 

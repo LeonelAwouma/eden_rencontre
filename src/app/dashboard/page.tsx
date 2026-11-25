@@ -80,13 +80,17 @@ import { FluentEmoji, EMOJI_CATEGORIES } from "@/components/fluent-emoji";
 import { Sticker as StickerArt, StickerPicker } from "@/components/forum/forum-ui";
 import { findSticker } from "@/lib/forum-shared";
 import { PushOptIn } from "@/components/push-opt-in";
-import { listenToServiceWorker, clearAppBadge } from "@/lib/push";
+import { listenToServiceWorker, clearAppBadge, getPushState, type PushState } from "@/lib/push";
+import { PushMessagePrompt, PUSH_PROMPT_STATES } from "@/components/push-message-prompt";
+import { usePresence, formatLastSeen } from "@/lib/presence";
 import { CoachProposalCard } from "@/components/dashboard/coach-proposal-card";
 import { MemberCoachNotificationsPanel, useMemberCoachNotifications } from "@/components/dashboard/member-coach-notifications";
 import { COACH_PROPOSAL_ANCHOR, proposalAnchorFromHash } from "@/lib/coach/member-notifications";
 import { useScrollToElement } from "@/hooks/use-scroll-to-element";
 import { CoachFollowUpCard } from "@/components/dashboard/coach-follow-up-card";
 import { AutoSaveIndicator } from "@/components/autosave-indicator";
+
+const PUSH_PROMPT_SESSION_KEY = "eden-push-msg-prompt";
 
 // Sentinel activeConvId used before any real conversation with Admin exists yet —
 // lets the pinned Admin entry open a chat view without a conversation row in the DB.
@@ -378,6 +382,20 @@ export default function DashboardPage() {
       ? { id: ADMIN_VIRTUAL_ID, otherId: adminUser.id, name: adminUser.name, avatar: null, last: "", when: "", unread: 0 }
       : null);
   const messageNotifs = conversations.filter((c) => c.unread > 0);
+  const presence = usePresence();
+
+  // Après un envoi : si les notifications ne sont pas actives sur cet appareil, une fenêtre
+  // invite à les autoriser (une fois par session, tant qu'elles ne sont pas activées).
+  const [pushPrompt, setPushPrompt] = useState<{ state: PushState; name: string | null } | null>(null);
+  const maybePromptPush = (name: string | null) => {
+    try {
+      if (sessionStorage.getItem(PUSH_PROMPT_SESSION_KEY)) return;
+      sessionStorage.setItem(PUSH_PROMPT_SESSION_KEY, "1");
+    } catch { return; }
+    getPushState().then((state) => {
+      if (PUSH_PROMPT_STATES.includes(state)) setPushPrompt({ state, name });
+    }).catch(() => {});
+  };
   const displayName = user?.pseudo || user?.name || "Membre";
 
   // Meeting notifications
@@ -679,6 +697,7 @@ export default function DashboardPage() {
     if (sent.error) { notifySendError(sent.error); return; }
     if (sent.message) appendMessage(sent.message);
     loadConversations();
+    maybePromptPush(activeConv?.name ?? null);
   };
 
   // Aperçu d'un dernier message sticker : « 🙏 Amen » dans la langue du lecteur.
@@ -709,6 +728,7 @@ export default function DashboardPage() {
       if (sentImg.error) { notifySendError(sentImg.error); return; }
       if (sentImg.message) appendMessage(sentImg.message);
       clearPendingImage(); setChatInput(""); loadConversations();
+      maybePromptPush(activeConv?.name ?? null);
       return;
     }
     setChatInput("");
@@ -716,6 +736,7 @@ export default function DashboardPage() {
     if (sent.error) { setChatInput(text); notifySendError(sent.error); return; }
     if (sent.message) appendMessage(sent.message);
     loadConversations();
+    maybePromptPush(activeConv?.name ?? null);
   };
 
   const appendMessage = (msg: ChatMessage) => {
@@ -1363,6 +1384,7 @@ export default function DashboardPage() {
           </div>
         </div>
       )}
+      <PushMessagePrompt state={pushPrompt?.state ?? null} name={pushPrompt?.name} onClose={() => setPushPrompt(null)} />
       {showRegistrationFeedback && user?.id && (
         <RegistrationFeedbackDialog userId={user.id} onClose={closeRegistrationFeedback} />
       )}
@@ -2426,10 +2448,16 @@ export default function DashboardPage() {
                         <button key={c.id} onClick={() => openConversation(c.id)}
                           className="w-full flex items-center gap-3 p-3 text-left transition-colors"
                           style={{ background: sel ? "#EEF5EC" : "transparent", borderLeft: sel ? "3px solid #486B46" : "3px solid transparent" }}>
-                          <Avatar className="w-11 h-11 shrink-0" style={{ border: "1px solid #E8E5E0" }}>
-                            <AvatarImage src={avatarSrc(c.avatar)} />
-                            <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{c.name?.[0]?.toUpperCase()}</AvatarFallback>
-                          </Avatar>
+                          <span className="relative shrink-0">
+                            <Avatar className="w-11 h-11" style={{ border: "1px solid #E8E5E0" }}>
+                              <AvatarImage src={avatarSrc(c.avatar)} />
+                              <AvatarFallback style={{ background: "#EEF5EC", color: "#486B46" }}>{c.name?.[0]?.toUpperCase()}</AvatarFallback>
+                            </Avatar>
+                            {presence.isOnline(c.otherId) && (
+                              <span aria-label={t("dashboard.online")} className="absolute bottom-0 right-0 w-3 h-3 rounded-full"
+                                style={{ background: "#3F8F4E", boxShadow: "0 0 0 2px #FFFFFF" }} />
+                            )}
+                          </span>
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-2">
                               <h4 className="font-bold text-sm truncate" style={{ color: sel ? "#486B46" : "#2F2F2F" }}>{c.name}</h4>
@@ -2473,9 +2501,20 @@ export default function DashboardPage() {
                       </Avatar>
                       <div className="text-left min-w-0">
                         <h4 className="font-bold text-sm truncate" style={{ color: "#2F2F2F" }}>{displayConv.name}</h4>
-                        <p className="text-[11px]" style={{ color: partnerTyping ? "#486B46" : "#777777" }}>
-                          {isAdminThread ? t("dashboard.contactAdminHint") : partnerTyping ? t("dashboard.typing") : t("dashboard.viewProfile")}
-                        </p>
+                        {(() => {
+                          if (isAdminThread) return <p className="text-[11px]" style={{ color: "#777777" }}>{t("dashboard.contactAdminHint")}</p>;
+                          if (partnerTyping) return <p className="text-[11px]" style={{ color: "#486B46" }}>{t("dashboard.typing")}</p>;
+                          if (presence.isOnline(displayConv.otherId)) {
+                            return (
+                              <p className="text-[11px] font-semibold flex items-center gap-1" style={{ color: "#486B46" }}>
+                                <span className="w-1.5 h-1.5 rounded-full" style={{ background: "#3F8F4E" }} /> {t("dashboard.online")}
+                              </p>
+                            );
+                          }
+                          const seen = presence.lastSeen(displayConv.otherId, displayConv.lastSeenAt);
+                          const label = seen ? formatLastSeen(seen, locale, t, presence.now || Date.now()) : "";
+                          return <p className="text-[11px]" style={{ color: "#777777" }}>{label || t("dashboard.viewProfile")}</p>;
+                        })()}
                       </div>
                     </button>
                     {!isAdminThread && (
